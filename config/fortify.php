@@ -101,7 +101,7 @@ return [
     |
     */
 
-    'middleware' => ['web'],
+    'middleware' => ['web', 'cache.headers:no_store;must_revalidate;max_age=0'],
 
     /*
     |--------------------------------------------------------------------------
