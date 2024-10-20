@@ -1,1 +1,1 @@
-<img  src="{{url('/storage/images/logo.webp')}}" />
+<img  src="{{url('/images/logo.webp')}}" />

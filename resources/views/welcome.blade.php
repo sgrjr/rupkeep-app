@@ -45,7 +45,7 @@
                         @auth()
                             <a href="{{route('dashboard')}}"><img src="{{auth()->user()->organization->logo_url}}" class="max-w-[550px] m-auto"/></a>
                         @else
-                            <a href="{{route('dashboard')}}"><img  src="{{url('/storage/images/logo.webp')}}" class="max-w-[550px] m-auto w-full"/></a>
+                            <a href="{{route('dashboard')}}"><img  src="{{url('/images/logo.webp')}}" class="max-w-[550px] m-auto w-full"/></a>
                         @endauth
                         
                     </main>
