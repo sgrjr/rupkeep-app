@@ -1,0 +1,21 @@
+{
+  "resources/css/app.css": {
+    "file": "assets/app-mu-LJhBa.css",
+    "src": "resources/css/app.css",
+    "isEntry": true
+  },
+  "resources/css/default_dashboard_theme.css": {
+    "file": "assets/default_dashboard_theme-DKdzqc0w.css",
+    "src": "resources/css/default_dashboard_theme.css",
+    "isEntry": true
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-C9AKHVwC.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true,
+    "css": [
+      "assets/app-C7s3BGlm.css"
+    ]
+  }
+}
