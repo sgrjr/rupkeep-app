@@ -171,6 +171,10 @@ class PilotCarJob extends Model
         if(!array_key_exists('job_no', $values)){
             return true;
         }
+
+        if(!array_key_exists('end_time', $values)){
+            dd($values);
+        }
             $job = static::where('organization_id',$organization_id)
                     ->where('job_no', $values['job_no'] )
                     ->where('invoice_no', $values['invoice_no'] )
