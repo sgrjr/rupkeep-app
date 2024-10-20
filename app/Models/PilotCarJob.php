@@ -72,6 +72,7 @@ class PilotCarJob extends Model
                     }
         
                     $header = static::translateHeaders($h_eader);
+                    dd($header, $h_eader);
                 }else{
                     $values = str_getcsv($line);
                     $new_values = [];
