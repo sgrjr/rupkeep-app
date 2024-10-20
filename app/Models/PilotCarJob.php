@@ -78,7 +78,7 @@ class PilotCarJob extends Model
                     foreach($values as $index=>$v){
                         $new_values[$header[$index]] = $v;
                     }
-                    dd($new_values);
+                    if(count($new_values) != 57) dd($new_values);
                     $l[] = $new_values;
                 }
                 $number++;
