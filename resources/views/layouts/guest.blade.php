@@ -17,7 +17,7 @@
         <!-- Styles -->
         @livewireStyles
     </head>
-    <body class="welcome default-theme">
+    <body class="welcome {{request()->has('customer_id')? 'dark-theme':'default-theme'}}">
         <div>
             {{ $slot }}
         </div>
