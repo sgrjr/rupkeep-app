@@ -73,7 +73,7 @@ class EditPilotCarJob extends Component
             $this->job = $job;
             $this->form->job_no = $job->job_no;
             $this->form->customer_id = $job->customer_id;
-            $this->form->new_customer_name = $job->scheduled_pickup_at;
+            $this->form->new_customer_name = null;
             $this->form->scheduled_pickup_at = $job->scheduled_pickup_at;
             $this->form->scheduled_delivery_at = $job->scheduled_delivery_at;
             $this->form->load_no = $job->load_no;
@@ -97,6 +97,6 @@ class EditPilotCarJob extends Component
         $form = $this->form->all();
         $job = $this->job->update($form);
         $this->dispatch('saved');
-        return back();
+        return redirect()->route('jobs.show', ['job'=>$this->job->id]);
     }
 }

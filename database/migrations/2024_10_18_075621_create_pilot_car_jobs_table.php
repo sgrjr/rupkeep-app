@@ -31,6 +31,7 @@ return new class extends Migration
             $table->binary('memo')->nullable();
             $table->foreignId('organization_id')->nullable();
             $table->timestamps();
+            $table->softDeletes();
 
             $table->index('customer_id');
             $table->foreign('customer_id')->references('id')->on('customers')->onDelete('cascade');

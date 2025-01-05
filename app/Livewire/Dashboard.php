@@ -9,6 +9,7 @@ use App\Models\Organization;
 use Livewire\WithFileUploads;
 use Livewire\Attributes\Validate;
 use App\Models\PilotCarJob;
+use App\Models\UserLog;
 
 class Dashboard extends Component
 {
@@ -40,26 +41,38 @@ class Dashboard extends Component
          ]];
        }
 
+       if(auth()->user()->can('createJob', $organization)){
        $cards[] = (Object)['title'=>'Jobs', 'count'=> $organization->jobs()->count(), 'links'=> [
             ['url'=> route('my.jobs.index'), 'title'=>'View All'],
             ['url'=> route('my.jobs.create'), 'title'=>'+Create New'],
         ]];
+       }
 
+       if(auth()->user()->can('createUser', $organization)){
        $cards[] = (Object)['title'=>'Users', 'count'=> $organization->users()->count(), 'links'=> [
             ['url'=> route('my.users.index'), 'title'=>'View All'],
             ['url'=> route('my.users.create'), 'title'=>'+Create New'],
         ]];
+       }
 
+       if(auth()->user()->can('createCustomer', $organization)){
         $cards[] = (Object)['title'=>'Customers', 'count'=> $organization->customers()->count(), 'links'=> [
             ['url'=> route('my.customers.index'), 'title'=>'View All'],
             ['url'=> route('my.customers.create'), 'title'=>'+Create New'],
         ]];
+       }
        
         if(Auth::user()->is_super){
             $organizations = \App\Models\Organization::all();
         }
 
-        return view('livewire.dashboard', compact('organization', 'organizations','cards'));
+        if(auth()->user()->can('work', $organization)){
+            $logs = UserLog::where('car_driver_id', auth()->user()->id)->get();
+        }else{
+            $logs = false;
+        }
+
+        return view('livewire.dashboard', compact('organization', 'organizations','cards','logs'));
     }
 
     public function uploadFile()

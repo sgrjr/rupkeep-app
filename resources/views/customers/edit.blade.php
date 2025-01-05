@@ -1,5 +1,7 @@
 <x-app-layout>
     <div>
+        <a class="button w-full block text-center" href="{{route('my.customers.show', ['customer'=>$customer->id])}}">&larr;{{$customer->name}}</a>
+
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <form action="{{route('customers.update', ['customer'=> $customer->id])}}" method="post">
                 @csrf

@@ -12,7 +12,7 @@ class PilotCarJobPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->organization->is_super;
+        return $user->is_super;
     }
 
     /**
@@ -20,7 +20,7 @@ class PilotCarJobPolicy
      */
     public function view(User $user, Job $model): bool
     {
-        return $user->organization_id === $model->organization_id || $user->organization->is_super;
+        return $user->organization_id === $model->organization_id || $user->is_super;
     }
 
     /**
@@ -28,7 +28,7 @@ class PilotCarJobPolicy
      */
     public function create(User $user, Job $model): bool
     {
-        return ($user->organization_id === $model->organization_id && $user->organization_role === 'administrator') || $user->organization->is_super;
+        return ($user->organization_id === $model->organization_id && $user->organization_role === 'administrator') || $user->is_super;
     }
 
     /**
@@ -36,7 +36,7 @@ class PilotCarJobPolicy
      */
     public function update(User $user, Job $model): bool
     {
-        return ($user->organization_id === $model->organization_id && in_array($user->organization_role,['administrator','editor'])) || $user->organization->is_super;
+        return ($user->organization_id === $model->organization_id && in_array($user->organization_role,['administrator','editor'])) || $user->is_super;
     }
 
     /**
@@ -44,7 +44,7 @@ class PilotCarJobPolicy
      */
     public function delete(User $user, Job $model): bool
     {
-        return ($user->organization_id === $model->organization_id && $user->organization_role === 'administrator') || $user->organization->is_super;
+        return ($user->organization_id === $model->organization_id && $user->organization_role === 'administrator') || $user->is_super;
     }
 
     /**
@@ -52,7 +52,7 @@ class PilotCarJobPolicy
      */
     public function restore(User $user, Job $model): bool
     {
-        return ($user->organization_id === $model->organization_id && $user->organization_role === 'administrator') || $user->organization->is_super;
+        return ($user->organization_id === $model->organization_id && $user->organization_role === 'administrator') || $user->is_super;
     }
 
     /**
@@ -60,7 +60,7 @@ class PilotCarJobPolicy
      */
     public function forceDelete(User $user, Job $model): bool
     {
-        return ($user->organization_id === $model->organization_id && $user->organization_role === 'administrator') || $user->organization->is_super;
+        return ($user->organization_id === $model->organization_id && $user->organization_role === 'administrator') || $user->is_super;
     }
 
 }

@@ -12,7 +12,7 @@ class NewJobForm extends Form
     #[Validate('required|string|max:255')]
     public $job_no = null;
  
-    #[Validate('required|numeric|exists:customers|min:1')]
+    #[Validate('required|numeric|exists:customers,id|min:1')]
     public $customer_id = null;
 
     #[Validate('string|min:6')]
@@ -108,6 +108,8 @@ class CreatePilotCarJob extends Component
                         $customer_id = $c->id;
                     }
                 }
+            }else{
+                $customer_id = false;
             }
 
             if(!$customer_id){

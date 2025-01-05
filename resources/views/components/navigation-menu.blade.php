@@ -17,81 +17,89 @@
                         {{ __('Dashboard') }}
                     </x-nav-link>
 
-                    <x-dropdown :active="request()->routeIs('my.jobs.*')">
-                        <x-slot name="trigger">
-                            <p>{{ __('Jobs') }}</p>
-                        </x-slot>
+                    @if(auth()->user()->can('createJob', auth()->user()->organization))
+                        <x-dropdown :active="request()->routeIs('my.jobs.*')">
+                            <x-slot name="trigger">
+                                <p>{{ __('Jobs') }}</p>
+                            </x-slot>
 
-                        <x-slot name="content">
-                            <x-dropdown-link href="{{ route('my.jobs.index') }}">
-                                {{ __('Jobs Search') }}
-                            </x-dropdown-link>
+                            <x-slot name="content">
+                                <x-dropdown-link href="{{ route('my.jobs.index') }}">
+                                    {{ __('Jobs Search') }}
+                                </x-dropdown-link>
 
-                            <div class="border-t border-gray-200 dark:border-gray-600"></div>
+                                <div class="border-t border-gray-200 dark:border-gray-600"></div>
 
-                            <x-dropdown-link href="{{ route('my.jobs.create') }}">
-                                {{ __('+Create New') }}
-                            </x-dropdown-link>
+                                <x-dropdown-link href="{{ route('my.jobs.create') }}">
+                                    {{ __('+Create New') }}
+                                </x-dropdown-link>
 
-                        </x-slot>
-                    </x-dropdown>
+                            </x-slot>
+                        </x-dropdown>
+                    @endif
 
-                    <x-dropdown :active="request()->routeIs('my.customers.*')">
-                        <x-slot name="trigger">
-                            <p>{{ __('Customers') }}</p>
-                        </x-slot>
+                    @if(auth()->user()->can('createCustomer', auth()->user()->organization))
+                        <x-dropdown :active="request()->routeIs('my.customers.*')">
+                            <x-slot name="trigger">
+                                <p>{{ __('Customers') }}</p>
+                            </x-slot>
 
-                        <x-slot name="content">
-                            <x-dropdown-link href="{{ route('my.customers.index') }}">
-                                {{ __('Customers Search') }}
-                            </x-dropdown-link>
+                            <x-slot name="content">
+                                <x-dropdown-link href="{{ route('my.customers.index') }}">
+                                    {{ __('Customers Search') }}
+                                </x-dropdown-link>
 
-                            <div class="border-t border-gray-200 dark:border-gray-600"></div>
+                                <div class="border-t border-gray-200 dark:border-gray-600"></div>
 
-                            <x-dropdown-link href="{{ route('my.customers.create') }}">
-                                {{ __('+Create New') }}
-                            </x-dropdown-link>
+                                <x-dropdown-link href="{{ route('my.customers.create') }}">
+                                    {{ __('+Create New') }}
+                                </x-dropdown-link>
 
-                        </x-slot>
-                    </x-dropdown>
+                            </x-slot>
+                        </x-dropdown>
+                    @endif
 
-                    <x-dropdown :active="request()->routeIs('my.users.*')">
-                        <x-slot name="trigger">
-                            <p>{{ __('Users') }}</p>
-                        </x-slot>
+                    @if(auth()->user()->can('createUser', auth()->user()->organization))
+                        <x-dropdown :active="request()->routeIs('my.users.*')">
+                            <x-slot name="trigger">
+                                <p>{{ __('Users') }}</p>
+                            </x-slot>
 
-                        <x-slot name="content">
-                            <x-dropdown-link href="{{ route('my.users.index') }}">
-                                {{ __('Users Search') }}
-                            </x-dropdown-link>
+                            <x-slot name="content">
+                                <x-dropdown-link href="{{ route('my.users.index') }}">
+                                    {{ __('Users Search') }}
+                                </x-dropdown-link>
 
-                            <div class="border-t border-gray-200 dark:border-gray-600"></div>
+                                <div class="border-t border-gray-200 dark:border-gray-600"></div>
 
-                            <x-dropdown-link href="{{ route('my.users.create') }}">
-                                {{ __('+Create New') }}
-                            </x-dropdown-link>
+                                <x-dropdown-link href="{{ route('my.users.create') }}">
+                                    {{ __('+Create New') }}
+                                </x-dropdown-link>
 
-                        </x-slot>
-                    </x-dropdown>
+                            </x-slot>
+                        </x-dropdown>
+                    @endif
 
-                    <x-dropdown :active="request()->routeIs('my.vehicles.*')">
-                        <x-slot name="trigger">
-                            <p>{{ __('Vehicles') }}</p>
-                        </x-slot>
+                    @if(auth()->user()->can('createVehicle', auth()->user()->organization))
+                        <x-dropdown :active="request()->routeIs('my.vehicles.*')">
+                            <x-slot name="trigger">
+                                <p>{{ __('Vehicles') }}</p>
+                            </x-slot>
 
-                        <x-slot name="content">
-                            <x-dropdown-link href="{{ route('my.vehicles.index') }}">
-                                {{ __('Vehicles Search') }}
-                            </x-dropdown-link>
+                            <x-slot name="content">
+                                <x-dropdown-link href="{{ route('my.vehicles.index') }}">
+                                    {{ __('Vehicles Search') }}
+                                </x-dropdown-link>
 
-                            <div class="border-t border-gray-200 dark:border-gray-600"></div>
+                                <div class="border-t border-gray-200 dark:border-gray-600"></div>
 
-                            <x-dropdown-link href="{{ route('my.vehicles.create') }}">
-                                {{ __('+Create New') }}
-                            </x-dropdown-link>
+                                <x-dropdown-link href="{{ route('my.vehicles.create') }}">
+                                    {{ __('+Create New') }}
+                                </x-dropdown-link>
 
-                        </x-slot>
-                    </x-dropdown>
+                            </x-slot>
+                        </x-dropdown>
+                    @endif
 
                     @can('viewAny', new \App\Models\Organization)
                         <x-dropdown :active="request()->routeIs('organizations.*')">

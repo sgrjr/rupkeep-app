@@ -35,6 +35,7 @@ class UpdateProfileInformationForm extends Component
     public $verificationLinkSent = false;
 
     public $user;
+    public $roles;
 
     /**
      * Prepare the component.
@@ -54,6 +55,7 @@ class UpdateProfileInformationForm extends Component
         ], $this->user->withoutRelations()->toArray());
 
         $this->themes = User::themes();
+        $this->roles = User::roles();
     }
 
     /**

@@ -12,7 +12,7 @@ class UserPolicy
      */
     public function viewAny(User $user): bool
     {
-        //
+        return $user->is_super;
     }
 
     /**
@@ -20,7 +20,7 @@ class UserPolicy
      */
     public function view(User $user, User $model): bool
     {
-        //
+        return $user->id === $model->id || ($user->organization_id === $model->organization_id && $user->organization_role === 'administrator') || $user->is_super;
     }
 
     /**
@@ -28,15 +28,14 @@ class UserPolicy
      */
     public function create(User $user, User $model): bool
     {
-        return ($user->organization_id === $model->organization_id && $user->organization_role === 'administrator') || $user->organization->is_super;
+        return ($user->organization_id === $model->organization_id && $user->organization_role === 'administrator') || $user->is_super;
     }
 
     /**
      * Determine whether the user can update the model.
      */
-    public function update(User $user, User $model): bool
-    {
-        return ($user->organization_id === $model->id && $user->organization_role === 'administrator') || $user->organization->is_super;
+    public function update(User $user, User $model): bool{
+        return $user->id === $model->id || ($user->organization_id === $model->organization_id && $user->organization_role === 'administrator') || $user->is_super;
     }
 
     /**
@@ -44,7 +43,7 @@ class UserPolicy
      */
     public function delete(User $user, User $model): bool
     {
-        //
+        return ($user->organization_id === $model->organization_id && $user->organization_role === 'administrator') || $user->is_super;
     }
 
     /**
@@ -52,7 +51,12 @@ class UserPolicy
      */
     public function restore(User $user, User $model): bool
     {
-        //
+        return ($user->organization_id === $model->organization_id && $user->organization_role === 'administrator') || $user->is_super;
+    }
+
+    public function restoreAny(User $user, User $model): bool
+    {
+        return $user->is_super;
     }
 
     /**
@@ -60,16 +64,16 @@ class UserPolicy
      */
     public function forceDelete(User $user, User $model): bool
     {
-        //
+        return $user->is_super;
     }
 
     public function updateRole(User $user, User $model): bool
     {
-        return ($user->organization_id === $model->organization_id && $user->organization_role === 'administrator') || $user->organization->is_super;
+        return ($user->organization_id === $model->organization_id && $user->organization_role === 'administrator') || $user->is_super;
     }
 
     public function impersonate(User $user, User $model): bool
     {
-        return ($user->organization_id === $model->organization_id && $user->organization_role === 'administrator') || $user->organization->is_super;
+        return ($user->organization_id === $model->organization_id && $user->organization_role === 'administrator') || $user->is_super;
     }
 }

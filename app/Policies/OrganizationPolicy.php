@@ -12,7 +12,7 @@ class OrganizationPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->organization->is_super;
+        return $user->is_super;
     }
 
     /**
@@ -20,7 +20,7 @@ class OrganizationPolicy
      */
     public function view(User $user, Organization $organization): bool
     {
-        return $user->organization_id === $organization->id || $user->organization->is_super;
+        return $user->organization_id === $organization->id || $user->is_super;
     }
 
     /**
@@ -28,7 +28,7 @@ class OrganizationPolicy
      */
     public function create(User $user): bool
     {
-        return $user->organization->is_super;
+        return $user->is_super;
     }
 
     /**
@@ -36,7 +36,7 @@ class OrganizationPolicy
      */
     public function update(User $user, Organization $organization): bool
     {
-        return $user->organization_id === $organization->id || $user->organization->is_super;
+        return ($user->organization_id === $organization->id && $user->organization_role === 'administrator') || $user->is_super;
     }
 
     /**
@@ -44,7 +44,7 @@ class OrganizationPolicy
      */
     public function delete(User $user, Organization $organization): bool
     {
-        return $user->organization->is_super;
+        return $user->is_super;
     }
 
     /**
@@ -52,7 +52,7 @@ class OrganizationPolicy
      */
     public function restore(User $user, Organization $organization): bool
     {
-        return $user->organization->is_super;
+        return $user->is_super;
     }
 
     /**
@@ -60,7 +60,7 @@ class OrganizationPolicy
      */
     public function forceDelete(User $user, Organization $organization): bool
     {
-        return $user->organization->is_super;
+        return $user->is_super;
     }
 
     /**
@@ -68,11 +68,31 @@ class OrganizationPolicy
      */
     public function updateOwner(User $user, Organization $organization): bool
     {
-        return $user->organization->is_super;
+        return $user->is_super;
     }
     
     public function createUser(User $user, Organization $organization): bool
     {
-        return $user->id === $organization->user_id || $user->organization->is_super;
+        return ($user->organization_id === $organization->id && $user->organization_role === 'administrator') || $user->is_super;
+    }
+
+    public function createJob(User $user, Organization $organization): bool
+    {
+        return ($user->organization_id === $organization->id && $user->organization_role === 'administrator') || $user->is_super;
+    }
+
+    public function createCustomer(User $user, Organization $organization): bool
+    {
+        return ($user->organization_id === $organization->id && $user->organization_role === 'administrator') || $user->is_super;
+    }
+
+    public function createVehicle(User $user, Organization $organization): bool
+    {
+        return ($user->organization_id === $organization->id && $user->organization_role === 'administrator') || $user->is_super;
+    }
+
+    public function work(User $user, Organization $organization): bool
+    {
+        return ($user->organization_id === $organization->id && $user->organization_role === 'driver');
     }
 }

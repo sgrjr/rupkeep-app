@@ -19,6 +19,7 @@
                         </div>
 
                         <div class="card-actions">
+                            <a href="{{route('my.jobs.index', ['customer'=>$c->id])}}" class="button">jobs</a>
                             <a href="{{route('customers.edit', ['customer'=>$c->id])}}" class="button">edit</a>
                             <x-delete-form class="inline-block underline" action="{{route('customers.destroy', ['customer'=> $c->id])}}" title="delete"/>
                         </div>

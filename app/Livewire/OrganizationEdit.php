@@ -12,7 +12,7 @@ class OrganizationEdit extends Component
     public function mount(Int $organization){
         $organization = Organization::find($organization)->append('owner_email');
 
-        if($this->authorize('view', $organization)){
+        if($this->authorize('update', $organization)){
             $this->organization = $organization;
         }
     }

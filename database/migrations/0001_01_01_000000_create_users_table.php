@@ -23,6 +23,7 @@ return new class extends Migration
             $table->string('organization_role', 64)->nullable();
             $table->string('theme')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

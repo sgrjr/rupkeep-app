@@ -5,18 +5,50 @@ namespace App\Livewire;
 use Livewire\Component;
 use Livewire\Form;
 use Livewire\Attributes\Validate;
-use App\Models\Customer;
+use App\Models\Vehicle;
+use App\Models\UserLog;
 use App\Models\PilotCarJob as Job;
+use App\Models\User;
+
+class JobAssignmentForm extends Form
+{
+    #[Validate('required|exists:users,id|max:255')]
+    public $car_driver_id = null;
+ 
+    #[Validate('nullable|exists:vehicles,id|max:255')]
+    public $vehicle_id = null;
+
+    #[Validate('required|string')]
+    public $vehicle_position = null;
+}
 
 class ShowPilotCarJob extends Component
 {
-    
-    public $customers = [];
+    public JobAssignmentForm $assignment;
+    public $job;
 
-    public $rates = [];
+    public $vehicles = [];
+    public $drivers = [];
+    public $vehicle_positions = [];
 
-    public function mount(){
+    public function mount(Int $job){
+        $this->job = Job::with('logs','logs.vehicle','logs.truck_driver','logs.user','logs.attachments','customer','customer.contacts')->find($job)->append('invoices_count');
 
+        $this->vehicles = [
+            ['name' => '(none selected)', 'value'=>null]
+        ];
+        
+        Vehicle::where('organization_id', $this->job->organization_id)->get()->map(fn($v)=>$this->vehicles[] = ['name'=>$v->name, 'value'=> $v->id ]);
+
+        $this->drivers = [
+            ['name' => '(none selected)', 'value'=>null]
+        ];
+        
+        $this->vehicle_positions = Vehicle::positionOptions();
+
+        User::where('organization_id', $this->job->organization_id)->get()->map(fn($d)=>$this->drivers[] = ['name'=>$d->name, 'value'=> $d->id ]);
+
+        $this->authorize('view', $this->job);
     }
 
     public function render()
@@ -24,42 +56,18 @@ class ShowPilotCarJob extends Component
         return view('livewire.show-pilot-car-job');
     }
 
-    public function createJob(){
+    public function assignJob(){
+        $new_log = UserLog::make([
+            'car_driver_id' => $this->assignment->car_driver_id,
+            'job_id'=>$this->job->id,
+            'vehicle_id'=> $this->assignment->vehicle_id,
+            'organization_id' => $this->job->organization_id,
+            'vehicle_position' => $this->assignment->vehicle_position,
+        ]);
 
-        $organization = auth()->user()->organization;
+        $new_log->save();
 
-        $form = $this->form->all();
-
-        if(empty($this->form->customer_id ) && !empty($this->form->new_customer_name)){
-
-            $existing_customers = Customer::where('organization_id', $organization->id)->get();
-
-            if($existing_customers->count() > 0){
-                $customer_id = false;
-                $name_id = trim(str_replace(' ', '', strtolower($this->form->new_customer_name)));
-                $matched = false;
-                foreach($existing_customers as $c){
-                    $c_name_id = trim(str_replace(' ', '', strtolower($c->name)));
-                    if(!$matched && $name_id === $c_name_id){
-                        $matched = true;
-                        $customer_id = $c->id;
-                    }
-                }
-            }
-
-            if(!$customer_id){
-                $customer = $organization->customers()->create([
-                    'name' => $this->form->new_customer_name
-                ]);
-                $customer_id = $customer->id;
-            }
-
-            $form['customer_id'] = $customer_id;
-        }
-
-        $job = $organization->jobs()->create($form);
-        $this->form->reset();
+        $this->assignment->reset();
         $this->dispatch('saved');
-        return redirect()->route('my.jobs.show', ['job'=>$job->id]);
     }
 }

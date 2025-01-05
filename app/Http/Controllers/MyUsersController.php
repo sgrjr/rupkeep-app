@@ -54,7 +54,6 @@ class MyUsersController extends Controller
         }
         $user = new User($request->except('_method'));
 
-        dd($user, $request->all());
         $this->authorize('create', $user);
         $user->save();
         return back();
@@ -89,7 +88,39 @@ class MyUsersController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        //christina@cascobaypilotcar.com
+        $user = User::find($id);
+
+        if(auth()->user()->can('delete', $user)){
+            $user->delete();
+        }
+
+        return back();
+        
+    }
+
+    public function delete(string $id)
+    {
+        $user = User::find($id);
+
+        if(auth()->user()->can('forceDelete', $user)){
+            $user->forceDelete();
+        }
+
+        return back();
+        
+    }
+
+    public function restore(string $id)
+    {
+        $user = User::find($id);
+
+        if(auth()->user()->can('restore', $user)){
+            $user->restore();
+        }
+
+        return back();
+        
     }
 
     public function impersonate(Request $request, string $id)

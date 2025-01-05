@@ -6,7 +6,7 @@
         <div class="grid grid-cols-2">
             <div class="group">
                 <label class="input-label">For Customer:</label>
-                <select wire:model.blur="form.customer_id">
+                <select wire:model="form.customer_id">
                     @foreach($customers as $customer)
                     <option value="{{$customer->id}}">{{$customer->name}}</option>
                     @endforeach
@@ -18,7 +18,7 @@
 
             <div class="group">
                 <label class="input-label"><i>New Customer Name:</i></label>
-                <input type="text" id="new_customer_name" wire:model.blur="form.new_customer_name" placeholder="use if does not exist!">
+                <input type="text" id="new_customer_name" wire:model.blur="form.new_customer_name" placeholder="use this if customer does not exist!">
                 @error('form.new_customer_name')
                     <div class="alert alert-danger">{{ $message }}</div>
                 @enderror

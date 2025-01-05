@@ -5,10 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\User;
 use App\Models\Customer;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Hash;
 
 class Organization extends Model
 {
+
+    use SoftDeletes;
+
     protected $fillable = [
         'name',
         'primary_contact',
@@ -22,6 +26,7 @@ class Organization extends Model
         'user_id',
         'logo_url',
         'website_url',
+        'deleted_at'
     ];
 
     public $appends = ['logo','is_super'];

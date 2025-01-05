@@ -9,6 +9,7 @@ use App\Models\User;
 use Livewire\Attributes\Validate;
 use Livewire\Form;
 use Auth;
+use Illuminate\Support\Facades\DB;
 
 class NewUserForm extends Form
 {
@@ -33,10 +34,16 @@ class OrganizationShow extends Component
     public $organization;
     public $roles;
 
+    public $deleted_users = false;
+
     public NewUserForm $form;
 
     public function mount(Int $organization){
         $organization = Organization::with('users','owner')->find($organization);
+
+        if(auth()->user()->can('restoreAny', new User)){
+            $this->deleted_users = DB::table('users')->where('organization_id', $organization->id)->whereNotNull('deleted_at')->get();
+        }
 
         if($this->authorize('view', $organization)){
             $this->organization = $organization;

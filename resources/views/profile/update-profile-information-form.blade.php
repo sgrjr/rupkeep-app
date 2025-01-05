@@ -1,3 +1,5 @@
+@props(['roles'=>[]])
+
 <x-form-section submit="updateProfileInformation">
     <x-slot name="title">
         {{ __('Profile Information') }}
@@ -96,10 +98,10 @@
         @can('updateRole', $this->user)
         <div class="col-span-6 sm:col-span-4">
             <x-label for="organization_role" value="{{ __('Organization Role') }}" />
-            <select id="organization_role" class="mt-1 block w-full" wire:model="state.organization_role" >
-                <option value="administrator">Administrator</option>
-                <option value="editor">Editor</option>
-                <option value="viewer">Viewer</option>
+            <select id="organization_role" class="block mt-1 w-full" name="organization_role"  wire:model="state.organization_role">
+                @foreach($roles as $role)
+                <option value="{{$role['id']}}">{{$role['name']}} ({{$role['short_description']}})</option>
+                @endforeach
             </select>
             <x-input-error for="name" class="mt-2" />
         </div>

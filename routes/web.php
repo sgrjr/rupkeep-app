@@ -11,6 +11,7 @@ use App\Livewire\MyUserProfile;
 use App\Livewire\CreatePilotCarJob;
 use App\Livewire\ShowPilotCarJob;
 use App\Livewire\EditPilotCarJob;
+use App\Livewire\EditUserLog;
 use App\Http\Controllers\OrganizationsController;
 use App\Http\Controllers\CustomersController;
 use App\Http\Controllers\CustomerContactsController;
@@ -18,6 +19,10 @@ use App\Http\Controllers\MyUsersController;
 use App\Http\Controllers\MyCustomersController;
 use App\Http\Controllers\MyVehiclesController;
 use App\Http\Controllers\MyJobsController;
+use App\Http\Controllers\UsersController;
+use App\Http\Controllers\UserLogsController;
+use App\Http\Controllers\AttachmentsController;
+use App\Http\Controllers\MyInvoicesController;
 
 Route::middleware([
     'auth:sanctum',
@@ -36,7 +41,8 @@ Route::middleware([
     Route::post('/organization', [OrganizationsController::class, 'store'])->name('organizations.store');
     Route::patch('/organization/{organization}', [OrganizationsController::class, 'update'])->name('organizations.update');
     Route::get('/users/{user}/profile', UserProfile::class)->name('user.profile');
-
+    Route::post('/users/{user}/restore', [UsersController::class, 'restore'])->name('user.restore');
+    Route::delete('/users/{user}', [UsersController::class, 'delete'])->name('user.delete');
 
     Route::resource('/customers', CustomersController::class)->names('customers');
     Route::resource('/customers/{customer}/contacts', CustomerContactsController::class)->names('customer.contacts');
@@ -49,6 +55,14 @@ Route::middleware([
     Route::get('/my/jobs/{job}', ShowPilotCarJob::class)->name('my.jobs.show');
     Route::get('/my/jobs/{job}/edit', EditPilotCarJob::class)->name('my.jobs.edit');
     Route::get('/my/profile', MyUserProfile::class)->name('my.profile');
+    Route::get('jobs/{job}', ShowPilotCarJob::class)->name('jobs.show');
+    Route::get('logs/{log}', EditUserLog::class)->name('logs.edit');
+    Route::delete('logs/{log}',[UserLogsController::class, 'delete'])->name('logs.destroy');
+
+    Route::get('attachments/{attachment}', [AttachmentsController::class, 'download'])->name('attachments.download');
+    Route::delete('attachments/{attachment}', [AttachmentsController::class, 'delete'])->name('attachments.destroy');
+
+    Route::post('my/invoices/create', [MyInvoicesController::class, 'store'])->name('my.invoices.store');
 });
 
 Route::middleware([
@@ -61,4 +75,5 @@ Route::middleware([
 });
 
 Route::get('/impersonate/{user}', [MyUsersController::class, 'impersonate'])->name('impersonate');
+
 

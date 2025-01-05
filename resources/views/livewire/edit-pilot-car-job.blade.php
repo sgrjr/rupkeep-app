@@ -18,7 +18,7 @@
 
             <div class="group">
                 <label class="input-label"><i>New Customer Name:</i></label>
-                <input type="text" id="new_customer_name" wire:model.blur="form.new_customer_name" placeholder="use if does not exist!">
+                <input type="text" id="new_customer_name" wire:model.blur="form.new_customer_name" placeholder="use only if customer does not exist in list!">
                 @error('form.new_customer_name')
                     <div class="alert alert-danger">{{ $message }}</div>
                 @enderror

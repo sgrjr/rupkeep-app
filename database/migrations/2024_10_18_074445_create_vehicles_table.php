@@ -19,6 +19,7 @@ return new class extends Migration
             $table->foreignId('user_id')->nullable();
             $table->timestamp('odometer_updated_at')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

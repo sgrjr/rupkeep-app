@@ -17,7 +17,7 @@
             
             <div class="card-actions">
                 <x-delete-form action="{{route('organizations.delete', ['organization'=> $org['id']])}}" title="delete"/>
-                <a href="route('organizations.edit', ['organization'=> $org['id']])}}" class="button">edit</a>
+                <a href="{{route('organizations.edit', ['organization'=> $org['id']])}}" class="button">edit</a>
                 <div class="action"><a href="{{route('organizations.show', ['organization'=> $org['id']])}}" class="button">view</a>
             </div>
         </div>

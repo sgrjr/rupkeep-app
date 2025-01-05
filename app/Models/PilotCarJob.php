@@ -10,10 +10,12 @@ use App\Models\UserLog;
 use App\Models\Vehicle;
 use App\Models\Organization;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\Traits\HasJobScopes;
 
 class PilotCarJob extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes, HasJobScopes;
     public $timestamps = true;
     public $fillable = [
         'job_no',
@@ -31,7 +33,8 @@ class PilotCarJob extends Model
         'canceled_at',
         'canceled_reason',
         'memo',
-        'organization_id'
+        'organization_id',
+        'deleted_at'
     ];
 
     public function attachments(){
@@ -44,6 +47,18 @@ class PilotCarJob extends Model
 
     public function organization(){
         return $this->belongsTo(Organization::class);
+    }
+
+    public function logs(){
+        return $this->hasMany(UserLog::class, 'job_id');
+    }
+
+    public function invoices(){
+        return $this->belongsToMany(Invoice::class,  'jobs_invoices');
+    }
+
+    public function getInvoicesCountAttribute(){
+        return $this->invoices()->count();
     }
 
     public function logSchema(){
@@ -74,13 +89,17 @@ class PilotCarJob extends Model
                     $header = static::translateHeaders($h_eader);
                 }else{
                     $values = str_getcsv($line);
-                    if(count($values) != 57) dd('line#: '.$number, $values, $line);
-                    $new_values = [];
-                    foreach($values as $index=>$v){
-                        $new_values[$header[$index]] = $v;
+                    if(count($values) != 57){
+                        //dd('line#: '.$number, $values, $line);
+                    }else{
+                        $new_values = [];
+                        foreach($values as $index=>$v){
+                            $new_values[$header[$index]] = $v;
+                        }
+    
+                        $l[] = $new_values;
                     }
-
-                    $l[] = $new_values;
+                   
                 }
                 $number++;
             }
@@ -174,8 +193,9 @@ class PilotCarJob extends Model
         }
 
         if(!array_key_exists('end_time', $values)){
-            dd($values);
+           $values['end_time'] = null;
         }
+        
             $job = static::where('organization_id',$organization_id)
                     ->where('job_no', $values['job_no'] )
                     ->where('invoice_no', $values['invoice_no'] )
@@ -317,5 +337,54 @@ class PilotCarJob extends Model
             (Object)['value'=>'flat_rate_excludes_expenses','title'=>'Flat Price (excludes expenses)'],
             (Object)['value'=>'flat_rate','title'=>'Flat Price (includes Expenses)'],
         ];
+    }
+
+    /* TODO Implement all this calculation */
+    public function getTruckDrivers(Bool $return_string = false){
+        return '';
+    }
+
+    public function getTruckNumbers(Bool $return_string = false){
+        return '';
+    }
+
+    public function getTrailerNumbers(Bool $return_string = false){
+        return '';
+    }
+
+    public function getInvoiceNotes(Bool $return_string = false){
+        return '';
+    }
+
+    public function totalWaitTimeHours(Bool $return_string = false){
+        return '';
+    }
+
+    public function totalExtraLoadStops(Bool $return_string = false){
+        return '';
+    }
+
+    public function getTotalTolls(Bool $return_string = false){
+        return '';
+    }
+
+    public function getTotalHotel(Bool $return_string = false){
+        return '';
+    }
+
+    public function getExtraCharges(Bool $return_string = false){
+        return '';
+    }
+
+    public function getTotalMiles(Bool $return_string = false){
+        return '';
+    }
+
+    public function getTotalDue(Bool $return_string = false){
+        return '';
+    }
+
+    public function getTotalDeadHead(Bool $return_string = false){
+        return '';
     }
 }

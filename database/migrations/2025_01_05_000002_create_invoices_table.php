@@ -11,13 +11,20 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('attachments', function (Blueprint $table) {
+        Schema::create('invoices', function (Blueprint $table) {
             $table->id();
-            $table->morphs('attachable');
-            $table->string('location');
+            $table->boolean('paid_in_full')->default(false);
+            $table->json('values')->nullable();
             $table->foreignId('organization_id');
+            $table->foreignId('customer_id');
             $table->timestamps();
             $table->softDeletes();
+        });
+
+        Schema::create('jobs_invoices', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('invoice_id');
+            $table->foreignId('pilot_car_job_id');
         });
     }
 
@@ -26,6 +33,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('attachments');
+        Schema::dropIfExists('invoices');
     }
 };

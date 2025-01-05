@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
@@ -20,6 +21,7 @@ class User extends Authenticatable
     use HasProfilePhoto;
     use Notifiable;
     use TwoFactorAuthenticatable;
+    use SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -98,7 +100,7 @@ class User extends Authenticatable
                 'create',
                 'read',
                 'update',
-                'delete',
+                'delete'
            ],
            'description'=> 'Administrator users can perform any action.',
            'short_description' => 'can do anything+create users'
@@ -120,6 +122,14 @@ class User extends Authenticatable
            ],
            'description'=> 'Viewer users have the ability to read.',
            'short_description' => 'can only read'
+        ],[
+            'id'=>'driver', 
+            'name'=>'Driver', 
+            'permissions'=>[
+                'work'
+           ],
+           'description'=> 'Driver users have the ability to complete jobs.',
+           'short_description' => 'can only complete jobs'
         ]];
     }
 

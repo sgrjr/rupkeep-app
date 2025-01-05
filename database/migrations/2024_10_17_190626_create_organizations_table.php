@@ -26,6 +26,7 @@ return new class extends Migration
             $table->string('website_url')->nullable();
             $table->foreignId('user_id')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

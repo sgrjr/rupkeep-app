@@ -21,6 +21,11 @@ class MyCustomersController extends Controller
         return view('customers.create');
     }
 
+    public function show(Request $request, int $customer_id){
+        $customer = Customer::with('contacts','jobs')->where('id', $customer_id)->first();
+        return view('customers.show', compact('customer'));
+    }
+
     public function edit(Request $request, int $customer_id){
         $customer = Customer::with('contacts')->where('id', $customer_id)->first();
         return view('customers.edit', compact('customer'));

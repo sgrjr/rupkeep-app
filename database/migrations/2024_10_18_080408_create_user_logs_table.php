@@ -17,6 +17,7 @@ return new class extends Migration
             $table->bigInteger('car_driver_id')->nullable();
             $table->bigInteger('truck_driver_id')->nullable();
             $table->bigInteger('vehicle_id')->nullable();
+            $table->string('vehicle_position')->nullable();
             $table->string('truck_no')->nullable();
             $table->string('trailer_no')->nullable();
             $table->integer('start_mileage')->nullable();

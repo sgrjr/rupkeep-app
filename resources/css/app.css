@@ -100,7 +100,7 @@ input:where([type='submit']):hover {
     display:flex;
     align-items: end;
     padding: 5px;
-    gap: 30px;
+    gap: 5px;
     width:100%;;
     justify-content: end;
 }
@@ -113,7 +113,6 @@ input:where([type='submit']):hover {
 .card-actions a{
     text-decoration: none;
 }
-
 
 .menu-drop-down {
 /*border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-700 focus:outline-none focus:text-gray-700 dark:focus:text-gray-300 focus:border-gray-300 dark:focus:border-gray-700*/
@@ -178,6 +177,10 @@ input:where([type='submit']):hover {
     border: solid 1px var(--primary-orange);
 }
 
+.default-theme .card.unpaid-invoice {
+    border:solid 1px red;
+}
+
 .default-theme .primary-navigation-menu {
     background:var(--white);
     border-bottom: solid 1px var(--light-gray);
@@ -203,6 +206,10 @@ input:where([type='submit']):hover {
     width:100%;
     color:var(--white); 
     font-weight: bold;
+}
+
+.dark-theme .card.unpaid-invoice {
+    border:solid 1px red;
 }
 
 .dark-theme .card-actions {
