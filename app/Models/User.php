@@ -34,7 +34,8 @@ class User extends Authenticatable
         'password',
         'organization_id',
         'organization_role',
-        'theme'
+        'theme',
+        'notification_address'
     ];
 
     /**

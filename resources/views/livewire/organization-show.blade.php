@@ -214,7 +214,7 @@
                                     </form>
                                     <form class="w-full" wire:submit="deleteVehicles">
                                         @csrf
-                                        <button>Delete all Users ({{$vehicles_count}})</button>
+                                        <button>Delete all Vehicles ({{$vehicles_count}})</button>
                                     </form>
                                 </div>
                             </div>

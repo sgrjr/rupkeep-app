@@ -10,7 +10,7 @@ class CustomerContact extends Model
     public $timestamps = true;
 
     public $fillable = [
-        'customer_id', 'name', 'phone','memo','organization_id'
+        'customer_id', 'name', 'phone','memo','organization_id','email'
     ];
 
     public function organization(){
