@@ -114,7 +114,7 @@ class PilotCarJob extends Model
         $dictionary = [
             'job_no' => ['job'],
             'load_no' => ['load'],
-            'timestamp' => ['timestamp'],
+            'timestamp' => ['timestamp','Timestamp','229',229],
             'check_no' => ['check'],
             'invoice_paid' => ['invoice_paid'],
             'invoice_no' => ['invoice'],
@@ -144,7 +144,7 @@ class PilotCarJob extends Model
             'total_billable_miles' => ['total_billable_miles'],
             'tolls' => ['tolls'],
             'gas' => ['gas'],
-            'upload_receiptsinvoices' => ['upload_receiptsinvoices'],
+            'upload_receiptsinvoices' => ['upload_receiptsinvoices',"upload_receipts\ninvoices"],
             'end_mileage' => ['end_mileage'],
             'maintenance_memo' => ['any_questions_or_concerns_with_the_vehicle_any_maintenance_required'],
             'end_time' => ['end_time'],
