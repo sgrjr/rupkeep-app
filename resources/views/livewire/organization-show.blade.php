@@ -1,3 +1,9 @@
+@props([
+    'jobs_count'=>0,
+    'users_count'=>0,
+    'customers_count'=>0
+    ])
+
 <div class="max-w-5xl m-auto">
     <h1 class="text-center font-bold underline">
         @if(auth()->user()->can('update', $organization))
@@ -180,24 +186,37 @@
                     </div>
                 @endif
 
+                @if(auth()->user()->can('resetOrganization', $organization))
                 <x-section-border />
 
                 <div class="mt-10 sm:mt-0">
                     <div class="md:grid md:grid-cols-3 md:gap-6" >
                         <x-section-title>
-                            <x-slot name="title">{{ __('') }}</x-slot>
-                            <x-slot name="description">{{ __('') }}</x-slot>
+                            <x-slot name="title">{{ __('Reset Organization') }}</x-slot>
+                            <x-slot name="description">{{ __('this is a nuclear option to empty organization jobs, customers and/or users.') }}</x-slot>
                         </x-section-title>
 
                         <div class="mt-5 md:mt-0 md:col-span-2">
-                            <div class="px-4 py-5 bg-white dark:bg-gray-800 sm:p-6 shadow {{ isset($actions) ? 'sm:rounded-tl-md sm:rounded-tr-md' : 'sm:rounded-md' }}">
+                            <div class="px-4 py-5 bg-white dark:bg-gray-800 sm:p-6 shadow sm:rounded-tl-md sm:rounded-tr-md">
                                 <div class="grid grid-cols-6 gap-6">
-                                    &nbsp;
+                                    <form class="w-full" wire:submit="deleteJobs">
+                                        @csrf
+                                        <button>Delete all Jobs ({{$jobs_count}})</button>
+                                    </form>
+                                    <form class="w-full" wire:submit="deleteCustomers">
+                                        @csrf
+                                        <button>Delete all Customers ({{$customers_count}})</button>
+                                    </form>
+                                    <form class="w-full" wire:submit="deleteUsers">
+                                        @csrf
+                                        <button>Delete all Users ({{$users_count}})</button>
+                                    </form>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+                @endif
 
         </div>
     </div>

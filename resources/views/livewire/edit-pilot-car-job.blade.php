@@ -1,5 +1,13 @@
 @props(['customers'=>[], 'rates'=>[]])
 <div class="max-w-7xl mx-auto p-2">
+
+@if($job->customer_id)
+<div class="flex">
+<a class="button w-full block text-center" href="{{route('my.customers.show', ['customer'=>$job->customer_id])}}">&larr;{{$job->customer->name}}</a>
+<a class="button w-full block text-center" href="{{route('my.jobs.show', ['job'=>$job->id])}}">&larr;Job Summary: {{$job->job_no}} ({{$job->id}})</a>
+</div>
+@endif
+
     <form wire:submit="saveJob" method="post" class="pretty-form">
         @csrf
 

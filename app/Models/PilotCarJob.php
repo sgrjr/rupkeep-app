@@ -216,11 +216,11 @@ class PilotCarJob extends Model
                 ]);
             }
 
-            $car_driver = User::where('organization_id',$organization_id)->where('name', $values['pilot_car_name'])->first();
+            $car_driver = User::where('organization_id',$organization_id)->where('name', $values['driver_of_pilot_car'])->first();
 
             if(!$car_driver){
                 $car_driver = User::create([
-                    'name'=> $values['pilot_car_name'],
+                    'name'=> $values['driver_of_pilot_car'],
                     'email'=> 'missing_email_'.uniqid().'@email.com',
                     'password'=> 'DEFAULT_MISSING_PASSWORD_9Jx',
                     'organization_role'=>'driver',

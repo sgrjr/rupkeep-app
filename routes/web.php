@@ -19,6 +19,7 @@ use App\Http\Controllers\MyUsersController;
 use App\Http\Controllers\MyCustomersController;
 use App\Http\Controllers\MyVehiclesController;
 use App\Http\Controllers\MyJobsController;
+use App\Http\Controllers\JobsController;
 use App\Http\Controllers\UsersController;
 use App\Http\Controllers\UserLogsController;
 use App\Http\Controllers\AttachmentsController;
@@ -56,6 +57,7 @@ Route::middleware([
     Route::get('/my/jobs/{job}/edit', EditPilotCarJob::class)->name('my.jobs.edit');
     Route::get('/my/profile', MyUserProfile::class)->name('my.profile');
     Route::get('jobs/{job}', ShowPilotCarJob::class)->name('jobs.show');
+    Route::get('jobs', [JobsController::class, 'index'])->name('jobs.index');
     Route::get('logs/{log}', EditUserLog::class)->name('logs.edit');
     Route::delete('logs/{log}',[UserLogsController::class, 'delete'])->name('logs.destroy');
 

@@ -95,4 +95,10 @@ class OrganizationPolicy
     {
         return ($user->organization_id === $organization->id && $user->organization_role === 'driver');
     }
+
+    public function resetOrganization(User $user, Organization $organization): bool
+    {
+        return $user->is_super;
+    }
+
 }

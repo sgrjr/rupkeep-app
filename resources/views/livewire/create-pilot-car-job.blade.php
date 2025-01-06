@@ -8,7 +8,7 @@
                 <label class="input-label">For Customer:</label>
                 <select wire:model="form.customer_id">
                     @foreach($customers as $customer)
-                    <option value="{{$customer->id}}">{{$customer->name}}</option>
+                    <option value="{{$customer['value']}}">{{$customer['name']}}</option>
                     @endforeach
                 </select>
                 @error('form.customer_id')

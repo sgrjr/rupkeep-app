@@ -65,6 +65,7 @@ class MyJobsController extends Controller
                 'organization_id' => auth()->user()->organization_id
             ]);
         }
+
         $job = new Job($request->except('_method'));
         $this->authorize('create', $job);
         $job->save();
@@ -89,6 +90,11 @@ class MyJobsController extends Controller
            $job->delete();
         }
 
-        return redirect()->route('my.jobs.index');
+        if($request->has('redirect_to_route') && $request->get('redirect_to_route') != "0" && $request->get('redirect_to_route') != "false" && ($request->get('redirect_to_route') === true || (String)$request->get('redirect_to_route') === "1")){
+            return redirect()->route('jobs.index');
+        }else{
+            return redirect()->route('my.jobs.index');
+        }
+       
     }
 }

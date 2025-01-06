@@ -62,8 +62,18 @@ class CreatePilotCarJob extends Component
     public $rates = [];
 
     public function mount(){
-       $this->customers = auth()->user()->organization->customers;
+       $customers = auth()->user()->organization->customers;
 
+       $this->customers = [
+        ['name'=>'(none selected)', 'value'=> null]
+       ];
+
+       foreach($customers as $customer){
+        $this->customers[] = [
+            'name'=> $customer->name, 'value' => $customer->id
+        ];
+       }
+       
        $this->rates = [
             (Object)['value'=>'per_mile_rate_2_00','title'=>'$2.00 Per Mile (default)'],
             (Object)['value'=>'per_mile_rate_1_00','title'=>'$1.00 Per Mile'],

@@ -1,3 +1,4 @@
+@props(['redirect_to_root'=>false])
 <x-app-layout>
     <div>
         <div class="max-w-5xl mx-auto p-2">
@@ -35,7 +36,9 @@
                         @endcan
                         <p><span class="font-bold italic">job#:</span> <span class="font-normal">{{$j->job_no}}</span></p>
                         <p><b>load#:</b> {{$j->load_no}}</p>
+                        @if($j->customer)
                         <p><b>customer:</b> {{$j->customer->name}}</p>
+                        @endif
                         <p><b>scheduled pickup:</b> {{$j->pickup_address}} @ {{$j->scheduled_pickup_at}}</p>
                         <p><b>scheduled delivery:</b> {{$j->delivery_address}} @ {{$j->scheduled_delivery_at}}</p>
                         <p><b>check_no:</b> {{$j->check_no}}</p>
@@ -59,7 +62,7 @@
                             <a href="{{route('my.jobs.edit', ['job'=>$j->id])}}" class="button">edit</a>
                         @endif
                         @if(auth()->user()->can('delete', $j))
-                            <x-delete-form class="inline-block underline" action="{{route('my.jobs.destroy', ['job'=> $j->id])}}" title="delete"/>
+                            <x-delete-form class="inline-block underline" action="{{route('my.jobs.destroy', parameters: ['job'=> $j->id])}}" title="delete" redirect_to_route="{{$redirect_to_root}}"/>
                         @endif
 
                         <a href="{{route('my.jobs.show', ['job'=>$j->id])}}" class="button">view</a>

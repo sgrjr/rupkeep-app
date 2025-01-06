@@ -54,13 +54,45 @@ class OrganizationShow extends Component
 
     public function render()
     {
-        return view('livewire.organization-show');
+        return view('livewire.organization-show', [
+            'jobs_count' => $this->organization->jobs()->count(),
+            'users_count' => $this->organization->users()->count(),
+            'customers_count' => $this->organization->customers()->count(),
+        ]);
     }
 
     public function createUser(){
         $this->organization->createUser($this->form->all());
         $this->form->reset();
         $this->dispatch('saved');
+        return back();
+    }
+
+    
+    public function deleteJobs(){
+        $this->organization->jobs()->withTrashed()->get()->map(function($job){
+            $job->logs()->delete(); //logs do not have softdeletes trait
+            $job->delete();
+        });
+        return back();
+    }
+
+    public function deleteUsers(){
+        $this->organization->users()->withTrashed()->where('organization_role','!=','administrator')->delete();
+        return back();
+    }
+
+    public function deleteCustomers(){
+        $this->organization->customers->map(function($customer){ //customers do not have softdeletes trait
+            $customer->contacts()->forceDelete(); //contacts does not have softdeletes trait
+            
+            $customer->jobs->map(function($job){
+                $job->withTrashed()->logs()->forceDelete();
+                $job->forceDelete();
+            });
+
+            $customer->forceDelete();
+        });
         return back();
     }
 

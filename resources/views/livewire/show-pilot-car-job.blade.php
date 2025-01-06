@@ -2,7 +2,9 @@
 
 <div class="max-w-7xl mx-auto p-2">
 
+@if($job->customer_id)
 <a class="button w-full block text-center" href="{{route('my.customers.show', ['customer'=>$job->customer_id])}}">&larr;{{$job->customer->name}}</a>
+@endif
     <h2 class="font-bold">Job details: </h2>
     <div class="card">
         <div class="p-2">
@@ -11,9 +13,13 @@
         @endcan
         <p><span class="font-bold italic">job#:</span> <span class="font-normal">{{$job->job_no}}</span></p>
         <p><b>load#:</b> {{$job->load_no}}</p>
-        <p><b>customer:</b> {{$job->customer->name}}</p>
-        <p class="pl-2"><details><summary>contact info: </summary> {{$job->customer->street}} {{$job->customer->city}}, {{$job->customer->state}} {{$job->customer->zip}} #
         
+        <p><b>customer:</b> @if($job->customer) {{$job->customer->name}} @endif </p>
+        
+        @if($job->customer) 
+        <p class="pl-2"><details><summary>contact info: </summary> {{$job->customer->street}} {{$job->customer->city}}, {{$job->customer->state}} {{$job->customer->zip}} #
+  
+
         <table class="border">
             <thead>
                 <tr>
@@ -32,7 +38,7 @@
                 @endforeach
             </tbody>
         </table>
-    
+        @endif
         </details></p>
         <p><b>scheduled pickup:</b> {{$job->pickup_address}} @ {{$job->scheduled_pickup_at}}</p>
         <p><b>scheduled delivery:</b> {{$job->delivery_address}} @ {{$job->scheduled_delivery_at}}</p>
