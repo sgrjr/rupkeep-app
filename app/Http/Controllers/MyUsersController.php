@@ -16,7 +16,14 @@ class MyUsersController extends Controller
      */
     public function index(Request $request){
         $users = User::where('organization_id', auth()->user()->organization_id)->get();
-        return view('users.index', compact('users'));
+
+        if(auth()->user()->is_super){
+            $all_users = User::all();
+        }else{
+            $all_users = false;
+
+        }
+        return view('users.index', compact('users','all_users'));
     }
 
     /**
