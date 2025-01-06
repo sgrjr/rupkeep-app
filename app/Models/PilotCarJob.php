@@ -12,6 +12,8 @@ use App\Models\Organization;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\Traits\HasJobScopes;
+use App\Models\Attachment;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class PilotCarJob extends Model
 {
@@ -37,8 +39,9 @@ class PilotCarJob extends Model
         'deleted_at'
     ];
 
-    public function attachments(){
-        //TODO: has many Attachment: Permits & Invoice	
+    public function attachments(): MorphMany
+    {
+        return $this->morphMany(Attachment::class, 'attachable');
     }
 
     public function customer(){

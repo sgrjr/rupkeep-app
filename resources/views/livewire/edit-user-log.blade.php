@@ -33,12 +33,15 @@
         <x-action-message class="me-3" on="uploaded">
             {{ __('File Uploaded.') }}
         </x-action-message>
-        <button class="w-full" type="submit">After selecting a file click HERE to attach to job</button>
+        <button class="w-full" type="submit">After selecting a file click HERE to attach to log</button>
     </form>
 
     <div> <b>attachments ({{$log->attachments? $log->attachments->count():0}}): </b>
         @foreach($log->attachments as $att)
-        <a class="button" download href="{{route('attachments.download', ['attachment'=>$att->id])}}"><span>&#128229;</span>{{$att->file_name}}</a>, 
+        <div class="flex">
+        <x-delete-form class="inline-block underline text-red" action="{{route('attachments.destroy', ['attachment'=> $att->id])}}" title="X"/>
+        <a class="button" download href="{{route('attachments.download', ['attachment'=>$att->id])}}"><span>&#128229;</span>{{$att->file_name}}</a>
+        </div>
         @endforeach
     </div>
 

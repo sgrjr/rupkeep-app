@@ -55,9 +55,8 @@ class AttachmentsController extends Controller
     }
 
     public function delete(Request $request, Attachment $attachment){
-
-        if($attachment && $this->authorize('delete', $attachment)){
-           return $attachment->deleteFile()->delete();
+        if($attachment && auth()->user()->can('delete', $attachment)){
+           $attachment->deleteFile()->delete();
         }
 
         return back();

@@ -15,4 +15,8 @@ class AttachmentPolicy
         return $user->is_super || $attachment->organization_id === $user->organization_id;
     }
 
+    public function delete(User $user, Attachment $attachment): bool
+    {
+        return $user->is_super || $attachment->organization_id === $user->organization_id;
+    }
 }

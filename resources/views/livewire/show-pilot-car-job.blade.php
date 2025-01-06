@@ -40,8 +40,8 @@
         </table>
         @endif
         </details></p>
-        <p><b>scheduled pickup:</b> {{$job->pickup_address}} @ {{$job->scheduled_pickup_at}}</p>
-        <p><b>scheduled delivery:</b> {{$job->delivery_address}} @ {{$job->scheduled_delivery_at}}</p>
+        <p><b>scheduled pickup:</b> <a class="underline" href="http://maps.google.com/?daddr={{$job->pickup_address}}">(maps) {{$job->pickup_address}}</a> @ {{$job->scheduled_pickup_at}}</p>
+        <p><b>scheduled delivery:</b> <a class="underline" href="http://maps.google.com/?daddr={{$job->delivery_address}}">(maps) {{$job->delivery_address}}</a> @ {{$job->scheduled_delivery_at}}</p>
         <p><b>check_no:</b> {{$job->check_no}}</p>
         <p><b>invoice_paid:</b> {{$job->invoice_paid}}</p>
         <p><b>invoice#:</b> {{$job->invoice_no}}</p>
@@ -57,9 +57,30 @@
             @endif
         </p>
         <p><b>invoice:</b> {{$job->invoices_count}}</p>
+
+        <div> <b>attachments ({{$job->attachments? $job->attachments->count():0}}): </b>
+            @foreach($job->attachments as $att)
+            <div class="flex">
+            <x-delete-form class="inline-block underline text-red" action="{{route('attachments.destroy', ['attachment'=> $att->id])}}" title="X"/>
+            <a class="button" download href="{{route('attachments.download', ['attachment'=>$att->id])}}"><span>&#128229;</span>{{$att->file_name}}</a>
+            </div>
+            @endforeach
+        </div>
     </div>
 
     <div class="card-actions">
+
+        <form wire:submit="uploadFile">
+            <input type="file" wire:model="file">
+            @error('file') <span class="error">{{ $message }}</span> @enderror
+
+            <x-action-message class="me-3" on="uploaded">
+                {{ __('File Uploaded.') }}
+            </x-action-message>
+            <button class="w-full" type="submit">After selecting a file click HERE to attach to job</button>
+        </form>
+
+
         @if(auth()->user()->can('update', $job))
             <a href="{{route('my.jobs.edit', ['job'=>$job->id])}}" class="button">edit</a>
         @endif
@@ -147,7 +168,10 @@
 
     <div> <b>attachments ({{$log->attachments? $log->attachments->count():0}}): </b>
         @foreach($log->attachments as $att)
-        <a class="button" download href="{{route('attachments.download', ['attachment'=>$att->id])}}">{{$att->file_name}}</a>, 
+        <div class="flex">
+        <x-delete-form class="inline-block underline text-red" action="{{route('attachments.destroy', ['attachment'=> $att->id])}}" title="X"/>
+        <a class="button" download href="{{route('attachments.download', ['attachment'=>$att->id])}}"><span>&#128229;</span>{{$att->file_name}}</a>
+        </div>
         @endforeach
     </div>
     <div class="card-actions">

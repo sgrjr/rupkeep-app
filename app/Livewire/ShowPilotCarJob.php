@@ -9,6 +9,8 @@ use App\Models\Vehicle;
 use App\Models\UserLog;
 use App\Models\PilotCarJob as Job;
 use App\Models\User;
+use App\Models\Attachment;
+use Livewire\WithFileUploads;
 
 class JobAssignmentForm extends Form
 {
@@ -24,12 +26,16 @@ class JobAssignmentForm extends Form
 
 class ShowPilotCarJob extends Component
 {
+
+    use WithFileUploads;
+
     public JobAssignmentForm $assignment;
     public $job;
 
     public $vehicles = [];
     public $drivers = [];
     public $vehicle_positions = [];
+    public $file;
 
     public function mount(Int $job){
         $this->job = Job::with('logs','logs.vehicle','logs.truck_driver','logs.user','logs.attachments','customer','customer.contacts')->find($job)->append('invoices_count');
@@ -70,4 +76,23 @@ class ShowPilotCarJob extends Component
         $this->assignment->reset();
         $this->dispatch('saved');
     }
+
+    public function uploadFile()
+    {
+  
+        $originalName = $this->file->getClientOriginalName();
+        $this->file->storeAs(path: 'jobs/attachments_'.$this->job->id, name:$originalName);
+
+        Attachment::create([
+            'attachable_id' => $this->job->id,
+            'attachable_type' => $this->job::class,
+            'location' => storage_path('app/private/jobs/attachments_'.$this->job->id.'/'.$originalName),
+            'organization_id' => $this->job->organization_id,
+        ]);
+
+        $this->dispatch('uploaded');
+        
+        return back();
+    }
+
 }

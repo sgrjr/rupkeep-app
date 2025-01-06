@@ -12,6 +12,10 @@
         @else
             {{$organization->name}}
         @endif
+
+        @if(auth()->user()->is_super)
+            <a href="{{route('jobs.index',['organization'=>$organization->id])}}"> | Jobs</a>
+        @endif
         </h1>
     <img src="{{$organization->logo_url}}" class="w-64 m-auto"/>    
     <div>
@@ -54,9 +58,8 @@
                                     <thead>
                                         <tr class="bg-gray-100 border">
                                             <th></th>
-                                            <th></th>
                                             <th>name</th>
-                                            <th>email</th>
+                                            <th>contact</th>
                                             <th>role</th>
                                         </tr>
                                     </thead>
@@ -67,14 +70,12 @@
                                                 @if(auth()->user()->can('createUser', $organization))
                                                 <a class="underline" href="{{ route('user.profile', ['user'=>$user->id]) }}">profile</a>
                                                 @endif
-                                            </td>
-                                            <td>
-                                            @can('impersonate', $user)
-                                            <a href="{{route('impersonate', ['user'=>$user->id])}}" class="underline">impersonate</a>
-                                            @endcan
+                                                @can('impersonate', $user)
+                                                <a href="{{route('impersonate', ['user'=>$user->id])}}" class="underline">impersonate</a>
+                                                @endcan
                                             </td>
                                             <td>{{$user->name}}</td>
-                                            <td>{{$user->email}}</td>
+                                            <td><b>login:</b> {{$user->email}} <br/> <b>notifications:</b> {{$user->notification_address}}</td>
                                             <td>{{$user->organization_role}}</td>
                                         </tr>
                                         @endforeach

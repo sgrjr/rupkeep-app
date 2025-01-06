@@ -17,7 +17,12 @@ class JobsController extends Controller
 
         $this->authorize('viewAny', Job::class);
 
-        if($request->has('customer')){
+        if($request->has('organization_id')){
+            $jobs = Job::where('organization_id', $request->get('organization_id'))
+                ->orderBy('scheduled_pickup_at', 'desc')
+                ->get();
+            $customer = false;
+        }else if($request->has('customer')){
             $jobs = Job::where('organization_id', auth()->user()
                 ->organization_id)->where('customer_id', $request->get('customer'))
                 ->orderBy('scheduled_pickup_at', 'desc')
