@@ -73,18 +73,18 @@ class OrganizationShow extends Component
     public function deleteJobs(){
         $this->organization->jobs()->withTrashed()->get()->map(function($job){
             $job->logs()->delete(); //logs do not have softdeletes trait
-            $job->delete();
+            $job->forceDelete();
         });
         return back();
     }
 
     public function deleteUsers(){
-        $this->organization->users()->withTrashed()->where('organization_role','!=','administrator')->delete();
+        $this->organization->users()->withTrashed()->where('organization_role','!=','administrator')->forceDelete();
         return back();
     }
 
     public function deleteVehicles(){
-        $this->organization->vehicles()->withTrashed()->delete();
+        $this->organization->vehicles()->withTrashed()->forceDelete();
         return back();
     }
 
@@ -92,7 +92,7 @@ class OrganizationShow extends Component
         $this->organization->customers->map(function($customer){ //customers do not have softdeletes trait
             $customer->contacts()->forceDelete(); //contacts does not have softdeletes trait
             
-            $customer->jobs->map(function($job){
+            $customer->jobs()->withTrashed()->get()->map(function($job){
                 $job->withTrashed()->logs()->forceDelete();
                 $job->forceDelete();
             });
