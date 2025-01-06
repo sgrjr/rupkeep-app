@@ -91,4 +91,10 @@ class Dashboard extends Component
 
         return back();
     }
+
+    public function deleteJobs(){
+        UserLog::where('id','!=', 0)->forceDelete();
+        PilotCarJob::where('id','!=', 0)->forceDelete();
+        return back();
+    }
 }

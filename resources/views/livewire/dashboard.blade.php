@@ -58,5 +58,10 @@
             </div>
             @endforeach
         </div>
+        @if(auth()->user()->is_super)
+        <div>
+            <button wire:click="deleteJobs">Nuclear: Delete ALL Jobs + LOGS</button>
+        </div>
+        @endif
     </main>
 </div>
