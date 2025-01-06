@@ -1,7 +1,8 @@
 @props([
     'jobs_count'=>0,
     'users_count'=>0,
-    'customers_count'=>0
+    'customers_count'=>0,
+    'vehicles_count' => 0
     ])
 
 <div class="max-w-5xl m-auto">
@@ -210,6 +211,10 @@
                                     <form class="w-full" wire:submit="deleteUsers">
                                         @csrf
                                         <button>Delete all Users ({{$users_count}})</button>
+                                    </form>
+                                    <form class="w-full" wire:submit="deleteVehicles">
+                                        @csrf
+                                        <button>Delete all Users ({{$vehicles_count}})</button>
                                     </form>
                                 </div>
                             </div>

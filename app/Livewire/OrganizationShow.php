@@ -58,6 +58,7 @@ class OrganizationShow extends Component
             'jobs_count' => $this->organization->jobs()->count(),
             'users_count' => $this->organization->users()->count(),
             'customers_count' => $this->organization->customers()->count(),
+            'vehicles_count' => $this->organization->vehicles()->count(),
         ]);
     }
 
@@ -79,6 +80,11 @@ class OrganizationShow extends Component
 
     public function deleteUsers(){
         $this->organization->users()->withTrashed()->where('organization_role','!=','administrator')->delete();
+        return back();
+    }
+
+    public function deleteVehicles(){
+        $this->organization->vehicles()->withTrashed()->delete();
         return back();
     }
 
