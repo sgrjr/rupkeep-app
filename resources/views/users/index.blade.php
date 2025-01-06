@@ -28,7 +28,7 @@
                 @if($all_users && count($all_users) > 0)
                 <h2 class="text-2xl font-bold text-center mb-2">All Application Users ({{count($all_users)}}):</h2>
                 <div class="flex flex-wrap gap-2 justify-center md:grid md:grid-cols-3">
-                    @foreach($users AS $u)
+                    @foreach($all_users AS $u)
                         <div class="card">
 
                             <div class="p-2">
