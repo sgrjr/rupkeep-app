@@ -84,6 +84,12 @@
             @endif
         </div>
         
+        <div class="col-span-6 sm:col-span-4">
+            <x-label for="notification_address" value="{{ __('Notification Address (Email or Telephone #)') }}" />
+            <x-input id="notification_address" class="mt-1 block w-full" wire:model="state.notification_address" autocomplete="string" />
+            <x-input-error for="notification_address" class="mt-2" />
+        </div>
+
         <!-- Theme -->
         <div class="col-span-6 sm:col-span-4">
             <x-label for="theme" value="{{ __('Theme/Color Scheme') }}" />
