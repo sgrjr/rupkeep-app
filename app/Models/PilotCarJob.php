@@ -93,7 +93,6 @@ class PilotCarJob extends Model
                         //dd('line#: '.$number, $values, $line);
                     }else{
                         $new_values = [];
-                        dd($values, $header);
                         foreach($values as $index=>$v){
                             $new_values[$header[$index]] = $v;
                         }
@@ -183,7 +182,7 @@ class PilotCarJob extends Model
             }
             
         }
-
+        if(count($headers) != count($values)) dd($headers, $values);
         return $values; 
     }
 
