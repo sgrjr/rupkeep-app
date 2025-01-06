@@ -112,41 +112,41 @@ class PilotCarJob extends Model
 
     public static function translateHeaders($headers){
         $dictionary = [
-            'job_no' => ['job'],
-            'load_no' => ['load'],
+            'job_no' => ['job','job_no'],
+            'load_no' => ['load','load_no'],
             'timestamp' => ['timestamp','Timestamp','229',229],
-            'check_no' => ['check'],
-            'invoice_paid' => ['invoice_paid'],
-            'invoice_no' => ['invoice'],
-            'start_date' => ['date'],
+            'check_no' => ['check','check_no'],
+            'invoice_paid' => ['invoice_paid','Invoice Paid','invoice paid'],
+            'invoice_no' => ['invoice','invoice_no'],
+            'start_date' => ['date','Date'],
             'start_time' => ['start_time'],
             'start_mileage' => ['start_mileage'],
             'driver_of_pilot_car' => ['driver_of_pilot_car'],
-            'pilot_car_name' => ['pilot_car'],
-            'pretrip_check_answer' => ['did_you_pre_trip_your_vehicle_look_it_over_and_check_oil'],
-            'customer_name' => ['company_name'],
+            'pilot_car_name' => ['pilot_car','pilot_car_name'],
+            'pretrip_check_answer' => ['did_you_pre_trip_your_vehicle_look_it_over_and_check_oil','pretrip'],
+            'customer_name' => ['company_name','company name','Company Name'],
             'street' => ['address'],
             'city' => ['city'],
             'state' => ['state'],
             'zip_code' => ['zip_code'],
             'truck_driver_name' => ['truck_driver_name'],
-            'truck_no' => ['truck'],
-            'trailer_no' => ['trailer'],
+            'truck_no' => ['truck','truck_no'],
+            'trailer_no' => ['trailer','trailer_no'],
             'pickup_address' => ['load_pickup_address'],
-            'delivery_address' => ['load_deliver_address'],
+            'delivery_address' => ['load_deliver_address','load_delivery_address'],
             'start_job_mileage' => ['start_job_mileage'],
             'load_canceled' => ['load_canceled'],
-            'is_deadhead' => ['is_this_a_dead_head_run_to_manh_line'],
+            'is_deadhead' => ['is_this_a_dead_head_run_to_manh_line','deadhead'],
             'extra_load_stops_count' => ['extra_load_stops'],
             'wait_time_hours' => ['wait_time'],
-            'wait_time_reason' => ['trip_notes_reason_for_wait_time'],
+            'wait_time_reason' => ['trip_notes_reason_for_wait_time','trip_notes'],
             'end_job_mileage' => ['end_job_mileage'],
             'total_billable_miles' => ['total_billable_miles'],
             'tolls' => ['tolls'],
             'gas' => ['gas'],
             'upload_receiptsinvoices' => ['upload_receiptsinvoices',"upload_receipts\ninvoices","upload_receipts"],
             'end_mileage' => ['end_mileage'],
-            'maintenance_memo' => ['any_questions_or_concerns_with_the_vehicle_any_maintenance_required'],
+            'maintenance_memo' => ['any_questions_or_concerns_with_the_vehicle_any_maintenance_required','maintenance_memo'],
             'end_time' => ['end_time'],
             'hotel' => ['hotel_stay'],
             'total_hours_worked' => ['total_hours_worked'],
@@ -165,10 +165,10 @@ class PilotCarJob extends Model
             'subtotal_mileage_cost' => ['subtotal_mileage_cost'],
             'total_cost' => ['total_cost'],
             'total_vehicle_miles' => ['total_vehicle_miles'],
-            'merged_doc_id__invoice_2024' => ['merged_doc_id__invoice_2024'],
-            'job_memo' => ['merged_doc_url__invoice_2024'],
-            'link_to_merged_doc__invoice_2024' => ['link_to_merged_doc__invoice_2024'],
-            'document_merge_status__invoice_2024' => ['document_merge_status__invoice_2024']
+            'merged_doc_id__invoice_2024' => ['merged_doc_id__invoice_2024','merged_doc_id_invoice_2024'],
+            'job_memo' => ['merged_doc_url__invoice_2024','merged_doc_url_invoice_2024'],
+            'link_to_merged_doc__invoice_2024' => ['link_to_merged_doc__invoice_2024','link_to_merged_doc_invoice_2024'],
+            'document_merge_status__invoice_2024' => ['document_merge_status__invoice_2024','document_merge_status_invoice_2024']
         ];
 
         $values = [];
@@ -256,13 +256,13 @@ class PilotCarJob extends Model
                 $car = Vehicle::create([
                     'name'=> $values['pilot_car_name'],
                     'odometer'=> $values['end_mileage'],
-                    'odometer_updated_at'=> $job_ended->toDateTimeString(),
+                    'odometer_updated_at'=> $job_ended?->toDateTimeString(),
                     'organization_id' => $organization_id
                 ]);
             }else{
                 $car->update([
                     'odometer'=> $values['end_mileage'],
-                    'odometer_updated_at'=> $job_ended->toDateTimeString()
+                    'odometer_updated_at'=> $job_ended?->toDateTimeString()
                 ]);
             }
 
@@ -270,8 +270,8 @@ class PilotCarJob extends Model
                 $job = static::create([
                     'job_no'=> $values['job_no'],
                     'customer_id'=> $customer->id,
-                    'scheduled_pickup_at'=>$job_started->toDateTimeString(),
-                    'scheduled_delivery_at'=>$job_ended->toDateTimeString(),
+                    'scheduled_pickup_at'=>$job_started?->toDateTimeString(),
+                    'scheduled_delivery_at'=>$job_ended?->toDateTimeString(),
                     'load_no'=>$values['load_no'],
                     'pickup_address'=>$values['pickup_address'],
                     'delivery_address'=>$values['delivery_address'],
@@ -287,7 +287,7 @@ class PilotCarJob extends Model
                 ]);
             }
 
-            $log = UserLog::where('organization_id',$organization_id)->where('job_id', $job->id)->where('vehicle_id', $car->id)->where('started_at', $job_started->toDateTimeString())->first();
+            $log = UserLog::where('organization_id',$organization_id)->where('job_id', $job->id)->where('vehicle_id', $car->id)->where('started_at', $job_started?->toDateTimeString())->first();
 
             if(!$log){
                 $l = UserLog::create([
@@ -312,8 +312,8 @@ class PilotCarJob extends Model
                     'hotel'=>$values['hotel'] === 'NA'? null:$values['hotel'],
                     'memo'=>$values['wait_time_reason'],
                     'maintenance_memo'=>$values['maintenance_memo'],
-                    'started_at'=> $job_started->toDateTimeString(),
-                    'ended_at'=> $job_ended->toDateTimeString(),
+                    'started_at'=> $job_started?->toDateTimeString(),
+                    'ended_at'=> $job_ended?->toDateTimeString(),
                     'organization_id' => $organization_id
                 ]);
             }
