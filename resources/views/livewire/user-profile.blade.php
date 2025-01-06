@@ -11,6 +11,15 @@
         </div>
 
         <x-section-border />
+        
+        <div class="mt-10 sm:mt-0">
+            <form wire:submit="testNotification" method="post" class="pretty-form">
+            @csrf
+            <button>test notification</button>
+            </form>
+        </div>
+
+        <x-section-border />
 
         @if(false)
 

@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Laravel\Jetstream\Http\Controllers\Inertia\Concerns\ConfirmsTwoFactorAuthentication;
 use Laravel\Jetstream\Agent;
+use App\Actions\SendUserNotification;
 
 class UserProfile extends Component
 {
@@ -62,5 +63,9 @@ class UserProfile extends Component
     protected function createAgent($session)
     {
         return tap(new Agent(), fn ($agent) => $agent->setUserAgent($session->user_agent));
+    }
+
+    public function testNotification(){
+        SendUserNotification::to($this->profile, 'This is a test notification from ' . $this->profile->organization?->name . '.', subject: 'test');
     }
 }
