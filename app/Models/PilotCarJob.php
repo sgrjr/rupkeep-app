@@ -144,7 +144,7 @@ class PilotCarJob extends Model
             'total_billable_miles' => ['total_billable_miles'],
             'tolls' => ['tolls'],
             'gas' => ['gas'],
-            'upload_receiptsinvoices' => ['upload_receiptsinvoices',"upload_receipts\ninvoices"],
+            'upload_receiptsinvoices' => ['upload_receiptsinvoices',"upload_receipts\ninvoices","upload_receipts"],
             'end_mileage' => ['end_mileage'],
             'maintenance_memo' => ['any_questions_or_concerns_with_the_vehicle_any_maintenance_required'],
             'end_time' => ['end_time'],
