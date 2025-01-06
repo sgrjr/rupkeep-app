@@ -83,8 +83,9 @@ class Dashboard extends Component
         $this->dispatch('uploaded');
 
         $files = [[
+            'full_path' => $this->file->getPathName(),
             'original_name' => $this->file->getClientOriginalName(),
-            'contents' => file_get_contents($this->file->getPathName())
+            //'contents' => file_get_contents($this->file->getPathName())
         ]];
 
         PilotCarJob::import($files, auth()->user()->organization_id);

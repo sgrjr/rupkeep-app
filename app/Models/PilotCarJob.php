@@ -71,44 +71,47 @@ class PilotCarJob extends Model
     public static function import($files, $organization_id){
         //add each file details to database
 
-        foreach ($files as $file) {
-            $lines = explode(PHP_EOL, $file['contents']);
-            dd($lines);
-            $number = 0;
-            $header = [];
-            $l = [];
+        $number = 0;
+        $header = [];
+        $l = [];
 
-            foreach($lines as $line){
-               
+        if (($handle = fopen($files[0]['full_path'], "r")) !== FALSE) {
+            while (($data = fgetcsv($handle, separator: ",")) !== FALSE) {  
                 if($number == 0){
-                    $header = str_getcsv($line);
                     $h_eader = [];
-                    foreach($header as $h){
+                    foreach($data as $h){
                         $h_eader[] = str_replace('__','_',str_replace([' ','-'],'_',trim(str_replace(['#','(',')','/','?'],'', strtolower($h)))));
                     }
         
                     $header = static::translateHeaders($h_eader);
                 }else{
-                    $values = str_getcsv($line);
-                    if(count($values) != 57){
+
+                    if(count($data) != 57){
                         //dd('line#: '.$number, $values, $line);
                     }else{
                         $new_values = [];
-                        foreach($values as $index=>$v){
+                        foreach($data as $index=>$v){
                             $new_values[$header[$index]] = $v;
                         }
-    
+                        
+                        static::validate($new_values, count($header));
                         $l[] = $new_values;
                     }
-                   
+                    
                 }
                 $number++;
             }
-            foreach($l as $line){
-                static::processLog($line, $organization_id);
-            }
-                   
+            fclose($handle);
         }
+          
+        foreach($l as $line){
+            static::processLog($line, $organization_id);
+        }
+    }
+
+    public static function validate($row, $count): void{
+        if(empty($row['invoice_no'])) dd($row);
+        if(count($row) != $count) dd($row);
     }
 
     public static function translateHeaders($headers){
