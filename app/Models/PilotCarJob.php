@@ -201,6 +201,9 @@ class PilotCarJob extends Model
                     ->where('invoice_no', $values['invoice_no'] )
                     ->first();
 
+            if($job){
+                dd($job, $values);
+            }
             $customer = Customer::where('organization_id',$organization_id)->where('name', $values['customer_name'])->first();
             $job_started =  Carbon::make($values['start_date'] . ' ' . $values['start_time']);
             $job_ended =  Carbon::make($values['start_date'] . ' ' . $values['end_time']);
