@@ -66,6 +66,10 @@ class Organization extends Model
         return $this->hasMany(PilotCarJob::class, 'organization_id','id');
     }
 
+    public function vehicles(){
+        return $this->hasMany(Vehicle::class, 'organization_id','id');
+    }
+
     public function createUser($input){
         $user = User::create([
             'name' => $input['name'],
