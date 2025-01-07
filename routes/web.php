@@ -24,6 +24,7 @@ use App\Http\Controllers\UsersController;
 use App\Http\Controllers\UserLogsController;
 use App\Http\Controllers\AttachmentsController;
 use App\Http\Controllers\MyInvoicesController;
+use App\Http\Controllers\EmailController;
 
 Route::middleware([
     'auth:sanctum',
@@ -78,4 +79,6 @@ Route::middleware([
 
 Route::get('/impersonate/{user}', [MyUsersController::class, 'impersonate'])->name('impersonate');
 
-
+Route::get('/send-email', [EmailController::class, 'redirectToAuthUrl']);
+Route::get('/email-callback', [EmailController::class, 'handleCallback']);
+Route::get('/send-html-email', [EmailController::class, 'sendHtmlEmail']);
