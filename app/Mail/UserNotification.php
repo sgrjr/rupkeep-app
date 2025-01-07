@@ -31,7 +31,6 @@ class UserNotification extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            from: auth()->user()->organization->email,
             subject: $this->subject,
         );
     }

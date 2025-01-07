@@ -20,12 +20,12 @@ class SendUserNotification
     public static function to(User $user, String $message, String $subject = null)
     {
         Mail::to($user->notification_address)->send(new UserNotification($message, subject: $subject));
-
-        /*$client = new Client();
+        /*
+        $client = new Client();
         $client->setClientId(env('GOOGLE_CLIENT_ID'));
         $client->setClientSecret(env('GOOGLE_CLIENT_SECRET'));
         $client->setRedirectUri(env('GOOGLE_REDIRECT_URI'));
-        $client->setAccessToken(auth()->user()->createToken('mail-login')->accessToken->token); // Ensure this method retrieves a valid token
+        $client->addScope(Gmail::GMAIL_SEND);
 
         $gmail = new Gmail($client);
         $gmailMessage = new Message();
@@ -43,6 +43,5 @@ class SendUserNotification
         $result = $gmail->users_messages->send('me', $gmailMessage);
         return $result;
         */
-
     }
 }
