@@ -346,52 +346,288 @@ class PilotCarJob extends Model
         ];
     }
 
+    public function invoiceValues(){
+
+        $logs = $this->logs;
+        $miles = $this->getTotalMiles($logs);
+
+        $values = [
+            'pilot_car_job_id' =>$this->id,
+            'organization_id' =>$this->organization_id,
+            'customer_id' =>$this->customer_id,
+            'title' => 'INVOICE',
+            'logo' => null,
+            'bill_from' => [
+                "company" => 'Casco Bay Pilot Car',
+                'attention' => 'Mary Reynolds',
+                "street" => 'P.O. Box 104',
+                'city' => 'Gorham',
+                'state' => 'ME',
+                'zip' => "04038"
+            ],
+            'bill_to' => [
+                "company" =>$this->customer->name,
+                'attention' => null,
+                "street" =>$this->customer->street,
+                'city' =>$this->customer->city,
+                'state' =>$this->customer->state,
+                'zip' =>$this->customer->zip,
+            ],
+            'footer' => 'Casco Bay Pilot Car would like to thank you for your business. Thank you!',
+            'truck_driver_name' =>$this->getTruckDrivers($logs),
+            'truck_number' =>$this->getTruckNumbers($logs),
+            'trailer_number' =>$this->getTrailerNumbers($logs),
+            'pickup_address' =>$this->pickup_address,
+            'delivery_address' =>$this->delivery_address,
+            'notes' =>$this->getInvoiceNotes($logs),
+            'load_no' =>$this->load_no,
+            'check_no' =>$this->check_no,
+            'wait_time_hours' =>$this->totalWaitTimeHours($logs),
+            'extra_load_stops_count' =>$this->totalExtraLoadStops($logs),
+            'dead_head' =>$this->getTotalDeadHead($logs),
+            'tolls' =>$this->getTotalTolls($logs),
+            'hotel' =>$this->getTotalHotel($logs),
+            'extra_charge' =>$this->getExtraCharges($logs),
+            'cars_count' =>$this->getCarsCount($logs),
+            'rate_code' =>$this->rate_code,
+            'rate_value' =>$this->rate_value,
+            'total_due' => 0.00,
+            'billable_miles' => $miles['total_billable'],
+            'nonbillable_miles' => $miles['total_nonbillable'],
+        ];
+
+        $values['total'] = $this->calculateTotalDue($values);
+        $values['effective_rate_code'] = $values['total']['effective_rate_code'];
+        $values['effective_rate_value'] = $values['total']['effective_rate_value'];
+        $values['total'] = $values['total']['total'];
+
+        return [
+            'paid_in_full' => false,
+            'values' => $values,
+            'organization_id' => $values['organization_id'],
+            'customer_id' => $values['customer_id'],
+            'pilot_car_job_id' => $values['pilot_car_job_id']
+        ];
+    }
+
     /* TODO Implement all this calculation */
-    public function getTruckDrivers(Bool $return_string = false){
-        return '';
+    public function getTruckDrivers($logs = false){
+
+        if(!$logs) $logs = $this->logs;
+        $drivers = [];
+
+        foreach($logs as $log){
+            if($log->truck_driver_id && !in_array($log->truck_driver?->name, array_values($drivers))){
+                $drivers[] = $log->truck_driver->name;
+            }
+        }
+
+        return implode(' & ',$drivers);
     }
 
-    public function getTruckNumbers(Bool $return_string = false){
-        return '';
+    public function getTruckNumbers($logs = false){
+        if(!$logs) $logs = $this->logs;
+        $no = [];
+
+        foreach($logs as $log){
+            if($log->truck_no && !in_array($log->truck_no, array_values($no))){
+                $no[] = $log->truck_no;
+            }
+        }
+
+        return implode(' & ',$no);
     }
 
-    public function getTrailerNumbers(Bool $return_string = false){
-        return '';
+    public function getTrailerNumbers($logs = false){
+        if(!$logs) $logs = $this->logs;
+        $no = [];
+
+        foreach($logs as $log){
+            if($log->trailer_no && !in_array($log->trailer_no, array_values($no))){
+                $no[] = $log->trailer_no;
+            }
+        }
+
+        return implode(' & ',$no);
     }
 
-    public function getInvoiceNotes(Bool $return_string = false){
-        return '';
+    public function getInvoiceNotes($logs = false){
+        if(!$logs) $logs = $this->logs;
+        $memo = [];
+
+        foreach($logs as $log){
+            if($log->memo && !in_array($log->memo, array_values($memo))){
+                $memo[] = $log->memo;
+            }
+        }
+
+        return implode(' | ',$memo);
     }
 
-    public function totalWaitTimeHours(Bool $return_string = false){
-        return '';
+    public function totalWaitTimeHours($logs = false){
+        if(!$logs) $logs = $this->logs;
+        $wait = 0;
+
+        foreach($logs as $log){
+            if($log->wait_time_hours && !empty($log->wait_time_hours)){
+                $wait += $log->wait_time_hours;
+            }
+        }
+        return $wait;
     }
 
-    public function totalExtraLoadStops(Bool $return_string = false){
-        return '';
+    public function totalExtraLoadStops($logs = false){
+        if(!$logs) $logs = $this->logs;
+        $stops = 0;
+
+        foreach($logs as $log){
+            if($log->extra_load_stops_count && !empty($log->extra_load_stops_count)){
+                $stops += $log->extra_load_stops_count;
+            }
+        }
+        return $stops;
     }
 
-    public function getTotalTolls(Bool $return_string = false){
-        return '';
+    public function getTotalTolls($logs = false){
+        if(!$logs) $logs = $this->logs;
+        $tolls = 0;
+
+        foreach($logs as $log){
+            if($log->tolls && !empty($log->tolls)){
+                $tolls += (Int)$log->tolls;
+            }
+        }
+        return number_format($tolls,2);
     }
 
-    public function getTotalHotel(Bool $return_string = false){
-        return '';
+    public function getTotalHotel($logs = false){
+        if(!$logs) $logs = $this->logs;
+        $hotel = 0;
+
+        foreach($logs as $log){
+            if($log->hotel && !empty($log->hotel)){
+                $hotel += (Int)$log->hotel;
+            }
+        }
+        return number_format( $hotel,2);
     }
 
-    public function getExtraCharges(Bool $return_string = false){
-        return '';
+    public function getExtraCharges($logs = false){
+        if(!$logs) $logs = $this->logs;
+        $extra_charge = 0;
+
+        foreach($logs as $log){
+            if($log->extra_charge && !empty($log->extra_charge)){
+                $extra_charge += (Int)$log->extra_charge;
+            }
+        }
+        return number_format($extra_charge,2);
     }
 
-    public function getTotalMiles(Bool $return_string = false){
-        return '';
+    public function getCarsCount($logs = false){
+        if(!$logs) $logs = $this->logs;
+        return count($logs);
     }
 
-    public function getTotalDue(Bool $return_string = false){
-        return '';
+    public function getTotalMiles($logs = false){
+
+        if(!$logs) $logs = $this->logs;
+
+        $miles = [
+            'total' => [],
+            'billable' => [],
+            'start'=> [],
+            'end'=> [],
+            'job_start'=> [],
+            'job_end'=> [],
+            'nonbillable' => []
+        ];
+
+        foreach($logs as $log){
+           $miles['start'][] = $log->start_mileage;
+           $miles['end'][] = $log->end_mileage;
+           $miles['total'][] = $log->end_mileage - $log->start_mileage;
+           $miles['job_start'][] = $log->start_job_mileage;
+           $miles['job_end'][] = $log->end_job_mileage;
+           $miles['billable'][] = $log->billable_miles && $log->billable_miles > 0? $log->billable_miles:$log->end_job_mileage - $log->start_job_mileage;
+           $miles['nonbillable'][] = ($log->end_mileage - $log->start_mileage) - ($log->end_job_mileage - $log->start_job_mileage);
+        }
+
+        $miles['total_billable'] = array_sum($miles['billable']);
+        $miles['total_nonbillable'] = array_sum($miles['nonbillable']);
+        return $miles;
     }
 
-    public function getTotalDeadHead(Bool $return_string = false){
-        return '';
+    public function getTotalDeadHead($logs = false){
+        if(!$logs) $logs = $this->logs;
+        $deadhead = 0;
+
+        foreach($logs as $log){
+            if($log->is_deadhead && !empty($log->is_deadhead) && (Int)$log->is_deadhead === 1){
+                $deadhead += 1;
+            }
+        }
+        return $deadhead;
+    }
+
+    public function calculateTotalDue(Array $totals){
+
+        $values = [
+            'tolls' => (float)$totals['tolls'],
+            'hotel' => (float)$totals['hotel'],
+            'extra' => (float)$totals['extra_charge'],
+            'load_stops' => 0.00,
+            'wait_time' => 0.00,
+        ];
+
+        if($totals['extra_load_stops_count'] > 0){
+            $values['load_stops'] = $totals['extra_load_stops_count'] * 30.00;
+        }
+
+        if($totals['wait_time_hours'] > 1){
+            $values['load_stops'] = $totals['wait_time_hours'] * 20.00;
+        }
+
+        $expenses = 0.00;
+
+        foreach($values as $v){
+            $expenses += $v;
+        }
+
+        if($totals['rate_code'] === 'per_mile_rate'){
+            $value = 1.00 * (float)number_format($totals['rate_value'], 2);
+            $values['miles_charge'] = $totals['billable_miles'] * $value;
+        }else if(str_starts_with($totals['rate_code'],'flat_rate')){
+            $values['miles_charge'] = 0.00;
+        }
+
+        if($totals['dead_head'] > 0){
+            $values['effective_rate_code'] = 'deadhead';
+            $values['effective_rate_value'] = $totals['dead_head'];
+            $values['total'] = number_format($expenses + ($totals['dead_head'] * 250.00),2);
+        }else if($totals['billable_miles'] <= 125){
+            //is mini
+            $values['effective_rate_code'] = 'mini';
+            $values['effective_rate_value'] = $totals['cars_count'];
+            $values['total'] = number_format($expenses + (250.00 * $totals['cars_count']),2);
+        }else{
+            //figure by given rate
+            if($totals['rate_code'] === 'flat_rate_excludes_expenses'){
+                $values['effective_rate_code'] = 'flat_rate_excludes_expenses';
+                $values['effective_rate_value'] = $totals['rate_value'];
+                $values['total'] = number_format($totals['rate_value'],2);
+            }else if($totals['rate_code'] === 'flat_rate'){
+                $values['effective_rate_code'] = 'flat_rate';
+                $values['effective_rate_value'] = $totals['rate_value'];
+                $values['total'] = number_format((float)number_format($totals['rate_value'],2) + $expenses,2);
+            }else{
+                $values['effective_rate_code'] = 'per_mile_rate';
+                $values['effective_rate_value'] = $totals['rate_value'];
+                $values['total'] = $values['miles_charge'] + $expenses;
+            }
+            
+        }
+
+        return $values;
     }
 }

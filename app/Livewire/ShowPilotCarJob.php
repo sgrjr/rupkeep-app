@@ -11,6 +11,7 @@ use App\Models\PilotCarJob as Job;
 use App\Models\User;
 use App\Models\Attachment;
 use Livewire\WithFileUploads;
+use App\Actions\SendUserNotification;
 
 class JobAssignmentForm extends Form
 {
@@ -38,7 +39,9 @@ class ShowPilotCarJob extends Component
     public $file;
 
     public function mount(Int $job){
-        $this->job = Job::with('logs','logs.vehicle','logs.truck_driver','logs.user','logs.attachments','customer','customer.contacts')->find($job)->append('invoices_count');
+        $this->job = Job::with('logs','logs.vehicle','logs.truck_driver','logs.user','logs.attachments','customer','customer.contacts')->find($job)?->append('invoices_count');
+
+        if(!$this->job) return redirect()->route('my.jobs.index');
 
         $this->vehicles = [
             ['name' => '(none selected)', 'value'=>null]
@@ -63,15 +66,22 @@ class ShowPilotCarJob extends Component
     }
 
     public function assignJob(){
-        $new_log = UserLog::make([
+
+        $values = [
             'car_driver_id' => $this->assignment->car_driver_id,
             'job_id'=>$this->job->id,
             'vehicle_id'=> $this->assignment->vehicle_id,
             'organization_id' => $this->job->organization_id,
             'vehicle_position' => $this->assignment->vehicle_position,
-        ]);
+        ];
+
+        $message = "New job assignment [{$values['vehicle_position']} car] for {$this->job->customer->name}. Job NO. {$this->job->job_no} | Load NO. {$this->job->load_no}. Pickup: {$this->job->pickup_address} @{$this->job->scheduled_pickup_at} {$this->job->memo}. For updates https://rupkeep.com/my/jobs/{$this->job->id}";
+
+        $new_log = UserLog::make($values);
 
         $new_log->save();
+        
+        SendUserNotification::to($new_log->user, $message, subject: 'New Job');
 
         $this->assignment->reset();
         $this->dispatch('saved');
@@ -95,4 +105,8 @@ class ShowPilotCarJob extends Component
         return back();
     }
 
+    public function generateInvoice(){
+        $this->job->invoices()->create($this->job->invoiceValues());
+        $this->dispatch('updated');
+    }
 }

@@ -56,7 +56,12 @@
                 {{$job->memo}}
             @endif
         </p>
-        <p><b>invoice:</b> {{$job->invoices_count}}</p>
+        <p><b>invoice:</b> 
+        
+            @foreach($job->invoices as $invoice)
+            <a target="_blank" href="{{route('my.invoices.edit', ['invoice'=>$invoice->id])}}" class="button">invoice {{$invoice->invoice_number}}</a>
+            @endforeach    
+        </p>
 
         <div> <b>attachments ({{$job->attachments? $job->attachments->count():0}}): </b>
             @foreach($job->attachments as $att)
@@ -84,6 +89,14 @@
         @if(auth()->user()->can('update', $job))
             <a href="{{route('my.jobs.edit', ['job'=>$job->id])}}" class="button">edit</a>
         @endif
+
+        <form wire:submit="generateInvoice" class="flex">
+            <x-action-message class="me-3" on="updated">
+                {{ __('Invoice Created.') }}
+            </x-action-message>
+            <button class="w-full" type="submit">Click to Generate Invoice</button>
+        </form>
+
         @if(auth()->user()->can('delete', $job))
             <x-delete-form class="inline-block underline" action="{{route('my.jobs.destroy', ['job'=> $job->id])}}" title="delete"/>
         @endif

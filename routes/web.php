@@ -66,6 +66,8 @@ Route::middleware([
     Route::delete('attachments/{attachment}', [AttachmentsController::class, 'delete'])->name('attachments.destroy');
 
     Route::post('my/invoices/create', [MyInvoicesController::class, 'store'])->name('my.invoices.store');
+    Route::get('my/invoices/{invoice}/edit', [MyInvoicesController::class, 'edit'])->name('my.invoices.edit');
+    Route::put('my/invoices/{invoice}', [MyInvoicesController::class, 'update'])->name('my.invoices.update');
 });
 
 Route::middleware([

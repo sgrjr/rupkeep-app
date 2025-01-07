@@ -43,6 +43,7 @@ class CustomerContactsController extends Controller
         }
         $customer_contact = new CustomerContact($request->except('_method'));
         $this->authorize('create', $customer_contact);
+
         $customer_contact->save();
         return back();
     }
@@ -52,7 +53,7 @@ class CustomerContactsController extends Controller
      */
     public function show(string $id)
     {
-        //
+        dd($id);
     }
 
     /**
@@ -60,15 +61,24 @@ class CustomerContactsController extends Controller
      */
     public function edit(string $id)
     {
-        //
+        dd($id);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, string $customer_id, Int $id)
     {
-        //
+        $customer_contact = CustomerContact::where('id',$id)->where('customer_id', $customer_id)->first();
+        $this->authorize('update', $customer_contact);
+        
+        if($request->has('delete') && $request->get('delete') === 'on'){
+            $customer_contact->delete();
+        }else{
+            $customer_contact->update($request->all());
+        }
+        
+        return back();
     }
 
     /**

@@ -14,56 +14,51 @@ class MyInvoicesController extends Controller
 
     use AuthorizesRequests;
 
+    public function edit(Request $request, Invoice $invoice){
+
+      $this->authorize('update', $invoice);
+
+      return view('invoices.edit', compact('invoice'));
+    }
+
+    public function update(Request $request, Invoice $invoice){
+
+        $this->authorize('update', $invoice);
+
+        if($request->has('values')){
+            $invoice->updateValues($request->values);
+        }
+        
+        if($request->has('delete') && $request->delete === 'on'){
+            $job_id = $invoice->pilot_car_job_id;
+            $invoice->forceDelete();
+            return redirect()->route('my.jobs.show', ['job'=>$job_id]);
+        }
+
+        $input = $request->except('values','_method','id','_token','delete');
+
+        if(count($input) > 0){
+            if(array_key_exists('paid_in_full', $input)){
+                if($input['paid_in_full'] === 'yes'){
+                    $input['paid_in_full'] = true;
+                }else{
+                    $input['paid_in_full'] = false;
+                }
+            }
+            $invoice->update($input);
+        }
+
+        return back();
+    }
+
     public function store(Request $request){
 
         $jobs = PilotCarJob::whereIn('id', $request->invoice_this)->get();
 
-
         $invoices = [];
 
         $jobs->map(function($job)use(&$invoices){
-            $invoices[] = [
-                'job_id' => $job->id,
-                'organization_id' => $job->organization_id,
-                'customer_id' => $job->customer_id,
-                'title' => 'INVOICE',
-                'logo' => null,
-                'bill_from' => [
-                    "company" => 'Casco Bay Pilot Car',
-                    'attention' => 'Mary Reynolds',
-                    "street" => 'P.O. Box 104',
-                    'city' => 'Gorham',
-                    'state' => 'ME',
-                    'zip' => "04038"
-                ],
-                'bill_to' => [
-                    "company" => $job->customer->name,
-                    'attention' => null,
-                    "street" => $job->customer->street,
-                    'city' => $job->customer->city,
-                    'state' => $job->customer->state,
-                    'zip' => $job->customer->zip,
-                ],
-                'footer' => 'Casco Bay Pilot Car would like to thank you for your business. Thank you!',
-                'truck_driver_name' => $job->getTruckDrivers(true),
-                'truck_number' => $job->getTruckNumbers(true),
-                'trailer_number' => $job->getTrailerNumbers(true),
-                'pickup_address' => $job->pickup_address,
-                'delivery_address' => $job->delivery_address,
-                'notes' => $job->getInvoiceNotes(true),
-                'load_no' => $job->load_no,
-                'check_no' => $job->check_no,
-                'wait_time_hours' => $job->totalWaitTimeHours(true),
-                'extra_load_stops_count' => $job->totalExtraLoadStops(true),
-                'dead_head' => $job->getTotalDeadHead(true),
-                'tolls' => $job->getTotalTolls(true),
-                'hotel' => $job->getTotalHotel(true),
-                'extra_chargs' => $job->getExtraCharges(true),
-                'rate_code' => $job->rate_code,
-                'rate_value' => $job->rate_value,
-                'miles' => $job->getTotalMiles(true),
-                'total_due' => $job->getTotalDue(true),
-            ];
+            $invoices[] = $job->invoiceValues();
         });
 
         foreach($invoices as $i){
@@ -72,6 +67,7 @@ class MyInvoicesController extends Controller
                 'values' => $i,
                 'organization_id' => $i['organization_id'],
                 'customer_id' => $i['customer_id'],
+                'pilot_car_job_id' => $i['job_id']
             ]);
 
             JobInvoice::create([
