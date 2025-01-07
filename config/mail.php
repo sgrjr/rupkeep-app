@@ -95,6 +95,11 @@ return [
             ],
         ],
 
+        'brevo' => [
+            'key' => env('BREVO_API_KEY'),
+            'sender' => ['name' => 'Pilot Car CMS', 'email' => env('MAIL_FROM_ADDRESS')],
+        ]
+
     ],
 
     /*
