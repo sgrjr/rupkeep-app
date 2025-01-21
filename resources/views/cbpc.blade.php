@@ -40,12 +40,12 @@
             </div>
 
             @if(!auth()->check())
-            <form class="w-full" method="POST" action="{{ route('login') }}">
+            <form class="w-full text-black" method="POST" action="{{ route('login') }}">
                 <div class="w-full bg-none mt-auto mb-auto md:grid md:grid-cols-3">
                 @csrf
-                <x-input id="email" class="block w-full" type="email" name="email" :value="old('email')" required autofocus autocomplete="username" aria-placeholder="email" placeholder="email"/>
-                <x-input id="password" class="block mb-2 mt-2 md:mb-0 md:mt-0 w-full md:ml-2" type="password" name="password" required autocomplete="current-password" aria-placeholder="password" placeholder="password"/>
-                <button class="block md:ml-4 text-center align-right flex-end float-right">
+                <x-input id="email" class="block w-full text-black" type="email" name="email" :value="old('email')" required autofocus autocomplete="username" aria-placeholder="email" placeholder="email"/>
+                <x-input id="password" class="block mb-2 mt-2 md:mb-0 md:mt-0 w-full md:ml-2 text-black" type="password" name="password" required autocomplete="current-password" aria-placeholder="password" placeholder="password"/>
+                <button class="block md:ml-4 text-center align-right flex-end float-right text-black">
                     {{ __('Log in') }}
                 </button>
                 </div>
