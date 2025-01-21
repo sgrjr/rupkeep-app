@@ -24,7 +24,10 @@ return new class extends Migration
             $table->string('zip')->nullable();
             $table->string('logo_url')->nullable();
             $table->string('website_url')->nullable();
-            $table->foreignId('user_id')->nullable();
+            $table->foreignId('user_id')
+                ->constrained()
+                ->cascadeOnUpdate()
+                ->cascadeOnDelete();
             $table->timestamps();
             $table->softDeletes();
         });

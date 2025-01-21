@@ -15,8 +15,14 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->integer('odometer')->nullable();
-            $table->foreignId('organization_id')->nullable();
-            $table->foreignId('user_id')->nullable();
+            $table->foreignId('organization_id')
+                ->constrained()
+                ->cascadeOnUpdate()
+                ->cascadeOnDelete();
+            $table->foreignId('user_id')
+                ->constrained()
+                ->cascadeOnUpdate()
+                ->cascadeOnDelete();
             $table->timestamp('odometer_updated_at')->nullable();
             $table->timestamps();
             $table->softDeletes();

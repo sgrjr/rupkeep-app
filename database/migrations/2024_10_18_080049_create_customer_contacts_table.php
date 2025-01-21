@@ -13,14 +13,24 @@ return new class extends Migration
     {
         Schema::create('customer_contacts', function (Blueprint $table) {
             $table->id();
-            $table->bigInteger('customer_id')->nullable();
+
+            $table->foreignId('customer_id')
+                ->constrained()
+                ->onUpdate('cascade')
+                ->onDelete('cascade')
+                ->nullable();
+            
+            $table->foreignId('organization_id')
+                ->constrained()
+                ->onUpdate('cascade')
+                ->onDelete('cascade')
+                ->nullable();
+                
             $table->string('name')->nullable();
             $table->string('phone')->nullable();
+            $table->string(column: 'email')->nullable();
             $table->string('memo')->nullable();
-            $table->foreignId('organization_id');
-            $table->index('customer_id');
-            $table->timestamps();
-            $table->foreign('customer_id')->references('id')->on('customers')->onDelete('cascade');          
+            $table->timestamps();     
         });
     }
 

@@ -28,8 +28,14 @@ return new class extends Migration
             $table->timestamp('canceled_at')->nullable();
             $table->binary('canceled_reason')->nullable();
             $table->binary('memo')->nullable();
-            $table->foreignId('customer_id')->nullable();
-            $table->foreignId('organization_id')->nullable();
+            $table->foreignId('customer_id')
+                ->constrained()
+                ->cascadeOnUpdate()
+                ->cascadeOnDelete();
+            $table->foreignId('organization_id')
+                ->constrained()
+                ->cascadeOnUpdate()
+                ->cascadeOnDelete();
             $table->timestamps();
             $table->softDeletes();
             });

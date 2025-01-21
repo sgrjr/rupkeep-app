@@ -13,10 +13,6 @@ return new class extends Migration
     {
         Schema::create('user_logs', function (Blueprint $table) {
             $table->id();
-            $table->bigInteger('job_id');
-            $table->bigInteger('car_driver_id')->nullable();
-            $table->bigInteger('truck_driver_id')->nullable();
-            $table->bigInteger('vehicle_id')->nullable();
             $table->string('vehicle_position')->nullable();
             $table->string('truck_no')->nullable();
             $table->string('trailer_no')->nullable();
@@ -38,16 +34,36 @@ return new class extends Migration
             $table->timestamp('started_at')->nullable();
             $table->timestamp('ended_at')->nullable();          
             $table->timestamps();
-            $table->foreignId('organization_id');
-            $table->index('job_id');
-            $table->index('car_driver_id');
-            $table->index('truck_driver_id');
-            $table->index('vehicle_id');
 
-            $table->foreign('job_id')->references('id')->on('pilot_car_jobs')->onDelete('SET NULL');
-            $table->foreign('car_driver_id')->references('id')->on('users')->onDelete('SET NULL');
-            $table->foreign('truck_driver_id')->references('id')->on('customer_contacts')->onDelete('SET NULL');
-            $table->foreign('vehicle_id')->references('id')->on('vehicles')->onDelete('SET NULL');
+            $table->foreignId('organization_id')
+            ->constrained()
+            ->cascadeOnUpdate()
+            ->cascadeOnDelete()
+            ->nullable();
+
+            $table->foreignId('job_id')
+            ->constrained(table: 'pilot_car_jobs')
+            ->cascadeOnUpdate()
+            ->cascadeOnDelete()
+            ->nullable();
+
+            $table->foreignId('car_driver_id')
+            ->constrained(table: 'users')
+            ->cascadeOnUpdate()
+            ->cascadeOnDelete()
+            ->nullable();
+
+            $table->foreignId('truck_driver_id')
+            ->constrained(table: 'customer_contacts')
+            ->cascadeOnUpdate()
+            ->cascadeOnDelete()
+            ->nullable();
+
+            $table->foreignId('vehicle_id')
+            ->constrained()
+            ->cascadeOnUpdate()
+            ->cascadeOnDelete()
+            ->nullable();
         });
     }
 
