@@ -33,7 +33,7 @@ class Organization extends Model
 
     public function getLogoAttribute(){
         if(empty($this->logo_url)){
-            return url('/images//images/organization-logo-2.avif');
+            return url('images//images/organization-logo-2.avif');
         }else if(str_starts_with($this->logo_url, 'http')){
             return $this->logo_url;
         }else{
