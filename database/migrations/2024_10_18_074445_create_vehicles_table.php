@@ -20,9 +20,9 @@ return new class extends Migration
                 ->cascadeOnUpdate()
                 ->cascadeOnDelete();
             $table->foreignId('user_id')
-                ->constrained()
-                ->cascadeOnUpdate()
-                ->cascadeOnDelete();
+                ->nullOnUpdate()
+                ->nullOnDelete()
+                ->nullable();
             $table->timestamp('odometer_updated_at')->nullable();
             $table->timestamps();
             $table->softDeletes();
