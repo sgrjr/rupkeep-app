@@ -14,7 +14,6 @@ return new class extends Migration
         Schema::create('pilot_car_jobs', function (Blueprint $table) {
             $table->id();
             $table->string('job_no')->nullable();
-            $table->bigInteger('customer_id')->nullable();
             $table->timestamp('scheduled_pickup_at')->nullable();
             $table->timestamp('scheduled_delivery_at')->nullable();
             $table->string('load_no')->nullable();
@@ -29,13 +28,11 @@ return new class extends Migration
             $table->timestamp('canceled_at')->nullable();
             $table->binary('canceled_reason')->nullable();
             $table->binary('memo')->nullable();
+            $table->foreignId('customer_id')->nullable();
             $table->foreignId('organization_id')->nullable();
             $table->timestamps();
             $table->softDeletes();
-
-            $table->index('customer_id');
-            $table->foreign('customer_id')->references('id')->on('customers')->onDelete('cascade');
-        });
+            });
     }
 
     /**
