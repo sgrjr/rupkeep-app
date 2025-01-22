@@ -5,6 +5,7 @@ namespace App\Livewire;
 use Livewire\Component;
 use Illuminate\Http\Request;
 use App\Models\User;
+use App\Models\Organization;
 use Laravel\Fortify\Features;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -17,8 +18,11 @@ class UserProfile extends Component
     use ConfirmsTwoFactorAuthentication;
     public $profile;
 
+    public Int $merged_user;
+
     public function mount(Int $user){
-        $this->profile = User::find($user);
+        $this->profile = User::with('organization')->find($user);
+
         $this->authorize('update', $this->profile);
     }
     public function render(Request $request)
@@ -67,5 +71,22 @@ class UserProfile extends Component
 
     public function testNotification(){
         SendUserNotification::to($this->profile, 'This is a test notification from ' . $this->profile->organization?->name . '.', subject: 'test');
+    }
+
+    public function mergeToUser(){
+        if(!empty($this->merged_user)){
+            $user = User::find($this->merged_user);
+
+            if($user && $this->profile->organization_id === $user->organization_id){
+                \App\Models\UserLog::where('car_driver_id', $this->profile->id)->update(['car_driver_id'=>$user->id]);
+                \App\Models\Vehicle::where('user_id', $this->profile->id)->update(['user_id'=>$user->id]);
+                $this->profile->delete();
+    
+                return redirect()->route('user.profile', ['user'=> $user->id]);
+            }else{
+                echo 'ERROR. I could not find that user(s)!'; 
+            }
+        }
+       
     }
 }

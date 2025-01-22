@@ -67,12 +67,19 @@ class Dashboard extends Component
         }
 
         if(auth()->user()->can('work', $organization)){
-            $logs = UserLog::where('car_driver_id', auth()->user()->id)->get();
+            $jobs = PilotCarJob::
+                orderBy('id','desc')
+                ->with(['logs','customer'])
+                ->whereHas('logs', function($query){
+                    return $query->where('car_driver_id', auth()->user()->id);
+                })
+                ->get();
+           
         }else{
-            $logs = false;
+            $jobs = false;
         }
 
-        return view('livewire.dashboard', compact('organization', 'organizations','cards','logs'));
+        return view('livewire.dashboard', compact('organization', 'organizations','cards','jobs'));
     }
 
     public function uploadFile()

@@ -78,6 +78,7 @@ class User extends Authenticatable
     }
 
     public function getDashboardThemeAttribute(){
+        return 'default-theme';
         return $this->theme? $this->theme:'default-theme';
     }
 

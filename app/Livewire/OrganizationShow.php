@@ -4,12 +4,13 @@ namespace App\Livewire;
 
 use Livewire\Component;
 use App\Models\Organization;
-use Illuminate\Support\Facades\Validator;
 use App\Models\User;
+use App\Models\PilotCarJob;
 use Livewire\Attributes\Validate;
 use Livewire\Form;
 use Auth;
 use Illuminate\Support\Facades\DB;
+use Livewire\WithFileUploads;
 
 class NewUserForm extends Form
 {
@@ -31,12 +32,18 @@ class NewUserForm extends Form
 
 class OrganizationShow extends Component
 {
+    
+    use WithFileUploads;
+
     public $organization;
     public $roles;
 
     public $deleted_users = false;
 
     public NewUserForm $form;
+ 
+    #[Validate('max:1024')] // 1MB Max
+    public $file;
 
     public function mount(Int $organization){
         $organization = Organization::with('users','owner')->find($organization);
@@ -117,5 +124,22 @@ class OrganizationShow extends Component
         }else{
             session()->flash('message','You are not allowed to do this ' . auth()->user()->name . ' :/');
         }
+    }
+
+    
+    public function uploadFile()
+    {
+        $originalName = $this->file->getClientOriginalName();
+        $this->file->storeAs(path: 'jobs/org_'.$this->organization->id, name:$originalName);
+        $this->dispatch('uploaded');
+
+        $files = [[
+            'full_path' => $this->file->getPathName(),
+            'original_name' => $this->file->getClientOriginalName()
+        ]];
+
+        PilotCarJob::import($files, $this->organization->id);
+
+        return back();
     }
 }

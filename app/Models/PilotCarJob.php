@@ -274,6 +274,12 @@ class PilotCarJob extends Model
             }
 
             if(!$job){
+                if(!empty($value['timestamp'])){
+                    $values['timestamp'] = Carbon::make($values['timestamp'])->toDateTimeString();
+                }else{
+                    $values['timestamp'] = null;
+                }
+
                 $job = static::create([
                     'job_no'=> $values['job_no'],
                     'customer_id'=> $customer->id,
@@ -297,26 +303,34 @@ class PilotCarJob extends Model
             $log = UserLog::where('organization_id',$organization_id)->where('job_id', $job->id)->where('vehicle_id', $car->id)->where('started_at', $job_started?->toDateTimeString())->first();
 
             if(!$log){
+                $hotel = null;
+
+                if($values['hotel'] === 'NA' || empty($values['hotel'])){
+                    //do nothing? 0.00:$values['hotel']
+                }else{
+                    $hotel = (Float)(trim(str_replace('$','', $values['hotel'])));
+                }
+
                 $l = UserLog::create([
                     'job_id'=> $job->id,
-                    'cart_driver_id'=> $car_driver->id,
+                    'car_driver_id'=> $car_driver->id,
                     'truck_driver_id'=> $truck_driver->id,
                     'vehicle_id'=> $car->id,
                     'pretrip_check'=> strtolower($values['pretrip_check_answer']) === 'yes',
                     'truck_no'=>$values['truck_no'],
                     'trailer_no'=>$values['trailer_no'],
-                    'start_mileage'=>$values['start_mileage'],
-                    'end_mileage'=>$values['end_mileage'],
-                    'start_job_mileage'=>$values['start_job_mileage'],
-                    'end_job_mileage'=>$values['end_job_mileage'],
+                    'start_mileage'=>empty($values['start_mileage'])?null:$values['start_mileage'],
+                    'end_mileage'=> empty($values['end_mileage'])?null:$values['end_mileage'],
+                    'start_job_mileage'=> empty($values['start_job_mileage'])?null:$values['start_job_mileage'],
+                    'end_job_mileage'=> empty($values['end_job_mileage'])?null:$values['end_job_mileage'],
                     'load_canceled'=>$values['if_load_canceled'] && strtolower($values['if_load_canceled']) === 'canceled',
                     'is_deadhead'=>$values['is_deadhead'] && strtolower($values['is_deadhead']) === 'yes',
-                    'extra_load_stops_count'=>$values['extra_load_stops_count'],
-                    'wait_time_hours'=>$values['wait_time_hours'],
-                    'tolls'=>$values['tolls'],
-                    'gas'=>$values['gas'],
-                    'extra_charge'=>$values['extra_charge'],
-                    'hotel'=>$values['hotel'] === 'NA'? null:$values['hotel'],
+                    'extra_load_stops_count'=> empty($values['extra_load_stops_count'])?0:(int)$values['extra_load_stops_count'],
+                    'wait_time_hours'=> empty($values['wait_time_hours'])?0.00:$values['wait_time_hours'],
+                    'tolls'=> empty($values['tolls'])?0.00:$values['tolls'],
+                    'gas'=>empty($values['gas'])?0.00:$values['gas'],
+                    'extra_charge'=>empty($values['extra_charge'])?0.00:$values['extra_charge'],
+                    'hotel'=> $hotel,
                     'memo'=>$values['wait_time_reason'],
                     'maintenance_memo'=>$values['maintenance_memo'],
                     'started_at'=> $job_started?->toDateTimeString(),

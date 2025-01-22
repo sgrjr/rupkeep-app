@@ -63,5 +63,38 @@
             <button wire:click="deleteJobs">Nuclear: Delete ALL Jobs + LOGS</button>
         </div>
         @endif
+
+        @if($jobs && count($jobs) > 0)
+        <div class="max-w-5xl m-auto p-2">
+                <table class="w-full border">
+                    <thead>
+                        <tr class="bg-gray-200">
+                            <th class="text-left">Job#</th>
+                            <th class="text-left"></th>
+                            <th class="text-left">Total Logs</th>
+                            <th class="text-left">Logs</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($jobs as $job)
+                            <tr class="border">
+                                <td><a class="underline" href="{{route('jobs.show', ['job'=>$job->id])}}">view: {{$job->job_no}}</a></td>
+                                <td>{{$job->customer?->name}}</td>
+                                <td>{{count($job->logs)}}</td>
+                               
+                                <td>
+                                    @foreach($job->logs as $log)
+                                    <p class="border">
+                                    <a class="underline" href="{{route('logs.edit', ['log'=>$log->id])}}">Log 
+                                    </a> &rarr; {{$log->memo}}
+                                    @endforeach
+                                    </p>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
     </main>
 </div>

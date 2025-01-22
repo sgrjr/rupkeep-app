@@ -224,6 +224,32 @@
                 </div>
                 @endif
 
+                @if(auth()->user()->can('createJob', $organization))
+                    <x-section-border />
+                    <div class="mt-10 sm:mt-0">
+                        <div class="md:grid md:grid-cols-3 md:gap-6" >
+                            <x-section-title>
+                                <x-slot name="title">{{ __('Upload Data from CSV') }}</x-slot>
+                                <x-slot name="description">{{ __('Upload job data from csv backup.') }}</x-slot>
+                            </x-section-title>
+
+                            <div class="mt-5 md:mt-0 md:col-span-2">
+                                <div class="px-4 py-5 bg-white dark:bg-gray-800 sm:p-6 shadow sm:rounded-tl-md sm:rounded-tr-md">
+                                    <div class="grid grid-cols-6 gap-6">
+                                    <form wire:submit="uploadFile">
+                                <input type="file" wire:model="file">
+                                @error('file') <span class="error">{{ $message }}</span> @enderror
+
+                                <x-action-message class="me-3" on="uploaded">
+                                    {{ __('File Uploaded.') }}
+                                </x-action-message>
+                                <button type="submit">Upload Data File</button>
+                            </form>
+                                   
+                        </div>
+                    </div>
+                @endif
+
         </div>
     </div>
 
