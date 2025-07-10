@@ -48,39 +48,90 @@
                 <div class="mt-10 sm:mt-0">
                     <div class="md:grid md:grid-cols-3 md:gap-6" >
                         <x-section-title>
-                            <x-slot name="title">{{ __('Organization Users') }} ({{count($organization->users)}})</x-slot>
-                            <x-slot name="description">{{ __('All '.$organization->name.' users.') }}</x-slot>
+                            <x-slot name="title">Organization Users ({{count($organization->users)}})</x-slot>
+                            <x-slot name="description">{{ 'All '.$organization->name.' users.' }}</x-slot>
                         </x-section-title>
 
-                        <div class="mt-5 md:mt-0 md:col-span-2">
-                            <div class="px-4 py-5 bg-white dark:bg-gray-800 sm:p-6 shadow {{ isset($actions) ? 'sm:rounded-tl-md sm:rounded-tr-md' : 'sm:rounded-md' }}">
-                                <table class="w-full">
+                        <div class="mt-5 ml-1 mr-1 md:mt-0 md:col-span-2">
+                            <div class="bg-white dark:bg-gray-800 sm:p-6 shadow {{ isset($actions) ? 'sm:rounded-tl-md sm:rounded-tr-md' : 'sm:rounded-md' }}">
+                               
+                                {{-- This div adds vertical space between user cards on mobile.
+                                    On medium screens and up (md:), it removes vertical space and allows horizontal scrolling for table-like behavior if needed. --}}
+
+                                <table class="hidden md:table w-full border-collapse">
+                                    {{-- This table is shown only on medium screens and up (md:) --}}
                                     <thead>
-                                        <tr class="bg-gray-100 border">
-                                            <th></th>
-                                            <th>name</th>
-                                            <th>contact</th>
-                                            <th>role</th>
+                                        <tr class="bg-gray-100 border-b border-gray-300">
+                                            <th class="p-3 text-left text-sm font-semibold text-gray-600">Name</th>
+                                            <th class="p-3 text-left text-sm font-semibold text-gray-600">Contact</th>
+                                            <th class="p-3 text-left text-sm font-semibold text-gray-600">Role</th>
+                                            <th class="p-3 text-left text-sm font-semibold text-gray-600">Notifications</th>
+                                            <th class="p-3 text-left text-sm font-semibold text-gray-600">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         @foreach($organization->users as $user)
-                                        <tr class="border">
-                                            <td>
-                                                @if(auth()->user()->can('createUser', $organization))
-                                                <a class="underline" href="{{ route('user.profile', ['user'=>$user->id]) }}">profile</a>
-                                                @endif
-                                                @can('impersonate', $user)
-                                                <a href="{{route('impersonate', ['user'=>$user->id])}}" class="underline">impersonate</a>
-                                                @endcan
+                                        <tr class="border-b border-gray-200 hover:bg-gray-50">
+                                            <td class="p-3 text-sm text-gray-800">{{ $user->name }}</td>
+                                            <td class="p-3 text-sm text-gray-800 break-all">{{ $user->email }}</td>
+                                            <td class="p-3 text-sm text-gray-800">{{ $user->organization_role }}</td>
+                                            <td class="p-3 text-sm text-gray-800 break-all">{{ $user->notification_address }}</td>
+                                            <td class="p-3 text-sm text-gray-800">
+                                                <div class="flex flex-wrap gap-2">
+                                                    @if(auth()->user()->can('createUser', $organization))
+                                                    <a class="underline text-blue-600 hover:text-blue-800" href="{{ route('user.profile', ['user'=>$user->id]) }}">Profile</a>
+                                                    @endif
+                                                    @can('impersonate', $user)
+                                                    <a href="{{route('impersonate', ['user'=>$user->id])}}" class="underline text-purple-600 hover:text-purple-800">Impersonate</a>
+                                                    @endcan
+                                                </div>
                                             </td>
-                                            <td>{{$user->name}}</td>
-                                            <td><b>login:</b> {{$user->email}} <br/> <b>notifications:</b> {{$user->notification_address}}</td>
-                                            <td>{{$user->organization_role}}</td>
                                         </tr>
                                         @endforeach
                                     </tbody>
                                 </table>
+
+                                <div class="md:hidden">
+                                    {{-- This div is shown only on mobile screens (hidden on medium screens and up) --}}
+                                    @foreach($organization->users as $user)
+                                    <div class="bg-white p-4 rounded-lg shadow-md border border-gray-200 mb-4">
+                                        {{-- Card for each user --}}
+                                        <h3 class="text-lg font-semibold text-gray-800 mb-2">{{ $user->name }}</h3>
+
+                                        <div class="mb-2">
+                                            <p class="text-sm text-gray-600">
+                                                <span class="font-bold">Login:</span>
+                                                <span class="break-all text-gray-800">{{ $user->email }}</span>
+                                            </p>
+                                        </div>
+
+                                        <div class="mb-2">
+                                            <p class="text-sm text-gray-600">
+                                                <span class="font-bold">Role:</span>
+                                                <span class="text-gray-800">{{ $user->organization_role }}</span>
+                                            </p>
+                                        </div>
+
+                                        <div class="mb-4">
+                                            <p class="text-sm text-gray-600">
+                                                <span class="font-bold">Notifications:</span>
+                                                <span class="break-all text-gray-800">{{ $user->notification_address }}</span>
+                                            </p>
+                                        </div>
+
+                                        <div class="flex flex-wrap gap-2 text-sm">
+                                            {{-- Actions --}}
+                                            @if(auth()->user()->can('createUser', $organization))
+                                            <a class="underline text-blue-600 hover:text-blue-800" href="{{ route('user.profile', ['user'=>$user->id]) }}">Profile</a>
+                                            @endif
+                                            @can('impersonate', $user)
+                                            <a href="{{route('impersonate', ['user'=>$user->id])}}" class="underline text-purple-600 hover:text-purple-800">Impersonate</a>
+                                            @endcan
+                                        </div>
+                                    </div>
+                                    @endforeach
+                                </div>
+
                             </div>
                         </div>
 

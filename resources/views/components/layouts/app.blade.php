@@ -26,7 +26,8 @@
         <x-banner />
 
         <div class="min-h-screen content-body">          
-            <x-navigation-menu></x-navigation-menu>
+            <!-- x-navigation-menu -->
+            <livewire:primary-navigation-menu />
             <!-- Page Heading -->
             @if (isset($header))
                 <header class="bg-white dark:bg-gray-800 shadow">

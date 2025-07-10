@@ -4,5 +4,7 @@
    @csrf
    <input type="hidden" name="_method" value="delete" />
    <input type="hidden" name="redirect_to_route" value="{{$redirect_to_route}}" />
-   <input class="text-red-500 border-red-500" type="submit" value="{{$title}}"/>
+   <button class="btn-base btn-action-danger" type="submit" value="{{$title}}">
+      <x-svg-delete/>{{$title}}
+   </button>
 </form>

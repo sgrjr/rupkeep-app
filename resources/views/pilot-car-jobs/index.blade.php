@@ -1,11 +1,21 @@
 @props(['redirect_to_root'=>false])
 <x-app-layout>
-    <div>
-        <div class="max-w-5xl mx-auto p-2">
+<div class="min-h-screen bg-gray-100 font-sans antialiased">
+    <div class="max-w-5xl mx-auto p-4 sm:p-6 lg:p-8">
 
-            <form class="m-auto w-full flex justify-center">
-                <input type="text" name="search_value"/>
-                <select name="search_field" >
+        <!-- Search Form -->
+        <form class="w-full flex flex-col sm:flex-row items-center justify-center gap-3 mb-6 p-4 bg-white rounded-lg shadow-md">
+            <input
+                type="text"
+                name="search_value"
+                placeholder="Search..."
+                class="w-full sm:w-auto flex-grow px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <div class="custom-select-wrapper w-full sm:w-auto">
+                <select
+                    name="search_field"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
                     <option value="has_customer_name">Customer Name</option>
                     <option value="job_no">Job #</option>
                     <option value="load_no">Load #</option>
@@ -17,58 +27,102 @@
                     <option value="is_not_paid">Is NOT Paid</option>
                     <option value="is_canceled">Is Canceled</option>
                 </select>
-                <button type="submit">search</button>
-            </form>
-            <h1 class="text-2xl font-bold text-center mb-2">
-                
+            </div>
+            <button
+                type="submit"
+                class="btn-base btn-primary"
+            >
+                Search
+            </button>
+        </form>
+
+        <!-- Customer Name and Job Count -->
+        <h1 class="text-3xl font-extrabold text-center text-gray-800 mb-6">
             @if($customer)
                 {{$customer->name}}
             @endif
-            Jobs: ({{count($jobs)}})</h1>
+            Jobs: ({{count($jobs)}})
+        </h1>
 
-            <div class="flex flex-wrap gap-2 justify-center md:grid md:grid-cols-3">
+        <!-- Jobs Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 space-2">
 
-                @foreach($jobs AS $j)
-                    <div class="card{{$j->invoice_paid < 1? ' unpaid-invoice':''}}">
-                        <div class="p-2">
-                        @can('viewAny', new \App\Models\Organization)
-                        <p><b>organization:</b> {{$j->organization->name}}</p>
-                        @endcan
-                        <p><span class="font-bold italic">job#:</span> <span class="font-normal">{{$j->job_no}}</span></p>
-                        <p><b>load#:</b> {{$j->load_no}}</p>
-                        @if($j->customer)
-                        <p><b>customer:</b> {{$j->customer->name}}</p>
-                        @endif
-                        <p><b>scheduled pickup:</b> {{$j->pickup_address}} @ {{$j->scheduled_pickup_at}}</p>
-                        <p><b>scheduled delivery:</b> {{$j->delivery_address}} @ {{$j->scheduled_delivery_at}}</p>
-                        <p><b>check_no:</b> {{$j->check_no}}</p>
-                        <p><b>invoice_paid:</b> {{$j->invoice_paid}}</p>
-                        <p><b>invoice#:</b> {{$j->invoice_no}}</p>
-                        <p><b>rate_code:</b> {{$j->rate_code}}</p>
-                        <p><b>rate_value:</b> {{$j->rate_value}}</p>
-                        @if($j->canceled_at)<p><b>canceled_at:</b> {{$j->canceled_at}}</p>@endif
-                        @if($j->canceled_reason)<p><b>canceled_reason:</b> {{$j->canceled_reason}}</p>@endif
-                        <p><b>memo:</b> 
-                            @if(str_starts_with($j->memo, 'http'))
-                                <a target="_blank" href="{!!$j->memo!!}" class="button">view invoice</a>
-                            @else
-                                {{$j->memo}}
+            @foreach($jobs AS $j)
+                <div class="
+                    bg-white rounded-lg shadow-lg overflow-hidden
+                    border-l-4
+                    {{$j->invoice_paid < 1 ? 'border-red-500' : 'border-green-500'}}
+                    hover:shadow-xl transition-shadow duration-300 ease-in-out
+                    flex flex-col
+                ">
+                    <div class="p-5 flex-grow">
+                        <!-- Job Header/Identifier -->
+                        <div class="mb-4 pb-3 border-b border-gray-200">
+                            <p class="text-lg font-bold text-gray-900 flex items-center justify-between">
+                                <span class="text-blue-700">Job #{{$j->job_no}}</span>
+                                @if($j->invoice_paid < 1)
+                                    <span class="text-sm font-semibold text-red-600 bg-red-100 px-2 py-1 rounded-full">UNPAID</span>
+                                @else
+                                    <span class="text-sm font-semibold text-green-600 bg-green-100 px-2 py-1 rounded-full">PAID</span>
+                                @endif
+                            </p>
+                            @if($j->customer)
+                                <p class="text-sm text-gray-600 mt-1">Customer: <span class="font-medium text-gray-800">{{$j->customer->name}}</span></p>
                             @endif
-                        </p>
+                        </div>
+
+                        <!-- Job Details -->
+                        <div class="space-y-2 text-sm text-gray-700">
+                            @can('viewAny', new \App\Models\Organization)
+                                <p><span class="font-semibold">Organization:</span> <span class="text-gray-800">{{$j->organization->name}}</span></p>
+                            @endcan
+                            <p><span class="font-semibold">Load #:</span> <span class="text-gray-800">{{$j->load_no}}</span></p>
+                            <p><span class="font-semibold">Scheduled Pickup:</span> <span class="text-gray-800">{{$j->pickup_address}} @ {{$j->scheduled_pickup_at}}</span></p>
+                            <p><span class="font-semibold">Scheduled Delivery:</span> <span class="text-gray-800">{{$j->delivery_address}} @ {{$j->scheduled_delivery_at}}</span></p>
+                            <p><span class="font-semibold">Invoice #:</span> <span class="text-gray-800">{{$j->invoice_no}}</span></p>
+                            <p><span class="font-semibold">Check #:</span> <span class="text-gray-800">{{$j->check_no}}</span></p>
+                            <p><span class="font-semibold">Rate Code:</span> <span class="text-gray-800">{{$j->rate_code}}</span></p>
+                            <p><span class="font-semibold">Rate Value:</span> <span class="text-gray-800">{{$j->rate_value}}</span></p>
+
+                            @if($j->canceled_at)
+                                <p class="text-red-600"><span class="font-semibold">Canceled At:</span> <span class="text-gray-800">{{$j->canceled_at}}</span></p>
+                            @endif
+                            @if($j->canceled_reason)
+                                <p class="text-red-600"><span class="font-semibold">Canceled Reason:</span> <span class="text-gray-800">{{$j->canceled_reason}}</span></p>
+                            @endif
+                            <p>
+                                <span class="font-semibold">Memo:</span>
+                                @if(str_starts_with($j->memo, 'http'))
+                                    <a target="_blank" href="{!!$j->memo!!}" class="text-blue-600 hover:text-blue-800 underline">view invoice</a>
+                                @else
+                                    <span class="text-gray-800">{{$j->memo}}</span>
+                                @endif
+                            </p>
+                        </div>
                     </div>
 
-                    <div class="card-actions">
+                    <!-- Card Actions -->
+                    <div class="flex flex-wrap justify-end flex-end gap-2 bg-gray-50 border-t border-gray-200">
+                        <a href="{{route('my.jobs.show', ['job'=>$j->id])}}" class="mr-4">
+                            View
+                        </a>
                         @if(auth()->user()->can('update', $j))
-                            <a href="{{route('my.jobs.edit', ['job'=>$j->id])}}" class="button">edit</a>
+                            <a href="{{route('my.jobs.edit', ['job'=>$j->id])}}" class="mr-4">
+                                Edit
+                            </a>
                         @endif
                         @if(auth()->user()->can('delete', $j))
-                            <x-delete-form class="inline-block underline" action="{{route('my.jobs.destroy', parameters: ['job'=> $j->id])}}" title="delete" redirect_to_route="{{$redirect_to_root}}"/>
+                            <livewire:delete-confirmation-button
+                                :action-url="route('my.jobs.destroy', parameters: ['job'=> $j->id])"
+                                button-text=""
+                                :redirect-route="$redirect_to_root"
+                            />
                         @endif
-
-                        <a href="{{route('my.jobs.show', ['job'=>$j->id])}}" class="button">view</a>
                     </div>
                 </div>
+
             @endforeach
         </div>
     </div>
+</div>
 </x-app-layout>

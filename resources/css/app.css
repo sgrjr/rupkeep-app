@@ -94,9 +94,12 @@ body {
     color: var(--main-text-color);
   }
 
-select {
-    background:inherit;
+a {
+    color: var(--primary-blue);
+    text-decoration: underline;
 }
+
+
 
 button, .dropdown-link a, .dropdown-link button, input:where([type='submit']), .button {
     border:solid 1px var(--button-border-color);
@@ -106,6 +109,7 @@ button, .dropdown-link a, .dropdown-link button, input:where([type='submit']), .
     padding-right:2rem;
     padding-top: .3rem;
     padding-bottom: .3rem;
+    border-radius: 3px;
 }
 
 button:hover, .dropdown-link a:hover, .dropdown-link button:hover, input:where([type='submit']):hover, .button:hover {
@@ -469,3 +473,150 @@ form.pretty-form .group {
 form.pretty-form .group label{
     font-weight: bold;
 }
+
+.danger-button {
+    color: var(--white);
+    background-color: #E64A19;
+    border: solid 1px #E64A19;
+}
+
+.danger-button:hover {
+    color: var(--white);
+    background-color: darkred;
+    border: solid 1px darkred;
+}
+.danger-button:focus {
+    color: var(--white);
+    background-color: darkred;
+    border: solid 1px darkred;
+}
+
+.danger-theme {
+    color: #E64A19;
+    stroke: #E64A19;
+    border: none
+}
+
+/* Base button styles */
+.btn-base {
+    @apply p-2 rounded-md shadow-sm transition duration-300 ease-in-out font-semibold text-white;
+}
+
+/* Primary button style (for Search) */
+.btn-primary {
+    @apply bg-[#f9b104] hover:bg-[#e6a000]; /* Using the specified primary color */
+}
+
+/* Action button base style (smaller text) */
+.btn-a_ction {
+    @apply text-sm;
+}
+
+/* Primary action button style (for View) */
+.btn-action-primary {
+    @apply bg-[#f9b104] hover:bg-[#e6a000]; /* Using the specified primary color */
+}
+
+/* Warning action button style (for Edit) */
+.btn-action-warning {
+    @apply bg-[#4CAF50] hover:bg-yellow-600;
+}
+
+/* Danger action button style (for Delete) */
+.btn-action-danger {
+    @apply hover:bg-red-600;
+    background-color: #E64A19;
+    stroke: white;
+}
+
+/* Select input styles */
+select {
+    background:inherit;
+}
+
+ /* Custom styles for select dropdown indicator */
+.custom-select-wrapper {
+    @apply relative;
+}
+
+.custom-select-wrapper::after {
+    content: '▼'; /* Unicode down arrow */
+    @apply absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none;
+}
+
+.custom-select-wrapper select {
+    /* Hide default arrow in some browsers */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    /* Add padding to prevent text from overlapping the custom arrow */
+    @apply pr-10;
+}
+
+/* Custom styles for Table */
+ /* Table specific styles for mobile readability */
+.responsive-table {
+    @apply w-full text-left border-collapse; /* Base table styles */
+}
+.responsive-table th, .responsive-table td {
+    @apply p-3 border border-gray-300; /* Cell padding and borders */
+}
+.responsive-table thead {
+    @apply bg-gray-200; /* Header background */
+}
+
+/* Table specific styles for mobile readability */
+    .responsive-table {
+        @apply w-full text-left border-collapse; /* Base table styles */
+    }
+    .responsive-table th, .responsive-table td {
+        @apply p-3 border border-gray-300; /* Cell padding and borders */
+    }
+    .responsive-table thead {
+        @apply bg-gray-200; /* Header background */
+    }
+    /* Make table cells stack on very small screens if needed, though a scroll is often better for tables */
+    @media (max-width: 640px) {
+        .responsive-table th, .responsive-table td {
+            @apply block;
+        }
+        .responsive-table tr {
+            @apply block mb-4 border border-gray-300 rounded-lg;
+        }
+        .responsive-table td:before {
+            content: attr(data-label);
+            @apply font-bold mr-2 inline-block w-24;
+        }
+        .responsive-table thead {
+            @apply hidden; /* Hide header on small screens when stacking */
+        }
+    }
+
+    /* Custom styling for input groups */
+    .input-group {
+        @apply bg-gray-50 p-4 rounded-md border border-gray-200;
+    }
+    .input-group label {
+        @apply block text-sm font-semibold text-gray-700 mb-1;
+    }
+    .input-group input[type="text"],
+    .input-group input[type="number"],
+    .input-group input[type="datetime-local"],
+    .input-group textarea,
+    .input-group select {
+        @apply w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500;
+    }
+    .input-group input[type="checkbox"] {
+        @apply h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500;
+    }
+    .input-group .error-message {
+        @apply text-red-500 text-xs mt-1;
+    }
+
+    #user_log_form input[type=text],
+    #user_log_form input[type=number],
+    #user_log_form input[type=datetime-local],
+    #user_log_form textarea,
+    #user_log_form select {
+        width:100%; /* Ensure full width for these inputs */
+    }
