@@ -20,12 +20,20 @@
     </head>
     <body class="theme-base antialiased {{ auth()->user()->dashboard_theme }}">
 
-        @if(Session::has('message'))
-        <p class="alert alert-info alert-dismissable fixed top-0 right-0">{{ Session::get('message') }}</p>
-        @endif
         <x-banner />
 
         <div class="relative min-h-screen">
+            @php
+                $toastMessages = collect([
+                    ['type' => 'success', 'message' => session('success')],
+                    ['type' => 'error', 'message' => session('error')],
+                    ['type' => 'warning', 'message' => session('warning')],
+                    ['type' => 'info', 'message' => session('message')],
+                ])->filter(fn ($toast) => filled($toast['message']))->values()->all();
+            @endphp
+
+            <x-toast-stack :toasts="$toastMessages" />
+
             <div class="min-h-screen content-body flex flex-col">
                 <!-- x-navigation-menu -->
                 <livewire:primary-navigation-menu />

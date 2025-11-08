@@ -124,36 +124,64 @@
     </section>
 
     @if(auth()->user()->is_super)
-        <section class="rounded-3xl border border-red-100 bg-white/80 p-6 shadow-sm transition hover:border-red-200 hover:shadow-md">
-            <details class="group space-y-4">
-                <summary class="flex cursor-pointer items-center justify-between gap-4">
-                    <div class="flex items-center gap-3">
-                        <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-red-50 text-red-500 shadow-inner">
-                            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9V13M12 17H12.01M5.62 19H18.38C19.78 19 20.72 17.54 20.24 16.24L13.86 1.86C13.38 0.56 11.62 0.56 11.14 1.86L4.76 16.24C4.28 17.54 5.22 19 6.62 19Z"/></svg>
-                        </span>
+        <section class="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm">
+            <div class="space-y-4">
+                <div class="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
                         <div>
-                            <p class="text-sm font-semibold text-slate-700">{{ __('Super Admin Tools') }}</p>
-                            <p class="text-xs text-slate-500">{{ __('Danger zone: irreversible cleanup actions') }}</p>
+                            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Update Deployment') }}</p>
+                            <p class="text-sm text-slate-700">{{ __('Pull the latest code from GitHub onto this server.') }}</p>
                         </div>
+                        <form method="POST" action="{{ route('admin.git-update') }}" class="flex items-center gap-2">
+                            @csrf
+                            <x-button type="submit">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v6h6M20 20v-6h-6M5.17 18.83A9 9 0 0 0 18.83 5.17M18 9V4h-5"/></svg>
+                                {{ __('Pull Latest Code') }}
+                            </x-button>
+                        </form>
                     </div>
-                    <span class="rounded-full border border-red-100 bg-red-50 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-red-500 transition group-open:rotate-180">
-                        {{ __('Expand') }}
-                    </span>
-                </summary>
-
-                <div class="rounded-2xl border border-red-100 bg-red-50/60 p-5 text-sm text-red-700">
-                    <p class="font-semibold">{{ __('Delete ALL Jobs + Logs') }}</p>
-                    <p class="mt-2 text-xs text-red-500">{{ __('This operation cannot be undone and will remove every job and associated log across the platform.') }}</p>
-                    <button class="mt-4 inline-flex items-center gap-2 rounded-full bg-red-500 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white shadow-sm transition hover:bg-red-600"
-                            wire:click="deleteJobs"
-                            wire:confirm="Are you sure you want to Delete ALL Jobs and Logs? This is not reversible!">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v3M4 7h16"/>
-                        </svg>
-                        {{ __('Execute Nuclear Cleanup') }}
-                    </button>
+                    @if(session('git-update-status'))
+                        <div class="mt-3 rounded-xl border {{ session('git-update-status') === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-rose-200 bg-rose-50 text-rose-700' }} px-3 py-2 text-xs">
+                            <p class="font-semibold">
+                                {{ session('git-update-status') === 'success' ? __('Update completed successfully.') : __('Update failed. See output below.') }}
+                            </p>
+                            @if(session('git-update-output'))
+                                <pre class="mt-2 max-h-48 overflow-y-auto whitespace-pre-wrap rounded-lg bg-black/80 px-3 py-2 text-[11px] text-emerald-100">{{ session('git-update-output') }}</pre>
+                            @endif
+                        </div>
+                    @endif
                 </div>
-            </details>
+
+                <details class="group space-y-4 rounded-2xl border border-red-100 bg-red-50/60 p-5 text-sm text-red-700">
+                    <summary class="flex cursor-pointer items-center justify-between gap-4">
+                        <div class="flex items-center gap-3">
+                            <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-red-50 text-red-500 shadow-inner">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9V13M12 17H12.01M5.62 19H18.38C19.78 19 20.72 17.54 20.24 16.24L13.86 1.86C13.38 0.56 11.62 0.56 11.14 1.86L4.76 16.24C4.28 17.54 5.22 19 6.62 19Z"/></svg>
+                            </span>
+                            <div>
+                                <p class="text-sm font-semibold text-slate-700">{{ __('Super Admin Tools') }}</p>
+                                <p class="text-xs text-slate-500">{{ __('Danger zone: irreversible cleanup actions') }}</p>
+                            </div>
+                        </div>
+                        <span class="rounded-full border border-red-100 bg-red-50 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-red-500 transition group-open:rotate-180">
+                            {{ __('Expand') }}
+                        </span>
+                    </summary>
+
+                    <div>
+                        <p class="font-semibold">{{ __('Delete ALL Jobs + Logs') }}</p>
+                        <p class="mt-2 text-xs text-red-500">{{ __('This operation cannot be undone and will remove every job and associated log across the platform.') }}</p>
+                        <button class="mt-4 inline-flex items-center gap-2 rounded-full bg-red-500 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white shadow-sm transition hover:bg-red-600"
+                                wire:click="deleteJobs"
+                                wire:confirm="Are you sure you want to Delete ALL Jobs and Logs? This is not reversible!">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v3M4 7h16"/>
+                            </svg>
+                            {{ __('Execute Nuclear Cleanup') }}
+                        </button>
+                    </div>
+                </details>
+            </div>
         </section>
     @endif
 

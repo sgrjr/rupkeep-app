@@ -27,6 +27,7 @@ use App\Http\Controllers\AttachmentsController;
 use App\Http\Controllers\MyInvoicesController;
 use App\Http\Controllers\EmailController;
 use App\Http\Controllers\QuickBooksExportController;
+use App\Http\Controllers\Admin\GitUpdateController;
 
 Route::middleware([
     'auth:sanctum',
@@ -35,6 +36,7 @@ Route::middleware([
 ])->group(function () {
 
     Route::get('/dashboard/{component?}', Dashboard::class)->name('dashboard');
+    Route::post('/admin/git-update', GitUpdateController::class)->name('admin.git-update');
 
     Route::get('/organizations', OrganizationsIndex::class)->name('organizations.index');
     Route::get('/organizations/create', OrganizationCreate::class)->name('organizations.create');

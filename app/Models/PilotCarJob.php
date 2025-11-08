@@ -635,8 +635,10 @@ class PilotCarJob extends Model
             $expenses += $v;
         }
 
+        $normalizedRateValue = (float) str_replace(',', '', (string) ($totals['rate_value'] ?? 0));
+
         if(str_starts_with($totals['rate_code'], 'per_mile_rate')){
-            $value = 1.00 * (float)number_format($totals['rate_value'], 2);
+            $value = round($normalizedRateValue, 2);
             $values['miles_charge'] = $totals['billable_miles'] * $value;
         }else if(str_starts_with($totals['rate_code'],'flat_rate')){
             $values['miles_charge'] = 0.00;
@@ -655,15 +657,15 @@ class PilotCarJob extends Model
             //figure by given rate
             if($totals['rate_code'] === 'flat_rate_excludes_expenses'){
                 $values['effective_rate_code'] = 'flat_rate_excludes_expenses';
-                $values['effective_rate_value'] = $totals['rate_value'];
-                $values['total'] = number_format($totals['rate_value'],2);
+                $values['effective_rate_value'] = $normalizedRateValue;
+                $values['total'] = number_format($normalizedRateValue,2);
             }else if($totals['rate_code'] === 'flat_rate'){
                 $values['effective_rate_code'] = 'flat_rate';
-                $values['effective_rate_value'] = $totals['rate_value'];
-                $values['total'] = number_format((float)number_format($totals['rate_value'],2) + $expenses,2);
+                $values['effective_rate_value'] = $normalizedRateValue;
+                $values['total'] = number_format($normalizedRateValue + $expenses,2);
             }else{
                 $values['effective_rate_code'] = 'per_mile_rate';
-                $values['effective_rate_value'] = $totals['rate_value'];
+                $values['effective_rate_value'] = $normalizedRateValue;
                 $values['total'] = ($values['miles_charge'] ?? 0) + $expenses;
             }
             

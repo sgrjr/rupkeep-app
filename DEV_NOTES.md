@@ -26,3 +26,10 @@
   - Add `-Follow` to stream (`-Follow`) and `-Contains "text"` to filter lines.
 - Stack traces trimmed to first `LOG_STACKTRACE_LIMIT` frames (default 12). Adjust via env var if needed.
 - In PowerShell use `;` for command chaining: `cd C:\inetpub\wwwroot\rupkeep-app; php artisan test`
+- Server Git update (discard local state and pull latest from GitHub):
+  ```bash
+  git fetch origin
+  git reset --hard origin/master
+  git clean -fd    # optional: removes untracked files/dirs
+  ```
+  *Alternatively set a pull strategy, e.g. `git config pull.rebase false`, before running `git pull` if you prefer merges.*
