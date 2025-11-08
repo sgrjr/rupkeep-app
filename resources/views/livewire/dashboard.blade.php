@@ -8,7 +8,7 @@
 @endphp
 
 <div id="dashboard" class="space-y-10">
-    <section class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-orange-500 via-orange-400 to-orange-300 p-8 text-white shadow-2xl">
+    <section class="relative overflow-hidden bg-gradient-to-r from-orange-500 via-orange-400 to-orange-300 p-8 text-white shadow-2xl">
         <div class="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.25),_transparent_60%)] opacity-70"></div>
         <div class="relative flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
             <div class="space-y-3">
