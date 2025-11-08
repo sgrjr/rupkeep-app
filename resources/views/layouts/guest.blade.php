@@ -19,7 +19,11 @@
     </head>
     <body class="welcome {{true || request()->has('customer_id')? 'dark-theme':'default-theme'}}">
         <div>
-            {{ $slot }}
+            @isset($slot)
+                {{ $slot }}
+            @else
+                @yield('content')
+            @endisset
         </div>
         @livewireScripts
     </body>

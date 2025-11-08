@@ -47,24 +47,24 @@
     --main-background-color: #172232;
     --alt-background-color:white;
     --main-text-color: #172232;
-    --button-border-color: #dddddd;
-    --button-border-color-hover: #dddddd;
-    --button-background-color: white;
-    --button-background-color-hover: #dddddd;
-    --button-text-color: #172232;
-    --button-text-color-hover: #172232;
+    --button-border-color: transparent;
+    --button-border-color-hover: transparent;
+    --button-background-color: transparent;
+    --button-background-color-hover: transparent;
+    --button-text-color: inherit;
+    --button-text-color-hover: inherit;
 }
 
 :root .default-theme {
     --white: white;
     --main-background-color: white;
     --main-text-color: #172232;
-    --button-border-color: var(--primary-orange);
-    --button-border-color-hover: #dddddd;
-    --button-background-color: white;
-    --button-background-color-hover: var(--primary-orange);
-    --button-text-color: #172232;
-    --button-text-color-hover: white;
+    --button-border-color: transparent;
+    --button-border-color-hover: transparent;
+    --button-background-color: transparent;
+    --button-background-color-hover: transparent;
+    --button-text-color: inherit;
+    --button-text-color-hover: inherit;
     --alt-background-color:white;
 }
 
@@ -87,12 +87,21 @@
 }
 
 body {
-    font-size:18pt;
+    font-size: 16px;
     font-weight: 400;
     font-style: normal;
+    line-height: 1.6;
     background-color: var(--main-background-color);
     color: var(--main-text-color);
-  }
+}
+
+.theme-base {
+    background-color: #f8fafc;
+}
+
+.theme-base main {
+    padding-bottom: 4rem;
+}
 
 a {
     color: var(--primary-blue);
@@ -102,20 +111,18 @@ a {
 
 
 button, .dropdown-link a, .dropdown-link button, input:where([type='submit']), .button {
-    border:solid 1px var(--button-border-color);
-    background-color: var(--button-background-color);
-    color: var(--button-text-color);
-    padding-left:2rem;
-    padding-right:2rem;
+    border: none;
+    border-radius: 3px;
+    padding-left: 2rem;
+    padding-right: 2rem;
     padding-top: .3rem;
     padding-bottom: .3rem;
-    border-radius: 3px;
+    background: inherit;
+    color: inherit;
 }
 
 button:hover, .dropdown-link a:hover, .dropdown-link button:hover, input:where([type='submit']):hover, .button:hover {
-    border:solid 1px var(--button-border-color-hover);
-    background-color: var(--button-background-color-hover);
-    color: var(--button-text-color-hover);
+    text-decoration: none;
 }
 
 input:where([type='submit']):hover {
@@ -155,30 +162,22 @@ input:where([type='submit']):hover {
 }
 
 .menu-drop-down {
-/*border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-700 focus:outline-none focus:text-gray-700 dark:focus:text-gray-300 focus:border-gray-300 dark:focus:border-gray-700*/
-    border:none;
+    border: none;
     display: inline-flex;
-    justify-content: center;
-    padding-right:2px;
-    padding-top:2px;
-    border-bottom: solid 1px var(--light-gray);
-    height: 100%;
-    padding:0;
-    margin:0;
-    background-color: inherit;
+    align-items: center;
+    padding: 0;
+    margin: 0;
+    background-color: transparent;
 }
 
-.menu-drop-down.active-menu-drop-down {
-        border:none;
-    }
-    
 .menu-drop-down .menu-drop-down-content {
-        background-color: var(--white);
-        border: var(--light-gray)
-    }
-    
+    background-color: #ffffff;
+    border: none;
+    box-shadow: 0 20px 45px -20px rgba(15, 23, 42, 0.35);
+}
+
 .menu-drop-down .menu-drop-down-content a:hover {
-        color: var(--primary-orange);
+    color: var(--primary-orange);
 }
 
 .impersonation-bar {
@@ -190,9 +189,6 @@ input:where([type='submit']):hover {
 
 /* nav-link */
 
-.nav-link.active-nav-link, .menu-drop-down.active-menu-drop-down {
-    border-bottom: solid 2px var(--primary-orange);
-}
 
 /* Default Theme */
 .default-theme .card-actions {
@@ -222,8 +218,8 @@ input:where([type='submit']):hover {
 }
 
 .default-theme .primary-navigation-menu {
-    background:var(--white);
-    border-bottom: solid 1px var(--light-gray);
+    background: transparent;
+    border-bottom: none;
 }
 
 .default-theme .impersonation-bar {
@@ -280,24 +276,7 @@ input:where([type='submit']):hover {
 }
 
 .dark-theme .primary-navigation-menu {
-    border-bottom: solid 1px var(--white);
-}
-
-.dark-theme .primary-navigation-menu a, .dark-theme .primary-navigation-menu p {
-    color:var(--white);
-}
-
-.dark-theme .menu-drop-down.active-menu-drop-down {
-    color:black
-}
-
-.dark-theme .menu-drop-down .menu-drop-down-content {
-    background-color: var(--main-background-color);
-}
-
-.dark-theme .menu-drop-down .menu-drop-down-content a:hover {
-    background-color: var(--white);
-    color:black;
+    border-bottom: none;
 }
 
 .dark-theme .dropdown-link a, .dropdown-link button {

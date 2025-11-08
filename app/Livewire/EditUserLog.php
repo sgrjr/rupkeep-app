@@ -41,6 +41,9 @@ class EditLogForm extends Form
 
     public $end_job_mileage = null;
 
+    #[Validate('nullable|numeric|min:0')]
+    public $billable_miles = null;
+
     // These are booleans from the form, will convert to 0/1 for DB
     #[Validate('nullable|boolean')]
     public $load_canceled = false;
@@ -140,6 +143,7 @@ class EditUserLog extends Component
             'end_mileage' => $this->log->end_mileage,
             'start_job_mileage' => $this->log->start_job_mileage,
             'end_job_mileage' => $this->log->end_job_mileage,
+            'billable_miles' => $this->log->billable_miles,
             'load_canceled' => (bool)$this->log->load_canceled,
             'extra_charge' => $this->log->extra_charge,
             'is_deadhead' => (bool)$this->log->is_deadhead,
@@ -215,6 +219,10 @@ class EditUserLog extends Component
             $updateData['is_deadhead'] = $this->form->is_deadhead ? 1 : 0;
             $updateData['pretrip_check'] = $this->form->pretrip_check ? 1 : 0;
 
+            if (array_key_exists('billable_miles', $updateData)) {
+                $updateData['billable_miles'] = $this->normalizeMiles($updateData['billable_miles']);
+            }
+
             $this->log->update($updateData);
 
             $this->dispatch('saved');
@@ -225,6 +233,21 @@ class EditUserLog extends Component
         } catch (\Exception $e) {
             session()->flash('error', 'An unexpected error occurred while saving: ' . $e->getMessage());
         }
+    }
+
+    protected function normalizeMiles($value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $normalized = preg_replace('/[^0-9\.\-]/', '', (string) $value);
+
+        if ($normalized === '' || ! is_numeric($normalized)) {
+            return null;
+        }
+
+        return number_format((float) $normalized, 2, '.', '');
     }
 
     public function uploadFile()

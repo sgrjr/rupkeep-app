@@ -36,7 +36,7 @@ class OrganizationPolicy
      */
     public function update(User $user, Organization $organization): bool
     {
-        return ($user->organization_id === $organization->id && $user->organization_role === 'administrator') || $user->is_super;
+        return ($user->organization_id === $organization->id && $user->isAdmin()) || $user->is_super;
     }
 
     /**
@@ -73,27 +73,27 @@ class OrganizationPolicy
     
     public function createUser(User $user, Organization $organization): bool
     {
-        return ($user->organization_id === $organization->id && $user->organization_role === 'administrator') || $user->is_super;
+        return ($user->organization_id === $organization->id && $user->isAdmin()) || $user->is_super;
     }
 
     public function createJob(User $user, Organization $organization): bool
     {
-        return ($user->organization_id === $organization->id && $user->organization_role === 'administrator') || $user->is_super;
+        return ($user->organization_id === $organization->id && ($user->isAdmin() || $user->isManager())) || $user->is_super;
     }
 
     public function createCustomer(User $user, Organization $organization): bool
     {
-        return ($user->organization_id === $organization->id && $user->organization_role === 'administrator') || $user->is_super;
+        return ($user->organization_id === $organization->id && ($user->isAdmin() || $user->isManager())) || $user->is_super;
     }
 
     public function createVehicle(User $user, Organization $organization): bool
     {
-        return ($user->organization_id === $organization->id && $user->organization_role === 'administrator') || $user->is_super;
+        return ($user->organization_id === $organization->id && ($user->isAdmin() || $user->isManager())) || $user->is_super;
     }
 
     public function work(User $user, Organization $organization): bool
     {
-        return ($user->organization_id === $organization->id && $user->organization_role === 'driver');
+        return $user->organization_id === $organization->id && $user->isEmployee();
     }
 
     public function resetOrganization(User $user, Organization $organization): bool

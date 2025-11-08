@@ -10,6 +10,7 @@ use App\Actions\Jetstream\InviteTeamMember;
 use App\Actions\Jetstream\RemoveTeamMember;
 use App\Actions\Jetstream\UpdateTeamName;
 use Illuminate\Support\ServiceProvider;
+use App\Models\User;
 use Laravel\Jetstream\Jetstream;
 use App\Livewire\UpdateProfileInformationForm;
 use App\Livewire\UpdatePasswordForm;
@@ -51,17 +52,26 @@ class JetstreamServiceProvider extends ServiceProvider
     {
         Jetstream::defaultApiTokenPermissions(['read']);
 
-        Jetstream::role('admin', 'Administrator', [
+        Jetstream::role(User::ROLE_ADMIN, User::ROLE_LABELS[User::ROLE_ADMIN], [
             'create',
             'read',
             'update',
             'delete',
-        ])->description('Administrator users can perform any action.');
+        ])->description('Administrators can perform any action, including managing users.');
 
-        Jetstream::role('editor', 'Editor', [
+        Jetstream::role(User::ROLE_EMPLOYEE_MANAGER, User::ROLE_LABELS[User::ROLE_EMPLOYEE_MANAGER], [
             'read',
             'create',
             'update',
-        ])->description('Editor users have the ability to read, create, and update.');
+        ])->description('Managers can read, create, and update records within their organization.');
+
+        Jetstream::role(User::ROLE_EMPLOYEE_STANDARD, User::ROLE_LABELS[User::ROLE_EMPLOYEE_STANDARD], [
+            'read',
+            'work',
+        ])->description('Standard employees can work assigned jobs and submit logs.');
+
+        Jetstream::role(User::ROLE_CUSTOMER, User::ROLE_LABELS[User::ROLE_CUSTOMER], [
+            'view_invoices',
+        ])->description('Customers can view and comment on their invoices.');
     }
 }

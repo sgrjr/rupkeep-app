@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\User;
 use App\Models\Customer;
@@ -12,6 +13,7 @@ class Organization extends Model
 {
 
     use SoftDeletes;
+    use HasFactory;
 
     protected $fillable = [
         'name',
@@ -71,38 +73,45 @@ class Organization extends Model
     }
 
     public function createUser($input){
+        $role = $input['organization_role'] ?? $input['role'] ?? User::ROLE_ADMIN;
+
         $user = User::create([
             'name' => $input['name'],
             'email' => $input['email'],
             'password' => Hash::make($input['password']),
             'organization_id' => $this->id,
-            'organization_role' => array_key_exists('organization_role', $input)? $input['organization_role']:'administrator'
+            'organization_role' => $role
         ]);
 
         return $user;
     }
 
     public static function roles(){
-       return [[
-        'id'=>'admin', 
-        'name'=>'Administrator', 
-        'permissions'=>[
-            'create',
-            'read',
-            'update',
-            'delete',
-       ],
-       'description'=> 'Administrator users can perform any action.'
-    ],[
-        'id'=>'editor', 
-        'name'=>'Editor', 
-        'permissions'=>[
-            'read',
-            'create',
-            'update',
-       ],
-       'description'=> 'Editor users have the ability to read, create, and update.'
-    ]];
-    
+       return [
+            [
+                'id' => User::ROLE_ADMIN,
+                'name' => User::ROLE_LABELS[User::ROLE_ADMIN],
+                'permissions' => ['create', 'read', 'update', 'delete'],
+                'description' => 'Administrators can perform any action.',
+            ],
+            [
+                'id' => User::ROLE_EMPLOYEE_MANAGER,
+                'name' => User::ROLE_LABELS[User::ROLE_EMPLOYEE_MANAGER],
+                'permissions' => ['read', 'create', 'update'],
+                'description' => 'Managers can read, create, and update records.',
+            ],
+            [
+                'id' => User::ROLE_EMPLOYEE_STANDARD,
+                'name' => User::ROLE_LABELS[User::ROLE_EMPLOYEE_STANDARD],
+                'permissions' => ['work'],
+                'description' => 'Standard employees/drivers can complete assigned jobs.',
+            ],
+            [
+                'id' => User::ROLE_CUSTOMER,
+                'name' => User::ROLE_LABELS[User::ROLE_CUSTOMER],
+                'permissions' => ['view_invoices'],
+                'description' => 'Customers can view and comment on their invoices.',
+            ],
+        ];
     }
 }

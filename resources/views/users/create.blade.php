@@ -33,9 +33,11 @@
                 <!-- Role -->
                 <div class="col-span-6 sm:col-span-4">
                     <x-label for="organization_role" value="{{ __('Organization Role') }}" />
-                    <select id="organization_role" name="organization_role" class="mt-1 block w-full" value="{{$user->organization_role}}"  >
+                    <select id="organization_role" name="organization_role" class="mt-1 block w-full">
                         @foreach($roles as $role)
-                        <option value="{{$role['id']}}">{{$role['name']}} ({{$role['short_description']}})</option>
+                        <option value="{{$role['id']}}" @selected($user->organization_role === $role['id'])>
+                            {{$role['name']}} ({{$role['short_description']}})
+                        </option>
                         @endforeach
                     </select>
                     <x-input-error for="organization_role" class="mt-2" />

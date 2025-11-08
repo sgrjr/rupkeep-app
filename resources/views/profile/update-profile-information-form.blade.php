@@ -94,7 +94,7 @@
         <div class="col-span-6 sm:col-span-4">
             <x-label for="theme" value="{{ __('Theme/Color Scheme') }}" />
             <select id="theme" class="mt-1 block w-full" wire:model="state.theme" >
-                @foreach($themes as $theme)
+                @foreach($this->themes as $theme)
                 <option value="{{$theme->value}}">{{$theme->title}}</option>
                 @endforeach
             </select>
@@ -105,7 +105,7 @@
         <div class="col-span-6 sm:col-span-4">
             <x-label for="organization_role" value="{{ __('Organization Role') }}" />
             <select id="organization_role" class="block mt-1 w-full" name="organization_role"  wire:model="state.organization_role">
-                @foreach($roles as $role)
+                @foreach($this->roles as $role)
                 <option value="{{$role['id']}}">{{$role['name']}} ({{$role['short_description']}})</option>
                 @endforeach
             </select>

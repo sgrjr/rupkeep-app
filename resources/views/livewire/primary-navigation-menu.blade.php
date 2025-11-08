@@ -1,159 +1,196 @@
-<nav x-data="{ open: false }" class="primary-navigation-menu">
-    <!-- Impersonation Bar (if session()->get('impersonate') is true) -->
+<nav x-data="{ open: false }" class="primary-navigation-menu sticky top-0 z-40">
     @if(session()->has('impersonate') && session()->get('impersonate'))
-        {{-- The 'impersonation-bar' class from app.css handles background and text --}}
-        <div class="impersonation-bar p-2 text-center text-sm font-semibold">
-            {{ __('You are currently impersonating: ') }} {{ session()->get('impersonate') }}
+        <div class="bg-slate-900 text-orange-100 text-xs tracking-wide">
+            <div class="mx-auto flex max-w-7xl items-center justify-center gap-2 px-4 py-2 sm:px-6 lg:px-8">
+                <span class="inline-flex items-center justify-center rounded-full bg-orange-400/90 px-2 py-0.5 text-[10px] font-semibold uppercase text-slate-900">
+                    {{ __('Impersonating') }}
+                </span>
+                <span class="font-medium">{{ session()->get('impersonate') }}</span>
+            </div>
         </div>
     @endif
 
-    <!-- Primary Navigation Menu -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
-            <div class="flex">
-                <!-- Logo -->
-                <div class="max-w-64 flex items-center">
-                    <a href="{{ route('dashboard') }}">
-                        <img src="{{ Auth::user()->organization->logo }}" class="block h-9 w-auto" alt="{{ Auth::user()->organization->name }} Logo" />
-                    </a>
-                </div>
-                <!-- Navigation Links (Desktop) -->
-                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex relative">
-                    {{-- x-nav-link component is assumed to apply 'nav-link' class internally,
-                         and its active state is handled by '.nav-link.active-nav-link' in app.css.
-                         No explicit text-white/hover classes needed here if nav-link handles it. --}}
-                    <x-nav-link href="{{ route('dashboard') }}" :active="request()->routeIs('dashboard')">
-                        {{ __('Dashboard') }}
-                    </x-nav-link>
-
-                    @if(auth()->user()->can('createJob', auth()->user()->organization))
-                        {{-- x-dropdown is assumed to apply 'menu-drop-down' to its trigger internally --}}
-                        <x-dropdown :active="request()->routeIs('my.jobs.*')">
-                            <x-slot name="trigger">
-                                {{-- The <p> tag here will inherit color from .primary-navigation-menu p in app.css --}}
-                                <p>{{ __('Jobs') }}</p>
-                            </x-slot>
-
-                            <x-slot name="content">
-                                {{-- x-dropdown-link is assumed to apply 'dropdown-link' class internally --}}
-                                <x-dropdown-link href="{{ route('my.jobs.index') }}">
-                                    {{ __('Jobs Search') }}
-                                </x-dropdown-link>
-                                <div class="border-t border-gray-200 dark:border-gray-600"></div>
-                                <x-dropdown-link href="{{ route('my.jobs.create') }}">
-                                    {{ __('+Create New') }}
-                                </x-dropdown-link>
-                            </x-slot>
-                        </x-dropdown>
-                    @endif
-
-                    @if(auth()->user()->can('createCustomer', auth()->user()->organization))
-                        <x-dropdown :active="request()->routeIs('my.customers.*')">
-                            <x-slot name="trigger">
-                                <p>{{ __('Customers') }}</p>
-                            </x-slot>
-                            <x-slot name="content">
-                                <x-dropdown-link href="{{ route('my.customers.index') }}">
-                                    {{ __('Customers Search') }}
-                                </x-dropdown-link>
-                                <div class="border-t border-gray-200 dark:border-gray-600"></div>
-                                <x-dropdown-link href="{{ route('my.customers.create') }}">
-                                    {{ __('+Create New') }}
-                                </x-dropdown-link>
-                            </x-slot>
-                        </x-dropdown>
-                    @endif
-
-                    @if(auth()->user()->can('createUser', auth()->user()->organization))
-                        <x-dropdown :active="request()->routeIs('my.users.*')">
-                            <x-slot name="trigger">
-                                <p>{{ __('Users') }}</p>
-                            </x-slot>
-                            <x-slot name="content">
-                                <x-dropdown-link href="{{ route('my.users.index') }}">
-                                    {{ __('Users Search') }}
-                                </x-dropdown-link>
-                                <div class="border-t border-gray-200 dark:border-gray-600"></div>
-                                <x-dropdown-link href="{{ route('my.users.create') }}">
-                                    {{ __('+Create New') }}
-                                </x-dropdown-link>
-                            </x-slot>
-                        </x-dropdown>
-                    @endif
-
-                    @if(auth()->user()->can('createVehicle', auth()->user()->organization))
-                        <x-dropdown :active="request()->routeIs('my.vehicles.*')">
-                            <x-slot name="trigger">
-                                <p>{{ __('Vehicles') }}</p>
-                            </x-slot>
-                            <x-slot name="content">
-                                <x-dropdown-link href="{{ route('my.vehicles.index') }}">
-                                    {{ __('Vehicles Search') }}
-                                </x-dropdown-link>
-                                <div class="border-t border-gray-200 dark:border-gray-600"></div>
-                                <x-dropdown-link href="{{ route('my.vehicles.create') }}">
-                                    {{ __('+Create New') }}
-                                </x-dropdown-link>
-                            </x-slot>
-                        </x-dropdown>
-                    @endif
-
-                    @can('viewAny', new \App\Models\Organization)
-                        <x-dropdown :active="request()->routeIs('organizations.*')">
-                            <x-slot name="trigger">
-                                <p>{{ __('Organizations') }}</p>
-                            </x-slot>
-                            <x-slot name="content">
-                                <x-dropdown-link href="{{ route('organizations.index') }}">
-                                    {{ __('Search') }}
-                                </x-dropdown-link>
-                                <div class="border-t border-gray-200 dark:border-gray-600"></div>
-                                <x-dropdown-link href="{{ route('organizations.create') }}">
-                                    {{ __('+Create New') }}
-                                </x-dropdown-link>
-                                <div class="border-t border-gray-200 dark:border-gray-600"></div>
-                                {{-- Use the $organizations property passed from the Livewire component --}}
-                                @foreach($organizations as $org)
-                                    <x-dropdown-link href="{{ route('organizations.show', ['organization'=> $org->id]) }}">
-                                        {{ __('view: ') }} {{ $org->name }}
-                                    </x-dropdown-link>
-                                @endforeach
-                            </x-slot>
-                        </x-dropdown>
-                    @endcan
-                </div>
-            </div>
-
-            <div class="hidden sm:flex sm:items-center sm:ms-6">
-                <!-- Settings Dropdown -->
-                <div class="ms-3 relative h-full">
-                    <x-dropdown align="right" width="48" class="no-border">
-                        <x-slot name="trigger">
-                            @if (Laravel\Jetstream\Jetstream::managesProfilePhotos())
-                                <button class="flex text-sm rounded-full focus:outline-none focus:border-indigo-300 transition">
-                                    <img class="h-8 w-8 rounded-full object-cover" src="{{ Auth::user()->profile_photo_url }}" alt="{{ Auth::user()->name }}" />
-                                </button>
+    <div class="relative text-white shadow-lg shadow-orange-500/10">
+        <div class="absolute inset-0 bg-gradient-to-r from-orange-600 via-orange-500 to-orange-400"></div>
+        <div class="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_top,_white,_transparent_55%)]"></div>
+        <div class="relative">
+            <div class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+                <div class="flex flex-1 items-center gap-6">
+                    <a href="{{ route('dashboard') }}" class="flex items-center gap-3 rounded-full bg-white/10 px-3 py-1.5 backdrop-blur transition hover:bg-white/20">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-white text-orange-600 shadow-md">
+                            @if(Auth::user()->organization?->logo)
+                                <img src="{{ Auth::user()->organization->logo }}" alt="{{ Auth::user()->organization->name }} Logo" class="h-8 w-8 object-contain">
                             @else
-                                <span class="inline-flex rounded-md">
-                                    {{-- This button will pick up the global 'button' styles --}}
-                                    <button type="button" class="button inline-flex items-center px-3 py-2 text-sm leading-4 font-medium transition ease-in-out duration-150">
-                                        {{ Auth::user()->name }}
-                                        <svg class="ms-2 -me-0.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                                <span class="text-lg font-bold">RP</span>
+                            @endif
+                        </div>
+                        <div class="hidden sm:block">
+                            <p class="text-xs uppercase tracking-widest text-white/70">Rupkeep</p>
+                            <p class="text-sm font-semibold">{{ Auth::user()->organization->name }}</p>
+                        </div>
+                    </a>
+
+                    <div class="hidden lg:flex items-center gap-2">
+                        <x-nav-link href="{{ route('dashboard') }}" :active="request()->routeIs('dashboard')">
+                            {{ __('Dashboard') }}
+                        </x-nav-link>
+
+                        @if(auth()->user()->can('createJob', auth()->user()->organization))
+                            <x-dropdown :active="request()->routeIs('my.jobs.*')" dropdownClasses="bg-white/95 text-slate-700 ring-1 ring-slate-900/10 shadow-xl" contentClasses="py-2 space-y-1">
+                                <x-slot name="trigger">
+                                    @php $jobsActive = request()->routeIs('my.jobs.*'); @endphp
+                                    <button type="button" class="inline-flex items-center gap-1 rounded-full px-3 py-2 text-sm font-medium transition {{ $jobsActive ? 'bg-white text-orange-600 shadow-sm ring-1 ring-white/60' : 'text-white/85 hover:bg-white/15 hover:text-white' }}">
+                                        <span>{{ __('Jobs') }}</span>
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
                                         </svg>
                                     </button>
+                                </x-slot>
+
+                                <x-slot name="content">
+                                    <x-dropdown-link href="{{ route('my.jobs.index') }}">
+                                        {{ __('Job Search') }}
+                                    </x-dropdown-link>
+                                    <div class="border-t border-slate-100"></div>
+                                    <x-dropdown-link href="{{ route('my.jobs.create') }}">
+                                        {{ __('Create Job') }}
+                                    </x-dropdown-link>
+                                </x-slot>
+                            </x-dropdown>
+                        @endif
+
+                        @if(auth()->user()->can('createCustomer', auth()->user()->organization))
+                            <x-dropdown :active="request()->routeIs('my.customers.*')" dropdownClasses="bg-white/95 text-slate-700 ring-1 ring-slate-900/10 shadow-xl" contentClasses="py-2 space-y-1">
+                                <x-slot name="trigger">
+                                    @php $customersActive = request()->routeIs('my.customers.*'); @endphp
+                                    <button type="button" class="inline-flex items-center gap-1 rounded-full px-3 py-2 text-sm font-medium transition {{ $customersActive ? 'bg-white text-orange-600 shadow-sm ring-1 ring-white/60' : 'text-white/85 hover:bg-white/15 hover:text-white' }}">
+                                        <span>{{ __('Customers') }}</span>
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
+                                        </svg>
+                                    </button>
+                                </x-slot>
+
+                                <x-slot name="content">
+                                    <x-dropdown-link href="{{ route('my.customers.index') }}">
+                                        {{ __('Customer Directory') }}
+                                    </x-dropdown-link>
+                                    <div class="border-t border-slate-100"></div>
+                                    <x-dropdown-link href="{{ route('my.customers.create') }}">
+                                        {{ __('Add Customer') }}
+                                    </x-dropdown-link>
+                                </x-slot>
+                            </x-dropdown>
+                        @endif
+
+                        @if(auth()->user()->can('createUser', auth()->user()->organization))
+                            <x-dropdown :active="request()->routeIs('my.users.*')" dropdownClasses="bg-white/95 text-slate-700 ring-1 ring-slate-900/10 shadow-xl" contentClasses="py-2 space-y-1">
+                                <x-slot name="trigger">
+                                    @php $usersActive = request()->routeIs('my.users.*'); @endphp
+                                    <button type="button" class="inline-flex items-center gap-1 rounded-full px-3 py-2 text-sm font-medium transition {{ $usersActive ? 'bg-white text-orange-600 shadow-sm ring-1 ring-white/60' : 'text-white/85 hover:bg-white/15 hover:text-white' }}">
+                                        <span>{{ __('Team') }}</span>
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
+                                        </svg>
+                                    </button>
+                                </x-slot>
+
+                                <x-slot name="content">
+                                    <x-dropdown-link href="{{ route('my.users.index') }}">
+                                        {{ __('Team Directory') }}
+                                    </x-dropdown-link>
+                                    <div class="border-t border-slate-100"></div>
+                                    <x-dropdown-link href="{{ route('my.users.create') }}">
+                                        {{ __('Invite Member') }}
+                                    </x-dropdown-link>
+                                </x-slot>
+                            </x-dropdown>
+                        @endif
+
+                        @if(auth()->user()->can('createVehicle', auth()->user()->organization))
+                            <x-dropdown :active="request()->routeIs('my.vehicles.*')" dropdownClasses="bg-white/95 text-slate-700 ring-1 ring-slate-900/10 shadow-xl" contentClasses="py-2 space-y-1">
+                                <x-slot name="trigger">
+                                    @php $vehiclesActive = request()->routeIs('my.vehicles.*'); @endphp
+                                    <button type="button" class="inline-flex items-center gap-1 rounded-full px-3 py-2 text-sm font-medium transition {{ $vehiclesActive ? 'bg-white text-orange-600 shadow-sm ring-1 ring-white/60' : 'text-white/85 hover:bg-white/15 hover:text-white' }}">
+                                        <span>{{ __('Vehicles') }}</span>
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
+                                        </svg>
+                                    </button>
+                                </x-slot>
+
+                                <x-slot name="content">
+                                    <x-dropdown-link href="{{ route('my.vehicles.index') }}">
+                                        {{ __('Fleet Overview') }}
+                                    </x-dropdown-link>
+                                    <div class="border-t border-slate-100"></div>
+                                    <x-dropdown-link href="{{ route('my.vehicles.create') }}">
+                                        {{ __('Add Vehicle') }}
+                                    </x-dropdown-link>
+                                </x-slot>
+                            </x-dropdown>
+                        @endif
+
+                        @can('viewAny', new \App\Models\Organization)
+                            <x-dropdown :active="request()->routeIs('organizations.*')" dropdownClasses="bg-white/95 text-slate-700 ring-1 ring-slate-900/10 shadow-xl max-h-96 overflow-y-auto" contentClasses="py-2 space-y-1">
+                                <x-slot name="trigger">
+                                    @php $organizationsActive = request()->routeIs('organizations.*'); @endphp
+                                    <button type="button" class="inline-flex items-center gap-1 rounded-full px-3 py-2 text-sm font-medium transition {{ $organizationsActive ? 'bg-white text-orange-600 shadow-sm ring-1 ring-white/60' : 'text-white/85 hover:bg-white/15 hover:text-white' }}">
+                                        <span>{{ __('Organizations') }}</span>
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
+                                        </svg>
+                                    </button>
+                                </x-slot>
+
+                                <x-slot name="content">
+                                    <x-dropdown-link href="{{ route('organizations.index') }}">
+                                        {{ __('Browse Organizations') }}
+                                    </x-dropdown-link>
+                                    <div class="border-t border-slate-100"></div>
+                                    <x-dropdown-link href="{{ route('organizations.create') }}">
+                                        {{ __('Create Organization') }}
+                                    </x-dropdown-link>
+                                    <div class="border-t border-slate-100"></div>
+                                    @foreach($organizations as $org)
+                                        <x-dropdown-link href="{{ route('organizations.show', ['organization'=> $org->id]) }}">
+                                            {{ $org->name }}
+                                        </x-dropdown-link>
+                                    @endforeach
+                                </x-slot>
+                            </x-dropdown>
+                        @endcan
+                    </div>
+                </div>
+
+                <div class="hidden sm:flex items-center gap-4">
+                    <div class="hidden sm:flex flex-col items-end text-xs text-white/80">
+                        <span class="uppercase tracking-widest">{{ __('Role') }}</span>
+                        <span class="font-semibold text-white">{{ Auth::user()->role_label }}</span>
+                    </div>
+
+                    <x-dropdown align="right" width="48" class="no-border" dropdownClasses="bg-white/95 text-slate-700 ring-1 ring-slate-900/10 shadow-xl" contentClasses="py-2 space-y-1">
+                        <x-slot name="trigger">
+                            <button class="flex items-center gap-3 rounded-full border border-white/20 bg-white/10 px-2 py-1 pr-3 text-sm font-medium text-white/85 shadow-sm backdrop-blur transition hover:bg-white/20 focus:outline-none">
+                                <span class="relative inline-flex">
+                                    <span class="absolute inset-0 rounded-full bg-white/30 blur-sm"></span>
+                                    <img class="relative h-9 w-9 rounded-full object-cover ring-2 ring-white/40" src="{{ Auth::user()->profile_photo_url }}" alt="{{ Auth::user()->name }}" />
                                 </span>
-                            @endif
+                                <span class="hidden sm:inline-flex flex-col text-left leading-tight">
+                                    <span class="text-xs text-white/60">{{ __('Signed in as') }}</span>
+                                    <span class="text-sm font-semibold text-white">{{ Auth::user()->name }}</span>
+                                </span>
+                                <svg class="h-4 w-4 text-white/70" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                                </svg>
+                            </button>
                         </x-slot>
 
                         <x-slot name="content">
-                            {{-- Dropdown content background and text are typically handled by Jetstream's x-dropdown component
-                                 or by your .menu-drop-down-content class from app.css --}}
-                            <div class="block px-4 py-2 text-xs text-gray-400">
-                                {{ Auth::user()->organization->name }} ({{ Auth::user()->organization_role }})
+                            <div class="px-4 pb-2 pt-1 text-xs font-semibold uppercase tracking-widest text-orange-500">
+                                {{ Auth::user()->organization->name }} • {{ Auth::user()->role_label }}
                             </div>
 
-                            <!-- Account Management -->
                             <x-dropdown-link href="{{ route('my.profile') }}">
                                 {{ __('Profile') }}
                             </x-dropdown-link>
@@ -164,9 +201,8 @@
                                 </x-dropdown-link>
                             @endif
 
-                            <div class="border-t border-gray-200 dark:border-gray-600"></div>
+                            <div class="border-t border-slate-100"></div>
 
-                            <!-- Authentication -->
                             <form method="POST" action="{{ route('logout') }}" x-data>
                                 @csrf
                                 <x-dropdown-link href="{{ route('logout') }}"
@@ -175,14 +211,12 @@
                                 </x-dropdown-link>
                             </form>
 
-                             @if (!empty($history))
-                                <div class="pt-4 pb-1 border-t border-gray-200 dark:border-gray-600">
-                                    <div class="px-4">
-                                        {{-- This text color will be handled by the default/dark theme classes from app.css --}}
-                                        <div class="font-medium text-base text-gray-800 dark:text-gray-200">{{ __('Previously Visited') }}</div>
+                            @if (!empty($history))
+                                <div class="border-t border-slate-100 pt-3">
+                                    <div class="px-4 pb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                                        {{ __('Recently Viewed') }}
                                     </div>
-
-                                    <div class="mt-3 space-y-1">
+                                    <div class="space-y-1">
                                         @foreach ($history as $item)
                                             <x-responsive-nav-link href="{{ $item['url'] }}">
                                                 {{ $item['title'] }}
@@ -191,159 +225,133 @@
                                     </div>
                                 </div>
                             @endif
-
-                            
                         </x-slot>
                     </x-dropdown>
                 </div>
-            </div>
 
-            <!-- Hamburger (Mobile Menu Toggle) -->
-            <div class="-me-2 flex items-center sm:hidden">
-                {{-- This button will pick up the global 'button' styles --}}
-                <button @click="open = ! open" class="button inline-flex items-center justify-center p-2 rounded-md focus:outline-none transition duration-150 ease-in-out">
-                    <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                        <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                        <path :class="{'hidden': ! open, 'inline-flex': open }" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
+                <div class="flex items-center lg:hidden">
+                    <button @click="open = ! open" class="inline-flex items-center justify-center rounded-full border border-white/30 bg-white/10 p-2 text-white/80 shadow-sm backdrop-blur transition hover:bg-white/20 focus:outline-none">
+                        <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
+                            <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                            <path :class="{'hidden': ! open, 'inline-flex': open }" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Responsive Navigation Menu -->
-    <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
-        <div class="pt-2 pb-3 space-y-1">
-            <x-responsive-nav-link href="{{ route('dashboard') }}" :active="request()->routeIs('dashboard')">
-                {{ __('Dashboard') }}
-            </x-responsive-nav-link>
-
-            @if(auth()->user()->can('createJob', auth()->user()->organization))
-                <x-responsive-nav-link href="{{ route('my.jobs.index') }}" :active="request()->routeIs('my.jobs.*')">
-                    {{ __('Jobs') }}
-                </x-responsive-nav-link>
-                <x-responsive-nav-link href="{{ route('my.jobs.create') }}">
-                    {{ __('+Create New Job') }}
-                </x-responsive-nav-link>
-            @endif
-            @if(auth()->user()->can('createCustomer', auth()->user()->organization))
-                <x-responsive-nav-link href="{{ route('my.customers.index') }}" :active="request()->routeIs('my.customers.*')">
-                    {{ __('Customers') }}
-                </x-responsive-nav-link>
-                <x-responsive-nav-link href="{{ route('my.customers.create') }}">
-                    {{ __('+Create New Customer') }}
-                </x-responsive-nav-link>
-            @endif
-            @if(auth()->user()->can('createUser', auth()->user()->organization))
-                <x-responsive-nav-link href="{{ route('my.users.index') }}" :active="request()->routeIs('my.users.*')">
-                    {{ __('Users') }}
-                </x-responsive-nav-link>
-                <x-responsive-nav-link href="{{ route('my.users.create') }}">
-                    {{ __('+Create New User') }}
-                </x-responsive-nav-link>
-            @endif
-            @if(auth()->user()->can('createVehicle', auth()->user()->organization))
-                <x-responsive-nav-link href="{{ route('my.vehicles.index') }}" :active="request()->routeIs('my.vehicles.*')">
-                    {{ __('Vehicles') }}
-                </x-responsive-nav-link>
-                <x-responsive-nav-link href="{{ route('my.vehicles.create') }}">
-                    {{ __('+Create New Vehicle') }}
-                </x-responsive-nav-link>
-            @endif
-            @if(auth()->user()->can('createOrganization', auth()->user()->organization))
-                <x-responsive-nav-link href="{{ route('my.organizations.index') }}" :active="request()->routeIs('my.organizations.*')">
-                    {{ __('Organizations') }}
-                </x-responsive-nav-link>
-                <x-responsive-nav-link href="{{ route('my.organizations.create') }}">
-                    {{ __('+Create New Organization') }}
-                </x-responsive-nav-link>
-            @endif
-        </div>
-
-        <!-- Responsive Settings Options -->
-        <div class="pt-4 pb-1 border-t border-gray-200 dark:border-gray-600">
-            <div class="flex items-center px-4">
-                @if (Laravel\Jetstream\Jetstream::managesProfilePhotos())
-                    <div class="shrink-0 me-3">
-                        <img class="h-10 w-10 rounded-full object-cover" src="{{ Auth::user()->profile_photo_url }}" alt="{{ Auth::user()->name }}" />
-                    </div>
-                @endif
-
-                <div>
-                    {{-- These text colors will be handled by the default/dark theme classes from app.css --}}
-                    <div class="font-medium text-base text-gray-800 dark:text-gray-200">{{ Auth::user()->name }}</div>
-                    <div class="font-medium text-sm text-gray-500 dark:text-gray-400">{{ Auth::user()->email }}</div>
-                </div>
-            </div>
-
-            <div class="mt-3 space-y-1">
-                <!-- Account Management -->
-                <x-responsive-nav-link href="{{ route('my.profile') }}" :active="request()->routeIs('my.profile')">
-                    {{ __('Profile') }}
+    <div :class="{'block': open, 'hidden': ! open}" class="hidden border-t border-slate-200 bg-white/95 backdrop-blur lg:hidden">
+        <div class="mx-auto max-w-7xl px-4 pb-6 sm:px-6 lg:px-8">
+            <div class="pt-4 pb-3 space-y-1">
+                <x-responsive-nav-link href="{{ route('dashboard') }}" :active="request()->routeIs('dashboard')">
+                    {{ __('Dashboard') }}
                 </x-responsive-nav-link>
 
-                @if (Laravel\Jetstream\Jetstream::hasApiFeatures())
-                    <x-responsive-nav-link href="{{ route('api-tokens.index') }}" :active="request()->routeIs('api-tokens.index')">
-                        {{ __('API Tokens') }}
+                @if(auth()->user()->can('createJob', auth()->user()->organization))
+                    <x-responsive-nav-link href="{{ route('my.jobs.index') }}" :active="request()->routeIs('my.jobs.*')">
+                        {{ __('Jobs') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link href="{{ route('my.jobs.create') }}">
+                        {{ __('Create Job') }}
                     </x-responsive-nav-link>
                 @endif
 
-                <!-- Authentication -->
-                <form method="POST" action="{{ route('logout') }}" x-data>
-                    @csrf
-                    <x-responsive-nav-link href="{{ route('logout') }}"
-                                           @click.prevent="$root.submit();">
-                        {{ __('Log Out') }}
+                @if(auth()->user()->can('createCustomer', auth()->user()->organization))
+                    <x-responsive-nav-link href="{{ route('my.customers.index') }}" :active="request()->routeIs('my.customers.*')">
+                        {{ __('Customers') }}
                     </x-responsive-nav-link>
-                </form>
+                    <x-responsive-nav-link href="{{ route('my.customers.create') }}">
+                        {{ __('Add Customer') }}
+                    </x-responsive-nav-link>
+                @endif
 
-                
-            </div>
+                @if(auth()->user()->can('createUser', auth()->user()->organization))
+                    <x-responsive-nav-link href="{{ route('my.users.index') }}" :active="request()->routeIs('my.users.*')">
+                        {{ __('Team') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link href="{{ route('my.users.create') }}">
+                        {{ __('Invite Member') }}
+                    </x-responsive-nav-link>
+                @endif
 
-            @can('viewAny', new \App\Models\Organization)
-                <div class="mt-3 space-y-1" >
-                    {{-- This text color will be handled by the default/dark theme classes from app.css --}}
-                    <div class="block px-4 py-2 text-xs text-gray-400">
+                @if(auth()->user()->can('createVehicle', auth()->user()->organization))
+                    <x-responsive-nav-link href="{{ route('my.vehicles.index') }}" :active="request()->routeIs('my.vehicles.*')">
+                        {{ __('Vehicles') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link href="{{ route('my.vehicles.create') }}">
+                        {{ __('Add Vehicle') }}
+                    </x-responsive-nav-link>
+                @endif
+
+                @if(auth()->user()->can('createOrganization', auth()->user()->organization))
+                    <x-responsive-nav-link href="{{ route('my.organizations.index') }}" :active="request()->routeIs('my.organizations.*')">
                         {{ __('Organizations') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link href="{{ route('my.organizations.create') }}">
+                        {{ __('Create Organization') }}
+                    </x-responsive-nav-link>
+                @endif
+            </div>
+
+            <div class="border-t border-slate-200 pt-4">
+                <div class="flex items-center gap-3 px-4">
+                    <img class="h-10 w-10 rounded-full object-cover ring-2 ring-orange-200" src="{{ Auth::user()->profile_photo_url }}" alt="{{ Auth::user()->name }}" />
+                    <div>
+                        <div class="text-base font-semibold text-slate-900">{{ Auth::user()->name }}</div>
+                        <div class="text-sm text-slate-500">{{ Auth::user()->email }}</div>
                     </div>
-
-                    <x-responsive-nav-link href="{{ route('organizations.index') }}">
-                        {{ __('Search') }}
-                    </x-responsive-nav-link>
-
-                    <div class="border-t border-gray-200 dark:border-gray-600"></div>
-
-                    <x-responsive-nav-link href="{{ route('organizations.create') }}">
-                        {{ __('+Create New') }}
-                    </x-responsive-nav-link>
-
-                    <div class="border-t border-gray-200 dark:border-gray-600"></div>
-
-                    {{-- Use the $organizations property passed from the Livewire component --}}
-                    @foreach($organizations as $org)
-                        <x-responsive-nav-link href="{{ route('organizations.show', ['organization'=> $org->id]) }}">
-                            {{ __('view: ') }} {{ $org->name }}
-                        </x-responsive-nav-link>
-                    @endforeach
-                </div>
-            @endcan
-        </div>
-
-        @if (!empty($history))
-            <div class="pt-4 pb-1 border-t border-gray-200 dark:border-gray-600">
-                <div class="px-4">
-                    {{-- This text color will be handled by the default/dark theme classes from app.css --}}
-                    <div class="font-medium text-base text-gray-800 dark:text-gray-200">{{ __('Previously Visited') }}</div>
                 </div>
 
                 <div class="mt-3 space-y-1">
+                    <x-responsive-nav-link href="{{ route('my.profile') }}" :active="request()->routeIs('my.profile')">
+                        {{ __('Profile') }}
+                    </x-responsive-nav-link>
+
+                    @if (Laravel\Jetstream\Jetstream::hasApiFeatures())
+                        <x-responsive-nav-link href="{{ route('api-tokens.index') }}" :active="request()->routeIs('api-tokens.index')">
+                            {{ __('API Tokens') }}
+                        </x-responsive-nav-link>
+                    @endif
+
+                    <form method="POST" action="{{ route('logout') }}" x-data>
+                        @csrf
+                        <x-responsive-nav-link href="{{ route('logout') }}"
+                                                @click.prevent="$root.submit();">
+                            {{ __('Log Out') }}
+                        </x-responsive-nav-link>
+                    </form>
+                </div>
+
+                @can('viewAny', new \App\Models\Organization)
+                    <div class="mt-4 space-y-1 rounded-lg border border-slate-100 bg-white p-4 shadow-sm">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">{{ __('Organizations') }}</p>
+                        <x-responsive-nav-link href="{{ route('organizations.index') }}">
+                            {{ __('Browse Organizations') }}
+                        </x-responsive-nav-link>
+                        <x-responsive-nav-link href="{{ route('organizations.create') }}">
+                            {{ __('Create Organization') }}
+                        </x-responsive-nav-link>
+                        <div class="border-t border-slate-100"></div>
+                        @foreach($organizations as $org)
+                            <x-responsive-nav-link href="{{ route('organizations.show', ['organization'=> $org->id]) }}">
+                                {{ $org->name }}
+                            </x-responsive-nav-link>
+                        @endforeach
+                    </div>
+                @endcan
+            </div>
+
+            @if (!empty($history))
+                <div class="mt-4 space-y-1 rounded-lg border border-slate-100 bg-white p-4 shadow-sm">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">{{ __('Recently Viewed') }}</p>
                     @foreach ($history as $item)
                         <x-responsive-nav-link href="{{ $item['url'] }}">
                             {{ $item['title'] }}
                         </x-responsive-nav-link>
                     @endforeach
                 </div>
-            </div>
-        @endif
+            @endif
+        </div>
     </div>
 </nav>

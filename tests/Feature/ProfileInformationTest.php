@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Fortify\Features;
 use Laravel\Jetstream\Http\Livewire\UpdateProfileInformationForm;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -11,6 +12,15 @@ use Tests\TestCase;
 class ProfileInformationTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        if (! Features::enabled(Features::updateProfileInformation())) {
+            $this->markTestSkipped('Profile information updates are disabled.');
+        }
+    }
 
     public function test_current_profile_information_is_available(): void
     {

@@ -230,7 +230,7 @@ class PilotCarJob extends Model
                     'name'=> $values['driver_of_pilot_car'],
                     'email'=> 'missing_email_'.uniqid().'@email.com',
                     'password'=> 'DEFAULT_MISSING_PASSWORD_9Jx',
-                    'organization_role'=>'driver',
+                    'organization_role'=> User::ROLE_EMPLOYEE_STANDARD,
                     'organization_id' => $organization_id
                 ]);
             }
@@ -341,23 +341,43 @@ class PilotCarJob extends Model
             
     }
 
-    public static function rates(){
-        return [
-            (Object)['value'=>'per_mile_rate_2_00','title'=>'$2.00 Per Mile (default)'],
-            (Object)['value'=>'per_mile_rate_1_00','title'=>'$1.00 Per Mile'],
-            (Object)['value'=>'per_mile_rate_1_25','title'=>'$1.25 Per Mile'],
-            (Object)['value'=>'per_mile_rate_1_50','title'=>'$1.50 Per Mile'],
-            (Object)['value'=>'per_mile_rate_2_00','title'=>'$2.00 Per Mile'],
-            (Object)['value'=>'per_mile_rate_2_25','title'=>'$2.25 Per Mile'],
-            (Object)['value'=>'per_mile_rate_2_50','title'=>'$2.50 Per Mile'],
-            (Object)['value'=>'per_mile_rate_2_75','title'=>'$2.75 Per Mile'],
-            (Object)['value'=>'per_mile_rate_3_00','title'=>'$3.00 Per Mile'],
-            (Object)['value'=>'per_mile_rate_3_25','title'=>'$3.25 Per Mile'],
-            (Object)['value'=>'per_mile_rate_3_50','title'=>'$3.50 Per Mile'],
-            (Object)['value'=>'new_per_mile_rate','title'=>'NEW Per Mile Rate (enter value below)'],
-            (Object)['value'=>'flat_rate_excludes_expenses','title'=>'Flat Price (excludes expenses)'],
-            (Object)['value'=>'flat_rate','title'=>'Flat Price (includes Expenses)'],
+    public static function rates()
+    {
+        $rates = [
+            'per_mile_rate_1_00' => '$1.00 Per Mile',
+            'per_mile_rate_1_25' => '$1.25 Per Mile',
+            'per_mile_rate_1_50' => '$1.50 Per Mile',
+            'per_mile_rate_2_00' => '$2.00 Per Mile (default)',
+            'per_mile_rate_2_25' => '$2.25 Per Mile',
+            'per_mile_rate_2_50' => '$2.50 Per Mile',
+            'per_mile_rate_2_75' => '$2.75 Per Mile',
+            'per_mile_rate_3_00' => '$3.00 Per Mile',
+            'per_mile_rate_3_25' => '$3.25 Per Mile',
+            'per_mile_rate_3_50' => '$3.50 Per Mile',
+            'new_per_mile_rate' => 'Custom Per Mile Rate (enter below)',
+            'flat_rate_excludes_expenses' => 'Flat Price (excludes expenses)',
+            'flat_rate' => 'Flat Price (includes expenses)',
         ];
+
+        return collect($rates)->map(function (string $title, string $value) {
+            return (object) ['value' => $value, 'title' => $title];
+        })->values()->all();
+    }
+
+    public static function defaultRateValue(?string $rateCode): ?string
+    {
+        if (! $rateCode) {
+            return null;
+        }
+
+        if (preg_match('/per_mile_rate_(\d+)_(\d+)/', $rateCode, $matches)) {
+            $dollars = (int) $matches[1];
+            $cents = (int) $matches[2];
+
+            return number_format($dollars + ($cents / 100), 2, '.', '');
+        }
+
+        return null;
     }
 
     public function invoiceValues(){
@@ -557,14 +577,21 @@ class PilotCarJob extends Model
             'nonbillable' => []
         ];
 
-        foreach($logs as $log){
-           $miles['start'][] = $log->start_mileage;
-           $miles['end'][] = $log->end_mileage;
-           $miles['total'][] = $log->end_mileage - $log->start_mileage;
-           $miles['job_start'][] = $log->start_job_mileage;
-           $miles['job_end'][] = $log->end_job_mileage;
-           $miles['billable'][] = $log->billable_miles && $log->billable_miles > 0? $log->billable_miles:$log->end_job_mileage - $log->start_job_mileage;
-           $miles['nonbillable'][] = ($log->end_mileage - $log->start_mileage) - ($log->end_job_mileage - $log->start_job_mileage);
+        foreach ($logs as $log) {
+            $miles['start'][] = $log->start_mileage;
+            $miles['end'][] = $log->end_mileage;
+            $miles['total'][] = $log->end_mileage - $log->start_mileage;
+            $miles['job_start'][] = $log->start_job_mileage;
+            $miles['job_end'][] = $log->end_job_mileage;
+
+            $billable = ($log->end_job_mileage - $log->start_job_mileage);
+
+            if ($log->billable_miles !== null && $log->billable_miles !== '' && is_numeric($log->billable_miles)) {
+                $billable = (float) $log->billable_miles;
+            }
+
+            $miles['billable'][] = max(0, $billable);
+            $miles['nonbillable'][] = ($log->end_mileage - $log->start_mileage) - ($log->end_job_mileage - $log->start_job_mileage);
         }
 
         $miles['total_billable'] = array_sum($miles['billable']);
@@ -608,7 +635,7 @@ class PilotCarJob extends Model
             $expenses += $v;
         }
 
-        if($totals['rate_code'] === 'per_mile_rate'){
+        if(str_starts_with($totals['rate_code'], 'per_mile_rate')){
             $value = 1.00 * (float)number_format($totals['rate_value'], 2);
             $values['miles_charge'] = $totals['billable_miles'] * $value;
         }else if(str_starts_with($totals['rate_code'],'flat_rate')){
@@ -637,7 +664,7 @@ class PilotCarJob extends Model
             }else{
                 $values['effective_rate_code'] = 'per_mile_rate';
                 $values['effective_rate_value'] = $totals['rate_value'];
-                $values['total'] = $values['miles_charge'] + $expenses;
+                $values['total'] = ($values['miles_charge'] ?? 0) + $expenses;
             }
             
         }

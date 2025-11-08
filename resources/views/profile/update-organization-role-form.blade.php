@@ -4,7 +4,7 @@
     </x-slot>
 
     <x-slot name="description">
-        {{ __('Only Organization administrators can update this value.') }}
+        {{ __('Only organization admins or super users can update this value.') }}
     </x-slot>
 
     <x-slot name="form">

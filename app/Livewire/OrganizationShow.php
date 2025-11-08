@@ -26,8 +26,8 @@ class NewUserForm extends Form
     #[Validate('same:password')]
     public $password_confirmation = '';
 
-    #[Validate('string|min:3')]
-    public $role = 'administrator';
+    #[Validate('string|in:admin,employee_manager,employee_standard,customer')]
+    public $role = User::ROLE_EMPLOYEE_STANDARD;
 }
 
 class OrganizationShow extends Component
@@ -86,7 +86,10 @@ class OrganizationShow extends Component
     }
 
     public function deleteUsers(){
-        $this->organization->users()->withTrashed()->where('organization_role','!=','administrator')->forceDelete();
+        $this->organization->users()
+            ->withTrashed()
+            ->where('organization_role', '!=', User::ROLE_ADMIN)
+            ->forceDelete();
         return back();
     }
 

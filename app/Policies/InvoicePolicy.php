@@ -12,7 +12,7 @@ class InvoicePolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->is_super;
+        return $user->is_super || $user->isAdmin() || $user->isManager() || $user->isCustomer();
     }
 
     /**
@@ -20,7 +20,15 @@ class InvoicePolicy
      */
     public function view(User $user, Invoice $model): bool
     {
-        return $user->organization_id === $model->organization_id || $user->is_super;
+        if ($user->is_super || $user->isAdmin() || $user->isManager()) {
+            return $user->organization_id === $model->organization_id || $user->is_super;
+        }
+
+        if ($user->isCustomer() && $user->customer_id === $model->customer_id) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -28,7 +36,7 @@ class InvoicePolicy
      */
     public function create(User $user, Invoice $model): bool
     {
-        return in_array($user->organization_role,['administrator']) || $user->is_super;
+        return $user->isAdmin() || $user->is_super;
     }
 
     /**
@@ -36,7 +44,7 @@ class InvoicePolicy
      */
     public function update(User $user, Invoice $model): bool
     {
-        return in_array($user->organization_role,['administrator']) || $user->is_super;
+        return $user->isAdmin() || $user->is_super;
     }
 
     /**
@@ -44,7 +52,7 @@ class InvoicePolicy
      */
     public function delete(User $user, Invoice $model): bool
     {
-        return in_array($user->organization_role,['administrator']) || $user->is_super;
+        return $user->isAdmin() || $user->is_super;
     }
 
     /**

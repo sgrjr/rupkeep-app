@@ -157,7 +157,7 @@
 
                         <x-slot name="content">
                             <div class="block px-4 py-2 text-xs text-gray-400">
-                                {{ Auth::user()->organization->name }} ({{Auth::user()->organization_role}})
+                                {{ Auth::user()->organization->name }} ({{Auth::user()->role_label}})
                             </div>
 
                             <!-- Account Management -->

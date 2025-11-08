@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Jetstream\Features;
 use Laravel\Jetstream\Http\Livewire\TeamMemberManager;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -11,6 +12,15 @@ use Tests\TestCase;
 class LeaveTeamTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        if (! Features::hasTeamFeatures()) {
+            $this->markTestSkipped('Team features are disabled.');
+        }
+    }
 
     public function test_users_can_leave_teams(): void
     {

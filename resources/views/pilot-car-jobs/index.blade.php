@@ -3,6 +3,45 @@
 <div class="min-h-screen bg-gray-100 font-sans antialiased">
     <div class="max-w-5xl mx-auto p-4 sm:p-6 lg:p-8">
 
+        @can('viewAny', \App\Models\Invoice::class)
+        <form
+            method="GET"
+            action="{{ route('my.invoices.export.quickbooks') }}"
+            class="w-full flex flex-col sm:flex-row items-center justify-center gap-3 mb-6 p-4 bg-white rounded-lg shadow-md"
+        >
+            <div class="flex flex-col sm:flex-row gap-3 w-full">
+                <input
+                    type="date"
+                    name="from"
+                    value="{{ request('from') }}"
+                    class="w-full sm:w-auto flex-grow px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="From date"
+                />
+                <input
+                    type="date"
+                    name="to"
+                    value="{{ request('to') }}"
+                    class="w-full sm:w-auto flex-grow px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="To date"
+                />
+                <select
+                    name="paid"
+                    class="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                    <option value="">Any Status</option>
+                    <option value="yes" @selected(request('paid') === 'yes')>Paid</option>
+                    <option value="no" @selected(request('paid') === 'no')>Unpaid</option>
+                </select>
+            </div>
+            <button
+                type="submit"
+                class="btn-base btn-secondary w-full sm:w-auto"
+            >
+                Export QuickBooks CSV
+            </button>
+        </form>
+        @endcan
+
         <!-- Search Form -->
         <form class="w-full flex flex-col sm:flex-row items-center justify-center gap-3 mb-6 p-4 bg-white rounded-lg shadow-md">
             <input
@@ -82,7 +121,12 @@
                             <p><span class="font-semibold">Invoice #:</span> <span class="text-gray-800">{{$j->invoice_no}}</span></p>
                             <p><span class="font-semibold">Check #:</span> <span class="text-gray-800">{{$j->check_no}}</span></p>
                             <p><span class="font-semibold">Rate Code:</span> <span class="text-gray-800">{{$j->rate_code}}</span></p>
-                            <p><span class="font-semibold">Rate Value:</span> <span class="text-gray-800">{{$j->rate_value}}</span></p>
+                            @php
+                                $rateDisplay = $j->rate_value !== null
+                                    ? '$'.number_format((float) $j->rate_value, 2)
+                                    : '—';
+                            @endphp
+                            <p><span class="font-semibold">Rate Value:</span> <span class="text-gray-800">{{$rateDisplay}}</span></p>
 
                             @if($j->canceled_at)
                                 <p class="text-red-600"><span class="font-semibold">Canceled At:</span> <span class="text-gray-800">{{$j->canceled_at}}</span></p>
@@ -102,20 +146,30 @@
                     </div>
 
                     <!-- Card Actions -->
+                    @php
+                        $showRoute = $redirect_to_root
+                            ? route('jobs.show', ['job' => $j->id])
+                            : route('my.jobs.show', ['job' => $j->id]);
+                        $editRoute = route('my.jobs.edit', ['job' => $j->id]);
+                        $destroyRoute = route('my.jobs.destroy', ['job' => $j->id]);
+                    @endphp
                     <div class="flex flex-wrap justify-end flex-end gap-2 bg-gray-50 border-t border-gray-200">
-                        <a href="{{route('my.jobs.show', ['job'=>$j->id])}}" class="mr-4">
-                            View
+                        <a href="{{$showRoute}}" class="mr-4">
+                            Show
                         </a>
                         @if(auth()->user()->can('update', $j))
-                            <a href="{{route('my.jobs.edit', ['job'=>$j->id])}}" class="mr-4">
+                            <a href="{{$editRoute}}" class="mr-4">
                                 Edit
                             </a>
                         @endif
                         @if(auth()->user()->can('delete', $j))
                             <livewire:delete-confirmation-button
-                                :action-url="route('my.jobs.destroy', parameters: ['job'=> $j->id])"
+                                :action-url="$destroyRoute"
                                 button-text=""
-                                :redirect-route="$redirect_to_root"
+                                :model-class="\App\Models\PilotCarJob::class"
+                                :record-id="$j->id"
+                                resource="jobs"
+                                :redirect-route="$redirect_to_root ? 'jobs.index' : 'my.jobs.index'"
                             />
                         @endif
                     </div>

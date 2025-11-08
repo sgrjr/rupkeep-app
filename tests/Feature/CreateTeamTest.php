@@ -5,12 +5,22 @@ namespace Tests\Feature;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Jetstream\Http\Livewire\CreateTeamForm;
+use Laravel\Jetstream\Jetstream;
 use Livewire\Livewire;
 use Tests\TestCase;
 
 class CreateTeamTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        if (! Jetstream::hasTeamFeatures()) {
+            $this->markTestSkipped('Team features are disabled.');
+        }
+    }
 
     public function test_teams_can_be_created(): void
     {

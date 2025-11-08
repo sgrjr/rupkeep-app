@@ -6,9 +6,14 @@ use Illuminate\Database\Eloquent\Model;
 use App\Models\PilotCarJob;
 use App\Models\Organization;
 use App\Models\CustomerContact;
+use App\Models\User;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Customer extends Model
 {
+    use HasFactory;
+
     public $timestamps = true;
 
     public $fillable = [
@@ -25,5 +30,10 @@ class Customer extends Model
 
     public function contacts(){
         return $this->hasMany(CustomerContact::class);
+    }
+
+    public function users()
+    {
+        return $this->hasMany(User::class);
     }
 }

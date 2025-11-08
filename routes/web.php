@@ -18,6 +18,7 @@ use App\Http\Controllers\CustomerContactsController;
 use App\Http\Controllers\MyUsersController;
 use App\Http\Controllers\MyCustomersController;
 use App\Http\Controllers\MyVehiclesController;
+use App\Http\Controllers\VehicleMaintenanceController;
 use App\Http\Controllers\MyJobsController;
 use App\Http\Controllers\JobsController;
 use App\Http\Controllers\UsersController;
@@ -25,6 +26,7 @@ use App\Http\Controllers\UserLogsController;
 use App\Http\Controllers\AttachmentsController;
 use App\Http\Controllers\MyInvoicesController;
 use App\Http\Controllers\EmailController;
+use App\Http\Controllers\QuickBooksExportController;
 
 Route::middleware([
     'auth:sanctum',
@@ -51,7 +53,10 @@ Route::middleware([
 
     Route::resource('/my/customers', MyCustomersController::class)->names('my.customers');
     Route::resource('/my/users', MyUsersController::class)->names('my.users');
+    Route::put('/my/vehicles/{vehicle}/restore', [MyVehiclesController::class, 'restore'])->name('my.vehicles.restore');
+    Route::delete('/my/vehicles/{vehicle}/force', [MyVehiclesController::class, 'forceDestroy'])->name('my.vehicles.force-destroy');
     Route::resource('/my/vehicles', MyVehiclesController::class)->names('my.vehicles');
+    Route::post('/my/vehicles/{vehicle}/maintenance', [VehicleMaintenanceController::class, 'store'])->name('my.vehicles.maintenance.store');
     Route::resource('/my/jobs', MyJobsController::class)->names('my.jobs');
     Route::get('/my/jobs/create', CreatePilotCarJob::class)->name('my.jobs.create');
     Route::get('/my/jobs/{job}', ShowPilotCarJob::class)->name('my.jobs.show');
@@ -68,6 +73,8 @@ Route::middleware([
     Route::post('my/invoices/create', [MyInvoicesController::class, 'store'])->name('my.invoices.store');
     Route::get('my/invoices/{invoice}/edit', [MyInvoicesController::class, 'edit'])->name('my.invoices.edit');
     Route::put('my/invoices/{invoice}', [MyInvoicesController::class, 'update'])->name('my.invoices.update');
+    Route::get('my/invoices/export/quickbooks', QuickBooksExportController::class)->name('my.invoices.export.quickbooks');
+    Route::get('my/invoices/{invoice}/print', [MyInvoicesController::class, 'print'])->name('my.invoices.print');
 });
 
 Route::middleware([
@@ -77,6 +84,17 @@ Route::middleware([
         return view('cbpc');
     })->name('home');    
 
+    Route::middleware('guest')->group(function () {
+        Route::get('/login-code', [\App\Http\Controllers\Auth\LoginCodeController::class, 'create'])->name('login-code.create');
+        Route::post('/login-code', [\App\Http\Controllers\Auth\LoginCodeController::class, 'store'])->name('login-code.store');
+        Route::get('/login-code/verify', [\App\Http\Controllers\Auth\LoginCodeController::class, 'verifyForm'])->name('login-code.verify-form');
+        Route::post('/login-code/verify', [\App\Http\Controllers\Auth\LoginCodeController::class, 'verify'])->name('login-code.verify');
+    });
+
+    Route::middleware(['auth', 'customer'])->prefix('portal')->name('customer.')->group(function () {
+        Route::get('invoices', [\App\Http\Controllers\CustomerPortal\InvoiceController::class, 'index'])->name('invoices.index');
+        Route::get('invoices/{invoice}', [\App\Http\Controllers\CustomerPortal\InvoiceController::class, 'show'])->name('invoices.show');
+    });
 });
 
 Route::get('/impersonate/{user}', [MyUsersController::class, 'impersonate'])->name('impersonate');

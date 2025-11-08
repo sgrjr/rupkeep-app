@@ -11,7 +11,7 @@
                         <div class="p-2">
                             <p><b>name:</b> {{$u->name}}</p>
                             <p><b>email:</b> {{$u->email}}</p>
-                            <p><b>role:</b> {{$u->organization_role}}</p>
+                            <p><b>role:</b> {{$u->role_label}}</p>
                             @can('viewAny', new \App\Models\Organization)
                             <p><b>organization:</b> {{$u->organization->name}}</p>
                             @endcan
@@ -34,7 +34,7 @@
                             <div class="p-2">
                                 <p><b>name:</b> {{$u->name}}</p>
                                 <p><b>email:</b> {{$u->email}}</p>
-                                <p><b>role:</b> {{$u->organization_role}}</p>
+                                <p><b>role:</b> {{$u->role_label}}</p>
                                 @can('viewAny', new \App\Models\Organization)
                                 <p><b>organization:</b> {{$u->organization->name}}</p>
                                 @endcan

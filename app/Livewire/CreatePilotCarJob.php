@@ -6,6 +6,7 @@ use Livewire\Component;
 use Livewire\Form;
 use Livewire\Attributes\Validate;
 use App\Models\Customer;
+use App\Models\PilotCarJob;
 
 class NewJobForm extends Form
 {
@@ -15,13 +16,13 @@ class NewJobForm extends Form
     #[Validate('required|numeric|exists:customers,id|min:1')]
     public $customer_id = null;
 
-    #[Validate('string|min:6')]
+    #[Validate('nullable|string|min:3')]
     public $new_customer_name = null;
 
-    #[Validate('string|min:8')]
+    #[Validate('nullable|string|min:8')]
     public $scheduled_pickup_at = null;
 
-    #[Validate('string|min:8')]
+    #[Validate('nullable|string|min:8')]
     public $scheduled_delivery_at = null;
     #[Validate('required|string|max:255')]
     public $load_no = null;
@@ -32,22 +33,22 @@ class NewJobForm extends Form
     #[Validate('required|string|max:255')]
     public $delivery_address = null;
 
-    #[Validate('string|max:255')]
+    #[Validate('nullable|string|max:255')]
     public $check_no = null;
 
-    #[Validate('string|max:255')]
+    #[Validate('nullable|string|max:255')]
     public $invoice_paid = null;
 
-    #[Validate('string|max:255')]
+    #[Validate('nullable|string|max:255')]
     public $invoice_no = null;
 
-    #[Validate('string|max:255')]
+    #[Validate('required|string|max:255')]
     public $rate_code = null;
 
-    #[Validate('string|max:255')]
-    public $flat_rate_value = null;
+    #[Validate('nullable|numeric')]
+    public $rate_value = null;
 
-    #[Validate('string|min:8')]
+    #[Validate('nullable|string|min:3')]
     public $memo = null;
 
 }
@@ -74,22 +75,13 @@ class CreatePilotCarJob extends Component
         ];
        }
        
-       $this->rates = [
-            (Object)['value'=>'per_mile_rate_2_00','title'=>'$2.00 Per Mile (default)'],
-            (Object)['value'=>'per_mile_rate_1_00','title'=>'$1.00 Per Mile'],
-            (Object)['value'=>'per_mile_rate_1_25','title'=>'$1.25 Per Mile'],
-            (Object)['value'=>'per_mile_rate_1_50','title'=>'$1.50 Per Mile'],
-            (Object)['value'=>'per_mile_rate_2_00','title'=>'$2.00 Per Mile'],
-            (Object)['value'=>'per_mile_rate_2_25','title'=>'$2.25 Per Mile'],
-            (Object)['value'=>'per_mile_rate_2_50','title'=>'$2.50 Per Mile'],
-            (Object)['value'=>'per_mile_rate_2_75','title'=>'$2.75 Per Mile'],
-            (Object)['value'=>'per_mile_rate_3_00','title'=>'$3.00 Per Mile'],
-            (Object)['value'=>'per_mile_rate_3_25','title'=>'$3.25 Per Mile'],
-            (Object)['value'=>'per_mile_rate_3_50','title'=>'$3.50 Per Mile'],
-            (Object)['value'=>'new_per_mile_rate','title'=>'NEW Per Mile Rate (enter value below)'],
-            (Object)['value'=>'flat_rate_excludes_expenses','title'=>'Flat Price (excludes expenses)'],
-            (Object)['value'=>'flat_rate','title'=>'Flat Price (includes Expenses)'],
-        ];
+       $this->rates = PilotCarJob::rates();
+
+       if (empty($this->form->rate_code)) {
+           $this->form->rate_code = 'per_mile_rate_2_00';
+       }
+
+       $this->form->rate_value = $this->form->rate_value ?? PilotCarJob::defaultRateValue($this->form->rate_code);
     }
 
     public function render()
@@ -102,6 +94,14 @@ class CreatePilotCarJob extends Component
         $organization = auth()->user()->organization;
 
         $form = $this->form->all();
+
+        if (empty($form['rate_code'])) {
+            $form['rate_code'] = 'per_mile_rate_2_00';
+        }
+
+        if (empty($form['rate_code'])) {
+            $form['rate_code'] = 'per_mile_rate_2_00';
+        }
 
         if(empty($this->form->customer_id ) && !empty($this->form->new_customer_name)){
 
@@ -132,9 +132,43 @@ class CreatePilotCarJob extends Component
             $form['customer_id'] = $customer_id;
         }
 
+        $form['rate_value'] = $this->sanitizeRateValue($this->form->rate_value, $form['rate_code']);
+
         $job = $organization->jobs()->create($form);
         $this->form->reset();
+        $this->form->rate_code = 'per_mile_rate_2_00';
+        $this->form->rate_value = PilotCarJob::defaultRateValue($this->form->rate_code);
         $this->dispatch('saved');
         return redirect()->route('my.jobs.show', ['job'=>$job->id]);
+    }
+
+    protected function sanitizeRateValue($rawValue, ?string $rateCode): ?string
+    {
+        $value = null;
+
+        if ($rawValue !== null && $rawValue !== '') {
+            $normalized = preg_replace('/[^0-9\.\-]/', '', (string) $rawValue);
+
+            if ($normalized !== '' && is_numeric($normalized)) {
+                $value = number_format((float) $normalized, 2, '.', '');
+            }
+        }
+
+        if ($value === null) {
+            $value = PilotCarJob::defaultRateValue($rateCode);
+        }
+
+        return $value;
+    }
+
+    public function updatedFormRateCode($value): void
+    {
+        $default = PilotCarJob::defaultRateValue($value);
+
+        if ($default !== null) {
+            $this->form->rate_value = $default;
+        } else {
+            $this->form->rate_value = $this->form->rate_value ?? null;
+        }
     }
 }

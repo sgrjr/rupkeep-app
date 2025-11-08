@@ -6,12 +6,22 @@ use App\Models\Team;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Jetstream\Http\Livewire\DeleteTeamForm;
+use Laravel\Jetstream\Jetstream;
 use Livewire\Livewire;
 use Tests\TestCase;
 
 class DeleteTeamTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        if (! Jetstream::hasTeamFeatures()) {
+            $this->markTestSkipped('Team features are disabled.');
+        }
+    }
 
     public function test_teams_can_be_deleted(): void
     {

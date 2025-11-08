@@ -1,0 +1,222 @@
+# Rupkeep Pilot Car Management System - Cursor AI Rules
+
+## Project Overview
+A Laravel 11 web application for managing pilot car/escort services. Replaces Google Sheets workflow with a comprehensive job tracking, logging, and invoicing system.
+
+**Customer**: Casco Bay Pilot Car (escort/pilot car company)
+**Primary Color**: Orange (#f9b104)
+**Stack**: Laravel 11 + Livewire 3 + Jetstream + Tailwind CSS 3 + SQLite/MySQL
+
+## Business Domain
+- **Pilot Car Jobs**: Escort services for oversized loads
+- **User Logs**: Driver-submitted job completion records (mobile-first)
+- **Invoicing**: Calculate billable miles, expenses, rates; generate customer invoices
+- **Multi-tenant**: Multiple organizations using the platform
+
+## Architecture & Key Patterns
+
+### Models & Relationships
+- `Organization` → has many `User`, `Customer`, `Vehicle`, `PilotCarJob`
+- `PilotCarJob` → belongs to `Customer`, has many `UserLog`, has many `Invoice`
+- `UserLog` → belongs to `PilotCarJob`, `User` (driver), `Vehicle`, `CustomerContact` (truck driver)
+- `Invoice` → belongs to `Customer`, `Organization`, `PilotCarJob`
+- `User` → has `organization_role`: admin, editor, viewer, driver
+- All major models use `SoftDeletes`
+
+### Authorization
+- Laravel Policies control access (OrganizationPolicy, PilotCarJobPolicy, InvoicePolicy, etc.)
+- Super user: organization_name == 'Reynolds Upkeep' && role == 'administrator'
+- Drivers have limited permissions (work on jobs only)
+
+### Data Flow
+1. CSV import from Google Sheets → normalized into DB tables
+2. Jobs created → Logs filled by drivers (mobile UI) → Invoices generated
+3. Invoice calculation: mileage rates, deadhead charges, mini charges, expenses (hotel, tolls, wait time)
+
+## Code Style & Standards
+
+### PHP/Laravel
+- PHP 8.2+ features preferred
+- Type hints on method signatures
+- Livewire 3 for reactive components
+- Use `authorize()` in controllers for policy checks
+- Form validation via Livewire `#[Validate]` attributes or Laravel Form Requests
+- Keep business logic in Models (e.g., `PilotCarJob::invoiceValues()`)
+
+### Frontend
+- Tailwind CSS 3 utility classes (already configured)
+- Mobile-first responsive design (especially for log entry forms)
+- Livewire wire:model for reactive inputs
+- Use CSS custom properties for theming (--primary-orange, --main-background-color, etc.)
+- Flatpickr for date/time pickers
+- Alpine.js (via Livewire) for lightweight interactions
+
+### Database
+- Migrations for all schema changes
+- Use Eloquent relationships, avoid raw SQL unless necessary
+- SQLite for local dev, MySQL for production
+
+### File Organization
+- Controllers in `app/Http/Controllers` (use `MyXController` for scoped resources)
+- Livewire components in `app/Livewire` + `resources/views/livewire`
+- Policies in `app/Policies`
+- Routes: group by middleware, use route names
+
+## Feature Requirements & Priorities
+
+### Phase 1: Core Functionality (MUST HAVE for ship)
+1. **User Management**: Login, roles, permissions ✅ DONE
+2. **Job Management**: Create, edit, view jobs ✅ DONE
+3. **Log Entry**: Mobile-optimized form for drivers ✅ DONE (needs polish)
+4. **Invoice Generation**: Calculate totals, display invoice ✅ DONE (needs PDF)
+5. **PDF Invoices**: Generate downloadable/printable PDFs ❌ TODO
+6. **Customer Portal**: Login + view invoice history ❌ TODO
+7. **Email Notifications**: Transactional emails (job assignments, invoice ready) ❌ TODO
+
+### Phase 2: Polish & Launch Blockers
+1. **UI Redesign**: Minimal, modern aesthetic with orange branding ❌ TODO
+2. **Safe Delete/Restore**: Better UX for accidental deletions ⚠️ PARTIAL
+3. **Main Contact Tagging**: Flag primary customer contact ❌ TODO
+4. **Billable Miles Override**: Allow manual override (exists, needs UI polish) ⚠️ PARTIAL
+5. **Show Button**: Add "Show" link to jobs list ⚠️ MISSING in some views
+
+### Phase 3: Nice-to-Have (Post-Launch)
+1. **QuickBooks Export**: Export data for accounting ❌ TODO
+2. **One-Time Login Links**: Magic links for customer invoice access ❌ TODO
+3. **Vehicle Maintenance**: Oil change tracking, inspection schedules ❌ TODO
+4. **SMS Notifications**: Text alerts to drivers (currently email only) ❌ TODO
+
+## Common Tasks & Patterns
+
+### Creating a New Feature
+1. Create migration: `php artisan make:migration create_xyz_table`
+2. Create model: `php artisan make:model Xyz`
+3. Create policy: `php artisan make:policy XyzPolicy --model=Xyz`
+4. Register policy in `AuthServiceProvider`
+5. Create controller: `php artisan make:controller XyzController --resource`
+6. Create Livewire component (if needed): `php artisan make:livewire XyzComponent`
+7. Add routes to `routes/web.php` with middleware
+8. Create views in `resources/views`
+
+### Working with Invoices
+- Invoice values stored as JSON in `values` column
+- `PilotCarJob::invoiceValues()` generates invoice data
+- Rates: per_mile_rate, flat_rate, flat_rate_excludes_expenses
+- Special calculations: mini charge ($250 for ≤125 miles), deadhead ($250 each)
+- Expenses: hotel, tolls, gas, extra_charge, wait_time, extra_load_stops
+
+### CSV Import
+- `PilotCarJob::import($files, $organization_id)` processes Google Sheets export
+- Headers auto-mapped via `translateHeaders()` dictionary
+- Creates/updates: Customer, User (driver), Vehicle, PilotCarJob, UserLog
+
+### Email (Brevo)
+- Configured in `config/mail.php` with Brevo API
+- Use Laravel Mail facade or Brevo SDK (getbrevo/brevo-php)
+- Email controller has OAuth examples (may need cleanup)
+
+## UI/UX Guidelines
+
+### Color Palette
+- Primary: `#f9b104` (orange)
+- Secondary: `#2c41ff` (blue)
+- Dark: `#172232`
+- Light Gray: `#dddddd`
+
+### Mobile Optimization
+- Log entry form is PRIMARY use case for drivers
+- Use responsive grid: `grid-cols-1 sm:grid-cols-2 md:grid-cols-4`
+- Sticky bottom save button on mobile forms
+- Collapsible details sections for long forms
+
+### Accessibility
+- Use semantic HTML
+- Proper labels for inputs
+- Error messages with `@error` directive
+- Loading states with `wire:loading`
+
+## Testing
+- Feature tests in `tests/Feature` (Jetstream tests exist)
+- Use factories: `UserFactory`, `TeamFactory` (create more as needed)
+- Run tests: `php artisan test`
+
+## Deployment (Windows IIS)
+- Project root: `C:\inetpub\wwwroot\rupkeep-app`
+- PHP 8.2+ required
+- Vite build: `npm run build` before deploy
+- Queue worker: `php artisan queue:listen` (for email jobs)
+
+### Framework Note
+- Laravel 11+ replaces `app/Http/Kernel.php` with middleware configuration in `bootstrap/app.php` (define aliases like `'customer' => EnsureCustomer::class` there).
+- PowerShell shell default (Windows): chain commands with `;` (e.g., `cd C:\inetpub\wwwroot\rupkeep-app; php artisan test`). `&&` is not supported in the shipped PowerShell version.
+
+## Known Issues & Technical Debt (from DEV_NOTES)
+- Rate values not saving properly (check `PilotCarJob` form validation)
+- Billable miles: calculated vs manual override needs clarification
+- Invoice paid link missing "show" button on some job views
+- Need confirm-before-delete on all delete actions
+- Driver notifications not implemented
+- Missing vehicle position in some contexts
+
+## Confirmed Architecture Decisions (Oct 29, 2025)
+
+### Authentication & Authorization
+- **Unified auth system** with role-based permissions (whitelist approach)
+- **Roles**: GUEST, EMPLOYEE:STANDARD, EMPLOYEE:MANAGER, CUSTOMER, ADMIN/SUPER_USER
+- **Login codes** for customers (one-time use, configurable expiry, default 24h)
+- Customers do NOT use traditional email+password (use login codes instead)
+
+### Invoicing
+- **Print-optimized HTML** for invoices (NOT PDF library - marked as future feature)
+- **Customer features**: View all their invoices, comment on invoices, flag for attention
+- **Proof materials**: Logs and attachments visible to staff by default, can be marked "public" for customer viewing
+- Business policy determines what customers can see (will evolve over time)
+
+### Notifications
+- **Email only** (via Laravel Events/Notifications pattern)
+- SMS marked as future feature - design should allow flexibility
+- Events: JobAssigned, InvoiceReady, InvoiceFlagged
+
+### Integrations
+- **QuickBooks**: CSV export (NOT API integration)
+
+### Vehicle Maintenance (Launch Requirement)
+- Track: oil change dates, inspection dates, repair dates, scheduled maintenance
+- Show: current assignment (who has the vehicle)
+- Think of it as "inventory management"
+
+### UI/UX Direction
+- **Keep orange theme** (#f9b104) - on brand for pilot car/construction
+- **Bright construction aesthetic**
+- Inspiration: singleparentproject.org (note how orange is used without overdoing it)
+- Mobile-first for driver log entry forms
+
+### Target Ship Date
+- **November 21, 2025**
+- Development capacity: 2-3 hours/day with some full days
+
+## AI Assistant Guidelines
+- When suggesting features, prioritize mobile UX for driver-facing screens
+- Always check existing Policies before adding authorization logic
+- Use Livewire for interactive forms (avoid vanilla JS where possible)
+- Keep the orange branding (#f9b104) in all UI designs
+- Ask clarifying questions about business logic (rates, charges, workflows)
+- Suggest test cases for critical paths (invoicing, payments, permissions)
+
+## Glossary
+- **Pilot Car**: Escort vehicle for oversized loads
+- **Load**: The oversized cargo being escorted
+- **Job**: A pilot car assignment (may span multiple days/logs)
+- **Log**: A single driver's work record for a job (daily entry)
+- **Deadhead**: Empty return trip (flat $250 charge)
+- **Mini**: Short job ≤125 billable miles (flat $250 charge)
+- **Billable Miles**: Miles charged to customer (job start to job end)
+- **Non-billable Miles**: Personal vehicle miles (home to job start, etc.)
+- **Rate Code**: Pricing model (per_mile_rate, flat_rate, etc.)
+
+---
+**Last Updated**: 2025-10-29
+**Laravel Version**: 11.9
+**PHP Version**: 8.2+
+**Target Ship Date**: [TBD - ask user]
+

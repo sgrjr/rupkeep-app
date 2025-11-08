@@ -29,7 +29,8 @@ class CustomerContactPolicy
      */
     public function create(User $user, CustomerContact $customer_contact): bool
     {
-        return ($user->organization_id === $customer_contact->organization_id && in_array($user->organization_role,['administrator','editor'])) || $user->organization->is_super;
+        return ($user->organization_id === $customer_contact->organization_id && ($user->isAdmin() || $user->isManager()))
+            || $user->organization->is_super;
     }
 
     /**
@@ -37,7 +38,8 @@ class CustomerContactPolicy
      */
     public function update(User $user, CustomerContact $customer_contact): bool
     {
-        return ($user->organization_id === $customer_contact->organization_id && in_array($user->organization_role,['administrator','editor','driver'])) || $user->organization->is_super;
+        return ($user->organization_id === $customer_contact->organization_id && ($user->isAdmin() || $user->isManager() || $user->isStandardEmployee()))
+            || $user->organization->is_super;
     }
 
     /**
@@ -45,7 +47,8 @@ class CustomerContactPolicy
      */
     public function delete(User $user, CustomerContact $customer_contact): bool
     {
-        return ($user->organization_id === $customer_contact->organization_id && $user->organization_role === 'administrator') || $user->organization->is_super;
+        return ($user->organization_id === $customer_contact->organization_id && $user->isAdmin())
+            || $user->organization->is_super;
     }
 
     /**
@@ -53,7 +56,8 @@ class CustomerContactPolicy
      */
     public function restore(User $user, CustomerContact $customer_contact): bool
     {
-        return ($user->organization_id === $customer_contact->organization_id && $user->organization_role === 'administrator') || $user->organization->is_super;
+        return ($user->organization_id === $customer_contact->organization_id && $user->isAdmin())
+            || $user->organization->is_super;
     }
 
     /**
@@ -61,12 +65,14 @@ class CustomerContactPolicy
      */
     public function forceDelete(User $user, CustomerContact $customer_contact): bool
     {
-        return ($user->organization_id === $customer_contact->organization_id && $user->organization_role === 'administrator') || $user->organization->is_super;
+        return ($user->organization_id === $customer_contact->organization_id && $user->isAdmin())
+            || $user->organization->is_super;
     }
 
     public function createCustomer(User $user, CustomerContact $customer_contact): bool
     {
-        return ($user->organization_id === $customer_contact->organization_id && $user->organization_role === 'administrator') || $user->organization->is_super;
+        return ($user->organization_id === $customer_contact->organization_id && $user->isAdmin())
+            || $user->organization->is_super;
     }
     
 }

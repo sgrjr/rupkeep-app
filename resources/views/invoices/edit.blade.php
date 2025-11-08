@@ -2,7 +2,12 @@
     <div>
         <div class="max-w-7xl mx-auto p-2">
 
-            <h1 class="text-xl text-center font-bold">{{$invoice->customer->name}} {{$invoice->values['title']}}# {{$invoice->invoice_number}}</h1>
+            <div class="flex items-center justify-between">
+                <h1 class="text-xl text-center font-bold">{{$invoice->customer->name}} {{$invoice->values['title']}}# {{$invoice->invoice_number}}</h1>
+                <a href="{{route('my.invoices.print', ['invoice'=>$invoice->id])}}" target="_blank" class="btn-base btn-secondary">
+                    Print Invoice
+                </a>
+            </div>
             <form class="mb-4" action="{{route('my.invoices.update',['invoice'=>$invoice->id])}}" method="post" autocomplete="off">
                 @csrf
                 <input name="_method" type="hidden" value="PUT">
@@ -114,6 +119,10 @@
                     </x-button>
                 </div>
             </form>
+
+            <div class="mt-6">
+                <livewire:invoice-comments :invoice="$invoice" />
+            </div>
 
 <!-- 
 

@@ -16,13 +16,13 @@ class EditJobForm extends Form
     #[Validate('required|exists:customers,id|min:1')]
     public $customer_id = null;
 
-    #[Validate('string|min:6')]
+    #[Validate('nullable|string|min:3')]
     public $new_customer_name = null;
 
-    #[Validate('string|min:8')]
+    #[Validate('nullable|string|min:8')]
     public $scheduled_pickup_at = null;
 
-    #[Validate('string|min:8')]
+    #[Validate('nullable|string|min:8')]
     public $scheduled_delivery_at = null;
     #[Validate('required|string|max:255')]
     public $load_no = null;
@@ -33,22 +33,22 @@ class EditJobForm extends Form
     #[Validate('required|string|max:255')]
     public $delivery_address = null;
 
-    #[Validate('string|max:255')]
+    #[Validate('nullable|string|max:255')]
     public $check_no = null;
 
-    #[Validate('string|max:255')]
+    #[Validate('nullable|string|max:255')]
     public $invoice_paid = null;
 
-    #[Validate('string|max:255')]
+    #[Validate('nullable|string|max:255')]
     public $invoice_no = null;
 
-    #[Validate('string|max:255')]
+    #[Validate('required|string|max:255')]
     public $rate_code = null;
 
-    #[Validate('string|max:255')]
-    public $flat_rate_value = null;
+    #[Validate('nullable|numeric')]
+    public $rate_value = null;
 
-    #[Validate('string|min:8')]
+    #[Validate('nullable|string|min:3')]
     public $memo = null;
 
 }
@@ -69,7 +69,7 @@ class EditPilotCarJob extends Component
        $this->rates = PilotCarJob::rates();
        $job = PilotCarJob::find($job);
 
-       if($this->authorize('update', $job)){
+        if($this->authorize('update', $job)){
             $this->job = $job;
             $this->form->job_no = $job->job_no;
             $this->form->customer_id = $job->customer_id;
@@ -83,7 +83,7 @@ class EditPilotCarJob extends Component
             $this->form->invoice_paid = $job->invoice_paid;
             $this->form->invoice_no = $job->invoice_no;
             $this->form->rate_code = $job->rate_code;
-            $this->form->flat_rate_value = $job->flat_rate_value;
+            $this->form->rate_value = $job->rate_value ?? PilotCarJob::defaultRateValue($job->rate_code);
             $this->form->memo = $job->memo;
         }
     }
@@ -94,9 +94,41 @@ class EditPilotCarJob extends Component
     }
 
     public function saveJob(){
+        $this->form->validate();
+
         $form = $this->form->all();
-        $job = $this->job->update($form);
+        $form['rate_value'] = $this->sanitizeRateValue($this->form->rate_value, $this->form->rate_code);
+
+        $this->job->update($form);
         $this->dispatch('saved');
         return redirect()->route('jobs.show', ['job'=>$this->job->id]);
+    }
+
+    protected function sanitizeRateValue($rawValue, ?string $rateCode): ?string
+    {
+        $value = null;
+
+        if ($rawValue !== null && $rawValue !== '') {
+            $normalized = preg_replace('/[^0-9\.\-]/', '', (string) $rawValue);
+
+            if ($normalized !== '' && is_numeric($normalized)) {
+                $value = number_format((float) $normalized, 2, '.', '');
+            }
+        }
+
+        if ($value === null) {
+            $value = PilotCarJob::defaultRateValue($rateCode);
+        }
+
+        return $value;
+    }
+
+    public function updatedFormRateCode($value): void
+    {
+        $default = PilotCarJob::defaultRateValue($value);
+
+        if ($default !== null) {
+            $this->form->rate_value = $default;
+        }
     }
 }

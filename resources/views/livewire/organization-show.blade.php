@@ -74,7 +74,7 @@
                                         <tr class="border-b border-gray-200 hover:bg-gray-50">
                                             <td class="p-3 text-sm text-gray-800">{{ $user->name }}</td>
                                             <td class="p-3 text-sm text-gray-800 break-all">{{ $user->email }}</td>
-                                            <td class="p-3 text-sm text-gray-800">{{ $user->organization_role }}</td>
+                                            <td class="p-3 text-sm text-gray-800">{{ $user->role_label }}</td>
                                             <td class="p-3 text-sm text-gray-800 break-all">{{ $user->notification_address }}</td>
                                             <td class="p-3 text-sm text-gray-800">
                                                 <div class="flex flex-wrap gap-2">
@@ -108,7 +108,7 @@
                                         <div class="mb-2">
                                             <p class="text-sm text-gray-600">
                                                 <span class="font-bold">Role:</span>
-                                                <span class="text-gray-800">{{ $user->organization_role }}</span>
+                                                <span class="text-gray-800">{{ $user->role_label }}</span>
                                             </p>
                                         </div>
 
@@ -157,7 +157,7 @@
                                             <td><x-delete-form class="inline-block underline" action="{{route('user.delete', ['user'=> $user->id])}}" title="delete"/></td>
                                             <td>{{$user->name}}</td>
                                             <td>{{$user->email}}</td>
-                                            <td>{{$user->organization_role}}</td>
+                                            <td>{{$user->role_label}}</td>
                                         </tr>
                                         @endforeach
                                     </tbody>

@@ -20,5 +20,9 @@
 - billable miles, edit values vs calculated values
 
 
+## Utilities
 
-
+- Quick log tailing: `powershell -File .\scripts\tail-laravel-log.ps1 -Lines 200`
+  - Add `-Follow` to stream (`-Follow`) and `-Contains "text"` to filter lines.
+- Stack traces trimmed to first `LOG_STACKTRACE_LIMIT` frames (default 12). Adjust via env var if needed.
+- In PowerShell use `;` for command chaining: `cd C:\inetpub\wwwroot\rupkeep-app; php artisan test`

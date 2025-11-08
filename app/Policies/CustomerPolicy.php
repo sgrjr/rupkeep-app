@@ -13,7 +13,7 @@ class CustomerPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->organization->is_super;
+        return $user->organization->is_super || $user->isEmployee();
     }
 
     /**
@@ -29,7 +29,7 @@ class CustomerPolicy
      */
     public function create(User $user): bool
     {
-        return true;
+        return $user->isAdmin() || $user->isManager() || $user->organization->is_super;
     }
 
     /**
@@ -37,7 +37,7 @@ class CustomerPolicy
      */
     public function update(User $user, Customer $customer): bool
     {
-        return ($user->organization_id === $customer->organization_id && in_array($user->organization_role,['administrator','editor'])) || $user->organization->is_super;
+        return ($user->organization_id === $customer->organization_id && ($user->isAdmin() || $user->isManager())) || $user->organization->is_super;
     }
 
     /**
@@ -45,7 +45,7 @@ class CustomerPolicy
      */
     public function delete(User $user, Customer $customer): bool
     {
-        return ($user->organization_id === $customer->organization_id && $user->organization_role === 'administrator') || $user->organization->is_super;
+        return ($user->organization_id === $customer->organization_id && $user->isAdmin()) || $user->organization->is_super;
     }
 
     /**
@@ -53,7 +53,7 @@ class CustomerPolicy
      */
     public function restore(User $user, Customer $customer): bool
     {
-        return ($user->organization_id === $customer->organization_id && $user->organization_role === 'administrator') || $user->organization->is_super;
+        return ($user->organization_id === $customer->organization_id && $user->isAdmin()) || $user->organization->is_super;
     }
 
     /**
@@ -61,12 +61,12 @@ class CustomerPolicy
      */
     public function forceDelete(User $user, Customer $customer): bool
     {
-        return ($user->organization_id === $customer->organization_id && $user->organization_role === 'administrator') || $user->organization->is_super;
+        return ($user->organization_id === $customer->organization_id && $user->isAdmin()) || $user->organization->is_super;
     }
 
     public function createCustomer(User $user, Customer $customer): bool
     {
-        return ($user->organization_id === $customer->organization_id && $user->organization_role === 'administrator') || $user->organization->is_super;
+        return ($user->organization_id === $customer->organization_id && $user->isAdmin()) || $user->organization->is_super;
     }
     
 }

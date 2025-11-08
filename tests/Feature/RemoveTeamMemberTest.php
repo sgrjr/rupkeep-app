@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Jetstream\Features;
 use Laravel\Jetstream\Http\Livewire\TeamMemberManager;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -11,6 +12,15 @@ use Tests\TestCase;
 class RemoveTeamMemberTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        if (! Features::hasTeamFeatures()) {
+            $this->markTestSkipped('Team features are disabled.');
+        }
+    }
 
     public function test_team_members_can_be_removed_from_teams(): void
     {

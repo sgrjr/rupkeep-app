@@ -28,7 +28,7 @@ class UserLogPolicy
      */
     public function create(User $user, UserLog $model): bool
     {
-        return ($user->organization_id === $model->organization_id && in_array($user->organization_role,['administrator','editor'])) || $user->is_super;
+        return ($user->organization_id === $model->organization_id && ($user->isAdmin() || $user->isManager())) || $user->is_super;
     }
 
     /**
@@ -36,7 +36,7 @@ class UserLogPolicy
      */
     public function update(User $user, UserLog $model): bool
     {
-        return ($user->organization_id === $model->organization_id && in_array($user->organization_role,['administrator','editor','driver'])) || $user->is_super;
+        return ($user->organization_id === $model->organization_id && ($user->isAdmin() || $user->isManager() || $user->isStandardEmployee())) || $user->is_super;
     }
 
     /**
@@ -44,7 +44,7 @@ class UserLogPolicy
      */
     public function delete(User $user, UserLog $model): bool
     {
-        return ($user->organization_id === $model->organization_id && in_array($user->organization_role,['administrator','editor'])) || $user->is_super;
+        return ($user->organization_id === $model->organization_id && ($user->isAdmin() || $user->isManager())) || $user->is_super;
     }
 
     /**

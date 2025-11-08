@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\Organization;
 use App\Models\PilotCarJob;
 use App\Models\Customer;
+use App\Models\InvoiceComment;
+use App\Models\Attachment;
+use App\Models\UserLog;
 
 class Invoice extends Model
 {
@@ -49,9 +52,40 @@ class Invoice extends Model
         return $this->belongsTo(Customer::class);
     }
 
-    public function jobs(){
-        //return $this->belongsToMany(PilotCarJob::class, 'jobs_invoices');
-        return $this->belongsTo(PilotCarJob::class);
+    public function job(){
+        return $this->belongsTo(PilotCarJob::class, 'pilot_car_job_id');
+    }
+
+    public function comments()
+    {
+        return $this->hasMany(InvoiceComment::class);
+    }
+
+    public function publicProofAttachments()
+    {
+        $job = $this->job;
+
+        if (!$job) {
+            return collect();
+        }
+
+        $attachments = $job->attachments()
+            ->where('is_public', true)
+            ->get();
+
+        $logIds = $job->logs()->pluck('id');
+
+        if ($logIds->isNotEmpty()) {
+            $logAttachments = Attachment::query()
+                ->where('is_public', true)
+                ->where('attachable_type', UserLog::class)
+                ->whereIn('attachable_id', $logIds)
+                ->get();
+
+            $attachments = $attachments->merge($logAttachments);
+        }
+
+        return $attachments;
     }
 
     public function getInvoiceNumberAttribute(){

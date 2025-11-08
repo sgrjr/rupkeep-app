@@ -17,8 +17,8 @@ class UpdateProfileInformationForm extends Component
      *
      * @var array
      */
-    public $state = [];
-    public $themes = [];
+    public array $state = [];
+    public array $themes = [];
 
     /**
      * The new avatar for the user.
@@ -32,10 +32,10 @@ class UpdateProfileInformationForm extends Component
      *
      * @var bool
      */
-    public $verificationLinkSent = false;
+    public bool $verificationLinkSent = false;
 
-    public $user;
-    public $roles;
+    public User $user;
+    public array $roles = [];
 
     /**
      * Prepare the component.
@@ -134,6 +134,9 @@ class UpdateProfileInformationForm extends Component
      */
     public function render()
     {   
-        return view('profile.update-profile-information-form');
+        return view('profile.update-profile-information-form', [
+            'themes' => $this->themes,
+            'roles' => $this->roles,
+        ]);
     }
 }

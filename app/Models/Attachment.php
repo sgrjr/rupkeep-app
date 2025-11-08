@@ -16,6 +16,7 @@ class Attachment extends Model
         'attachable_id',
         'attachable_type',
         'location',
+        'is_public',
         'organization_id',
         'deleted_at'
     ];

@@ -15,6 +15,15 @@ class InviteTeamMemberTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        if (! Features::hasTeamFeatures()) {
+            $this->markTestSkipped('Team features are disabled.');
+        }
+    }
+
     public function test_team_members_can_be_invited_to_team(): void
     {
         if (! Features::sendsTeamInvitations()) {

@@ -5,56 +5,56 @@ return [
         'name' => env('SUPER_NAME'),
         'email' => env('SUPER_EMAIL'),
         'password' => env('SUPER_PASSWORD'),
-        'organization_role' => 'administrator'
+        'organization_role' => 'admin'
     ],
     'cbpc_users' =>[
         [
             'name' => 'Mary Reynolds',
             'email' => env('u1_email'),
             'password' => env('u1_password'),
-            'organization_role' => 'administrator',
+            'organization_role' => 'admin',
             'notification_address' => null
         ],
         [
             'name' => 'Matthew Reynolds',
             'email' => env('u2_email'),
             'password' => env('u2_password'),
-            'organization_role' => 'administrator',
+            'organization_role' => 'admin',
             'notification_address' => '2074168659@mms.uscc.net'
         ],
         [
             'name' => 'Christina Reynolds',
             'email' => 'princessrina31@icloud.com',
             'password' => env('default_password'),
-            'organization_role' => 'driver',
+            'organization_role' => 'employee_standard',
             'notification_address' => null
         ],
         [
             'name' => 'Gail Field',
             'email' => 'gail@cascobaypc.com',
             'password' => env('default_password'),
-            'organization_role' => 'driver',
+            'organization_role' => 'employee_standard',
             'notification_address' => null
         ],
         [
             'name' => 'Donald Cummings',
             'email' => 'donald@cascobaypc.com',
             'password' => env('default_password'),
-            'organization_role' => 'driver',
+            'organization_role' => 'employee_standard',
             'notification_address' => ''
         ],
         [
             'name' => 'Dave Field',
             'email' => 'dave@cascobaypc.com',
             'password' => env('default_password'),
-            'organization_role' => 'driver',
+            'organization_role' => 'employee_standard',
             'notification_address' => null
         ],
         [
             'name' => 'Temp Driver',
             'email' => 'tempdriver@cascobaypc.com',
             'password' => env('default_password'),
-            'organization_role' => 'driver',
+            'organization_role' => 'employee_standard',
             'notification_address' => null
         ]
     ],

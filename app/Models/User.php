@@ -11,6 +11,8 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Jetstream\HasProfilePhoto;
 use Laravel\Sanctum\HasApiTokens;
 use App\Models\Organization;
+use App\Models\LoginCode;
+use App\Models\Customer;
 
 class User extends Authenticatable
 {
@@ -23,6 +25,20 @@ class User extends Authenticatable
     use TwoFactorAuthenticatable;
     use SoftDeletes;
 
+    public const ROLE_GUEST = 'guest';
+    public const ROLE_EMPLOYEE_STANDARD = 'employee_standard';
+    public const ROLE_EMPLOYEE_MANAGER = 'employee_manager';
+    public const ROLE_CUSTOMER = 'customer';
+    public const ROLE_ADMIN = 'admin';
+
+    public const ROLE_LABELS = [
+        self::ROLE_GUEST => 'Guest (No Access)',
+        self::ROLE_EMPLOYEE_STANDARD => 'Employee: Standard',
+        self::ROLE_EMPLOYEE_MANAGER => 'Employee: Manager',
+        self::ROLE_CUSTOMER => 'Customer',
+        self::ROLE_ADMIN => 'Admin / Super User',
+    ];
+
     /**
      * The attributes that are mass assignable.
      *
@@ -33,6 +49,7 @@ class User extends Authenticatable
         'email',
         'password',
         'organization_id',
+        'customer_id',
         'organization_role',
         'theme',
         'notification_address'
@@ -57,7 +74,8 @@ class User extends Authenticatable
      */
     protected $appends = [
         'profile_photo_url',
-        'dashboard_theme'
+        'dashboard_theme',
+        'role_label',
     ];
 
     /**
@@ -77,9 +95,24 @@ class User extends Authenticatable
         return $this->belongsTo(Organization::class);
     }
 
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class);
+    }
+
+    public function loginCodes()
+    {
+        return $this->hasMany(LoginCode::class);
+    }
+
     public function getDashboardThemeAttribute(){
         return 'default-theme';
         return $this->theme? $this->theme:'default-theme';
+    }
+
+    public function getRoleLabelAttribute(): string
+    {
+        return self::ROLE_LABELS[$this->organization_role] ?? ucfirst(str_replace('_', ' ', (string)$this->organization_role));
     }
 
     public static function superUser(){
@@ -95,51 +128,68 @@ class User extends Authenticatable
     }
 
     public static function roles(){
-        return [[
-            'id'=>'admin', 
-            'name'=>'Administrator', 
-            'permissions'=>[
-                'create',
-                'read',
-                'update',
-                'delete'
-           ],
-           'description'=> 'Administrator users can perform any action.',
-           'short_description' => 'can do anything+create users'
-        ],[
-            'id'=>'editor', 
-            'name'=>'Editor', 
-            'permissions'=>[
-                'read',
-                'create',
-                'update',
-           ],
-           'description'=> 'Editor users have the ability to read, create, and update.',
-           'short_description' => 'can read, write and update'
-        ],[
-            'id'=>'viewer', 
-            'name'=>'Viewer', 
-            'permissions'=>[
-                'read'
-           ],
-           'description'=> 'Viewer users have the ability to read.',
-           'short_description' => 'can only read'
-        ],[
-            'id'=>'driver', 
-            'name'=>'Driver', 
-            'permissions'=>[
-                'work'
-           ],
-           'description'=> 'Driver users have the ability to complete jobs.',
-           'short_description' => 'can only complete jobs'
-        ]];
+        return [
+            [
+                'id' => self::ROLE_ADMIN,
+                'name' => self::ROLE_LABELS[self::ROLE_ADMIN],
+                'permissions' => ['create', 'read', 'update', 'delete'],
+                'description' => 'Administrators can perform any action and manage other users.',
+                'short_description' => 'Full access + manage users',
+            ],
+            [
+                'id' => self::ROLE_EMPLOYEE_MANAGER,
+                'name' => self::ROLE_LABELS[self::ROLE_EMPLOYEE_MANAGER],
+                'permissions' => ['create', 'read', 'update'],
+                'description' => 'Managers can create and update jobs, logs, and customers.',
+                'short_description' => 'Create, update, review',
+            ],
+            [
+                'id' => self::ROLE_EMPLOYEE_STANDARD,
+                'name' => self::ROLE_LABELS[self::ROLE_EMPLOYEE_STANDARD],
+                'permissions' => ['work'],
+                'description' => 'Standard employees (drivers) can work assigned jobs and submit logs.',
+                'short_description' => 'Complete jobs & submit logs',
+            ],
+            [
+                'id' => self::ROLE_CUSTOMER,
+                'name' => self::ROLE_LABELS[self::ROLE_CUSTOMER],
+                'permissions' => ['view_invoices'],
+                'description' => 'Customers can access their invoices, comment, and flag issues.',
+                'short_description' => 'View & comment on invoices',
+            ],
+        ];
     }
 
     public function getOrganizationNameAttribute(){
-        return $this->organization()->select('name')->first()->name;
+        return $this->organization?->name;
     }
 
     public function getIsSuperAttribute(){
-        return $this->organization_name == 'Reynolds Upkeep' && $this->organization_role === 'administrator';
+        return $this->organization_name === 'Reynolds Upkeep' && $this->isAdmin();
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->organization_role === self::ROLE_ADMIN;
+    }
+
+    public function isManager(): bool
+    {
+        return $this->organization_role === self::ROLE_EMPLOYEE_MANAGER;
+    }
+
+    public function isStandardEmployee(): bool
+    {
+        return $this->organization_role === self::ROLE_EMPLOYEE_STANDARD;
+    }
+
+    public function isEmployee(): bool
+    {
+        return $this->isAdmin() || $this->isManager() || $this->isStandardEmployee();
+    }
+
+    public function isCustomer(): bool
+    {
+        return $this->organization_role === self::ROLE_CUSTOMER;
     }
 }

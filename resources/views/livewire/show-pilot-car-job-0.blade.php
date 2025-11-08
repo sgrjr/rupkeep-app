@@ -46,7 +46,12 @@
         <p><b>invoice_paid:</b> {{$job->invoice_paid}}</p>
         <p><b>invoice#:</b> {{$job->invoice_no}}</p>
         <p><b>rate_code:</b> {{$job->rate_code}}</p>
-        <p><b>rate_value:</b> {{$job->rate_value}}</p>
+        @php
+            $rateDisplay = $job->rate_value !== null
+                ? '$'.number_format((float) $job->rate_value, 2)
+                : '—';
+        @endphp
+        <p><b>rate_value:</b> {{$rateDisplay}}</p>
         @if($job->canceled_at)<p><b>canceled_at:</b> {{$job->canceled_at}}</p>@endif
         @if($job->canceled_reason)<p><b>canceled_reason:</b> {{$job->canceled_reason}}</p>@endif
         <p><b>memo:</b> 
@@ -65,9 +70,16 @@
 
         <div> <b>attachments ({{$job->attachments? $job->attachments->count():0}}): </b>
             @foreach($job->attachments as $att)
-            <div class="flex">
-            <x-delete-form class="inline-block underline text-red" action="{{route('attachments.destroy', ['attachment'=> $att->id])}}" title="X"/>
-            <a class="button" download href="{{route('attachments.download', ['attachment'=>$att->id])}}"><span>&#128229;</span>{{$att->file_name}}</a>
+            <div class="flex flex-wrap items-center gap-2">
+                <x-delete-form class="inline-block underline text-red" action="{{route('attachments.destroy', ['attachment'=> $att->id])}}" title="X"/>
+                <a class="button" download href="{{route('attachments.download', ['attachment'=>$att->id])}}"><span>&#128229;</span>{{$att->file_name}}</a>
+                @can('updateVisibility', $att)
+                    <livewire:attachment-visibility-toggle :attachment="$att" :key="'legacy-job-att-'.$att->id"/>
+                @else
+                    @if($att->is_public)
+                        <span class="text-xs text-green-600 font-semibold">{{ __('Visible to customer') }}</span>
+                    @endif
+                @endcan
             </div>
             @endforeach
         </div>
@@ -181,9 +193,16 @@
 
     <div> <b>attachments ({{$log->attachments? $log->attachments->count():0}}): </b>
         @foreach($log->attachments as $att)
-        <div class="flex">
-        <x-delete-form class="inline-block underline text-red" action="{{route('attachments.destroy', ['attachment'=> $att->id])}}" title="X"/>
-        <a class="button" download href="{{route('attachments.download', ['attachment'=>$att->id])}}"><span>&#128229;</span>{{$att->file_name}}</a>
+        <div class="flex flex-wrap items-center gap-2">
+            <x-delete-form class="inline-block underline text-red" action="{{route('attachments.destroy', ['attachment'=> $att->id])}}" title="X"/>
+            <a class="button" download href="{{route('attachments.download', ['attachment'=>$att->id])}}"><span>&#128229;</span>{{$att->file_name}}</a>
+            @can('updateVisibility', $att)
+                <livewire:attachment-visibility-toggle :attachment="$att" :key="'legacy-log-att-'.$att->id"/>
+            @else
+                @if($att->is_public)
+                    <span class="text-xs text-green-600 font-semibold">{{ __('Visible to customer') }}</span>
+                @endif
+            @endcan
         </div>
         @endforeach
     </div>

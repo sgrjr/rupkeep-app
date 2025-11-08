@@ -33,7 +33,7 @@ class MyUsersController extends Controller
     {
         $user = (new User([
             'organization_id' => auth()->user()->organization_id,
-            'organization_role' => 'editor',
+            'organization_role' => User::ROLE_EMPLOYEE_MANAGER,
             'theme'=> 'default-theme',
             'name'=>'',
             'password'=>'',

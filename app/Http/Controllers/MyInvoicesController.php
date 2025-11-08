@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\InvoiceReady;
 use Illuminate\Http\Request;
 use App\Models\UserLog;
 use App\Models\Invoice;
@@ -19,6 +20,23 @@ class MyInvoicesController extends Controller
       $this->authorize('update', $invoice);
 
       return view('invoices.edit', compact('invoice'));
+    }
+    public function print(Request $request, Invoice $invoice)
+    {
+        $user = $request->user();
+
+        if (! $user->is_super && ! $user->isAdmin() && ! $user->isManager()) {
+            abort(403);
+        }
+
+        $this->authorize('view', $invoice);
+
+        $invoice->loadMissing(['customer', 'organization', 'job']);
+
+        return view('invoices.print', [
+            'invoice' => $invoice,
+            'values' => is_array($invoice->values) ? $invoice->values : [],
+        ]);
     }
 
     public function update(Request $request, Invoice $invoice){
@@ -62,18 +80,26 @@ class MyInvoicesController extends Controller
         });
 
         foreach($invoices as $i){
+            $jobId = $i['job_id'] ?? $i['pilot_car_job_id'] ?? null;
+
+            if (!$jobId) {
+                continue;
+            }
+
             $invoice = Invoice::create([
                 'paid_in_full' => false,
                 'values' => $i,
                 'organization_id' => $i['organization_id'],
                 'customer_id' => $i['customer_id'],
-                'pilot_car_job_id' => $i['job_id']
+                'pilot_car_job_id' => $jobId
             ]);
 
             JobInvoice::create([
                 'invoice_id' => $invoice->id,
-                'pilot_car_job_id' => $i['job_id']
+                'pilot_car_job_id' => $jobId
             ]);
+
+            event(new InvoiceReady($invoice));
         }
         
         return back();
