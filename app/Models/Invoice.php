@@ -26,7 +26,9 @@ class Invoice extends Model
         'values',
         'organization_id',
         'customer_id',
-        'pilot_car_job_id'
+        'pilot_car_job_id',
+        'parent_invoice_id',
+        'invoice_type',
     ];
 
     public $timestamps = true;
@@ -56,6 +58,21 @@ class Invoice extends Model
         return $this->belongsTo(PilotCarJob::class, 'pilot_car_job_id');
     }
 
+    public function jobs()
+    {
+        return $this->belongsToMany(PilotCarJob::class, 'jobs_invoices');
+    }
+
+    public function parent()
+    {
+        return $this->belongsTo(self::class, 'parent_invoice_id');
+    }
+
+    public function children()
+    {
+        return $this->hasMany(self::class, 'parent_invoice_id');
+    }
+
     public function comments()
     {
         return $this->hasMany(InvoiceComment::class);
@@ -63,6 +80,15 @@ class Invoice extends Model
 
     public function publicProofAttachments()
     {
+        if ($this->isSummary()) {
+            return $this->children()
+                ->with('job.attachments', 'job.logs.attachments')
+                ->get()
+                ->flatMap(fn (Invoice $child) => $child->publicProofAttachments())
+                ->unique('id')
+                ->values();
+        }
+
         $job = $this->job;
 
         if (!$job) {
@@ -90,5 +116,10 @@ class Invoice extends Model
 
     public function getInvoiceNumberAttribute(){
         return substr($this->created_at,0,4) . str_pad((String)$this->id, 5, "0", STR_PAD_LEFT );
+    }
+
+    public function isSummary(): bool
+    {
+        return $this->invoice_type === 'summary';
     }
 }

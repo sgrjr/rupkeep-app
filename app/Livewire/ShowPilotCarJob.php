@@ -12,6 +12,9 @@ use App\Models\User;
 use App\Models\Attachment;
 use Livewire\WithFileUploads;
 use App\Actions\SendUserNotification;
+use App\Events\InvoiceReady;
+use App\Models\Invoice;
+use App\Models\JobInvoice;
 
 class JobAssignmentForm extends Form
 {
@@ -32,14 +35,31 @@ class ShowPilotCarJob extends Component
 
     public JobAssignmentForm $assignment;
     public $job;
+    public ?int $recentInvoiceId = null;
 
     public $vehicles = [];
     public $drivers = [];
     public $vehicle_positions = [];
     public $file;
 
+    protected function loadJobRelations(): void
+    {
+        $this->job->load([
+            'logs',
+            'logs.vehicle',
+            'logs.truck_driver',
+            'logs.user',
+            'logs.attachments',
+            'customer',
+            'customer.contacts',
+            'invoices' => fn ($query) => $query->with('children')->latest(),
+        ]);
+
+        $this->job->append('invoices_count');
+    }
+
     public function mount(Int $job){
-        $this->job = Job::with('logs','logs.vehicle','logs.truck_driver','logs.user','logs.attachments','customer','customer.contacts')->find($job)?->append('invoices_count');
+        $this->job = Job::find($job);
 
         if(!$this->job) return redirect()->route('my.jobs.index');
 
@@ -58,6 +78,8 @@ class ShowPilotCarJob extends Component
         User::where('organization_id', $this->job->organization_id)->get()->map(fn($d)=>$this->drivers[] = ['name'=>$d->name, 'value'=> $d->id ]);
 
         $this->authorize('view', $this->job);
+
+        $this->loadJobRelations();
     }
 
     public function render()
@@ -106,7 +128,29 @@ class ShowPilotCarJob extends Component
     }
 
     public function generateInvoice(){
-        $this->job->invoices()->create($this->job->invoiceValues());
+        $invoiceValues = $this->job->invoiceValues();
+
+        /** @var \App\Models\Invoice $invoice */
+        $invoice = $this->job->invoices()->create($invoiceValues);
+
+        JobInvoice::firstOrCreate([
+            'invoice_id' => $invoice->id,
+            'pilot_car_job_id' => $this->job->id,
+        ]);
+
+        $invoice->refresh();
+
+        event(new InvoiceReady($invoice));
+
+        $this->recentInvoiceId = $invoice->id;
+
+        $this->loadJobRelations();
+
+        session()->flash('success', __('Invoice #:number created for job :job.', [
+            'number' => $invoice->invoice_number,
+            'job' => $this->job->job_no ?? $this->job->id,
+        ]));
+
         $this->dispatch('updated');
     }
 }

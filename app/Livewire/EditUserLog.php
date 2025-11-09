@@ -97,10 +97,9 @@ class EditUserLog extends Component
     public $isDriverVehicleOpen = false; // Default to open
     public $isTripTimingOpen = false;
     public $isMileageDetailsOpen = false;
-    public $isTruckTrailerOpen = false;
-    public $isLoadTripStatusOpen = false;
-    public $isExpensesOpen = false;
-    public $isMaintenanceMemoOpen = false;
+    public $isExpenseDetailsOpen = false;
+    public $isLoadInformationOpen = false;
+    public $isAttachmentsOpen = false;
 
     protected $listeners = [
         'saved' => '$refresh',

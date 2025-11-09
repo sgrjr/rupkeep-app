@@ -22,7 +22,10 @@ class MyCustomersController extends Controller
     }
 
     public function show(Request $request, int $customer_id){
-        $customer = Customer::with('contacts','jobs')->where('id', $customer_id)->first();
+        $customer = Customer::with([
+            'contacts',
+            'jobs.invoices.children',
+        ])->where('id', $customer_id)->first();
         return view('customers.show', compact('customer'));
     }
 

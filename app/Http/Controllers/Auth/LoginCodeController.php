@@ -16,16 +16,27 @@ class LoginCodeController extends Controller
     ) {
     }
 
-    public function create()
+    public function create(Request $request)
     {
-        return view('auth.login-code-request');
+        if ($redirect = $request->query('redirect')) {
+            $request->session()->put('customer_portal.redirect', $redirect);
+        }
+
+        return view('auth.login-code-request', [
+            'redirect' => $request->query('redirect', $request->session()->get('customer_portal.redirect')),
+        ]);
     }
 
     public function store(Request $request)
     {
         $data = $request->validate([
             'email' => ['required', 'string', 'email'],
+            'redirect' => ['nullable', 'string'],
         ]);
+
+        if (! empty($data['redirect'])) {
+            $request->session()->put('customer_portal.redirect', $data['redirect']);
+        }
 
         $user = User::where('email', $data['email'])->first();
 
@@ -52,15 +63,22 @@ class LoginCodeController extends Controller
             ->with('code_preview', app()->environment('local') ? $code->code : null);
     }
 
-    public function verifyForm()
+    public function verifyForm(Request $request)
     {
-        return view('auth.login-code-verify');
+        if ($redirect = $request->query('redirect')) {
+            $request->session()->put('customer_portal.redirect', $redirect);
+        }
+
+        return view('auth.login-code-verify', [
+            'redirect' => $request->query('redirect', $request->session()->get('customer_portal.redirect')),
+        ]);
     }
 
     public function verify(Request $request)
     {
         $data = $request->validate([
             'code' => ['required', 'string', 'min:4', 'max:64'],
+            'redirect' => ['nullable', 'string'],
         ]);
 
         $user = $this->service->consume($data['code']);
@@ -80,6 +98,12 @@ class LoginCodeController extends Controller
         Auth::login($user, remember: false);
 
         $request->session()->regenerate();
+
+        $redirect = $data['redirect'] ?? $request->session()->pull('customer_portal.redirect');
+
+        if ($redirect) {
+            return redirect()->to($redirect);
+        }
 
         return redirect()->intended(route('customer.invoices.index'));
     }

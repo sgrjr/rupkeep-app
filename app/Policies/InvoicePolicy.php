@@ -44,7 +44,15 @@ class InvoicePolicy
      */
     public function update(User $user, Invoice $model): bool
     {
-        return $user->isAdmin() || $user->is_super;
+        if ($user->is_super || $user->isAdmin()) {
+            return true;
+        }
+
+        if ($user->isManager() && $user->organization_id === $model->organization_id) {
+            return true;
+        }
+
+        return false;
     }
 
     /**

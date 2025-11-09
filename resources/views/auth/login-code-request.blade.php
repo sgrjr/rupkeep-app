@@ -24,6 +24,10 @@
         <form method="POST" action="{{ route('login-code.store') }}">
             @csrf
 
+            @if(isset($redirect))
+                <input type="hidden" name="redirect" value="{{ $redirect }}">
+            @endif
+
             <div>
                 <x-label for="email" value="{{ __('Email') }}" />
                 <x-input id="email" class="block mt-1 w-full" type="email" name="email"
@@ -39,7 +43,7 @@
         </form>
 
         <div class="mt-4 text-center text-sm">
-            <a class="underline text-gray-600 hover:text-gray-900" href="{{ route('login-code.verify-form') }}">
+            <a class="underline text-gray-600 hover:text-gray-900" href="{{ route('login-code.verify-form', isset($redirect) ? ['redirect' => $redirect] : []) }}">
                 {{ __('Already have a code? Enter it here.') }}
             </a>
         </div>

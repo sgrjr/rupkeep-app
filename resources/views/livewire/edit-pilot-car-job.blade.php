@@ -17,6 +17,10 @@
                         {{ $job->customer->name }}
                     </a>
                 @endif
+                <a href="{{ route('my.jobs.show', ['job' => $job->id]) }}" class="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white/85 transition hover:bg-white/25">
+                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                    {{ __('Job details') }}
+                </a>
                 <a href="{{ route('my.jobs.index') }}" class="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white/85 transition hover:bg-white/25">
                     <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12H5m7-7l-7 7 7 7"/></svg>
                     {{ __('Back to jobs') }}

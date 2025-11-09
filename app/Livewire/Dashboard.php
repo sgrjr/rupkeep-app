@@ -48,12 +48,15 @@ class Dashboard extends Component
         ]];
        }
 
-       if(auth()->user()->can('createUser', $organization)){
-       $cards[] = (Object)['title'=>'Users', 'count'=> $organization->users()->count(), 'links'=> [
-            ['url'=> route('my.users.index'), 'title'=>'View All'],
-            ['url'=> route('my.users.create'), 'title'=>'+Create New'],
-        ]];
-       }
+       $canManageUsers = auth()->user()->can('createUser', $organization);
+       $cards[] = (object) [
+           'title' => 'Users',
+           'count' => $organization->users()->count(),
+           'links' => array_filter([
+               ['url' => route('my.users.index'), 'title' => 'View All'],
+               $canManageUsers ? ['url' => route('my.users.create'), 'title' => '+Create New'] : null,
+           ]),
+       ];
 
        if(auth()->user()->can('createCustomer', $organization)){
         $cards[] = (Object)['title'=>'Customers', 'count'=> $organization->customers()->count(), 'links'=> [

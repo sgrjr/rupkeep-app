@@ -1,4 +1,10 @@
 @props(['redirect_to_root'=>false])
+@php
+    $totalJobs = $jobs->count();
+    $paidJobs = $jobs->where('invoice_paid', '>=', 1)->count();
+    $unpaidJobs = $totalJobs - $paidJobs;
+    $canceledJobs = $jobs->whereNotNull('canceled_at')->count();
+@endphp
 <x-app-layout>
     <div class="bg-slate-100/80 pb-20">
         <div class="mx-auto max-w-6xl space-y-8 px-4 py-6 sm:px-6 lg:px-8">
@@ -20,6 +26,25 @@
                     <span class="rounded-full border border-white/25 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white/85 shadow-sm backdrop-blur">
                         {{ trans_choice('{0} No jobs|{1} :count job|[2,*] :count jobs', $jobs->count(), ['count' => $jobs->count()]) }}
                     </span>
+                </div>
+            </section>
+
+            <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div class="rounded-3xl border border-orange-100 bg-white/90 p-4 shadow-sm">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Total jobs') }}</p>
+                    <p class="mt-2 text-3xl font-semibold text-slate-900">{{ $totalJobs }}</p>
+                </div>
+                <div class="rounded-3xl border border-emerald-100 bg-white/90 p-4 shadow-sm">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Paid jobs') }}</p>
+                    <p class="mt-2 text-3xl font-semibold text-slate-900">{{ $paidJobs }}</p>
+                </div>
+                <div class="rounded-3xl border border-rose-100 bg-white/90 p-4 shadow-sm">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Unpaid jobs') }}</p>
+                    <p class="mt-2 text-3xl font-semibold text-slate-900">{{ $unpaidJobs }}</p>
+                </div>
+                <div class="rounded-3xl border border-slate-200 bg-white/90 p-4 shadow-sm">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Canceled') }}</p>
+                    <p class="mt-2 text-3xl font-semibold text-slate-900">{{ $canceledJobs }}</p>
                 </div>
             </section>
 
@@ -88,6 +113,11 @@
                         $isPaid = $job->invoice_paid >= 1;
                         $pillClasses = $isPaid ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700';
                         $pillText = $isPaid ? __('Paid') : __('Unpaid');
+                        $jobSummary = collect([
+                            $job->customer?->name,
+                            $job->load_no ? __('Load #:number', ['number' => $job->load_no]) : null,
+                            $job->rate_code,
+                        ])->filter()->implode(' • ');
                     @endphp
                     <article class="flex h-full flex-col justify-between overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
                         <div class="border-b border-slate-100 bg-slate-50 px-5 py-4">
@@ -99,7 +129,10 @@
                                 <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $pillClasses }}">{{ $pillText }}</span>
                             </div>
                             @if($job->customer)
-                                <p class="mt-2 text-sm text-slate-500">{{ __('Customer') }}: <span class="font-semibold text-slate-800">{{ $job->customer->name }}</span></p>
+                                <p class="mt-2 text-sm text-slate-500">
+                                    <span class="font-semibold text-slate-200">{{ __('Summary') }}</span>
+                                    <span class="ml-2 text-white/90">{{ $jobSummary }}</span>
+                                </p>
                             @endif
                         </div>
                         <div class="space-y-2 px-5 py-4 text-sm text-slate-600">
@@ -131,13 +164,13 @@
                         </div>
                         <div class="border-t border-slate-100 bg-slate-50 px-5 py-4">
                             <div class="flex flex-wrap justify-end gap-2">
-                                <x-button type="button" variant="ghost" onclick="window.location='{{ $showRoute }}'">
+                                <a href="{{ $showRoute }}" class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-600 transition hover:border-orange-300 hover:text-orange-600">
                                     {{ __('Show') }}
-                                </x-button>
+                                </a>
                                 @can('update', $job)
-                                    <x-button type="button" variant="ghost" onclick="window.location='{{ $editRoute }}'">
+                                    <a href="{{ $editRoute }}" class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-600 transition hover:border-orange-300 hover:text-orange-600">
                                         {{ __('Edit') }}
-                                    </x-button>
+                                    </a>
                                 @endcan
                                 @can('delete', $job)
                             <livewire:delete-confirmation-button

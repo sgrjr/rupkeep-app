@@ -1,4 +1,7 @@
 @php
+    use Illuminate\Support\Number;
+    use Illuminate\Support\Str;
+
     $iconMap = [
         'Jobs' => '<svg class="h-10 w-10 text-orange-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25V14.25C9 13.56 9.56 13 10.25 13H13.75C14.44 13 15 13.56 15 14.25V17.25M6.75 21H17.25C18.49 21 19.5 19.99 19.5 18.75V9.75C19.5 9.06 18.94 8.5 18.25 8.5H5.75C5.06 8.5 4.5 9.06 4.5 9.75V18.75C4.5 19.99 5.51 21 6.75 21ZM8.25 8.5V5.75C8.25 4.51 9.26 3.5 10.5 3.5H13.5C14.74 3.5 15.75 4.51 15.75 5.75V8.5" /></svg>',
         'Users' => '<svg class="h-10 w-10 text-orange-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128C13.875 20.321 12.314 21 10.5 21C6.91 21 4 18.09 4 14.5C4 10.91 6.91 8 10.5 8C12.314 8 13.875 8.679 15 9.872M19 8V12M21 10H17"/></svg>',
@@ -8,9 +11,9 @@
 @endphp
 
 <div id="dashboard" class="space-y-10">
-    <section class="relative overflow-hidden bg-gradient-to-r from-orange-500 via-orange-400 to-orange-300 p-8 text-white shadow-2xl">
+    <section class="relative overflow-hidden bg-gradient-to-r from-orange-500 via-orange-400 to-orange-300 p-6 text-white shadow-2xl sm:p-8">
         <div class="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.25),_transparent_60%)] opacity-70"></div>
-        <div class="relative flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+        <div class="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div class="space-y-3">
                 <span class="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-wider">
                     <span class="inline-block h-2 w-2 rounded-full bg-lime-300 animate-pulse"></span>
@@ -23,12 +26,12 @@
                     {{ __('Monitor jobs, team activity, and customer relationships from one place. Kick off imports, invite collaborators, and stay ahead of upcoming work.') }}
                 </p>
             </div>
-            <div class="flex items-center justify-end gap-6">
+            <div class="flex flex-wrap items-center gap-4 sm:gap-6">
                 <div class="rounded-2xl border border-white/30 bg-white/20 px-5 py-4 text-sm font-semibold shadow-xl backdrop-blur">
                     <p class="text-white/70 uppercase tracking-wider">{{ __('Today') }}</p>
                     <p class="text-lg">{{ now()->timezone(Auth::user()->timezone ?? config('app.timezone'))->isoFormat('MMM D, YYYY') }}</p>
                 </div>
-                <div class="hidden sm:block rounded-2xl border border-white/30 bg-white/15 px-5 py-4 text-sm font-semibold shadow-xl backdrop-blur">
+                <div class="rounded-2xl border border-white/30 bg-white/15 px-5 py-4 text-sm font-semibold shadow-xl backdrop-blur">
                     <p class="text-white/70 uppercase tracking-wider">{{ __('Active Roles') }}</p>
                     <p class="text-lg">{{ ucfirst(strtolower(Auth::user()->role_label)) }}</p>
                 </div>
@@ -37,12 +40,12 @@
     </section>
 
     <section class="space-y-6">
-        <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+        <div class="grid gap-4 overflow-x-auto pb-2 sm:grid-cols-2 xl:grid-cols-4 sm:gap-6" style="scroll-snap-type:x mandatory;">
             @foreach($cards as $card)
                 @php
                     $icon = $iconMap[$card->title] ?? '<svg class="h-10 w-10 text-orange-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /></svg>';
                 @endphp
-                <div class="group relative overflow-hidden rounded-3xl border border-orange-100 bg-white/80 p-6 shadow-sm transition hover:-translate-y-1 hover:border-orange-200 hover:shadow-xl">
+                <div class="group relative min-w-[260px] overflow-hidden rounded-3xl border border-orange-100 bg-white/80 p-5 shadow-sm transition hover:-translate-y-1 hover:border-orange-200 hover:shadow-xl sm:min-w-0 sm:p-6" style="scroll-snap-align:start;">
                     <div class="absolute right-0 top-0 h-32 w-32 -translate-y-14 translate-x-10 rounded-full bg-orange-100 opacity-60 blur-3xl transition group-hover:opacity-70"></div>
                     <div class="relative flex items-start justify-between">
                         <div>
@@ -55,29 +58,40 @@
                     </div>
 
                     <div class="mt-5 space-y-3 text-sm">
-                        @if($card->title === 'Jobs')
+                    @if($card->title === 'Jobs')
                             <div class="rounded-2xl bg-slate-50/80 px-4 py-3">
                                 <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">{{ __('Import from Spreadsheet') }}</p>
                                 <form class="mt-3 space-y-3" wire:submit.prevent="uploadFile">
                                     <label class="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-dashed border-orange-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 shadow-sm transition hover:border-orange-300 hover:text-orange-600">
-                                        <span class="truncate">{{ __('Choose CSV file to import') }}</span>
+                                        <span class="truncate">
+                                            @if($file)
+                                                {{ Str::limit($file->getClientOriginalName(), 48) }}
+                                            @else
+                                                {{ __('Choose CSV file to import') }}
+                                            @endif
+                                        </span>
                                         <span class="inline-flex items-center rounded-full bg-orange-100 px-2 py-1 text-[10px] font-semibold text-orange-600">{{ __('Browse') }}</span>
                                         <input type="file" wire:model="file" class="hidden" accept=".csv,.xlsx">
                                     </label>
+                                    @if($file)
+                                        <p class="text-[10px] font-medium uppercase tracking-wide text-slate-400">
+                                            {{ __('Selected') }}: {{ $file->getSize() ? Number::fileSize($file->getSize()) : $file->getMimeType() }}
+                                        </p>
+                                    @endif
                                     @error('file')
                                         <p class="text-xs font-semibold text-red-500">{{ $message }}</p>
                                     @enderror
                                     <div class="flex items-center justify-between">
                                         <x-action-message class="text-xs font-medium text-emerald-600" on="uploaded">
-                                            {{ __('File Uploaded.') }}
-                                        </x-action-message>
-                                        <button type="submit" class="inline-flex items-center gap-1 rounded-full bg-orange-500 px-3 py-1 text-xs font-semibold text-white shadow-sm transition hover:bg-orange-600">
+                                    {{ __('File Uploaded.') }}
+                                </x-action-message>
+                                        <button type="submit" class="inline-flex w-full items-center justify-center gap-1 rounded-full bg-orange-500 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-orange-600 sm:w-auto">
                                             <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16V14C4 10.13 7.13 7 11 7C14.87 7 18 10.13 18 14V16M12 3V11M12 11L9.5 8.5M12 11L14.5 8.5"/></svg>
                                             {{ __('Upload') }}
                                         </button>
                                     </div>
-                                </form>
-                            </div>
+                            </form>
+                        </div>
                         @endif
 
                         @if($card->title === 'Organizations' && $organizations)
@@ -101,29 +115,29 @@
                                                             <a class="rounded-full bg-orange-500 px-1.5 py-0.5 text-[10px] font-semibold text-white shadow-sm hover:bg-orange-600" href="{{ route('impersonate',['user'=> $user->id]) }}">{{ __('Impersonate') }}</a>
                                                         </span>
                                                     </div>
-                                                @endforeach
-                                            </div>
-                                        </div>
-                                    @endforeach
-                                </div>
+                                @endforeach
                             </div>
-                        @endif
+                        </div>
+                    @endforeach
                     </div>
+                            </div>
+                    @endif
+                </div>
 
                     <div class="relative mt-6 flex flex-wrap gap-2">
-                        @foreach($card->links as $link)
+                    @foreach($card->links as $link)
                             <a class="inline-flex items-center gap-1 rounded-full border border-orange-200 bg-white/60 px-3 py-1 text-xs font-semibold text-orange-600 transition hover:bg-orange-500 hover:text-white" href="{{ $link['url'] }}">
                                 {{ $link['title'] }}
                                 <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5L15 12L9 19"/></svg>
                             </a>
-                        @endforeach
-                    </div>
+                    @endforeach
                 </div>
+            </div>
             @endforeach
         </div>
     </section>
 
-    @if(auth()->user()->is_super)
+        @if(auth()->user()->is_super)
         <section class="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm">
             <div class="space-y-4">
                 <div class="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
@@ -180,26 +194,26 @@
                             {{ __('Execute Nuclear Cleanup') }}
                         </button>
                     </div>
-                </details>
+</details>
             </div>
         </section>
-    @endif
+        @endif
 
-    @if($jobs && count($jobs) > 0)
+        @if($jobs && count($jobs) > 0)
         <section class="space-y-4 rounded-3xl border border-slate-100 bg-white/80 p-6 shadow-sm">
             <header class="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
                 <div>
                     <h2 class="text-xl font-bold text-slate-900">{{ __('My Assigned Jobs') }}</h2>
                     <p class="text-sm text-slate-500">{{ __('Quick access to your latest work logs and customer contacts.') }}</p>
                 </div>
-                <a href="{{ route('my.jobs.index') }}" class="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-600 transition hover:bg-orange-500 hover:text-white">
+                <a href="{{ route('my.jobs.index') }}" class="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3 py-2 text-xs font-semibold text-orange-600 transition hover:bg-orange-500 hover:text-white">
                     {{ __('View All Jobs') }}
                     <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5L15 12L9 19"/></svg>
                 </a>
             </header>
 
             <div class="space-y-4">
-                @foreach($jobs as $job)
+                        @foreach($jobs as $job)
                     <div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition hover:border-orange-100 hover:shadow-md">
                         <div class="flex flex-wrap items-start justify-between gap-3">
                             <div>
@@ -214,7 +228,7 @@
                         </div>
                         @if($job->logs->count())
                             <div class="mt-4 grid gap-3 md:grid-cols-2">
-                                @foreach($job->logs as $log)
+                                    @foreach($job->logs as $log)
                                     <div class="flex items-start gap-3 rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3">
                                         <div class="mt-1 h-2 w-2 rounded-full bg-orange-400"></div>
                                         <div class="space-y-2 text-sm">
@@ -228,12 +242,12 @@
                                             <p class="text-xs text-slate-600">{{ $log->memo ?: __('No memo recorded yet.') }}</p>
                                         </div>
                                     </div>
-                                @endforeach
+                                    @endforeach
                             </div>
                         @endif
                     </div>
-                @endforeach
+                        @endforeach
             </div>
         </section>
-    @endif
+        @endif
 </div>

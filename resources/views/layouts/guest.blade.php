@@ -19,6 +19,43 @@
     </head>
     <body class="welcome {{true || request()->has('customer_id')? 'dark-theme':'default-theme'}}">
         <div>
+            @php
+                $legacyToasts = collect([
+                    ['type' => 'success', 'message' => session('success')],
+                    ['type' => 'error', 'message' => session('error')],
+                    ['type' => 'warning', 'message' => session('warning')],
+                    ['type' => 'info', 'message' => session('message')],
+                ])->filter(fn ($toast) => filled($toast['message']))->values();
+
+                $structuredToasts = collect(session('message'))
+                    ->when(is_string(session('message')), fn ($collection) => collect([session('message')]))
+                    ->flatMap(function ($value, $key) {
+                        if (is_array($value)) {
+                            return collect($value)->map(fn ($message, $type) => [
+                                'type' => is_string($type) ? $type : 'info',
+                                'message' => $message,
+                            ]);
+                        }
+
+                        if (is_string($key) && in_array($key, ['success', 'error', 'warning', 'info'], true)) {
+                            return [[
+                                'type' => $key,
+                                'message' => $value,
+                            ]];
+                        }
+
+                        return [[
+                            'type' => 'info',
+                            'message' => $value,
+                        ]];
+                    })
+                    ->filter(fn ($toast) => filled(data_get($toast, 'message')));
+
+                $toastMessages = $legacyToasts->concat($structuredToasts)->values()->all();
+            @endphp
+
+            <x-toast-stack :toasts="$toastMessages" />
+
             @isset($slot)
                 {{ $slot }}
             @else

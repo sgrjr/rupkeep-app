@@ -4,7 +4,7 @@
     <div class="mx-auto max-w-6xl space-y-8 px-4 py-6 sm:px-6 lg:px-8">
         <section class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-orange-500 via-orange-400 to-orange-300 p-6 text-white shadow-xl">
             <div class="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.25),_transparent_60%)] opacity-70"></div>
-            <div class="relative flex flex-wrap items-center justify-between gap-4">
+            <div class="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                 <div class="space-y-2">
                     <p class="text-xs font-semibold uppercase tracking-wider text-white/80">{{ __('Fleet Vehicle') }}</p>
                     <h1 class="text-3xl font-bold tracking-tight">{{ $vehicle->name }}</h1>
@@ -21,12 +21,12 @@
                         @endif
                     </div>
                 </div>
-                <div class="flex items-center gap-3">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
                     <div class="rounded-2xl border border-white/30 bg-white/15 px-4 py-3 text-xs font-semibold uppercase tracking-wider text-white/85">
                         {{ __('Last Updated') }}
                         <p class="mt-1 text-base normal-case">{{ optional($vehicle->updated_at)->diffForHumans() }}</p>
                     </div>
-                    <a href="{{ route('my.vehicles.index') }}" class="inline-flex items-center gap-2 rounded-full border border-white/40 bg-white/10 px-4 py-2 text-xs font-semibold text-white/85 backdrop-blur transition hover:bg-white/20">
+                    <a href="{{ route('my.vehicles.index') }}" class="inline-flex items-center justify-center gap-2 rounded-full border border-white/40 bg-white/10 px-4 py-2 text-xs font-semibold text-white/85 backdrop-blur transition hover:bg-white/20">
                         <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12H5m7-7l-7 7 7 7"/></svg>
                         {{ __('Back to vehicles') }}
                     </a>
@@ -63,8 +63,8 @@
                             <p class="text-xs text-slate-500">{{ __('Keep driver-facing name and mileage info current for accurate reporting.') }}</p>
                         </header>
 
-                        <div class="grid gap-4 md:grid-cols-3">
-                            <div class="md:col-span-2">
+                        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                            <div class="sm:col-span-2">
                                 <label for="name" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Vehicle Name') }}</label>
                                 <input id="name" name="name" type="text" value="{{ old('name', $vehicle->name) }}" required class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
                                 <x-input-error for="name" class="mt-2 text-xs font-semibold text-red-500" />
@@ -90,7 +90,7 @@
                             </div>
                         </header>
 
-                        <div class="grid gap-4 md:grid-cols-2">
+                        <div class="grid gap-4 sm:grid-cols-2">
                             <div>
                                 <label for="current_user_id" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Assigned Driver') }}</label>
                                 <select id="current_user_id" name="current_user_id" class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
@@ -122,7 +122,7 @@
                             <p class="text-xs text-slate-500">{{ __('Log last service dates so we can surface upcoming work and overdue items on dashboards.') }}</p>
                         </header>
 
-                        <div class="grid gap-4 md:grid-cols-2">
+                        <div class="grid gap-4 sm:grid-cols-2">
                             <div>
                                 <label for="last_oil_change_at" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Last Oil Change') }}</label>
                                 <input id="last_oil_change_at" name="last_oil_change_at" type="date" value="{{ old('last_oil_change_at', optional($vehicle->last_oil_change_at)->toDateString()) }}" class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
@@ -143,25 +143,25 @@
                                 <input id="next_inspection_due_at" name="next_inspection_due_at" type="date" value="{{ old('next_inspection_due_at', optional($vehicle->next_inspection_due_at)->toDateString()) }}" class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
                                 <x-input-error for="next_inspection_due_at" class="mt-2 text-xs font-semibold text-red-500" />
                             </div>
-                </div>
+                        </div>
 
                         <div class="mt-6 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
                             <input id="is_in_service" name="is_in_service" type="checkbox" value="1" class="h-4 w-4 rounded border-slate-300 text-orange-500 focus:ring-orange-400" {{ old('is_in_service', $vehicle->is_in_service) ? 'checked' : '' }}>
                             <label for="is_in_service" class="text-sm font-semibold text-slate-700">{{ __('Vehicle is currently in service') }}</label>
-                </div>
+                        </div>
                     </section>
 
                     <div class="flex justify-end">
-                        <x-button class="inline-flex items-center gap-2 rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-orange-600">
+                        <x-button class="inline-flex w-full items-center justify-center gap-2 rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-orange-600 sm:w-auto">
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                             {{ __('Save Vehicle') }}
-                </x-button>
-            </div>
-            </form>
+                        </x-button>
+                    </div>
+                </form>
             </div>
 
             <div class="space-y-6">
-                <form method="POST" action="{{ route('my.vehicles.maintenance.store', $vehicle) }}" class="rounded-3xl border border-slate-100 bg-white/90 p-6 shadow-sm space-y-5">
+                <form method="POST" action="{{ route('my.vehicles.maintenance.store', $vehicle) }}" class="space-y-5 rounded-3xl border border-slate-100 bg-white/90 p-6 shadow-sm">
                 @csrf
                     <header>
                         <h2 class="text-lg font-semibold text-slate-900">{{ __('Log Maintenance') }}</h2>
@@ -183,7 +183,7 @@
                             <input id="title" name="title" type="text" value="{{ old('title') }}" class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
                             <x-input-error for="title" class="mt-2 text-xs font-semibold text-red-500" />
                         </div>
-                        <div class="grid gap-4 md:grid-cols-2">
+                        <div class="grid gap-4 sm:grid-cols-2">
                             <div>
                                 <label for="performed_at" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Performed On') }}</label>
                                 <input id="performed_at" name="performed_at" type="date" value="{{ old('performed_at') }}" class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
@@ -195,7 +195,7 @@
                                 <x-input-error for="next_due_at" class="mt-2 text-xs font-semibold text-red-500" />
                             </div>
                         </div>
-                        <div class="grid gap-4 md:grid-cols-2">
+                        <div class="grid gap-4 sm:grid-cols-2">
                             <div>
                                 <label for="mileage" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Mileage') }}</label>
                                 <input id="mileage" name="mileage" type="number" min="0" value="{{ old('mileage') }}" class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
@@ -206,21 +206,21 @@
                                 <input id="cost" name="cost" type="number" step="0.01" min="0" value="{{ old('cost') }}" class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
                                 <x-input-error for="cost" class="mt-2 text-xs font-semibold text-red-500" />
                             </div>
-                </div>
+                        </div>
                         <div>
                             <label for="notes" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Notes') }}</label>
                             <textarea id="notes" name="notes" rows="3" class="mt-2 block w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">{{ old('notes') }}</textarea>
                             <x-input-error for="notes" class="mt-2 text-xs font-semibold text-red-500" />
-                </div>
-                </div>
+                        </div>
+                    </div>
 
                     <div class="flex justify-end">
-                        <x-button class="inline-flex items-center gap-2 rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-orange-600">
+                        <x-button class="inline-flex w-full items-center justify-center gap-2 rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-orange-600 sm:w-auto">
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
                             {{ __('Add Record') }}
-                </x-button>
-            </div>
-            </form>
+                        </x-button>
+                    </div>
+                </form>
             </div>
         </div>
 
@@ -233,7 +233,7 @@
                 <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{{ $vehicle->maintenanceRecords->count() }} {{ __('records') }}</span>
             </header>
 
-            <div class="max-h-96 overflow-y-auto">
+            <div class="max-h-96 overflow-x-auto overflow-y-auto">
                 <table class="min-w-full divide-y divide-slate-200 text-sm">
                     <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500">
                         <tr>

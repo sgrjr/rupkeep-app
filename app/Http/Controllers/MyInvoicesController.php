@@ -4,11 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Events\InvoiceReady;
 use Illuminate\Http\Request;
-use App\Models\UserLog;
 use App\Models\Invoice;
 use App\Models\PilotCarJob;
 use App\Models\JobInvoice;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class MyInvoicesController extends Controller
 {
@@ -43,66 +45,207 @@ class MyInvoicesController extends Controller
 
         $this->authorize('update', $invoice);
 
-        if($request->has('values')){
-            $invoice->updateValues($request->values);
-        }
-        
-        if($request->has('delete') && $request->delete === 'on'){
-            $job_id = $invoice->pilot_car_job_id;
-            $invoice->forceDelete();
-            return redirect()->route('my.jobs.show', ['job'=>$job_id]);
-        }
+        if ($request->boolean('delete')) {
+            $jobId = $invoice->pilot_car_job_id ?? $invoice->children()->value('pilot_car_job_id');
+            $deleteMode = $request->input('delete_mode', $invoice->isSummary() ? 'release_children' : 'delete_children');
 
-        $input = $request->except('values','_method','id','_token','delete');
+            if ($invoice->isSummary()) {
+                $children = $invoice->children()->get();
 
-        if(count($input) > 0){
-            if(array_key_exists('paid_in_full', $input)){
-                if($input['paid_in_full'] === 'yes'){
-                    $input['paid_in_full'] = true;
-                }else{
-                    $input['paid_in_full'] = false;
+                if ($deleteMode === 'release_children') {
+                    foreach ($children as $child) {
+                        $child->update(['parent_invoice_id' => null]);
+                    }
+
+                    JobInvoice::where('invoice_id', $invoice->id)->delete();
+                    $invoice->forceDelete();
+
+                    session()->flash('success', __('Summary invoice deleted. Child invoices released.'));
+
+                    return redirect()->route('my.jobs.show', ['job' => $jobId]);
+                }
+
+                foreach ($children as $child) {
+                    JobInvoice::where('invoice_id', $child->id)->delete();
+                    $child->forceDelete();
                 }
             }
-            $invoice->update($input);
+
+            JobInvoice::where('invoice_id', $invoice->id)->delete();
+            $invoice->forceDelete();
+
+            session()->flash('success', __('Invoice deleted.'));
+
+            return redirect()->route('my.jobs.show', ['job' => $jobId]);
         }
 
-        return back();
+        $values = $invoice->values ?? [];
+
+        $incomingValues = $request->input('values', []);
+
+        if (! is_array($incomingValues)) {
+            $incomingValues = [];
+        }
+
+        $numericKeys = [
+            'wait_time_hours',
+            'extra_load_stops_count',
+            'dead_head',
+            'tolls',
+            'hotel',
+            'extra_charge',
+            'cars_count',
+            'billable_miles',
+            'nonbillable_miles',
+            'rate_value',
+            'effective_rate_value',
+            'total_due',
+            'total',
+        ];
+
+        foreach (Arr::dot($incomingValues) as $key => $value) {
+            if (is_string($value)) {
+                $value = trim($value);
+                if ($value === '') {
+                    $value = null;
+                }
+            }
+
+            if (in_array($key, $numericKeys, true)) {
+                $value = $value === null ? null : (float) $value;
+            }
+
+            Arr::set($values, $key, $value);
+        }
+
+        $invoice->values = $values;
+
+        if ($request->filled('paid_in_full')) {
+            $invoice->paid_in_full = $request->input('paid_in_full') === 'yes';
+        }
+
+        $invoice->save();
+
+        session()->flash('success', __('Invoice updated.'));
+
+        return redirect()->route('my.invoices.edit', ['invoice' => $invoice->id]);
     }
 
     public function store(Request $request){
 
-        $jobs = PilotCarJob::whereIn('id', $request->invoice_this)->get();
+        $jobIds = collect($request->input('invoice_this', []))
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
 
-        $invoices = [];
+        if ($jobIds->isEmpty()) {
+            return back()->with('error', __('Please select at least one job to invoice.'));
+        }
 
-        $jobs->map(function($job)use(&$invoices){
-            $invoices[] = $job->invoiceValues();
-        });
+        $jobs = PilotCarJob::with('customer', 'organization')
+            ->whereIn('id', $jobIds)
+            ->get();
 
-        foreach($invoices as $i){
-            $jobId = $i['job_id'] ?? $i['pilot_car_job_id'] ?? null;
+        if ($jobs->isEmpty()) {
+            return back()->with('error', __('No matching jobs were found for invoicing.'));
+        }
 
-            if (!$jobId) {
-                continue;
+        if ($jobs->pluck('customer_id')->unique()->count() > 1) {
+            return back()->with('error', __('Invoices can only be generated for one customer at a time.'));
+        }
+
+        $createdInvoices = DB::transaction(function () use ($jobs) {
+            $createdInvoices = collect();
+
+            foreach ($jobs as $job) {
+                $invoiceValues = $job->invoiceValues();
+
+                $invoice = Invoice::create([
+                    'paid_in_full' => false,
+                    'values' => $invoiceValues,
+                    'organization_id' => $invoiceValues['organization_id'],
+                    'customer_id' => $invoiceValues['customer_id'],
+                    'pilot_car_job_id' => $job->id,
+                    'invoice_type' => 'single',
+                ]);
+
+                JobInvoice::firstOrCreate([
+                    'invoice_id' => $invoice->id,
+                    'pilot_car_job_id' => $job->id,
+                ]);
+
+                $createdInvoices->push($invoice->fresh());
             }
 
-            $invoice = Invoice::create([
-                'paid_in_full' => false,
-                'values' => $i,
-                'organization_id' => $i['organization_id'],
-                'customer_id' => $i['customer_id'],
-                'pilot_car_job_id' => $jobId
-            ]);
+            if ($createdInvoices->count() > 1) {
+                $summary = Invoice::create([
+                    'paid_in_full' => false,
+                    'values' => $this->buildSummaryValues($createdInvoices),
+                    'organization_id' => $createdInvoices->first()->organization_id,
+                    'customer_id' => $createdInvoices->first()->customer_id,
+                    'invoice_type' => 'summary',
+                ]);
 
-            JobInvoice::create([
-                'invoice_id' => $invoice->id,
-                'pilot_car_job_id' => $jobId
-            ]);
+                foreach ($createdInvoices as $child) {
+                    $child->update(['parent_invoice_id' => $summary->id]);
+                }
 
-            event(new InvoiceReady($invoice));
+                foreach ($jobs as $job) {
+                    JobInvoice::firstOrCreate([
+                        'invoice_id' => $summary->id,
+                        'pilot_car_job_id' => $job->id,
+                    ]);
+                }
+
+                return collect([$summary]);
+            }
+
+            return $createdInvoices;
+        });
+
+        /** @var \App\Models\Invoice $invoice */
+        $invoice = $createdInvoices->first();
+
+        event(new InvoiceReady($invoice));
+
+        return redirect()->route('my.invoices.edit', ['invoice' => $invoice->id]);
+    }
+
+    protected function buildSummaryValues(Collection $childInvoices): array
+    {
+        $baseValues = $childInvoices->first()->values ?? [];
+
+        $total = 0.0;
+        $billableMiles = 0.0;
+        $items = [];
+
+        foreach ($childInvoices as $child) {
+            $childValues = $child->values ?? [];
+            $childTotal = (float) data_get($childValues, 'total', 0);
+            $childMiles = (float) data_get($childValues, 'billable_miles', 0);
+
+            $total += $childTotal;
+            $billableMiles += $childMiles;
+
+            $items[] = [
+                'invoice_id' => $child->id,
+                'invoice_number' => $child->invoice_number,
+                'title' => data_get($childValues, 'title', 'INVOICE'),
+                'job_no' => data_get($childValues, 'load_no'),
+                'total' => $childTotal,
+                'billable_miles' => $childMiles,
+                'rate_code' => data_get($childValues, 'effective_rate_code') ?? data_get($childValues, 'rate_code'),
+            ];
         }
-        
-        return back();
+
+        $baseValues['title'] = 'SUMMARY INVOICE';
+        $baseValues['total'] = round($total, 2);
+        $baseValues['billable_miles'] = round($billableMiles, 2);
+        $baseValues['summary_items'] = $items;
+        $baseValues['child_invoice_ids'] = $childInvoices->pluck('id')->all();
+
+        return $baseValues;
     }
 
     public function delete(Request $request, $log){
@@ -140,3 +283,5 @@ class MyInvoicesController extends Controller
         return back();
     }
 }
+
+

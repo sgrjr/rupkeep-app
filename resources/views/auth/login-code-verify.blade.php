@@ -13,6 +13,10 @@
         <form method="POST" action="{{ route('login-code.verify') }}">
             @csrf
 
+            @if(isset($redirect))
+                <input type="hidden" name="redirect" value="{{ $redirect }}">
+            @endif
+
             <div>
                 <x-label for="code" value="{{ __('Login Code') }}" />
                 <x-input id="code" class="block mt-1 w-full tracking-widest uppercase" type="text" name="code"
@@ -22,7 +26,7 @@
 
             <div class="flex items-center justify-between mt-4">
                 <a class="underline text-sm text-gray-600 hover:text-gray-900"
-                   href="{{ route('login-code.create') }}">
+                   href="{{ route('login-code.create', isset($redirect) ? ['redirect' => $redirect] : []) }}">
                     {{ __('Need a new code?') }}
                 </a>
 

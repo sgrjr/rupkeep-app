@@ -27,6 +27,15 @@ class CustomerPortalTest extends TestCase
             ->assertSee($invoice->invoice_number);
     }
 
+    public function test_guest_is_prompted_for_authentication(): void
+    {
+        $this->get(route('customer.invoices.index'))
+            ->assertStatus(200)
+            ->assertSeeText(__('Sign in to view your invoices'))
+            ->assertSee(route('login-code.create'), false)
+            ->assertSee(route('login'), false);
+    }
+
     public function test_customer_cannot_view_other_customer_invoice(): void
     {
         $customer = Customer::factory()->create();
@@ -40,7 +49,9 @@ class CustomerPortalTest extends TestCase
 
         $this->actingAs($user)
             ->get(route('customer.invoices.show', $otherInvoice))
-            ->assertStatus(403);
+            ->assertStatus(403)
+            ->assertSeeText(__('We couldn\'t open that invoice'))
+            ->assertSee(route('customer.invoices.index'), false);
     }
 
     public function test_employee_cannot_access_customer_portal(): void
@@ -49,7 +60,9 @@ class CustomerPortalTest extends TestCase
 
         $this->actingAs($user)
             ->get(route('customer.invoices.index'))
-            ->assertStatus(403);
+            ->assertStatus(403)
+            ->assertSeeText(__('Customer portal access required'))
+            ->assertSee(route('login-code.create'), false);
     }
 }
 

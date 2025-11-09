@@ -38,6 +38,11 @@
             </div>
         </section>
 
+        @php
+            $primaryInvoices = $job->invoices->whereNull('parent_invoice_id');
+            $latestInvoice = $primaryInvoices->firstWhere('id', $recentInvoiceId);
+        @endphp
+
         <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             @if(auth()->user()->can('update', $job))
                 <a href="{{route('my.jobs.edit', ['job'=>$job->id])}}" class="group relative overflow-hidden rounded-3xl border border-orange-100 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-orange-200 hover:shadow-lg">
@@ -71,15 +76,63 @@
                         {{ __('Create Invoice') }}
                     </x-button>
                 </form>
+
+                @if($primaryInvoices->isNotEmpty())
+                    <div class="mt-5 space-y-2">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">{{ __('Existing Invoices') }}</p>
+
+                        @foreach($primaryInvoices as $invoice)
+                            <div @class([
+                                    'rounded-2xl border px-4 py-3 text-xs shadow-sm transition',
+                                    'border-emerald-200 bg-emerald-50 text-emerald-700' => $recentInvoiceId === $invoice->id,
+                                    'border-slate-200 bg-slate-50 text-slate-600' => $recentInvoiceId !== $invoice->id,
+                                ])>
+                                <div class="flex flex-wrap items-center justify-between gap-2">
+                                    <div class="font-semibold text-slate-800">
+                                        {{ __('Invoice #:number', ['number' => $invoice->invoice_number]) }}
+                                    </div>
+                                    <span class="text-[10px] uppercase tracking-wide text-slate-400">
+                                        {{ optional($invoice->created_at)->format('M j, Y g:ia') }}
+                                    </span>
+                                </div>
+                                <div class="mt-3 flex flex-wrap items-center gap-2">
+                                    <a class="inline-flex items-center gap-1 rounded-full bg-white/70 px-3 py-1 text-[11px] font-semibold text-orange-600 shadow-sm transition hover:bg-orange-500 hover:text-white" href="{{ route('my.invoices.edit', ['invoice' => $invoice->id]) }}">
+                                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-4.536a2.5 2.5 0 11-3.536 3.536L4.5 16.5V19.5H7.5l8.5-8.5"/></svg>
+                                        {{ __('Edit Invoice') }}
+                                    </a>
+                                    <a class="inline-flex items-center gap-1 rounded-full border border-white/70 px-3 py-1 text-[11px] font-semibold text-slate-600 transition hover:border-slate-400 hover:text-orange-600" href="{{ route('my.invoices.print', ['invoice' => $invoice->id]) }}" target="_blank">
+                                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h10M7 11h10M7 15h5M17 15h.01M6 19h12a2 2 0 002-2v-8a2 2 0 00-2-2h-1V5a2 2 0 00-2-2H9a2 2 0 00-2 2v2H6a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                                        {{ __('Print') }}
+                                    </a>
+                                </div>
+                                @if($invoice->isSummary())
+                                    <div class="mt-4 space-y-1 text-[11px]">
+                                        <p class="font-semibold text-slate-500 uppercase tracking-wide">{{ __('Child Invoices') }}</p>
+                                        @foreach(data_get($invoice->values, 'summary_items', []) as $item)
+                                            <a href="{{ route('my.invoices.edit', ['invoice' => $item['invoice_id'] ?? null]) }}"
+                                               class="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-600 transition hover:border-orange-300 hover:text-orange-600">
+                                                <span>{{ __('Invoice #:number', ['number' => $item['invoice_number'] ?? '']) }}</span>
+                                                <span class="flex items-center gap-3 text-[10px] uppercase tracking-wider text-slate-400">
+                                                    {{ $item['job_no'] ?? __('Job') }} · {{ isset($item['total']) ? number_format($item['total'], 2) : '—' }}
+                                                    <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                                                </span>
+                                            </a>
+                                        @endforeach
+                                    </div>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
             </div>
 
             <div class="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:col-span-2 lg:col-span-2">
                 <div class="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-slate-200 to-slate-300"></div>
                 <form wire:submit="uploadFile" class="space-y-3">
                     <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">{{ __('Attachments') }}</p>
-                    <div class="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                    <div class="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center">
                         <input type="file" wire:model="file" class="grow rounded-xl border border-dashed border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none" />
-                        <x-button type="submit" variant="ghost">
+                        <x-button type="submit" variant="ghost" class="w-full justify-center sm:w-auto">
                             <span wire:loading wire:target="uploadFile" class="h-4 w-4 animate-spin rounded-full border-2 border-white/80 border-t-transparent"></span>
                             {{ __('Attach File') }}
                         </x-button>
@@ -152,15 +205,20 @@
                         @endif
                     </p>
                     <div class="pt-2">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Invoices') }}</p>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">{{ __('Invoices') }}</p>
                         <div class="mt-2 flex flex-wrap gap-2">
-                            @forelse($job->invoices as $invoice)
-                                <a target="_blank" href="{{route('my.invoices.edit', ['invoice'=>$invoice->id])}}" class="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-600 transition hover:bg-orange-500 hover:text-white">
-                                    {{ __('Invoice #:number', ['number' => $invoice->invoice_number]) }}
-                                </a>
-                            @empty
+                            @if($primaryInvoices->isEmpty())
                                 <span class="text-xs text-slate-400">{{ __('No invoices yet.') }}</span>
-                            @endforelse
+                            @else
+                                <span class="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-600">
+                                    {{ trans_choice('{0} No invoices|{1} :count invoice|[2,*] :count invoices', $primaryInvoices->count(), ['count' => $primaryInvoices->count()]) }}
+                                </span>
+                                @if($latestInvoice)
+                                    <span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-semibold text-emerald-700">
+                                        {{ __('Latest Invoice #:number ready', ['number' => $latestInvoice->invoice_number]) }}
+                                    </span>
+                                @endif
+                            @endif
                         </div>
                     </div>
                 </article>
@@ -203,14 +261,14 @@
                 <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">{{ __('Attachments (:count)', ['count' => $job->attachments? $job->attachments->count():0]) }}</p>
                 <div class="mt-3 space-y-3">
                     @forelse($job->attachments as $att)
-                        <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+                        <div class="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                             <div class="min-w-0 flex-1">
                                 <a class="text-sm font-semibold text-orange-600 hover:text-orange-700" download href="{{route('attachments.download', ['attachment'=>$att->id])}}">
                                     {{ $att->file_name }}
                                 </a>
                                 <p class="text-xs text-slate-500">{{ $att->created_at->diffForHumans() }}</p>
                             </div>
-                            <div class="flex items-center gap-2">
+                            <div class="flex flex-wrap items-center gap-2">
                                 @can('updateVisibility', $att)
                                     <livewire:attachment-visibility-toggle :attachment="$att" :key="'job-att-'.$att->id"/>
                                 @else
@@ -236,7 +294,7 @@
         </section>
 
         @if($job->logs)
-            <section class="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm">
+            <section id="job-logs" class="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm">
                 <header class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
                     <div>
                         <h2 class="text-lg font-semibold text-slate-900">{{ __('Job Logs') }}</h2>
@@ -247,9 +305,9 @@
 
                 <div class="mt-6 space-y-6">
                     <form wire:submit="assignJob" class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 shadow-sm">
-                        <div class="flex flex-wrap items-center gap-3">
+                        <div class="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center">
                             <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Assign driver & vehicle') }}</label>
-                            <div class="grow">
+                            <div class="w-full sm:flex-1">
                                 <select wire:model.blur="assignment.car_driver_id" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200" required>
                                     <option value="">{{ __('Select Driver') }}</option>
                                     @foreach($drivers as $driver)
@@ -257,7 +315,7 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="grow">
+                            <div class="w-full sm:flex-1">
                                 <select wire:model.blur="assignment.vehicle_id" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
                                     <option value="">{{ __('Select Vehicle') }}</option>
                                     @foreach($vehicles as $vehicle)
@@ -265,7 +323,7 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="grow">
+                            <div class="w-full sm:flex-1">
                                 <select wire:model.blur="assignment.vehicle_position" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
                                     <option value="">{{ __('Select Position') }}</option>
                                     @foreach($vehicle_positions as $position)
@@ -276,7 +334,7 @@
                             <x-action-message class="text-xs font-semibold text-emerald-600" on="updated">
                                 {{ __('Assigned') }}
                             </x-action-message>
-                            <x-button type="submit">
+                            <x-button type="submit" class="w-full justify-center sm:w-auto">
                                 <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
                                 {{ __('Assign') }}
                             </x-button>
@@ -335,14 +393,14 @@
                                     <div class="mt-4 space-y-2">
                                         <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">{{ __('Log Attachments') }}</p>
                                         @foreach($log->attachments as $att)
-                                            <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                            <div class="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                                                 <div class="min-w-0 flex-1">
                                                     <a class="text-sm font-semibold text-orange-600 hover:text-orange-700" download href="{{route('attachments.download', ['attachment'=>$att->id])}}">{{ $att->file_name }}</a>
                                                     <p class="text-xs text-slate-500">{{ $att->created_at->diffForHumans() }}</p>
                                                 </div>
-                                                <div class="flex items-center gap-2">
+                                                <div class="flex flex-wrap items-center gap-2">
                                                     @can('updateVisibility', $att)
-                                                        <livewire:attachment-visibility-toggle :attachment="$att" :key="'job-log-att-'.$att->id"/>
+                                                        <livewire:attachment-visibility-toggle :attachment="$att" :key="'log-att-'.$att->id"/>
                                                     @else
                                                         @if($att->is_public)
                                                             <span class="text-xs font-semibold text-emerald-600">{{ __('Visible to customer') }}</span>

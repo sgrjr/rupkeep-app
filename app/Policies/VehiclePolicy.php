@@ -26,9 +26,9 @@ class VehiclePolicy
     /**
      * Determine whether the user can create models.
      */
-    public function create(User $user, Vehicle $model): bool
+    public function create(User $user): bool
     {
-        return ($user->organization_id === $model->organization_id && ($user->isAdmin() || $user->isManager())) || $user->organization->is_super;
+        return $user->organization->is_super || $user->isAdmin() || $user->isManager();
     }
 
     /**

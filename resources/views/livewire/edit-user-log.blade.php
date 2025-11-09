@@ -39,7 +39,7 @@
         <form id="user_log_form" wire:submit="saveLog" class="space-y-6">
             @csrf
 
-            <div class="sticky bottom-6 z-30 flex items-center justify-between gap-3 rounded-3xl border border-slate-200 bg-white/90 px-4 py-4 shadow-lg backdrop-blur sm:px-6">
+            <div class="sticky bottom-6 z-30 flex flex-col items-stretch gap-3 rounded-3xl border border-slate-200 bg-white/90 px-4 py-4 shadow-lg backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:px-6">
                 <div class="flex flex-wrap items-center gap-3 text-sm">
                     @if (session()->has('error'))
                         <div class="inline-flex items-center gap-2 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-red-600">
@@ -56,19 +56,32 @@
                         {{ __('Saved!') }}
                     </x-action-message>
                 </div>
-                <x-button type="submit">
+                <x-button type="submit" class="w-full justify-center sm:w-auto">
                     <span wire:loading wire:target="saveLog" class="h-4 w-4 animate-spin border-2 border-white/80 border-t-transparent rounded-full"></span>
                     {{ __('Save Changes') }}
                 </x-button>
             </div>
 
-            <section class="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm">
+            <section class="rounded-3xl border border-slate-200 bg-white/90 p-5 shadow-sm sm:p-6">
                 <details {{ $isDriverVehicleOpen ? 'open' : '' }} class="group space-y-5">
-                    <summary wire:click="$toggle('isDriverVehicleOpen')" class="flex cursor-pointer items-center justify-between gap-4 border-b border-slate-100 pb-3 text-lg font-semibold text-slate-900">
-                        {{ __('Driver & Vehicle') }}
+                    @php
+                        $driverName = $log->driver?->name ?? __('Unassigned');
+                        $vehicleName = $log->vehicle?->name ?? __('No vehicle');
+                        $driverVehicleSummary = __('Driver & Vehicle') . ': ' . $driverName . ' • ' . $vehicleName;
+                        $tripTimingSummary = implode(' → ', array_filter([
+                            optional($log->started_at)->format('M j g:ia'),
+                            optional($log->ended_at)->format('M j g:ia'),
+                        ]));
+                        $mileageSummary = __('Miles') . ': ' . ($log->total_miles ?? '—') . ' • ' . __('Billable') . ': ' . ($log->billable_miles ?? '—');
+                        $expenseSummary = __('Tolls') . ': ' . ($log->tolls ?? 0) . ' • ' . __('Hotel') . ': ' . ($log->hotel ?? 0);
+                        $loadSummary = __('Truck') . ': ' . ($log->truck_number ?? '—') . ' • ' . __('Trailer') . ': ' . ($log->trailer_number ?? '—');
+                        $attachmentsCount = $log->attachments?->count() ?? 0;
+                    @endphp
+                    <summary wire:click="$toggle('isDriverVehicleOpen')" class="flex flex-wrap cursor-pointer items-center justify-between gap-3 border-b border-slate-100 pb-3 text-lg font-semibold text-slate-900 sm:flex-nowrap">
+                        <span>{{ $driverVehicleSummary }}</span>
                         <svg class="h-4 w-4 transition group-open:rotate-180" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>
                     </summary>
-                    <div class="grid gap-4 md:grid-cols-2">
+                    <div class="grid gap-4 sm:grid-cols-2">
                         <div>
                             <label for="car_driver_id" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Escort Driver') }}</label>
                             <select id="car_driver_id" wire:model.blur="form.car_driver_id" class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
@@ -112,7 +125,7 @@
                     </div>
                     <details class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
                         <summary class="cursor-pointer text-sm font-semibold text-orange-600 hover:text-orange-700">{{ __('New Truck Driver') }}</summary>
-                        <div class="mt-3 grid gap-3 md:grid-cols-3">
+                        <div class="mt-3 grid gap-3 sm:grid-cols-2 md:grid-cols-3">
                             <div>
                                 <label for="new_truck_driver_name" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Name') }}</label>
                                 <input type="text" id="new_truck_driver_name" wire:model.blur="form.new_truck_driver_name" class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
@@ -133,13 +146,13 @@
                 </details>
             </section>
 
-            <section class="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm">
+            <section class="rounded-3xl border border-slate-200 bg-white/90 p-5 shadow-sm sm:p-6">
                 <details {{ $isTripTimingOpen ? 'open' : '' }} class="group space-y-5">
                     <summary wire:click="$toggle('isTripTimingOpen')" class="flex cursor-pointer items-center justify-between gap-4 border-b border-slate-100 pb-3 text-lg font-semibold text-slate-900">
-                        {{ __('Trip Timing') }}
+                        <span>{{ __('Trip Timing') }} @if($tripTimingSummary) <span class="text-sm font-normal text-slate-500">— {{ $tripTimingSummary }}</span> @endif</span>
                         <svg class="h-4 w-4 transition group-open:rotate-180" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>
                     </summary>
-                    <div class="grid gap-4 md:grid-cols-2">
+                    <div class="grid gap-4 sm:grid-cols-2">
                         <div>
                             <label for="started_at" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Started At') }}</label>
                             <input type="datetime-local" id="started_at" wire:model.blur="form.started_at" class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
@@ -154,13 +167,13 @@
                 </details>
             </section>
 
-            <section class="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm">
+            <section class="rounded-3xl border border-slate-200 bg-white/90 p-5 shadow-sm sm:p-6">
                 <details {{ $isMileageDetailsOpen ? 'open' : '' }} class="group space-y-5">
                     <summary wire:click="$toggle('isMileageDetailsOpen')" class="flex cursor-pointer items-center justify-between gap-4 border-b border-slate-100 pb-3 text-lg font-semibold text-slate-900">
-                        {{ __('Mileage & Stops') }}
+                        <span>{{ __('Mileage & Stops') }} <span class="text-sm font-normal text-slate-500">— {{ $mileageSummary }}</span></span>
                         <svg class="h-4 w-4 transition group-open:rotate-180" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>
                     </summary>
-                    <div class="grid gap-4 md:grid-cols-4">
+                    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                         <div>
                             <label for="start_mileage" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Start Mileage') }}</label>
                             <input type="number" id="start_mileage" wire:model.blur="form.start_mileage" class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
@@ -205,13 +218,13 @@
                 </details>
             </section>
 
-            <section class="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm">
+            <section class="rounded-3xl border border-slate-200 bg-white/90 p-5 shadow-sm sm:p-6">
                 <details {{ $isExpenseDetailsOpen ? 'open' : '' }} class="group space-y-5">
                     <summary wire:click="$toggle('isExpenseDetailsOpen')" class="flex cursor-pointer items-center justify-between gap-4 border-b border-slate-100 pb-3 text-lg font-semibold text-slate-900">
-                        {{ __('Expenses') }}
+                        <span>{{ __('Expenses') }} <span class="text-sm font-normal text-slate-500">— {{ $expenseSummary }}</span></span>
                         <svg class="h-4 w-4 transition group-open:rotate-180" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>
                     </summary>
-                    <div class="grid gap-4 md:grid-cols-4">
+                    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                         <div>
                             <label for="tolls" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Tolls') }}</label>
                             <input type="number" id="tolls" wire:model.blur="form.tolls" step="0.01" min="0" class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
@@ -236,13 +249,13 @@
                 </details>
             </section>
 
-            <section class="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm">
+            <section class="rounded-3xl border border-slate-200 bg-white/90 p-5 shadow-sm sm:p-6">
                 <details {{ $isLoadInformationOpen ? 'open' : '' }} class="group space-y-5">
                     <summary wire:click="$toggle('isLoadInformationOpen')" class="flex cursor-pointer items-center justify-between gap-4 border-b border-slate-100 pb-3 text-lg font-semibold text-slate-900">
-                        {{ __('Load Information') }}
+                        <span>{{ __('Load Information') }} <span class="text-sm font-normal text-slate-500">— {{ $loadSummary }}</span></span>
                         <svg class="h-4 w-4 transition group-open:rotate-180" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>
                     </summary>
-                    <div class="grid gap-4 md:grid-cols-2">
+                    <div class="grid gap-4 sm:grid-cols-2">
                         <div>
                             <label for="trailer_number" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Trailer #') }}</label>
                             <input type="text" id="trailer_number" wire:model.blur="form.trailer_number" class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
@@ -262,16 +275,16 @@
                 </details>
             </section>
 
-            <section class="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm">
+            <section class="rounded-3xl border border-slate-200 bg-white/90 p-5 shadow-sm sm:p-6">
                 <details {{ $isAttachmentsOpen ? 'open' : '' }} class="group space-y-5">
                     <summary wire:click="$toggle('isAttachmentsOpen')" class="flex cursor-pointer items-center justify-between gap-4 border-b border-slate-100 pb-3 text-lg font-semibold text-slate-900">
-                        {{ __('Attachments & Proof') }}
+                        <span>{{ __('Attachments & Proof') }} <span class="text-sm font-normal text-slate-500">— {{ trans_choice(':count attachment|:count attachments', $attachmentsCount) }}</span></span>
                         <svg class="h-4 w-4 transition group-open:rotate-180" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>
                     </summary>
                     <div class="space-y-4">
                         <div class="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
                             <input type="file" wire:model="file" class="grow rounded-xl border border-dashed border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none" />
-                            <x-button type="button" wire:click="uploadFile" wire:loading.attr="disabled">
+                            <x-button type="button" wire:click="uploadFile" wire:loading.attr="disabled" class="w-full justify-center sm:w-auto">
                                 <span wire:loading wire:target="uploadFile" class="h-4 w-4 animate-spin border-2 border-white/80 border-t-transparent rounded-full"></span>
                                 {{ __('Upload Attachment') }}
                             </x-button>
@@ -289,7 +302,7 @@
                                         </a>
                                         <p class="text-xs text-slate-500">{{ $att->created_at->diffForHumans() }}</p>
                                     </div>
-                                    <div class="flex items-center gap-2">
+                                    <div class="flex flex-wrap items-center gap-2">
                                         @can('updateVisibility', $att)
                                             <livewire:attachment-visibility-toggle :attachment="$att" :key="'log-att-'.$att->id"/>
                                         @else

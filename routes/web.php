@@ -93,7 +93,7 @@ Route::middleware([
         Route::post('/login-code/verify', [\App\Http\Controllers\Auth\LoginCodeController::class, 'verify'])->name('login-code.verify');
     });
 
-    Route::middleware(['auth', 'customer'])->prefix('portal')->name('customer.')->group(function () {
+    Route::prefix('portal')->name('customer.')->group(function () {
         Route::get('invoices', [\App\Http\Controllers\CustomerPortal\InvoiceController::class, 'index'])->name('invoices.index');
         Route::get('invoices/{invoice}', [\App\Http\Controllers\CustomerPortal\InvoiceController::class, 'show'])->name('invoices.show');
     });
