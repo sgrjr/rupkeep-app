@@ -80,11 +80,43 @@ class SendUserNotification
                         'message_id' => $result->getMessageId() ?? 'unknown',
                     ]);
                     return; // Success, exit early
+                } catch (\Brevo\Client\ApiException $e) {
+                    // Brevo-specific API exception - log detailed error
+                    $errorBody = $e->getResponseBody();
+                    $errorCode = $e->getCode();
+                    
+                    Log::warning('SendUserNotification: Brevo API failed, falling back to Laravel Mail', [
+                        'user_id' => $user->id,
+                        'recipient' => $recipient,
+                        'error_message' => $e->getMessage(),
+                        'error_code' => $errorCode,
+                        'error_body' => $errorBody,
+                        'api_key_configured' => !empty($api_key),
+                        'api_key_length' => $api_key ? strlen($api_key) : 0,
+                        'sender_email' => $sender_email,
+                    ]);
+                    
+                    // If the error is "API Key is not enabled", log a helpful message
+                    if (str_contains($e->getMessage(), 'API Key is not enabled') || 
+                        (is_string($errorBody) && str_contains($errorBody, 'API Key is not enabled'))) {
+                        Log::error('SendUserNotification: Brevo API Key is not enabled. Please check your Brevo dashboard:', [
+                            'instructions' => [
+                                '1. Log into your Brevo account',
+                                '2. Go to Settings > API Keys',
+                                '3. Ensure you have a "Transactional Email API" key (not just any API key)',
+                                '4. Make sure the API key is enabled/active',
+                                '5. Verify the API key in your .env file matches the one in Brevo',
+                            ],
+                        ]);
+                    }
+                    // Fall through to Laravel Mail fallback below
                 } catch (\Exception $e) {
-                    Log::warning('SendUserNotification: Brevo failed, falling back to Laravel Mail', [
+                    Log::warning('SendUserNotification: Brevo failed with unexpected error, falling back to Laravel Mail', [
                         'user_id' => $user->id,
                         'recipient' => $recipient,
                         'error' => $e->getMessage(),
+                        'error_class' => get_class($e),
+                        'trace' => $e->getTraceAsString(),
                     ]);
                     // Fall through to Laravel Mail fallback below
                 }
@@ -100,21 +132,67 @@ class SendUserNotification
         // Use standard Laravel Mail facade (respects MAIL_MAILER config - will log in development)
         // This handles both regular emails and SMS gateway fallback
         try {
+            $defaultMailer = config('mail.default');
+            $mailerConfig = config("mail.mailers.{$defaultMailer}");
+            
+            // Check if mailer is properly configured
+            if ($defaultMailer === 'smtp' && empty(config('mail.mailers.smtp.username'))) {
+                Log::error('SendUserNotification: SMTP mailer is configured but missing credentials', [
+                    'user_id' => $user->id,
+                    'recipient' => $recipient,
+                    'mailer' => $defaultMailer,
+                    'issue' => 'SMTP username/password not configured. Set MAIL_USERNAME and MAIL_PASSWORD in .env',
+                ]);
+                throw new \Exception('SMTP mailer is not properly configured. Missing MAIL_USERNAME or MAIL_PASSWORD.');
+            }
+            
             Mail::to($recipient)->send(new UserNotification($message, $subject));
             
             Log::info('SendUserNotification: Sent successfully via Laravel Mail', [
                 'user_id' => $user->id,
                 'recipient' => $recipient,
                 'subject' => $subject,
-                'mailer' => config('mail.default'),
+                'mailer' => $defaultMailer,
             ]);
         } catch (\Exception $e) {
+            // Check if it's a mail transport exception
+            $isTransportException = str_contains(get_class($e), 'TransportException') || 
+                                   str_contains($e->getMessage(), 'transport') ||
+                                   str_contains($e->getMessage(), 'mailer');
+            
             Log::error('SendUserNotification: Failed to send via Laravel Mail', [
                 'user_id' => $user->id,
                 'recipient' => $recipient,
+                'mailer' => config('mail.default'),
                 'error' => $e->getMessage(),
+                'error_class' => get_class($e),
+                'is_transport_error' => $isTransportException,
+                'previous_error' => $e->getPrevious() ? $e->getPrevious()->getMessage() : null,
                 'trace' => $e->getTraceAsString(),
             ]);
+            
+            // Final fallback: try using 'log' mailer if default mailer failed
+            if (config('mail.default') !== 'log') {
+                try {
+                    Log::warning('SendUserNotification: Attempting final fallback to log mailer', [
+                        'user_id' => $user->id,
+                        'recipient' => $recipient,
+                    ]);
+                    Mail::mailer('log')->to($recipient)->send(new UserNotification($message, $subject));
+                    Log::info('SendUserNotification: Notification logged (could not be sent)', [
+                        'user_id' => $user->id,
+                        'recipient' => $recipient,
+                        'subject' => $subject,
+                        'note' => 'Check storage/logs/laravel.log for notification details',
+                    ]);
+                } catch (\Exception $logException) {
+                    Log::error('SendUserNotification: Even log mailer failed - notification completely failed', [
+                        'user_id' => $user->id,
+                        'recipient' => $recipient,
+                        'error' => $logException->getMessage(),
+                    ]);
+                }
+            }
         }
         /*
         $client = new Client();
