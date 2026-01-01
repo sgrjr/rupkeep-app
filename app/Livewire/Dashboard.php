@@ -112,6 +112,10 @@ class Dashboard extends Component
             $totalRevenue = $allInvoices->sum(fn($inv) => (float)($inv->values['total'] ?? 0));
             $unpaidAmount = $unpaidInvoices->sum(fn($inv) => (float)($inv->values['total'] ?? 0));
             
+            // Calculate total account credits
+            $totalAccountCredits = \App\Models\Customer::where('organization_id', $organization->id)
+                ->sum('account_credit');
+            
             $managerStats = (object)[
                 'total_jobs' => $allJobs->count(),
                 'active_jobs' => $activeJobs->count(),
@@ -121,6 +125,7 @@ class Dashboard extends Component
                 'unpaid_invoices' => $unpaidInvoices->count(),
                 'total_revenue' => $totalRevenue,
                 'unpaid_amount' => $unpaidAmount,
+                'total_account_credits' => (float)$totalAccountCredits,
             ];
             
             // Get jobs with invoices marked for attention

@@ -333,7 +333,7 @@
                 </div>
             </div>
 
-            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                 <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                     <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">{{ __('Total Invoices') }}</p>
                     <p class="mt-2 text-3xl font-bold text-slate-900">{{ number_format($managerStats->total_invoices) }}</p>
@@ -349,6 +349,10 @@
                 <div class="rounded-2xl border border-red-200 bg-red-50 p-4 shadow-sm">
                     <p class="text-xs font-semibold uppercase tracking-wider text-red-600">{{ __('Outstanding') }}</p>
                     <p class="mt-2 text-2xl font-bold text-red-700">${{ number_format($managerStats->unpaid_amount, 2) }}</p>
+                </div>
+                <div class="rounded-2xl border border-blue-200 bg-blue-50 p-4 shadow-sm">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-blue-600">{{ __('Sum of Account Credits') }}</p>
+                    <p class="mt-2 text-2xl font-bold text-blue-700">${{ number_format($managerStats->total_account_credits, 2) }}</p>
                 </div>
             </div>
 
