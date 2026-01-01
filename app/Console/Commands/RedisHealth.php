@@ -30,6 +30,47 @@ class RedisHealth extends Command
         $output[] = "=== Redis Health Check ===";
         $output[] = "";
 
+        // Check configuration and extension
+        $redisConfig = config('database.redis.default');
+        $redisClient = config('database.redis.client', 'phpredis');
+        
+        $output[] = "Redis Client: " . $redisClient;
+        
+        // Check if phpredis extension is loaded when using phpredis client
+        if ($redisClient === 'phpredis' && !extension_loaded('redis')) {
+            $output[] = "";
+            $output[] = "=== ERROR ===";
+            $output[] = "PHP Redis extension (phpredis) is not installed or not loaded.";
+            $output[] = "";
+            $output[] = "To fix this issue:";
+            $output[] = "";
+            $output[] = "Option 1: Install PHP Redis extension";
+            $output[] = "  Ubuntu/Debian: sudo apt-get install php-redis php8.x-redis";
+            $output[] = "  CentOS/RHEL:   sudo yum install php-redis";
+            $output[] = "  Via PECL:      pecl install redis";
+            $output[] = "";
+            $output[] = "  After installation, restart PHP-FPM/web server:";
+            $output[] = "  sudo systemctl restart php-fpm  (or php8.x-fpm)";
+            $output[] = "  sudo systemctl restart nginx    (or apache2)";
+            $output[] = "";
+            $output[] = "Option 2: Switch to Predis client (PHP library, no extension needed)";
+            $output[] = "  Set REDIS_CLIENT=predis in your .env file";
+            $output[] = "  Then run: php artisan config:clear";
+            $output[] = "";
+            $output[] = "Connection Configuration:";
+            if ($redisConfig) {
+                $output[] = "  Host: " . ($redisConfig['host'] ?? 'localhost');
+                $output[] = "  Port: " . ($redisConfig['port'] ?? 6379);
+                $output[] = "  Database: " . ($redisConfig['database'] ?? 0);
+            }
+            $output[] = "";
+            $output[] = "=== Status: UNHEALTHY ===";
+            $this->error(implode("\n", $output));
+            return 1;
+        }
+        
+        $output[] = "";
+
         try {
             // Test connection
             $output[] = "Testing Redis connection...";
@@ -41,10 +82,12 @@ class RedisHealth extends Command
             $output[] = "=== Redis Server Information ===";
             $info = Redis::info();
             
-            // Handle case where info() returns string instead of array
+            // Handle case where info() returns string instead of array (predis)
             if (is_string($info)) {
                 $infoArray = [];
-                foreach (explode("\r\n", $info) as $line) {
+                $lines = preg_split('/\r?\n/', $info);
+                foreach ($lines as $line) {
+                    $line = trim($line);
                     if (empty($line) || str_starts_with($line, '#')) {
                         continue;
                     }
@@ -164,13 +207,27 @@ class RedisHealth extends Command
             
         } catch (\Exception $e) {
             $output[] = "=== ERROR ===";
-            $output[] = "Failed to connect to Redis: " . $e->getMessage();
+            $errorMessage = $e->getMessage();
+            $output[] = "Failed to connect to Redis: " . $errorMessage;
             $output[] = "";
+            
+            // Check if it's the phpredis extension error
+            if (str_contains($errorMessage, 'Class "Redis" not found') || str_contains($errorMessage, 'phpredis')) {
+                $output[] = "This error indicates the PHP Redis extension is not installed.";
+                $output[] = "";
+                $output[] = "To fix:";
+                $output[] = "  1. Install: sudo apt-get install php-redis (or php8.x-redis for specific PHP version)";
+                $output[] = "  2. Restart PHP-FPM: sudo systemctl restart php-fpm";
+                $output[] = "  3. Or switch to Predis: Set REDIS_CLIENT=predis in .env";
+                $output[] = "";
+            }
+            
             $output[] = "Connection Details:";
             $redisConfig = config('database.redis.default');
             if ($redisConfig) {
-                $output[] = "Host: " . ($redisConfig['host'] ?? 'localhost');
-                $output[] = "Port: " . ($redisConfig['port'] ?? 6379);
+                $output[] = "  Host: " . ($redisConfig['host'] ?? 'localhost');
+                $output[] = "  Port: " . ($redisConfig['port'] ?? 6379);
+                $output[] = "  Database: " . ($redisConfig['database'] ?? 0);
             }
             $output[] = "";
             $output[] = "=== Status: UNHEALTHY ===";
