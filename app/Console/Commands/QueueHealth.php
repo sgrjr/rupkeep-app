@@ -190,6 +190,34 @@ class QueueHealth extends Command
         }
         $output[] = "";
 
+        // Worker Log Tail
+        $output[] = "=== Recent Worker Log Output (Last 20 lines) ===";
+        $workerLogPath = storage_path('logs/worker.log');
+        try {
+            if (file_exists($workerLogPath) && is_readable($workerLogPath)) {
+                // Get last 20 lines of the log file
+                $logLines = file($workerLogPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+                if ($logLines !== false && !empty($logLines)) {
+                    $lastLines = array_slice($logLines, -20);
+                    if (!empty($lastLines)) {
+                        foreach ($lastLines as $line) {
+                            $output[] = $line;
+                        }
+                    } else {
+                        $output[] = "Log file is empty";
+                    }
+                } else {
+                    $output[] = "Log file is empty";
+                }
+            } else {
+                $output[] = "Log file not found or not readable: {$workerLogPath}";
+                $output[] = "Logs will appear here once the worker starts processing jobs.";
+            }
+        } catch (\Exception $e) {
+            $output[] = "Error reading log file: " . $e->getMessage();
+        }
+        $output[] = "";
+
         // Recommendations
         $output[] = "=== Recommendations ===";
         $hasIssues = false;
