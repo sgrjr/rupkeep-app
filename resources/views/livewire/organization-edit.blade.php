@@ -1,5 +1,22 @@
-<div class="max-w-3xl flex w-full justify-center items-center m-auto py-12">
-    <form method="POST" action="{{ route('organizations.update', ['organization'=>$organization['id'], '_method'=>'PATCH']) }}" class="grid grid-cols-1 gap-2 w-full">
+<div>
+    <div class="mx-auto space-y-8">
+        <section class="relative overflow-hidden bg-gradient-to-r from-orange-500 via-orange-400 to-orange-300 p-6 text-white shadow-xl">
+            <div class="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.25),_transparent_60%)] opacity-70"></div>
+            <div class="relative flex flex-wrap items-center justify-between gap-4">
+                <div class="space-y-2">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-white/75">{{ __('Edit Organization') }}</p>
+                    <h1 class="text-3xl font-bold tracking-tight">{{ $organization['name'] }}</h1>
+                </div>
+                <a href="{{route('organizations.show',['organization'=>$organization['id']])}}" class="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white/85 shadow-sm backdrop-blur transition hover:bg-white/20">
+                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
+                    {{ __('Back') }}
+                </a>
+            </div>
+        </section>
+
+        <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+            <div class="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm">
+                <form method="POST" action="{{ route('organizations.update', ['organization'=>$organization['id'], '_method'=>'PATCH']) }}" class="grid grid-cols-1 gap-4">
     @csrf
 
     <div>
@@ -63,8 +80,11 @@
         </div>
     @endcan
 
-    <x-button>
-        {{ __('Save Changes') }}
-    </x-button>
-</form>
+                    <x-button>
+                        {{ __('Save Changes') }}
+                    </x-button>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>

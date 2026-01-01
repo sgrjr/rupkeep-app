@@ -44,6 +44,14 @@ class SendUserNotification
         // For SMS gateway addresses (phone numbers), try Brevo API first (proven working method)
         // Fall back to Laravel Mail if Brevo fails or is not configured (e.g., in development)
         // For regular emails, use standard Laravel Mail facade
+        //
+        // IMPORTANT: SMS Gateway Delivery Notes
+        // - Messages sent via Brevo to SMS gateways (e.g., vtext.com, tmomail.net) may show
+        //   "452 server temporarily unavailable AUP#MXRT" errors in Brevo's dashboard
+        // - This is a TEMPORARY rejection by the carrier's SMS gateway (not your code)
+        // - Brevo automatically retries these messages - most deliver successfully after retry
+        // - Monitor Brevo dashboard for delivery statistics and bounce reports
+        // - See docs/SMS_GATEWAY_TROUBLESHOOTING.md for detailed troubleshooting guidance
         if ($isSmsGateway) {
             // Try Brevo API for SMS gateway addresses (proven working method from test notification)
             $api_key = config('mail.mailers.brevo.key');
@@ -78,6 +86,7 @@ class SendUserNotification
                         'recipient' => $recipient,
                         'subject' => $subject,
                         'message_id' => $result->getMessageId() ?? 'unknown',
+                        'note' => 'Message accepted by Brevo. Monitor Brevo dashboard for delivery status. Carrier SMS gateways may temporarily reject messages (452 errors), but Brevo will automatically retry.',
                     ]);
                     return; // Success, exit early
                 } catch (\Brevo\Client\ApiException $e) {

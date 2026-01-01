@@ -9,7 +9,6 @@ use App\Models\PilotCarJob;
 use Livewire\Attributes\Validate;
 use Livewire\Form;
 use Auth;
-use Illuminate\Support\Facades\DB;
 use Livewire\WithFileUploads;
 
 class NewUserForm extends Form
@@ -46,14 +45,14 @@ class OrganizationShow extends Component
     public $file;
 
     public function mount(Int $organization){
-        $organization = Organization::with('users','owner')->find($organization);
-
-        if(auth()->user()->can('restoreAny', new User)){
-            $this->deleted_users = DB::table('users')->where('organization_id', $organization->id)->whereNotNull('deleted_at')->get();
-        }
+        $organization = Organization::with('users','owner')->findOrFail($organization);
 
         if($this->authorize('view', $organization)){
             $this->organization = $organization;
+        }
+
+        if(auth()->user()->can('restoreAny', new User)){
+            $this->deleted_users = User::withTrashed()->where('organization_id', $organization->id)->whereNotNull('deleted_at')->get();
         }
 
         $this->roles = User::roles();

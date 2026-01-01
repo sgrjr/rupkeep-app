@@ -5,20 +5,29 @@
     'vehicles_count' => 0
     ])
 
-<div class="max-w-5xl m-auto">
-    <h1 class="text-center font-bold underline">
-        @if(auth()->user()->can('update', $organization))
-            <a href="{{route('organizations.edit',['organization'=>$organization->id])}}">{{$organization->name}}</a>
-        @else
-            {{$organization->name}}
-        @endif
+<div>
+    <div class="mx-auto space-y-8">
+        <section class="relative overflow-hidden bg-gradient-to-r from-orange-500 via-orange-400 to-orange-300 p-6 text-white shadow-xl">
+            <div class="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.25),_transparent_60%)] opacity-70"></div>
+            <div class="relative flex flex-wrap items-center justify-between gap-4">
+                <div class="space-y-2">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-white/75">{{ __('Organization Profile') }}</p>
+                    <h1 class="text-3xl font-bold tracking-tight">{{ $organization->name }}</h1>
+                    @if($organization->city && $organization->state)
+                        <p class="text-sm text-white/85">
+                            {{ $organization->city }}, {{ $organization->state }}
+                        </p>
+                    @endif
+                </div>
+                @if(auth()->user()->can('update', $organization))
+                    <a href="{{route('organizations.edit',['organization'=>$organization->id])}}" class="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white/85 shadow-sm backdrop-blur transition hover:bg-white/20">
+                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-4.536a2.5 2.5 0 11-3.536 3.536L4.5 16.5V19.5H7.5l8.5-8.5"/></svg>
+                        {{ __('Edit') }}
+                    </a>
+                @endif
+            </div>
+        </section>
 
-        @if(auth()->user()->is_super)
-            <a href="{{route('jobs.index',['organization'=>$organization->id])}}"> | Jobs</a>
-        @endif
-        </h1>
-    <img src="{{$organization->logo_url}}" class="w-64 m-auto"/>    
-    <div>
         <div class="max-w-7xl mx-auto">
                 <x-section-border />
             
@@ -31,9 +40,6 @@
 
                         <div class="mt-5 md:mt-0 md:col-span-2">
                             <div class="px-4 py-5 bg-white dark:bg-gray-800 sm:p-6 shadow {{ isset($actions) ? 'sm:rounded-tl-md sm:rounded-tr-md' : 'sm:rounded-md' }}">
-                                @if(auth()->user()->can('update', $organization))
-                                <a class="underline" href="{{route('organizations.edit',['organization'=>$organization->id])}}">edit</a>
-                                @endif
                                 <p>Owner: <b>{{$organization->owner?->name}}</b> | Primary Contact: <b>{{$organization->primary_contact}}</b> | Telephone: <b>{{$organization->telephone}}</b> | Fax: <b>{{$organization->fax? $organization->fax:'(none)'}}</b> | Contact Email: <b>{{$organization->email? $organization->email:'(none)'}}</b> | Website: <b><a class="underline" href="{{$organization->website_url}}">{{$organization->website_url? $organization->website_url:'(none)'}}</a></b></p>
 
                                 <p>Address: <b>{{$organization->street}} {{$organization->city}}, {{$organization->state}} {{$organization->zip}}</b></p>
@@ -303,6 +309,5 @@
 
         </div>
     </div>
-
 </div>
 
