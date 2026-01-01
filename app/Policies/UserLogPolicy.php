@@ -52,7 +52,7 @@ class UserLogPolicy
      */
     public function restore(User $user, UserLog $model): bool
     {
-        return $user->is_super;
+        return ($user->organization_id === $model->organization_id && ($user->isAdmin() || $user->isManager())) || $user->is_super;
     }
 
     /**

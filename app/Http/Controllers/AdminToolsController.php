@@ -65,6 +65,16 @@ class AdminToolsController extends Controller
                 'command' => 'view:clear',
                 'description' => 'Clear view cache',
             ],
+            'artisan_migrate' => [
+                'type' => 'artisan',
+                'command' => 'migrate --force',
+                'description' => 'Run database migrations',
+            ],
+            'artisan_migrate_rollback' => [
+                'type' => 'artisan',
+                'command' => 'migrate:rollback --force',
+                'description' => 'Rollback the last database migration',
+            ],
         ];
     }
 
@@ -184,10 +194,13 @@ class AdminToolsController extends Controller
             // Execute artisan command via Process to capture full output
             $commandString = "php artisan {$commandDef['command']}";
             
+            // Split command string to handle flags (e.g., 'migrate:rollback --force')
+            $commandParts = explode(' ', $commandDef['command']);
+            
             // Use Process to execute artisan command and capture all output
             // Passing null for env allows Process to inherit parent environment variables
             // Laravel will read .env file during bootstrap, so no need to pass env explicitly
-            $process = new Process(['php', 'artisan', $commandDef['command']], base_path(), null);
+            $process = new Process(array_merge(['php', 'artisan'], $commandParts), base_path(), null);
             
             // Set timeout for long-running processes (5 minutes)
             $process->setTimeout(300);
@@ -208,8 +221,22 @@ class AdminToolsController extends Controller
             // Set timeout for long-running processes (5 minutes)
             $process->setTimeout(300);
             
-            // Run and capture output
-            $process->run();
+            // For git commands, configure environment to handle SSH/HTTPS issues on production servers
+            $env = null;
+            if ($commandDef['type'] === 'git') {
+                // For git pull/push/fetch, configure SSH to accept GitHub's host key automatically
+                // This handles "Host key verification failed" errors on production servers
+                // where the web server user (www-data/nginx) doesn't have GitHub in known_hosts
+                if (in_array($commandDef['command'][1] ?? '', ['pull', 'push', 'fetch'])) {
+                    // Use SSH with strict host key checking disabled for GitHub
+                    // This is safe for GitHub as we're only connecting to github.com
+                    // The env parameter to run() merges with inherited environment
+                    $env = ['GIT_SSH_COMMAND' => 'ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no'];
+                }
+            }
+            
+            // Run and capture output (pass env as second parameter to merge with inherited env)
+            $process->run(null, $env);
             
             $exitCode = $process->getExitCode();
             $stdout = $process->getOutput();

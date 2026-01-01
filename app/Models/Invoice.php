@@ -133,6 +133,12 @@ class Invoice extends Model
      */
     public function calculateLateFees(): array
     {
+        $invoiceDate = $this->created_at;
+        $organizationId = $this->organization_id;
+        $gracePeriod = $organizationId
+            ? PricingSetting::getValueForOrganization($organizationId, 'payment_terms.grace_period_days', config('pricing.payment_terms.grace_period_days', 30))
+            : config('pricing.payment_terms.grace_period_days', 30);
+        
         if ($this->paid_in_full) {
             return [
                 'is_past_due' => false,
@@ -140,17 +146,13 @@ class Invoice extends Model
                 'late_fee_periods' => 0,
                 'late_fee_amount' => 0.0,
                 'total_with_late_fees' => (float) ($this->values['total'] ?? 0),
+                'due_date' => $invoiceDate->copy()->addDays($gracePeriod),
+                'late_fees_applied' => false,
             ];
         }
 
-        $invoiceDate = $this->created_at;
         $now = now();
         $daysSinceInvoice = $invoiceDate->diffInDays($now);
-        
-        $organizationId = $this->organization_id;
-        $gracePeriod = $organizationId
-            ? PricingSetting::getValueForOrganization($organizationId, 'payment_terms.grace_period_days', config('pricing.payment_terms.grace_period_days', 30))
-            : config('pricing.payment_terms.grace_period_days', 30);
         $lateFeePercentage = $organizationId
             ? PricingSetting::getValueForOrganization($organizationId, 'payment_terms.late_fee_percentage', config('pricing.payment_terms.late_fee_percentage', 10.0))
             : config('pricing.payment_terms.late_fee_percentage', 10.0);

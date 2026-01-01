@@ -16,7 +16,7 @@
         <div class="relative">
             <div class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-2 px-4 sm:px-6 lg:px-8">
                 <div class="flex flex-1 items-center gap-3 min-w-0">
-                    <a href="{{ route('dashboard') }}" class="flex items-center gap-2 sm:gap-3 rounded-xl border border-white/30 bg-white/20 backdrop-blur-sm px-2 sm:px-3 py-1.5 sm:py-2 shadow-md transition hover:bg-white/30 hover:shadow-lg hover:scale-[1.02] shrink-0">
+                    <a href="{{ route('dashboard') }}" style="text-decoration: none;" class="flex items-center gap-2 sm:gap-3 rounded-xl border border-white/30 bg-white/20 backdrop-blur-sm px-2 sm:px-3 py-1.5 sm:py-2 shadow-md transition hover:bg-white/30 hover:shadow-lg hover:scale-[1.02] shrink-0">
                         <div class="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg bg-orange-500 text-white shadow-md ring-2 ring-white/50">
                             @if(Auth::user()->organization?->logo)
                                 <img src="{{ Auth::user()->organization->logo }}" alt="{{ Auth::user()->organization->name }} Logo" class="h-6 w-6 sm:h-7 sm:w-7 object-contain">

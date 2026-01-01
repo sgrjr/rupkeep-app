@@ -1,7 +1,36 @@
 @props(['drivers'=>[], 'vehicles'=>[]])
 
-<div class="bg-slate-100/80 pb-32">
+<div class="bg-slate-100/80 pb-32" x-data>
+    <style>
+        html {
+            scroll-behavior: smooth;
+        }
+    </style>
+
     <div class="mx-auto max-w-6xl space-y-8 px-4 py-6 sm:px-6 lg:px-8">
+        @if($job->trashed())
+            <section class="rounded-3xl border-2 border-red-400 bg-red-50 p-6 shadow-lg">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-3 mb-3">
+                            <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+                            </svg>
+                            <h2 class="text-xl font-bold text-red-900">{{ __('This Job Has Been Deleted') }}</h2>
+                        </div>
+                        <p class="text-sm text-red-700 mb-4">{{ __('This job was archived on :date. You can restore it to make it active again.', ['date' => $job->deleted_at->format('M j, Y g:i A')]) }}</p>
+                        @can('restore', $job)
+                            <button wire:click="restoreJob" class="inline-flex items-center gap-2 rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/>
+                                </svg>
+                                {{ __('Restore Job') }}
+                            </button>
+                        @endcan
+                    </div>
+                </div>
+            </section>
+        @endif
         <section class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-orange-500 via-orange-400 to-orange-300 p-6 text-white shadow-xl">
             <div class="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.25),_transparent_60%)] opacity-70"></div>
             <div class="relative flex flex-wrap items-center justify-between gap-4">
@@ -18,9 +47,9 @@
                             ];
                             $statusColor = $statusColors[$status] ?? 'bg-slate-500/80 text-white';
                         @endphp
-                        <span class="inline-flex items-center gap-1.5 rounded-full {{ $statusColor }} px-3 py-1 text-xs font-bold uppercase tracking-wider shadow-sm">
+                        <a href="#job-status-explanation" class="inline-flex items-center gap-1.5 rounded-full {{ $statusColor }} px-3 py-1 text-xs font-bold uppercase tracking-wider shadow-sm transition hover:opacity-90 cursor-pointer" title="{{ __('Click to learn more about job statuses') }}">
                             {{ $job->status_label }}
-                        </span>
+                        </a>
                     </div>
                     <h1 class="text-3xl font-bold tracking-tight">{{ $job->job_no ?? __('Unnumbered Job') }}</h1>
                     <div class="flex flex-wrap items-center gap-3 text-sm text-white/85">
@@ -34,6 +63,12 @@
                             {{ __('My Jobs') }}
                             <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
                         </a>
+                        @if(auth()->user()->can('update', $job))
+                            <a href="{{route('my.jobs.edit', ['job'=>$job->id])}}" class="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold transition hover:bg-white/25">
+                                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-4.536a2.5 2.5 0 11-3.536 3.536L4.5 16.5V19.5H7.5l8.5-8.5"/></svg>
+                                {{ __('Edit Job') }}
+                            </a>
+                        @endif
                     </div>
                 </div>
                 <div class="grid gap-3 rounded-2xl border border-white/25 bg-white/10 px-4 py-3 text-xs font-semibold uppercase tracking-wider text-white/85 shadow-sm backdrop-blur sm:grid-cols-2">
@@ -61,44 +96,69 @@
                         $rateComparison = $job->getRateComparison();
                     @endphp
                     @if($rateComparison && $rateComparison['is_mini_better'] && $job->rate_code !== 'mini_flat_rate')
-                        <div class="sm:col-span-2 rounded-xl border-2 border-emerald-400/50 bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 p-4 shadow-lg">
+                        <div class="sm:col-span-2 rounded-xl border-2 border-orange-400 bg-white p-4 shadow-lg">
                             <div class="flex items-start justify-between gap-3">
                                 <div class="flex-1">
-                                    <p class="text-[10px] font-bold uppercase tracking-wider text-emerald-200">{{ __('💰 Rate Comparison') }}</p>
+                                    <p class="text-[10px] font-bold uppercase tracking-wider text-orange-600">{{ __('💰 Rate Comparison') }}</p>
                                     <div class="mt-2 grid grid-cols-2 gap-3 text-xs">
-                                        <div class="rounded-lg border border-white/20 bg-white/5 p-2">
-                                            <p class="text-[9px] font-semibold uppercase tracking-wide text-white/70">{{ __('Current Rate') }}</p>
-                                            <p class="mt-1 text-sm font-bold text-white">{{ $rateComparison['current_rate_label'] }}</p>
-                                            <p class="mt-0.5 text-lg font-bold text-white">${{ number_format($rateComparison['current_cost'], 2) }}</p>
+                                        <div class="rounded-lg border border-slate-200 bg-slate-50 p-2">
+                                            <p class="text-[9px] font-semibold uppercase tracking-wide text-slate-600">{{ __('Current Rate') }}</p>
+                                            <p class="mt-1 text-sm font-bold text-slate-900">{{ $rateComparison['current_rate_label'] }}</p>
+                                            <p class="mt-0.5 text-lg font-bold text-slate-900">${{ number_format($rateComparison['current_cost'], 2) }}</p>
                                         </div>
-                                        <div class="rounded-lg border-2 border-emerald-300/50 bg-emerald-500/20 p-2">
-                                            <p class="text-[9px] font-semibold uppercase tracking-wide text-emerald-200">{{ __('Mini-Run Rate') }}</p>
-                                            <p class="mt-1 text-sm font-bold text-emerald-100">Mini-Run ({{ $rateComparison['billable_miles'] }} miles)</p>
-                                            <p class="mt-0.5 text-lg font-bold text-emerald-100">${{ number_format($rateComparison['mini_cost'], 2) }}</p>
+                                        <div class="rounded-lg border-2 border-orange-400 bg-orange-50 p-2">
+                                            <p class="text-[9px] font-semibold uppercase tracking-wide text-orange-700">{{ __('Mini-Run Rate') }}</p>
+                                            <p class="mt-1 text-sm font-bold text-slate-900">Mini-Run ({{ $rateComparison['billable_miles'] }} miles)</p>
+                                            <p class="mt-0.5 text-lg font-bold text-slate-900">${{ number_format($rateComparison['mini_cost'], 2) }}</p>
                                         </div>
                                     </div>
-                                    <div class="mt-2 rounded-lg bg-emerald-600/30 px-2 py-1.5">
-                                        <p class="text-[10px] font-bold uppercase tracking-wide text-emerald-100">
-                                            {{ __('Save $:amount by switching to Mini-Run', ['amount' => number_format($rateComparison['savings'], 2)]) }}
+                                    <div class="mt-2 rounded-lg border-2 border-orange-400 px-2 py-1.5 bg-orange-50">
+                                        <p class="text-[10px] font-bold uppercase tracking-wide text-orange-700">
+                                            {{ __('Earn $:amount more by switching to Mini-Run', ['amount' => number_format($rateComparison['savings'], 2)]) }}
                                         </p>
                                     </div>
+                                    <details class="mt-2">
+                                        <summary class="cursor-pointer text-[10px] text-orange-700 hover:text-orange-800 transition flex items-center gap-1">
+                                            {{ __('See details') }}
+                                            <svg class="inline-block h-3 w-3 align-middle transition-transform duration-200" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
+                                            </svg>
+                                        </summary>
+                                        <div class="mt-2 rounded-lg border border-orange-300 bg-slate-50 p-3 text-[10px] text-slate-700 space-y-2">
+                                            <p class="font-semibold text-slate-900">{{ __('What this means:') }}</p>
+                                            <p>{{ __('This job qualifies for Mini-Run (≤:miles miles). Your current billing rate ($:current) is lower than the Mini-Run flat rate ($:mini). Switching to Mini-Run would increase revenue by $:amount.', ['miles' => number_format($rateComparison['billable_miles'], 0), 'current' => number_format($rateComparison['current_cost'], 2), 'mini' => number_format($rateComparison['mini_cost'], 2), 'amount' => number_format($rateComparison['savings'], 2)]) }}</p>
+                                            <p class="pt-2 border-t border-orange-200">{{ __('Consider updating the billing rate to Mini-Run to maximize revenue for this job.') }}</p>
+                                        </div>
+                                    </details>
                                 </div>
                             </div>
                         </div>
                     @elseif($rateComparison && !$rateComparison['is_mini_better'] && $job->rate_code !== 'mini_flat_rate')
-                        <div class="sm:col-span-2 rounded-xl border border-white/30 bg-white/10 p-3">
-                            <p class="text-[10px] font-semibold uppercase tracking-wider text-white/90">{{ __('Rate Comparison') }}</p>
+                        <div class="sm:col-span-2 rounded-xl border-2 border-emerald-400 bg-white p-3 shadow-lg">
+                            <p class="text-[10px] font-semibold uppercase tracking-wider text-emerald-600">{{ __('Rate Comparison') }}</p>
                             <div class="mt-2 grid grid-cols-2 gap-2 text-xs">
-                                <div class="rounded border border-white/20 bg-white/5 p-2">
-                                    <p class="text-[9px] text-white/70">{{ __('Current') }}</p>
-                                    <p class="mt-0.5 text-sm font-bold text-white">${{ number_format($rateComparison['current_cost'], 2) }}</p>
+                                <div class="rounded border border-slate-200 bg-slate-50 p-2">
+                                    <p class="text-[9px] text-slate-600">{{ __('Current') }}</p>
+                                    <p class="mt-0.5 text-sm font-bold text-slate-900">${{ number_format($rateComparison['current_cost'], 2) }}</p>
                                 </div>
-                                <div class="rounded border border-white/20 bg-white/5 p-2">
-                                    <p class="text-[9px] text-white/70">{{ __('Mini-Run') }}</p>
-                                    <p class="mt-0.5 text-sm font-bold text-white">${{ number_format($rateComparison['mini_cost'], 2) }}</p>
+                                <div class="rounded border border-slate-200 bg-slate-50 p-2">
+                                    <p class="text-[9px] text-slate-600">{{ __('Mini-Run') }}</p>
+                                    <p class="mt-0.5 text-sm font-bold text-slate-900">${{ number_format($rateComparison['mini_cost'], 2) }}</p>
                                 </div>
                             </div>
-                            <p class="mt-2 text-[10px] text-white/80">{{ __('Current rate is better for this job.') }}</p>
+                            <details class="mt-2">
+                                <summary class="cursor-pointer text-[10px] text-emerald-700 hover:text-emerald-800 transition flex items-center gap-1">
+                                    {{ __('Current rate is better for this job.') }} {{ __('See details') }}
+                                    <svg class="inline-block h-3 w-3 align-middle transition-transform duration-200" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </summary>
+                                <div class="mt-2 rounded-lg border border-emerald-300 bg-emerald-50 p-3 text-[10px] text-slate-700 space-y-2">
+                                    <p class="font-semibold text-slate-900">{{ __('What this means:') }}</p>
+                                    <p>{{ __('Your current billing rate ($:current) is higher than the Mini-Run flat rate ($:mini) for this job. You are already maximizing revenue with the current rate.', ['current' => number_format($rateComparison['current_cost'], 2), 'mini' => number_format($rateComparison['mini_cost'], 2)]) }}</p>
+                                    <p class="pt-2 border-t border-emerald-200">{{ __('Note: This job qualifies for Mini-Run (≤:miles miles), but switching to Mini-Run would result in $:amount less revenue.', ['miles' => number_format($rateComparison['billable_miles'], 0), 'amount' => number_format($rateComparison['savings'], 2)]) }}</p>
+                                </div>
+                            </details>
                         </div>
                     @endif
                 </div>
@@ -109,6 +169,27 @@
             $totalMiles = (float) (optional($job->miles)->total ?? 0);
             $billableMiles = (float) (optional($job->miles)->billable ?? 0);
             $personalMiles = (float) (optional($job->miles)->personal ?? 0);
+            $mileageRateComparison = $job->getRateComparison();
+            // Determine colors based on rate comparison outcome
+            if ($mileageRateComparison && $mileageRateComparison['is_mini_better'] && $job->rate_code !== 'mini_flat_rate') {
+                // Action needed - use orange/red
+                $billableMilesBorder = 'border-orange-400';
+                $billableMilesBg = 'bg-orange-50';
+                $billableMilesText = 'text-orange-700';
+                $billableMilesLabel = 'text-orange-600';
+            } elseif ($mileageRateComparison && !$mileageRateComparison['is_mini_better'] && $job->rate_code !== 'mini_flat_rate') {
+                // Already optimal - use green
+                $billableMilesBorder = 'border-emerald-400';
+                $billableMilesBg = 'bg-emerald-50';
+                $billableMilesText = 'text-emerald-700';
+                $billableMilesLabel = 'text-emerald-600';
+            } else {
+                // Default/neutral (no comparison or already using Mini-Run)
+                $billableMilesBorder = 'border-emerald-200';
+                $billableMilesBg = 'bg-emerald-50/80';
+                $billableMilesText = 'text-emerald-700';
+                $billableMilesLabel = 'text-emerald-600';
+            }
         @endphp
 
         @if($totalMiles > 0 || $billableMiles > 0 || $personalMiles > 0)
@@ -125,10 +206,10 @@
                     <p class="mt-2 text-3xl font-bold text-slate-900">{{ number_format($totalMiles, 1) }}</p>
                     <p class="mt-1 text-xs text-slate-500">{{ __('All distance traveled') }}</p>
                 </div>
-                <div class="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-5 shadow-sm backdrop-blur">
-                    <p class="text-xs font-semibold uppercase tracking-wider text-emerald-600">{{ __('Billable Miles') }}</p>
-                    <p class="mt-2 text-3xl font-bold text-emerald-700">{{ number_format($billableMiles, 1) }}</p>
-                    <p class="mt-1 text-xs text-emerald-600">{{ __('Charged to customer') }}</p>
+                <div class="rounded-2xl border {{ $billableMilesBorder }} {{ $billableMilesBg }} p-5 shadow-sm backdrop-blur">
+                    <p class="text-xs font-semibold uppercase tracking-wider {{ $billableMilesLabel }}">{{ __('Billable Miles') }}</p>
+                    <p class="mt-2 text-3xl font-bold {{ $billableMilesText }}">{{ number_format($billableMiles, 1) }}</p>
+                    <p class="mt-1 text-xs {{ $billableMilesLabel }}">{{ __('Charged to customer') }}</p>
                 </div>
                 <div class="rounded-2xl border border-slate-200 bg-slate-50/80 p-5 shadow-sm backdrop-blur">
                     <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">{{ __('Personal Miles') }}</p>
@@ -186,22 +267,7 @@
             $latestInvoice = $primaryInvoices->firstWhere('id', $recentInvoiceId);
         @endphp
 
-        <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            @if(auth()->user()->can('update', $job))
-                <a href="{{route('my.jobs.edit', ['job'=>$job->id])}}" class="group relative overflow-hidden rounded-3xl border border-orange-100 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-orange-200 hover:shadow-lg">
-                    <div class="absolute right-0 top-0 h-24 w-24 -translate-y-12 translate-x-6 rounded-full bg-orange-100 opacity-60 blur-3xl transition group-hover:opacity-80"></div>
-                    <div class="relative flex items-center justify-between">
-                        <div>
-                            <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">{{ __('Manage') }}</p>
-                            <p class="mt-2 text-lg font-bold text-slate-900">{{ __('Edit Job') }}</p>
-                        </div>
-                        <span class="rounded-full bg-orange-50 p-2 text-orange-500">
-                            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-4.536a2.5 2.5 0 11-3.536 3.536L4.5 16.5V19.5H7.5l8.5-8.5"></path></svg>
-                        </span>
-                    </div>
-                </a>
-            @endif
-
+        <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div class="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div class="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-orange-400 to-orange-600"></div>
                 <form wire:submit="generateInvoice" class="space-y-3">
@@ -324,7 +390,7 @@
                 <div class="rounded-3xl border border-amber-100 bg-white/90 p-5 shadow-sm">
                     <p class="text-xs font-semibold uppercase tracking-wider text-amber-600">{{ __('Job Management') }}</p>
                     <p class="mt-1 text-sm font-semibold text-slate-900">{{ __('Cancel Job') }}</p>
-                    <p class="mt-2 text-xs text-slate-500">{{ __('Cancel this job and set appropriate billing based on timing and circumstances.') }}</p>
+                    <p class="mt-2 text-xs text-slate-500">{{ __('Cancel this job and set appropriate billing based on timing and circumstances. (You will be asked to confirm before the job is actually canceled.)') }}</p>
                     <div class="mt-4">
                         <livewire:cancel-job :job="$job" :key="'cancel-job-' . $job->id" />
                         <button type="button" onclick="Livewire.dispatch('open-cancel-job-modal-{{ $job->id }}')" 
@@ -590,56 +656,87 @@
             </div>
         </section>
 
-        @if($job->logs)
-            <section id="job-logs" class="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm">
-                <header class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
-                    <div>
-                        <h2 class="text-lg font-semibold text-slate-900">{{ __('Job Logs') }}</h2>
-                        <p class="text-xs text-slate-500">{{ __('Assign drivers and manage daily records for this job.') }}</p>
-                    </div>
-                    <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{{ trans_choice('{0} No logs|{1} :count log|[2,*] :count logs', $job->logs->count(), ['count' => $job->logs->count()]) }}</span>
-                </header>
+        <section id="job-logs" class="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm">
+            <header class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                <div>
+                    <h2 class="text-lg font-semibold text-slate-900">{{ __('Job Logs') }}</h2>
+                    <p class="text-xs text-slate-500">{{ __('Assign drivers and manage daily records for this job.') }}</p>
+                </div>
+                @if($job->logs && $job->logs->count() > 0)
+                    <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{{ trans_choice('{1} :count log|[2,*] :count logs', $job->logs->count(), ['count' => $job->logs->count()]) }}</span>
+                @else
+                    <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{{ __('No logs') }}</span>
+                @endif
+            </header>
 
-                <div class="mt-6 space-y-6">
-                    <form wire:submit="assignJob" class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 shadow-sm">
+            <div class="mt-6 space-y-6">
+                <form wire:submit="assignJob" 
+                      class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 shadow-sm">
                         <div class="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center">
                             <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Assign driver & vehicle') }}</label>
                             <div class="w-full sm:flex-1">
-                                <select wire:model.blur="assignment.car_driver_id" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200" required>
+                                <select wire:model="assignment.car_driver_id"
+                                        class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
                                     <option value="">{{ __('Select Driver') }}</option>
                                     @foreach($drivers as $driver)
-                                        <option value="{{ $driver['value'] }}">{{ $driver['name'] }}</option>
+                                        @if($driver['value'])
+                                            <option value="{{ $driver['value'] }}">{{ $driver['name'] }}</option>
+                                        @endif
                                     @endforeach
                                 </select>
+                                @error('assignment.car_driver_id') <p class="mt-1 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                             </div>
                             <div class="w-full sm:flex-1">
-                                <select wire:model.blur="assignment.vehicle_id" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                <select wire:model="assignment.vehicle_id" 
+                                        class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
                                     <option value="">{{ __('Select Vehicle') }}</option>
                                     @foreach($vehicles as $vehicle)
-                                        <option value="{{ $vehicle['value'] }}">{{ $vehicle['name'] }}</option>
+                                        @if($vehicle['value'])
+                                            <option value="{{ $vehicle['value'] }}">{{ $vehicle['name'] }}</option>
+                                        @endif
                                     @endforeach
                                 </select>
+                                @error('assignment.vehicle_id') <p class="mt-1 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                             </div>
                             <div class="w-full sm:flex-1">
-                                <select wire:model.blur="assignment.vehicle_position" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                <select wire:model="assignment.vehicle_position" 
+                                        class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
                                     <option value="">{{ __('Select Position') }}</option>
                                     @foreach($vehicle_positions as $position)
-                                        <option value="{{ $position['value'] }}">{{ $position['name'] }}</option>
+                                        @if($position['value'])
+                                            <option value="{{ $position['value'] }}">{{ $position['name'] }}</option>
+                                        @endif
                                     @endforeach
                                 </select>
+                                @error('assignment.vehicle_position') <p class="mt-1 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                             </div>
+                            @if(session()->has('success'))
+                                <div class="text-xs font-semibold text-emerald-600">
+                                    {{ session('success') }}
+                                </div>
+                            @endif
+                            @if(session()->has('error'))
+                                <div class="text-xs font-semibold text-red-600">
+                                    {{ session('error') }}
+                                </div>
+                            @endif
                             <x-action-message class="text-xs font-semibold text-emerald-600" on="updated">
                                 {{ __('Assigned') }}
                             </x-action-message>
-                            <x-button type="submit" class="w-full justify-center sm:w-auto">
-                                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-                                {{ __('Assign') }}
-                            </x-button>
+                            <button type="submit" 
+                                    wire:loading.attr="disabled"
+                                    class="inline-flex items-center justify-center gap-2 rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-200 disabled:opacity-60 disabled:cursor-not-allowed w-full sm:w-auto">
+                                <svg wire:loading.remove wire:target="assignJob" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                                <svg wire:loading wire:target="assignJob" class="h-3.5 w-3.5 animate-spin" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
+                                <span wire:loading.remove wire:target="assignJob">{{ __('Assign') }}</span>
+                                <span wire:loading wire:target="assignJob">{{ __('Assigning...') }}</span>
+                            </button>
                         </div>
-                    </form>
+                </form>
 
+                @if(optional($job->logs)->isNotEmpty())
                     <div class="space-y-4">
-                        @foreach($job->logs as $log)
+                        @foreach($job->logs ?? [] as $log)
                             <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
                                 <div class="flex flex-wrap items-start justify-between gap-3">
                                     <div>
@@ -722,8 +819,237 @@
                             </div>
                         @endforeach
                     </div>
+                @endif
+            </div>
+        </section>
+
+        @if($trashedLogs && $trashedLogs->count() > 0)
+            <section class="rounded-3xl border-2 border-amber-300 bg-amber-50 p-6 shadow-lg">
+                <header class="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-amber-200 pb-3">
+                    <div>
+                        <h2 class="text-lg font-semibold text-amber-900">{{ __('Deleted Job Logs') }}</h2>
+                        <p class="text-xs text-amber-700">{{ __('Restore archived logs for this job.') }}</p>
+                    </div>
+                    <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">{{ trans_choice('{0} No deleted logs|{1} :count deleted log|[2,*] :count deleted logs', $trashedLogs->count(), ['count' => $trashedLogs->count()]) }}</span>
+                </header>
+
+                <div class="space-y-4">
+                    @foreach($trashedLogs as $log)
+                        <div class="rounded-2xl border border-amber-200 bg-white p-5 shadow-sm opacity-75">
+                            <div class="flex flex-wrap items-start justify-between gap-3">
+                                <div>
+                                    <p class="text-xs font-semibold uppercase tracking-wider text-amber-600">{{ __('Deleted Log ID') }}: {{ $log->id }}</p>
+                                    <p class="text-sm font-semibold text-slate-900">{{ optional($log->created_at)->toFormattedDateString() }}</p>
+                                    <p class="text-xs text-slate-500">{{ __('Driver') }}: {{ $log->user?->name ?? '—' }}</p>
+                                    <p class="text-xs text-amber-600 mt-1">{{ __('Deleted on') }}: {{ optional($log->deleted_at)->format('M j, Y g:i A') }}</p>
+                                </div>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    @can('restore', $log)
+                                        <button wire:click="restoreLog({{ $log->id }})" class="inline-flex items-center gap-2 rounded-full bg-amber-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-amber-700">
+                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/>
+                                            </svg>
+                                            {{ __('Restore Log') }}
+                                        </button>
+                                    @endcan
+                                </div>
+                            </div>
+
+                            <div class="mt-4 grid gap-3 md:grid-cols-2">
+                                <div class="space-y-1 text-sm text-slate-600">
+                                    <p><span class="font-semibold text-slate-900">{{ __('Start Mileage') }}:</span> {{ $log->start_mileage ?? '—' }}</p>
+                                    <p><span class="font-semibold text-slate-900">{{ __('End Mileage') }}:</span> {{ $log->end_mileage ?? '—' }}</p>
+                                    <p><span class="font-semibold text-slate-900">{{ __('Total Miles') }}:</span> {{ $log->total_miles ?? '—' }}</p>
+                                </div>
+                                <div class="space-y-1 text-sm text-slate-600">
+                                    <p><span class="font-semibold text-slate-900">{{ __('Tolls') }}:</span> {{ $log->tolls ? '$'.number_format($log->tolls, 2) : '—' }}</p>
+                                    <p><span class="font-semibold text-slate-900">{{ __('Hotel') }}:</span> {{ $log->hotel ? '$'.number_format($log->hotel, 2) : '—' }}</p>
+                                </div>
+                            </div>
+
+                            @if($log->memo)
+                                <div class="mt-4 text-sm text-slate-600">
+                                    <p class="font-semibold text-slate-900">{{ __('Memo') }}</p>
+                                    <p class="mt-1 text-slate-500">{{ $log->memo }}</p>
+                                </div>
+                            @endif
+                        </div>
+                    @endforeach
                 </div>
             </section>
         @endif
+
+        <!-- Job Status Explanation Section -->
+        <section id="job-status-explanation" class="mx-4 sm:mx-6 lg:mx-8 rounded-3xl border-2 border-slate-200 bg-white p-6 shadow-lg">
+            <div class="mb-6">
+                <h2 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                    <svg class="h-6 w-6 text-orange-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z"/>
+                    </svg>
+                    {{ __('Job Status Guide') }}
+                </h2>
+                <p class="mt-2 text-sm text-slate-600">{{ __('Understanding what each job status means and when it applies.') }}</p>
+            </div>
+
+            <div class="space-y-6">
+                <!-- Active Status -->
+                <div class="rounded-2xl border-2 border-blue-200 bg-blue-50/50 p-5">
+                    <div class="flex items-start gap-4">
+                        <div class="flex-shrink-0">
+                            <span class="inline-flex items-center gap-1.5 rounded-full bg-blue-500/80 text-white px-4 py-2 text-sm font-bold uppercase tracking-wider shadow-sm">
+                                {{ __('Active') }}
+                            </span>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-lg font-semibold text-slate-900">{{ __('Active Job') }}</h3>
+                            <p class="mt-2 text-sm text-slate-700">{{ __('An active job is currently in progress or scheduled to be completed. This status indicates that the pilot car service is either being performed or is planned to be performed. Active jobs appear in your job list and can be edited, assigned to drivers, and have logs created for them.') }}</p>
+                            <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-600">
+                                <span class="inline-flex items-center gap-1 rounded-full bg-white px-2 py-1">
+                                    <svg class="h-3 w-3 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    {{ __('Can be edited') }}
+                                </span>
+                                <span class="inline-flex items-center gap-1 rounded-full bg-white px-2 py-1">
+                                    <svg class="h-3 w-3 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    {{ __('Can create logs') }}
+                                </span>
+                                <span class="inline-flex items-center gap-1 rounded-full bg-white px-2 py-1">
+                                    <svg class="h-3 w-3 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    {{ __('Can generate invoices') }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Completed Status -->
+                <div class="rounded-2xl border-2 border-emerald-200 bg-emerald-50/50 p-5">
+                    <div class="flex items-start gap-4">
+                        <div class="flex-shrink-0">
+                            <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/80 text-white px-4 py-2 text-sm font-bold uppercase tracking-wider shadow-sm">
+                                {{ __('Completed') }}
+                            </span>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-lg font-semibold text-slate-900">{{ __('Completed Job') }}</h3>
+                            <p class="mt-2 text-sm text-slate-700">{{ __('A completed job indicates that the pilot car service has been successfully finished. The job has been completed, all necessary logs have been recorded, and invoices may have been generated. Completed jobs remain in the system for historical and accounting purposes.') }}</p>
+                            <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-600">
+                                <span class="inline-flex items-center gap-1 rounded-full bg-white px-2 py-1">
+                                    <svg class="h-3 w-3 text-emerald-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    {{ __('Service finished') }}
+                                </span>
+                                <span class="inline-flex items-center gap-1 rounded-full bg-white px-2 py-1">
+                                    <svg class="h-3 w-3 text-emerald-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    {{ __('Ready for invoicing') }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cancelled (Show But No-Go) Status -->
+                <div class="rounded-2xl border-2 border-red-200 bg-red-50/50 p-5">
+                    <div class="flex items-start gap-4">
+                        <div class="flex-shrink-0">
+                            <span class="inline-flex items-center gap-1.5 rounded-full bg-red-500/80 text-white px-4 py-2 text-sm font-bold uppercase tracking-wider shadow-sm">
+                                {{ __('Cancelled (Show But No-Go)') }}
+                            </span>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-lg font-semibold text-slate-900">{{ __('Cancelled: Show But No-Go') }}</h3>
+                            <p class="mt-2 text-sm text-slate-700">{{ __('This status indicates that the pilot car driver showed up at the scheduled location, but the job did not proceed as planned. The driver was present and ready, but circumstances prevented the job from being completed. This typically results in a partial charge (usually $225.00) for the driver\'s time and presence.') }}</p>
+                            <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-600">
+                                <span class="inline-flex items-center gap-1 rounded-full bg-white px-2 py-1">
+                                    <svg class="h-3 w-3 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                                    </svg>
+                                    {{ __('Driver showed up') }}
+                                </span>
+                                <span class="inline-flex items-center gap-1 rounded-full bg-white px-2 py-1">
+                                    <svg class="h-3 w-3 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                                    </svg>
+                                    {{ __('Job did not proceed') }}
+                                </span>
+                                <span class="inline-flex items-center gap-1 rounded-full bg-white px-2 py-1">
+                                    <svg class="h-3 w-3 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    {{ __('Partial charge applies') }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cancelled (No-Go) Status -->
+                <div class="rounded-2xl border-2 border-amber-200 bg-amber-50/50 p-5">
+                    <div class="flex items-start gap-4">
+                        <div class="flex-shrink-0">
+                            <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-500/80 text-white px-4 py-2 text-sm font-bold uppercase tracking-wider shadow-sm">
+                                {{ __('Cancelled (No-Go)') }}
+                            </span>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-lg font-semibold text-slate-900">{{ __('Cancelled: No-Go') }}</h3>
+                            <p class="mt-2 text-sm text-slate-700">{{ __('This status indicates that the job was cancelled before the driver showed up at the scheduled location. The job was called off prior to the scheduled start time, so no driver presence was required. This typically results in no charge, unless there are specific cancellation terms in place.') }}</p>
+                            <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-600">
+                                <span class="inline-flex items-center gap-1 rounded-full bg-white px-2 py-1">
+                                    <svg class="h-3 w-3 text-amber-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                                    </svg>
+                                    {{ __('Cancelled before start') }}
+                                </span>
+                                <span class="inline-flex items-center gap-1 rounded-full bg-white px-2 py-1">
+                                    <svg class="h-3 w-3 text-amber-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                                    </svg>
+                                    {{ __('No driver presence') }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8 rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-700 mb-3">{{ __('Quick Reference') }}</h3>
+                <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <div class="text-center">
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-blue-500/80 text-white px-3 py-1.5 text-xs font-bold uppercase tracking-wider shadow-sm">
+                            {{ __('Active') }}
+                        </span>
+                        <p class="mt-2 text-xs text-slate-600">{{ __('In progress or scheduled') }}</p>
+                    </div>
+                    <div class="text-center">
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/80 text-white px-3 py-1.5 text-xs font-bold uppercase tracking-wider shadow-sm">
+                            {{ __('Completed') }}
+                        </span>
+                        <p class="mt-2 text-xs text-slate-600">{{ __('Successfully finished') }}</p>
+                    </div>
+                    <div class="text-center">
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-red-500/80 text-white px-3 py-1.5 text-xs font-bold uppercase tracking-wider shadow-sm">
+                            {{ __('Cancelled (Show But No-Go)') }}
+                        </span>
+                        <p class="mt-2 text-xs text-slate-600">{{ __('Driver showed, job didn\'t proceed') }}</p>
+                    </div>
+                    <div class="text-center">
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-500/80 text-white px-3 py-1.5 text-xs font-bold uppercase tracking-wider shadow-sm">
+                            {{ __('Cancelled (No-Go)') }}
+                        </span>
+                        <p class="mt-2 text-xs text-slate-600">{{ __('Cancelled before start') }}</p>
+                    </div>
+                </div>
+            </div>
+        </section>
     </div>
 </div>

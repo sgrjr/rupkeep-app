@@ -20,6 +20,15 @@ class PilotCarJob extends Model
 {
     use HasFactory, SoftDeletes, HasJobScopes;
     public $timestamps = true;
+    
+    /**
+     * Retrieve the model for route model binding, including soft-deleted models.
+     */
+    public function resolveRouteBinding($value, $field = null)
+    {
+        return $this->withTrashed()->where($field ?? $this->getRouteKeyName(), $value)->first();
+    }
+    
     public $fillable = [
         'job_no',
         'customer_id',
@@ -1124,9 +1133,16 @@ class PilotCarJob extends Model
         // Calculate mini rate cost (always includes expenses)
         $miniCost = $miniRate + $expenses;
 
-        // Determine which is better
-        $savings = $currentCost - $miniCost;
-        $isMiniBetter = $savings > 0;
+        // Determine which is better FROM COMPANY'S PERSPECTIVE (higher revenue is better)
+        // Mini-Run is better if it would charge MORE than current rate
+        $isMiniBetter = $miniCost > $currentCost;
+        
+        // Calculate potential additional revenue (or savings if current is better)
+        if ($isMiniBetter) {
+            $savings = $miniCost - $currentCost; // How much MORE they'd make with Mini-Run
+        } else {
+            $savings = $currentCost - $miniCost; // How much MORE they're making with current rate
+        }
 
         return [
             'current_cost' => $currentCost,

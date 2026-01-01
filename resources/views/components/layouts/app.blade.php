@@ -38,13 +38,13 @@
             @endif
 
             <!-- Page Content -->
-            <main>
+            <main class="bg-slate-300">
                 {{ $slot }}
             </main>
 
             <!-- Footer with Feedback Form -->
             @auth
-                <footer class="border-t border-slate-200 bg-white/90 backdrop-blur">
+                <footer class="border-t border-slate-400 bg-slate-200 backdrop-blur">
                     <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
                         <div class="flex flex-wrap items-center justify-between gap-4">
                             <div class="text-xs text-slate-500">

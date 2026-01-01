@@ -3,22 +3,18 @@
     use Illuminate\Support\Str;
 
     $iconMap = [
-        'Jobs' => '<svg class="h-10 w-10 text-orange-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25V14.25C9 13.56 9.56 13 10.25 13H13.75C14.44 13 15 13.56 15 14.25V17.25M6.75 21H17.25C18.49 21 19.5 19.99 19.5 18.75V9.75C19.5 9.06 18.94 8.5 18.25 8.5H5.75C5.06 8.5 4.5 9.06 4.5 9.75V18.75C4.5 19.99 5.51 21 6.75 21ZM8.25 8.5V5.75C8.25 4.51 9.26 3.5 10.5 3.5H13.5C14.74 3.5 15.75 4.51 15.75 5.75V8.5" /></svg>',
-        'Users' => '<svg class="h-10 w-10 text-orange-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128C13.875 20.321 12.314 21 10.5 21C6.91 21 4 18.09 4 14.5C4 10.91 6.91 8 10.5 8C12.314 8 13.875 8.679 15 9.872M19 8V12M21 10H17"/></svg>',
+        'Jobs' => '<svg class="h-10 w-10 text-orange-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="4" y1="3" x2="4" y2="21" stroke-linecap="round"/><path d="M4 3 L4 10 L14 6.5 L4 3 Z" fill="currentColor" stroke="none"/></svg>',
+        'Users' => '<svg class="h-10 w-10 text-orange-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 7.5C7.5 5.57 9.07 4 11 4C12.93 4 14.5 5.57 14.5 7.5C14.5 9.43 12.93 11 11 11C9.07 11 7.5 9.43 7.5 7.5ZM4 19C4 16.24 6.24 14 9 14H13C15.76 14 18 16.24 18 19M18.5 8.5H20M19.25 7.75V9.25"/></svg>',
         'Customers' => '<svg class="h-10 w-10 text-orange-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 7.5C7.5 5.57 9.07 4 11 4C12.93 4 14.5 5.57 14.5 7.5C14.5 9.43 12.93 11 11 11C9.07 11 7.5 9.43 7.5 7.5ZM4 19C4 16.24 6.24 14 9 14H13C15.76 14 18 16.24 18 19M18.5 8.5H20M19.25 7.75V9.25"/></svg>',
         'Organizations' => '<svg class="h-10 w-10 text-orange-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9L12 3L21 9V20H3V9ZM9 20V12H15V20"/></svg>',
     ];
 @endphp
 
-<div id="dashboard" class="space-y-10">
+<div id="dashboard" class="space-y-10 pb-8">
     <section class="relative overflow-hidden bg-gradient-to-r from-orange-500 via-orange-400 to-orange-300 p-6 text-white shadow-2xl sm:p-8">
         <div class="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.25),_transparent_60%)] opacity-70"></div>
         <div class="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div class="space-y-3">
-                <span class="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-wider">
-                    <span class="inline-block h-2 w-2 rounded-full bg-lime-300 animate-pulse"></span>
-                    {{ __('Live Organization Workspace') }}
-                </span>
                 <h1 class="text-3xl font-bold tracking-tight md:text-4xl">
                     {{ $organization->name }}
                 </h1>
@@ -39,7 +35,7 @@
         </div>
     </section>
 
-    <section class="space-y-6">
+    <section class="space-y-6 px-4 sm:px-6 lg:px-8">
         <div class="grid gap-4 overflow-x-auto pb-2 sm:grid-cols-2 xl:grid-cols-4 sm:gap-6" style="scroll-snap-type:x mandatory;">
             @foreach($cards as $card)
                 @php
@@ -53,7 +49,11 @@
                             <p class="mt-2 text-3xl font-bold text-slate-900">{{ number_format($card->count) }}</p>
                         </div>
                         <span class="rounded-2xl bg-orange-50 p-2 text-orange-500">
-                            {!! $icon !!}
+                            @if($card->title === 'Jobs')
+                                <x-icon-job-flag class="h-10 w-10 text-orange-500" />
+                            @else
+                                {!! $icon !!}
+                            @endif
                         </span>
                     </div>
 
@@ -138,7 +138,7 @@
     </section>
 
         @if(auth()->user()->is_super)
-        <section class="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm">
+        <section class="mx-4 sm:mx-6 lg:mx-8 rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm">
             <div class="space-y-4">
                 <div class="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
                     <div class="flex flex-wrap items-center justify-between gap-3">
@@ -299,10 +299,13 @@
         @endif
 
         @if($managerStats)
-        <section class="space-y-6 rounded-3xl border border-slate-100 bg-white/80 p-6 shadow-sm">
+        <section class="mx-4 sm:mx-6 lg:mx-8 space-y-6 rounded-3xl border border-slate-100 bg-white/80 p-6 shadow-sm">
             <header class="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
                 <div>
-                    <h2 class="text-xl font-bold text-slate-900">{{ __('Job Status Overview') }}</h2>
+                    <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                        <x-icon-job-flag class="h-6 w-6 text-orange-500" />
+                        {{ __('Job Status Overview') }}
+                    </h2>
                     <p class="text-sm text-slate-500">{{ __('At-a-glance view of all jobs and financial status.') }}</p>
                 </div>
                 <a href="{{ route('my.jobs.index') }}" class="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3 py-2 text-xs font-semibold text-orange-600 transition hover:bg-orange-500 hover:text-white">
@@ -390,7 +393,7 @@
         @endif
 
         @if($jobs && count($jobs) > 0)
-        <section class="space-y-4 rounded-3xl border border-slate-100 bg-white/80 p-6 shadow-sm">
+        <section class="space-y-4 rounded-3xl border border-slate-100 bg-white/80 p-6 shadow-sm px-4 sm:px-6 lg:px-8">
             <header class="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
                 <div>
                     <h2 class="text-xl font-bold text-slate-900">{{ __('My Assigned Jobs') }}</h2>

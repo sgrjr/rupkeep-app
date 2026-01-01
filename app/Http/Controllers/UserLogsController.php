@@ -16,10 +16,11 @@ class UserLogsController extends Controller
         return $this->destroy($request, $log);
     }
     public function destroy(Request $request, $log){
+        // Use withTrashed to find even soft-deleted logs (though we shouldn't be deleting already deleted logs)
+        $log = UserLog::withTrashed()->find($log);
 
-        $log = UserLog::find($log);
-
-        if($log && $this->authorize('delete', $log)){
+        if($log && !$log->trashed() && $this->authorize('delete', $log)){
+           // This will now soft delete since UserLog uses SoftDeletes trait
            $log->delete();
         }
 

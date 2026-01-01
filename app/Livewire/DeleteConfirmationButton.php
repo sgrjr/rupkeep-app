@@ -47,6 +47,10 @@ class DeleteConfirmationButton extends Component
 
     public function delete()
     {
+        $modelId = null;
+        $wasSoftDeleted = false;
+        $jobId = null; // Store job_id for log deletions
+        
         try {
             $model = $this->resolveTargetModel();
 
@@ -54,6 +58,14 @@ class DeleteConfirmationButton extends Component
                 session()->flash('error', 'Unable to locate the record to delete.');
                 $this->confirmingDelete = false;
                 return null;
+            }
+
+            $modelId = $model->id;
+            $wasSoftDeleted = $this->usesSoftDeletes($model) && !$this->force;
+
+            // If deleting a log from a job page, store the job_id before deletion
+            if ($model instanceof \App\Models\UserLog && $model->job_id) {
+                $jobId = $model->job_id;
             }
 
             $ability = $this->force ? 'forceDelete' : 'delete';
@@ -74,10 +86,75 @@ class DeleteConfirmationButton extends Component
         $this->confirmingDelete = false;
 
         if ($this->redirectRoute) {
-            return redirect()->route($this->redirectRoute);
+            try {
+                // Try to generate the route - if it requires parameters and model is soft-deleted, it will fail
+                $route = \Illuminate\Support\Facades\Route::getRoutes()->getByName($this->redirectRoute);
+                
+                // Check if route requires parameters
+                $parameters = $route->parameterNames();
+                
+                // Special handling: if deleting a log from a job page, redirect back to that job
+                if ($jobId && (str_contains($this->redirectRoute, 'jobs.show'))) {
+                    // Determine which route name to use based on the current route
+                    $jobRouteName = str_contains($this->redirectRoute, 'my.jobs') ? 'my.jobs.show' : 'jobs.show';
+                    return redirect()->route($jobRouteName, ['job' => $jobId]);
+                }
+                
+                if (!empty($parameters) && $wasSoftDeleted) {
+                    // Route requires parameters but model is soft-deleted
+                    // Try to infer the index route from the show route
+                    $indexRoute = $this->inferIndexRoute($this->redirectRoute);
+                    if ($indexRoute) {
+                        return redirect()->route($indexRoute);
+                    }
+                    // Fallback to jobs index if it's a job
+                    if (str_contains($this->redirectRoute, 'jobs')) {
+                        return redirect()->route('my.jobs.index');
+                    }
+                }
+                
+                // If route doesn't need parameters or we have them, try to redirect
+                if (empty($parameters)) {
+                    return redirect()->route($this->redirectRoute);
+                } else {
+                    // Route needs parameters - try with stored ID if available
+                    if ($modelId) {
+                        try {
+                            return redirect()->route($this->redirectRoute, ['job' => $modelId]);
+                        } catch (\Exception $e) {
+                            // If that fails, redirect to index
+                            $indexRoute = $this->inferIndexRoute($this->redirectRoute);
+                            if ($indexRoute) {
+                                return redirect()->route($indexRoute);
+                            }
+                            return redirect()->route('my.jobs.index');
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                // If route generation fails, redirect to index
+                $indexRoute = $this->inferIndexRoute($this->redirectRoute);
+                if ($indexRoute) {
+                    return redirect()->route($indexRoute);
+                }
+                if (str_contains($this->redirectRoute, 'jobs')) {
+                    return redirect()->route('my.jobs.index');
+                }
+            }
         }
 
         return redirect()->back();
+    }
+    
+    protected function inferIndexRoute(string $routeName): ?string
+    {
+        // Convert show routes to index routes
+        return match(true) {
+            str_contains($routeName, 'jobs.show') => 'my.jobs.index',
+            str_contains($routeName, 'customers.show') => 'my.customers.index',
+            str_contains($routeName, 'invoices.edit') => 'my.invoices.index',
+            default => null,
+        };
     }
 
     protected function resolveTargetModel(): ?Model

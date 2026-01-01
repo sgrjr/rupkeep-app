@@ -81,6 +81,18 @@
                         <span wire:loading wire:target="executeCommand('artisan_view_clear')" class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-orange-600 border-t-transparent"></span>
                         {{ __('Clear View Cache') }}
                     </button>
+                    <button wire:click="executeCommand('artisan_migrate')" 
+                            wire:loading.attr="disabled"
+                            class="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-semibold text-orange-600 transition hover:bg-orange-500 hover:text-white disabled:opacity-50">
+                        <span wire:loading wire:target="executeCommand('artisan_migrate')" class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-orange-600 border-t-transparent"></span>
+                        {{ __('Run Migrations') }}
+                    </button>
+                    <button wire:click="executeCommand('artisan_migrate_rollback')" 
+                            wire:loading.attr="disabled"
+                            class="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-semibold text-orange-600 transition hover:bg-orange-500 hover:text-white disabled:opacity-50">
+                        <span wire:loading wire:target="executeCommand('artisan_migrate_rollback')" class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-orange-600 border-t-transparent"></span>
+                        {{ __('Rollback Migration') }}
+                    </button>
                 </div>
             </div>
 

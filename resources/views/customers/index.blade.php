@@ -7,9 +7,8 @@
     <x-slot name="header">
         <div class="flex flex-wrap items-center justify-between gap-4">
             <div>
-                <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">{{ __('Accounts Directory') }}</p>
-                <h1 class="text-xl font-semibold text-slate-900">{{ __('Customers') }}</h1>
-                <p class="text-xs text-slate-500">{{ trans_choice('You manage :count customer|You manage :count customers', $customerCount) }}</p>
+                <p class="text-xs font-semibold uppercase tracking-wide">{{ auth()->user()->organization->name }}</p>
+                <h1 class="text-xl font-semibold">{{ __('Customer Directory') }}</h1>
             </div>
             <div class="flex flex-wrap items-center gap-2">
                 <a href="{{ route('my.customers.create') }}"
@@ -30,6 +29,14 @@
             <div class="rounded-3xl border border-slate-200 bg-white/90 p-4 shadow-sm">
                 <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Contacts on file') }}</p>
                 <p class="mt-2 text-2xl font-semibold text-slate-900">{{ $totalContacts }}</p>
+            </div>
+            <div class="rounded-3xl border border-blue-100 bg-white/90 p-4 shadow-sm">
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Avg jobs per customer') }}</p>
+                <p class="mt-2 text-3xl font-semibold text-slate-900">{{ $averageJobsPerCustomer }}</p>
+            </div>
+            <div class="rounded-3xl border border-amber-100 bg-white/90 p-4 shadow-sm">
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('With account credit') }}</p>
+                <p class="mt-2 text-3xl font-semibold text-slate-900">{{ $customersWithCredit }}</p>
             </div>
         </section>
 
@@ -69,9 +76,14 @@
                                 <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-4.536a2.5 2.5 0 11-3.536 3.536L4.5 16.5V19.5H7.5l8.5-8.5"/></svg>
                                 {{ __('Edit') }}
                             </a>
-                            <x-delete-form action="{{ route('my.customers.destroy', ['customer' => $customer->id]) }}"
-                                           title="{{ __('Delete') }}"
-                                           button-class="inline-flex items-center gap-1 rounded-full border border-red-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-red-600 transition hover:border-red-300 hover:text-red-700" />
+                            <form action="{{ route('my.customers.destroy', ['customer' => $customer->id]) }}" method="post" class="inline">
+                                @csrf
+                                @method('delete')
+                                <button type="submit" class="inline-flex items-center gap-1 rounded-full border border-red-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-red-600 transition hover:border-red-300 hover:text-red-700">
+                                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
+                                    {{ __('Delete') }}
+                                </button>
+                            </form>
                         </div>
                     </div>
                 @empty
@@ -120,9 +132,14 @@
                                             <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-4.536a2.5 2.5 0 11-3.536 3.536L4.5 16.5V19.5H7.5l8.5-8.5"/></svg>
                                             {{ __('Edit') }}
                                         </a>
-                                        <x-delete-form action="{{ route('my.customers.destroy', ['customer' => $customer->id]) }}"
-                                                       title="{{ __('Delete') }}"
-                                                       button-class="inline-flex items-center gap-1 rounded-full border border-red-200 bg-white px-3 py-1 text-[11px] font-semibold text-red-600 transition hover:border-red-300 hover:text-red-700" />
+                                        <form action="{{ route('my.customers.destroy', ['customer' => $customer->id]) }}" method="post" class="inline">
+                                            @csrf
+                                            @method('delete')
+                                            <button type="submit" class="inline-flex items-center gap-1 rounded-full border border-red-200 bg-white px-3 py-1 text-[11px] font-semibold text-red-600 transition hover:border-red-300 hover:text-red-700">
+                                                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
+                                                {{ __('Delete') }}
+                                            </button>
+                                        </form>
                                     </div>
                                 </td>
                             </tr>

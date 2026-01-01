@@ -96,6 +96,17 @@
         </section>
 
         <section class="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm">
+            <header class="mb-4">
+                <h2 class="text-lg font-semibold text-slate-900">{{ __('Transaction Register') }}</h2>
+                <p class="text-xs text-slate-500">{{ __('Complete transaction history showing invoices (credits) and payments (debits) with running balance.') }}</p>
+            </header>
+            <x-transaction-register 
+                :transactions="$transactions" 
+                :show-balance="true"
+                :account-credit="$accountCredit" />
+        </section>
+
+        <section class="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm">
             <header class="flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <h2 class="text-lg font-semibold text-slate-900">{{ __('Jobs & Invoicing') }}</h2>

@@ -15,8 +15,8 @@ class UserNotification extends Mailable
 
     public $subject;
     private $message;
-    private $view;
-    private $viewData;
+    public $view;
+    public $viewData;
 
     /**
      * Create a new message instance.

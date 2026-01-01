@@ -66,7 +66,7 @@
 
                 <!-- Page Heading -->
                 @if (isset($header))
-                    <header class="bg-white/90 backdrop-blur dark:bg-gray-800/95 shadow">
+                    <header class="bg-gradient-to-r from-orange-500 via-orange-400 to-orange-300 text-white shadow-2xl">
                         <div class="mx-auto max-w-7xl py-6 px-4 sm:px-6 lg:px-8">
                             {{ $header }}
                         </div>
@@ -74,13 +74,13 @@
                 @endif
 
                 <!-- Page Content -->
-                <main class="flex-1">
+                <main class="flex-1 bg-slate-300">
                     {{ $slot }}
                 </main>
 
                 <!-- Footer with Feedback Form -->
                 @auth
-                    <footer class="border-t border-slate-200 bg-white/90 backdrop-blur">
+                    <footer class="border-t border-slate-400 bg-slate-200 backdrop-blur">
                         <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
                             <div class="flex flex-wrap items-center justify-between gap-4">
                                 <div class="text-xs text-slate-500">

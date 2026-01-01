@@ -23,12 +23,19 @@ class QuickBooksExportController extends Controller
             'customer_id' => ['nullable', 'integer'],
             'paid' => ['nullable', 'in:yes,no'],
         ]);
+        
+        // Normalize empty strings to null to ensure they're not treated as filters
+        $data['from'] = !empty($data['from']) ? $data['from'] : null;
+        $data['to'] = !empty($data['to']) ? $data['to'] : null;
+        $data['customer_id'] = !empty($data['customer_id']) ? $data['customer_id'] : null;
+        $data['paid'] = !empty($data['paid']) ? $data['paid'] : null;
 
         $query = Invoice::query()
             ->with(['customer', 'job'])
             ->where('organization_id', $user->organization_id)
             ->orderByDesc('created_at');
 
+        // Apply filters only if provided - if no filters, export ALL invoices
         if (! empty($data['from'])) {
             $query->whereDate('created_at', '>=', Carbon::parse($data['from']));
         }
@@ -45,7 +52,9 @@ class QuickBooksExportController extends Controller
             $query->where('paid_in_full', $data['paid'] === 'yes');
         }
 
-        $invoices = $query->get();
+        // Explicitly get all results - no limit, no pagination when no filters are provided
+        // This ensures ALL invoices are exported when filters are empty
+        $invoices = $query->limit(null)->get();
 
         $filename = 'quickbooks-export-' . now()->format('Ymd-His') . '.csv';
         $headers = [

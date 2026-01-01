@@ -18,6 +18,8 @@ use App\Events\JobWasUncanceled;
 use App\Models\Invoice;
 use App\Models\JobInvoice;
 use App\Models\CustomerContact;
+use Illuminate\Support\Facades\Schema;
+use Livewire\Attributes\Layout;
 
 class JobAssignmentForm extends Form
 {
@@ -31,6 +33,7 @@ class JobAssignmentForm extends Form
     public $vehicle_position = null;
 }
 
+#[Layout('layouts.app')]
 class ShowPilotCarJob extends Component
 {
 
@@ -44,6 +47,12 @@ class ShowPilotCarJob extends Component
     public $drivers = [];
     public $vehicle_positions = [];
     public $file;
+    public $trashedLogs = [];
+
+    public function boot()
+    {
+        // Let Livewire handle Form initialization automatically
+    }
 
     protected function loadJobRelations(): void
     {
@@ -64,7 +73,8 @@ class ShowPilotCarJob extends Component
     }
 
     public function mount(Int $job){
-        $this->job = Job::find($job);
+        // Check for soft-deleted jobs
+        $this->job = Job::withTrashed()->find($job);
 
         if(!$this->job) return redirect()->route('my.jobs.index');
 
@@ -97,32 +107,106 @@ class ShowPilotCarJob extends Component
         }
     }
 
+    public function restoreJob()
+    {
+        if (!$this->job->trashed()) {
+            session()->flash('error', 'Job is not deleted.');
+            return;
+        }
+
+        $this->authorize('restore', $this->job);
+        
+        $this->job->restore();
+        $this->job->refresh();
+        $this->loadJobRelations();
+        
+        session()->flash('message', 'Job restored successfully.');
+    }
+
+    public function restoreLog($logId)
+    {
+        $log = UserLog::withTrashed()->find($logId);
+        
+        if (!$log) {
+            session()->flash('error', 'Log not found.');
+            return;
+        }
+        
+        if (!$log->trashed()) {
+            session()->flash('error', 'Log is not deleted.');
+            return;
+        }
+
+        $this->authorize('restore', $log);
+        
+        $log->restore();
+        $this->job->refresh();
+        $this->loadJobRelations();
+        
+        // Reload trashed logs
+        $this->trashedLogs = UserLog::withTrashed()
+            ->where('job_id', $this->job->id)
+            ->whereNotNull('deleted_at')
+            ->with(['vehicle', 'truck_driver', 'user', 'attachments'])
+            ->orderBy('deleted_at', 'desc')
+            ->get();
+        
+        session()->flash('message', 'Log restored successfully.');
+    }
+
     public function render()
     {
         return view('livewire.show-pilot-car-job');
     }
 
     public function assignJob(){
+        try {
+            // Validate the form - this will throw ValidationException if it fails
+            $this->assignment->validate();
 
-        $values = [
-            'car_driver_id' => $this->assignment->car_driver_id ?: $this->job->default_driver_id,
-            'job_id'=>$this->job->id,
-            'vehicle_id'=> $this->assignment->vehicle_id,
-            'organization_id' => $this->job->organization_id,
-            'vehicle_position' => $this->assignment->vehicle_position,
-            'truck_driver_id' => $this->job->default_truck_driver_id,
-        ];
+            // Ensure we have required values
+            if (empty($this->assignment->car_driver_id)) {
+                session()->flash('error', __('Please select a driver.'));
+                return;
+            }
 
-        $message = "New job assignment [{$values['vehicle_position']} car] for {$this->job->customer->name}. Job NO. {$this->job->job_no} | Load NO. {$this->job->load_no}. Pickup: {$this->job->pickup_address} @{$this->job->scheduled_pickup_at} {$this->job->memo}. For updates https://rupkeep.com/my/jobs/{$this->job->id}";
+            if (empty($this->assignment->vehicle_position)) {
+                session()->flash('error', __('Please select a vehicle position.'));
+                return;
+            }
 
-        $new_log = UserLog::make($values);
+            $values = [
+                'car_driver_id' => $this->assignment->car_driver_id,
+                'job_id' => $this->job->id,
+                'vehicle_id' => $this->assignment->vehicle_id ?: null,
+                'organization_id' => $this->job->organization_id,
+                'vehicle_position' => $this->assignment->vehicle_position,
+                'truck_driver_id' => $this->job->default_truck_driver_id ?: null,
+            ];
 
-        $new_log->save();
-        
-        SendUserNotification::to($new_log->user, $message, subject: 'New Job');
+            $message = "New job assignment [{$values['vehicle_position']} car] for {$this->job->customer->name}. Job NO. {$this->job->job_no} | Load NO. {$this->job->load_no}. Pickup: {$this->job->pickup_address} @{$this->job->scheduled_pickup_at} {$this->job->memo}. For updates https://rupkeep.com/my/jobs/{$this->job->id}";
 
-        $this->assignment->reset();
-        $this->dispatch('saved');
+            $new_log = UserLog::create($values);
+            
+            if ($new_log->user) {
+                SendUserNotification::to($new_log->user, $message, subject: 'New Job');
+            }
+
+            // Reload job relations to show the new log
+            $this->job->refresh();
+            $this->loadJobRelations();
+
+            // Reset the form
+            $this->assignment->reset();
+            
+            session()->flash('success', __('Driver and vehicle assigned successfully.'));
+            
+            $this->dispatch('updated');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
+        } catch (\Exception $e) {
+            session()->flash('error', __('An error occurred while assigning the driver: ') . $e->getMessage());
+        }
     }
 
     public $isPublicUpload = false;
@@ -245,21 +329,11 @@ class ShowPilotCarJob extends Component
         $this->job->update($updateData);
         $this->job->refresh();
 
-        \Log::info('ShowPilotCarJob: Job uncanceled, firing event', [
-            'job_id' => $this->job->id,
-            'job_no' => $this->job->job_no,
-            'previous_reason' => $previousReason,
-        ]);
-
         // Fire the JobWasUncanceled event
         event(new JobWasUncanceled(
             $this->job,
             $previousReason
         ));
-        
-        \Log::info('ShowPilotCarJob: Event fired', [
-            'job_id' => $this->job->id,
-        ]);
 
         $this->loadJobRelations();
 

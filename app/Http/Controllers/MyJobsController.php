@@ -28,12 +28,19 @@ class MyJobsController extends Controller
             $query->withTrashed();
         }
         
+        // Calculate statistics from base query (before pagination)
+        $statsQuery = (clone $query);
+        $totalJobs = $statsQuery->count();
+        $paidJobs = $statsQuery->where('invoice_paid', '>=', 1)->count();
+        $unpaidJobs = $totalJobs - $paidJobs;
+        $canceledJobs = $statsQuery->whereNotNull('canceled_at')->count();
+        
         if($request->has('customer')){
             $jobs = (clone $query)
                 ->where('customer_id', $request->get('customer'))
                 ->orderByRaw('CASE WHEN deleted_at IS NULL THEN 0 ELSE 1 END')
                 ->orderBy('scheduled_pickup_at', 'desc')
-                ->get();
+                ->paginate(15);
             $customer = Customer::where('id', $request->get('customer'))->where('organization_id', $organizationId)->first();
         }else if($request->has('search_field')){
             
@@ -43,17 +50,19 @@ class MyJobsController extends Controller
                 ->where($request->search_field, $request->search_value)
                 ->orderByRaw('CASE WHEN deleted_at IS NULL THEN 0 ELSE 1 END')
                 ->orderBy('scheduled_pickup_at', 'desc')
-                ->get();
+                ->paginate(15);
             }else if($request->search_field === 'has_customer_name'){
-                $jobs = collect([]);
-                Customer::with(['jobs' => function($query) use ($eagerLoad, $showDeleted) {
-                    $query->with($eagerLoad);
-                    if ($showDeleted) {
-                        $query->withTrashed();
-                    }
-                }])->where('name', 'like', '%'.$request->search_value.'%')->where('organization_id', $organizationId)->get()->each(function($c)use(&$jobs){
-                    $jobs = $jobs->merge($c->jobs); 
-                });
+                // Get customer IDs matching the name
+                $customerIds = Customer::where('name', 'like', '%'.$request->search_value.'%')
+                    ->where('organization_id', $organizationId)
+                    ->pluck('id');
+                
+                // Query jobs for those customers
+                $jobs = (clone $query)
+                    ->whereIn('customer_id', $customerIds)
+                    ->orderByRaw('CASE WHEN deleted_at IS NULL THEN 0 ELSE 1 END')
+                    ->orderBy('scheduled_pickup_at', 'desc')
+                    ->paginate(15);
             }else{
                 $scope = Str::camel($request->search_field);
 
@@ -61,17 +70,17 @@ class MyJobsController extends Controller
                 ->$scope()
                 ->orderByRaw('CASE WHEN deleted_at IS NULL THEN 0 ELSE 1 END')
                 ->orderBy('scheduled_pickup_at', 'desc')
-                ->get();
+                ->paginate(15);
             }
         }else{
             $jobs = $query
                 ->orderByRaw('CASE WHEN deleted_at IS NULL THEN 0 ELSE 1 END')
                 ->orderBy('scheduled_pickup_at', 'desc')
-                ->get();
+                ->paginate(15);
             $customer = false;
         }
         
-        return view('pilot-car-jobs.index', compact('jobs','customer', 'showDeleted'));
+        return view('pilot-car-jobs.index', compact('jobs','customer', 'showDeleted', 'totalJobs', 'paidJobs', 'unpaidJobs', 'canceledJobs'));
     }
 
     public function create(Request $request){

@@ -1,14 +1,8 @@
 @props(['redirect_to_root'=>false])
-@php
-    $totalJobs = $jobs->count();
-    $paidJobs = $jobs->where('invoice_paid', '>=', 1)->count();
-    $unpaidJobs = $totalJobs - $paidJobs;
-    $canceledJobs = $jobs->whereNotNull('canceled_at')->count();
-@endphp
 <x-app-layout>
-    <div class="bg-slate-100/80 pb-20">
-        <div class="mx-auto max-w-6xl space-y-8 px-4 py-6 sm:px-6 lg:px-8">
-            <section class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-orange-500 via-orange-400 to-orange-300 p-6 text-white shadow-xl">
+    <div>
+        <div class="mx-auto space-y-8">
+            <section class="relative overflow-hidden bg-gradient-to-r from-orange-500 via-orange-400 to-orange-300 p-6 text-white shadow-xl">
                 <div class="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.25),_transparent_60%)] opacity-70"></div>
                 <div class="relative flex flex-wrap items-center justify-between gap-4">
                     <div class="space-y-2">
@@ -17,19 +11,19 @@
                             @if($customer)
                                 {{ $customer->name }} —
                             @endif
-                            {{ __('Job Dashboard') }}
+                            {{ __('Jobs Dashboard') }}
                         </h1>
                         <p class="text-sm text-white/85">
                             {{ __('Monitor billing status, export invoices, and dive into job details for your escort team.') }}
                         </p>
                     </div>
                     <span class="rounded-full border border-white/25 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white/85 shadow-sm backdrop-blur">
-                        {{ trans_choice('{0} No jobs|{1} :count job|[2,*] :count jobs', $jobs->count(), ['count' => $jobs->count()]) }}
+                        {{ trans_choice('{0} No jobs|{1} :count job|[2,*] :count jobs', $totalJobs, ['count' => $totalJobs]) }}
                     </span>
                 </div>
             </section>
 
-            <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 px-6">
                 <div class="rounded-3xl border border-orange-100 bg-white/90 p-4 shadow-sm">
                     <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Total jobs') }}</p>
                     <p class="mt-2 text-3xl font-semibold text-slate-900">{{ $totalJobs }}</p>
@@ -49,7 +43,7 @@
             </section>
 
             @can('viewAny', \App\Models\Invoice::class)
-                <section class="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm">
+                <section class="rounded-3xl border border-slate-200 bg-white/90 m-6 p-6 shadow-sm">
                     <header class="mb-4">
                         <h2 class="text-lg font-semibold text-slate-900">{{ __('QuickBooks Export') }}</h2>
                         <p class="text-xs text-slate-500">{{ __('Filter invoices by date, customer, or payment status and export a detailed CSV ready for QuickBooks import.') }}</p>
@@ -93,7 +87,7 @@
                 </section>
             @endcan
 
-            <section class="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm">
+            <section class="rounded-3xl border border-slate-200 bg-white/90 p-6 m-6 shadow-sm">
                 <form class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                     <div class="flex-1">
                         <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Search Jobs') }}</label>
@@ -143,7 +137,7 @@
                 </div>
             </section>
 
-            <section class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            <section class="grid gap-6 md:grid-cols-2 xl:grid-cols-3 px-4 sm:px-6">
                 @foreach($jobs as $job)
                     @php
                         $showRoute = $redirect_to_root
@@ -269,6 +263,50 @@
                     </article>
             @endforeach
             </section>
+            
+            @if($jobs->hasPages())
+                <div class="px-4 sm:px-6">
+                    <div class="flex items-center justify-between border-t border-slate-200 bg-white px-4 py-3 sm:px-6">
+                        <div class="flex flex-1 justify-between sm:hidden">
+                            @if($jobs->onFirstPage())
+                                <span class="relative inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-500 cursor-not-allowed">
+                                    {{ __('Previous') }}
+                                </span>
+                            @else
+                                <a href="{{ $jobs->appends(request()->query())->previousPageUrl() }}" class="relative inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                                    {{ __('Previous') }}
+                                </a>
+                            @endif
+                            
+                            @if($jobs->hasMorePages())
+                                <a href="{{ $jobs->appends(request()->query())->nextPageUrl() }}" class="relative ml-3 inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                                    {{ __('Next') }}
+                                </a>
+                            @else
+                                <span class="relative ml-3 inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-500 cursor-not-allowed">
+                                    {{ __('Next') }}
+                                </span>
+                            @endif
+                        </div>
+                        <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                            <div>
+                                <p class="text-sm text-slate-700">
+                                    {{ __('Showing') }}
+                                    <span class="font-medium">{{ $jobs->firstItem() }}</span>
+                                    {{ __('to') }}
+                                    <span class="font-medium">{{ $jobs->lastItem() }}</span>
+                                    {{ __('of') }}
+                                    <span class="font-medium">{{ $jobs->total() }}</span>
+                                    {{ __('results') }}
+                                </p>
+                            </div>
+                            <div>
+                                {{ $jobs->appends(request()->except('page'))->links() }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endif
     </div>
 </div>
 </x-app-layout>
