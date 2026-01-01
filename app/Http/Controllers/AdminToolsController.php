@@ -75,6 +75,11 @@ class AdminToolsController extends Controller
                 'command' => 'migrate:rollback --force',
                 'description' => 'Rollback the last database migration',
             ],
+            'artisan_redis_health' => [
+                'type' => 'artisan',
+                'command' => 'redis:health',
+                'description' => 'Check Redis server health and status',
+            ],
         ];
     }
 

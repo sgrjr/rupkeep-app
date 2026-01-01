@@ -19,6 +19,10 @@ class UserProfile extends Component
     public $profile;
 
     public Int $merged_user;
+    
+    public $notificationTestStatus = null;
+    public $notificationTestMessage = '';
+    public $notificationTesting = false;
 
     public function mount(Int $user){
         $this->profile = User::with('organization')->find($user);
@@ -70,7 +74,36 @@ class UserProfile extends Component
     }
 
     public function testNotification(){
-        SendUserNotification::to($this->profile, 'This is a test notification from ' . $this->profile->organization?->name . '.', subject: 'test');
+        $this->notificationTesting = true;
+        $this->notificationTestStatus = null;
+        $this->notificationTestMessage = '';
+        
+        try {
+            // Check if user has a valid recipient address
+            $recipient = $this->profile->getSmsGatewayAddress() ?? $this->profile->email;
+            
+            if (empty($recipient)) {
+                $this->notificationTestStatus = 'error';
+                $this->notificationTestMessage = 'No valid recipient address found. Please set an email address or notification address in your profile.';
+                return;
+            }
+            
+            SendUserNotification::to($this->profile, 'This is a test notification from ' . $this->profile->organization?->name . '.', subject: 'test');
+            
+            $this->notificationTestStatus = 'success';
+            $notificationType = $this->profile->getSmsGatewayAddress() ? 'SMS' : 'email';
+            $this->notificationTestMessage = "Test notification sent successfully to {$recipient} via {$notificationType}!";
+        } catch (\Exception $e) {
+            $this->notificationTestStatus = 'error';
+            $this->notificationTestMessage = 'Failed to send test notification: ' . $e->getMessage();
+        } finally {
+            $this->notificationTesting = false;
+        }
+    }
+    
+    public function clearNotificationTestStatus(){
+        $this->notificationTestStatus = null;
+        $this->notificationTestMessage = '';
     }
 
     public function mergeToUser(){
