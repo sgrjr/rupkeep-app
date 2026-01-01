@@ -223,7 +223,7 @@
         @endif
 
         @if($jobsMarkedForAttention && $jobsMarkedForAttention->count() > 0 && auth()->user()->can('createJob', $organization))
-        <section class="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm">
+        <section class="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm m-8">
             <header class="flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <h2 class="text-lg font-semibold text-slate-900">{{ __('Invoices Marked for Attention') }}</h2>
