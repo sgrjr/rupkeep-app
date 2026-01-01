@@ -80,6 +80,11 @@ class AdminToolsController extends Controller
                 'command' => 'redis:health',
                 'description' => 'Check Redis server health and status',
             ],
+            'artisan_queue_health' => [
+                'type' => 'artisan',
+                'command' => 'queue:health',
+                'description' => 'Check queue worker health and status',
+            ],
         ];
     }
 

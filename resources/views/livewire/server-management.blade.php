@@ -108,6 +108,15 @@
                         <span wire:loading wire:target="executeCommand('artisan_redis_health')" class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-purple-600 border-t-transparent"></span>
                         {{ __('Redis Health Check') }}
                     </button>
+                    <button wire:click="executeCommand('artisan_queue_health')" 
+                            wire:loading.attr="disabled"
+                            class="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-600 transition hover:bg-blue-500 hover:text-white disabled:opacity-50">
+                        <svg wire:loading.remove wire:target="executeCommand('artisan_queue_health')" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <span wire:loading wire:target="executeCommand('artisan_queue_health')" class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent"></span>
+                        {{ __('Queue Health Check') }}
+                    </button>
                 </div>
             </div>
 
