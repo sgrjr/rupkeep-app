@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\CustomerContact;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Facades\Auth;
 
 class CustomerContactsController extends Controller
 {
@@ -15,10 +16,10 @@ class CustomerContactsController extends Controller
      * Display a listing of the resource.
      */
     public function index(Request $request){
-        if(auth()->user()->is_super){
+        if(Auth::user()->is_super){
             $contacts = CustomerContact::all();
         }else{
-            $contacts = CustomerContact::where('organization_id', auth()->user()->organization_id)->get();
+            $contacts = CustomerContact::where('organization_id', Auth::user()->organization_id)->get();
         }
         return view('customers.contact_index', compact('contacts'));
     }
@@ -38,14 +39,19 @@ class CustomerContactsController extends Controller
     {
         if(!$request->has('organization_id')){
             $request->merge([
-                'organization_id' => auth()->user()->organization_id
+                'organization_id' => Auth::user()->organization_id
             ]);
         }
-        $customer_contact = new CustomerContact($request->except('_method'));
+        $data = $request->except('_method');
+        // Convert checkbox values to booleans
+        $data['is_main_contact'] = $request->has('is_main_contact') && $request->input('is_main_contact') == '1';
+        $data['is_billing_contact'] = $request->has('is_billing_contact') && $request->input('is_billing_contact') == '1';
+        
+        $customer_contact = new CustomerContact($data);
         $this->authorize('create', $customer_contact);
 
         $customer_contact->save();
-        return back();
+        return back()->with('success', __('Contact created.'));
     }
 
     /**
@@ -70,15 +76,26 @@ class CustomerContactsController extends Controller
     public function update(Request $request, string $customer_id, Int $id)
     {
         $customer_contact = CustomerContact::where('id',$id)->where('customer_id', $customer_id)->first();
+        
+        if (!$customer_contact) {
+            abort(404);
+        }
+        
         $this->authorize('update', $customer_contact);
         
         if($request->has('delete') && $request->get('delete') === 'on'){
             $customer_contact->delete();
-        }else{
-            $customer_contact->update($request->all());
+            return back()->with('success', __('Contact deleted.'));
         }
         
-        return back();
+        $data = $request->only(['name', 'phone', 'email', 'memo', 'notification_address']);
+        // Convert checkbox values to booleans
+        $data['is_main_contact'] = $request->has('is_main_contact') && $request->input('is_main_contact') == '1';
+        $data['is_billing_contact'] = $request->has('is_billing_contact') && $request->input('is_billing_contact') == '1';
+        
+        $customer_contact->update($data);
+        
+        return back()->with('success', __('Contact updated.'));
     }
 
     /**

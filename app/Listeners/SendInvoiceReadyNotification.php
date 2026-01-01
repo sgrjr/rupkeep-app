@@ -35,8 +35,10 @@ class SendInvoiceReadyNotification implements ShouldQueue
             number_format($invoice->values['total'] ?? 0, 2)
         );
 
-        $recipients->each(function (string $address) use ($subject, $message) {
-            Mail::to($address)->send(new UserNotification($message, $subject));
+        $recipients->each(function (string $address) use ($subject, $message, $invoice) {
+            Mail::to($address)->send(new UserNotification($message, $subject, 'mail.invoice-ready', [
+                'invoice' => $invoice,
+            ]));
         });
     }
 

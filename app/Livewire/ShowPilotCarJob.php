@@ -12,9 +12,12 @@ use App\Models\User;
 use App\Models\Attachment;
 use Livewire\WithFileUploads;
 use App\Actions\SendUserNotification;
+use App\Actions\SendCustomerContactNotification;
 use App\Events\InvoiceReady;
+use App\Events\JobWasUncanceled;
 use App\Models\Invoice;
 use App\Models\JobInvoice;
+use App\Models\CustomerContact;
 
 class JobAssignmentForm extends Form
 {
@@ -52,6 +55,8 @@ class ShowPilotCarJob extends Component
             'logs.attachments',
             'customer',
             'customer.contacts',
+            'defaultDriver',
+            'defaultTruckDriver',
             'invoices' => fn ($query) => $query->with('children')->latest(),
         ]);
 
@@ -82,6 +87,16 @@ class ShowPilotCarJob extends Component
         $this->loadJobRelations();
     }
 
+    protected $listeners = ['job-canceled' => 'refreshJob'];
+
+    public function refreshJob($jobId)
+    {
+        if ($this->job->id == $jobId) {
+            $this->job->refresh();
+            $this->loadJobRelations();
+        }
+    }
+
     public function render()
     {
         return view('livewire.show-pilot-car-job');
@@ -90,11 +105,12 @@ class ShowPilotCarJob extends Component
     public function assignJob(){
 
         $values = [
-            'car_driver_id' => $this->assignment->car_driver_id,
+            'car_driver_id' => $this->assignment->car_driver_id ?: $this->job->default_driver_id,
             'job_id'=>$this->job->id,
             'vehicle_id'=> $this->assignment->vehicle_id,
             'organization_id' => $this->job->organization_id,
             'vehicle_position' => $this->assignment->vehicle_position,
+            'truck_driver_id' => $this->job->default_truck_driver_id,
         ];
 
         $message = "New job assignment [{$values['vehicle_position']} car] for {$this->job->customer->name}. Job NO. {$this->job->job_no} | Load NO. {$this->job->load_no}. Pickup: {$this->job->pickup_address} @{$this->job->scheduled_pickup_at} {$this->job->memo}. For updates https://rupkeep.com/my/jobs/{$this->job->id}";
@@ -109,9 +125,14 @@ class ShowPilotCarJob extends Component
         $this->dispatch('saved');
     }
 
+    public $isPublicUpload = false;
+
     public function uploadFile()
     {
-  
+        $this->validate([
+            'file' => 'required|file|max:10240',
+        ]);
+
         $originalName = $this->file->getClientOriginalName();
         $this->file->storeAs(path: 'jobs/attachments_'.$this->job->id, name:$originalName);
 
@@ -120,8 +141,10 @@ class ShowPilotCarJob extends Component
             'attachable_type' => $this->job::class,
             'location' => storage_path('app/private/jobs/attachments_'.$this->job->id.'/'.$originalName),
             'organization_id' => $this->job->organization_id,
+            'is_public' => $this->isPublicUpload,
         ]);
 
+        $this->isPublicUpload = false;
         $this->dispatch('uploaded');
         
         return back();
@@ -152,5 +175,94 @@ class ShowPilotCarJob extends Component
         ]));
 
         $this->dispatch('updated');
+    }
+
+    /**
+     * Send notification to a customer contact (truck driver)
+     */
+    public function notifyCustomerContact(int $contactId): void
+    {
+        $contact = CustomerContact::findOrFail($contactId);
+        
+        // Verify contact belongs to this job's customer
+        if ($contact->customer_id !== $this->job->customer_id) {
+            session()->flash('error', __('Contact does not belong to this job\'s customer.'));
+            return;
+        }
+
+        // Build job status message
+        $status = $this->job->status_label;
+        $scheduledAt = $this->job->scheduled_pickup_at 
+            ? \Carbon\Carbon::parse($this->job->scheduled_pickup_at)->toDayDateTimeString()
+            : 'Not scheduled';
+        
+        $message = sprintf(
+            "Hello %s,\n\nJob Status Update for %s\n\nJob Details:\n- Job #: %s\n- Load #: %s\n- Status: %s\n- Pickup: %s\n- Delivery: %s\n- Scheduled Pickup: %s\n\nFor updates, contact your dispatcher.",
+            $contact->name,
+            $this->job->customer->name,
+            $this->job->job_no ?? ('#'.$this->job->id),
+            $this->job->load_no ?: 'Not provided',
+            $status,
+            $this->job->pickup_address ?: 'Not yet provided',
+            $this->job->delivery_address ?: 'Not yet provided',
+            $scheduledAt
+        );
+
+        $subject = sprintf('Job Status: %s - %s', $status, $this->job->job_no ?? ('Job '.$this->job->id));
+
+        SendCustomerContactNotification::to($contact, $message, $subject);
+        
+        session()->flash('success', __('Notification sent to ') . $contact->name);
+    }
+
+    /**
+     * Reverse job cancellation
+     */
+    public function uncancelJob(): void
+    {
+        $this->authorize('update', $this->job);
+
+        if (!$this->job->canceled_at) {
+            session()->flash('error', __('This job is not canceled.'));
+            return;
+        }
+
+        $updateData = [
+            'canceled_at' => null,
+            'canceled_reason' => null,
+        ];
+
+        // If the rate_code was set to a cancellation type, reset it to null
+        $cancellationRateCodes = ['show_no_go', 'cancellation_24hr', 'cancel_without_billing'];
+        if (in_array($this->job->rate_code, $cancellationRateCodes)) {
+            $updateData['rate_code'] = null;
+            $updateData['rate_value'] = null;
+        }
+
+        // Store previous cancellation reason before updating
+        $previousReason = $this->job->canceled_reason;
+
+        $this->job->update($updateData);
+        $this->job->refresh();
+
+        \Log::info('ShowPilotCarJob: Job uncanceled, firing event', [
+            'job_id' => $this->job->id,
+            'job_no' => $this->job->job_no,
+            'previous_reason' => $previousReason,
+        ]);
+
+        // Fire the JobWasUncanceled event
+        event(new JobWasUncanceled(
+            $this->job,
+            $previousReason
+        ));
+        
+        \Log::info('ShowPilotCarJob: Event fired', [
+            'job_id' => $this->job->id,
+        ]);
+
+        $this->loadJobRelations();
+
+        session()->flash('success', __('Job cancellation has been reversed. The job is now active again.'));
     }
 }

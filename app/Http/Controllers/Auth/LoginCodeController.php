@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Actions\SendUserNotification;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\LoginCodeService;
@@ -57,7 +58,16 @@ class LoginCodeController extends Controller
             'user_agent' => $request->userAgent(),
         ]);
 
-        // TODO: Send notification via email
+        // Send login code via email
+        $message = sprintf(
+            "Hello %s,\n\nYour login code for Rupkeep is: %s\n\nThis code will expire in 24 hours. If you did not request this code, please ignore this email.",
+            $user->name,
+            $code->code
+        );
+
+        $subject = __('Your Rupkeep Login Code');
+
+        SendUserNotification::to($user, $message, $subject);
 
         return back()->with('status', __('We sent a login code to :email', ['email' => $user->email]))
             ->with('code_preview', app()->environment('local') ? $code->code : null);

@@ -137,6 +137,7 @@ class UpdateProfileInformationForm extends Component
         return view('profile.update-profile-information-form', [
             'themes' => $this->themes,
             'roles' => $this->roles,
+            'smsGateways' => config('sms_gateways.providers', []),
         ]);
     }
 }

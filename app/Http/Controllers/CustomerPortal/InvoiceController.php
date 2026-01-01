@@ -38,11 +38,28 @@ class InvoiceController extends Controller
             ]);
         }
 
-        $invoices = Invoice::query()
+        $query = Invoice::query()
             ->with(['customer', 'job'])
-            ->where('customer_id', $user->customer_id ?? null)
-            ->latest()
-            ->paginate(15);
+            ->where('customer_id', $user->customer_id ?? null);
+
+        // Filter by payment status
+        if ($request->has('status')) {
+            if ($request->status === 'paid') {
+                $query->where('paid_in_full', true);
+            } elseif ($request->status === 'unpaid') {
+                $query->where('paid_in_full', false);
+            }
+        }
+
+        // Filter by date range
+        if ($request->has('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+        if ($request->has('date_to')) {
+            $query->whereDate('created_at', '<=', $request->date_to);
+        }
+
+        $invoices = $query->latest()->paginate(15)->withQueryString();
 
         return view('customer.invoices.index', [
             'invoices' => $invoices,
@@ -90,7 +107,7 @@ class InvoiceController extends Controller
             ]);
         }
 
-        $invoice->loadMissing(['customer', 'job']);
+        $invoice->loadMissing(['customer', 'job', 'organization', 'comments.user']);
 
         $values = is_array($invoice->values) ? $invoice->values : [];
 

@@ -13,6 +13,7 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\Traits\HasJobScopes;
 use App\Models\Attachment;
+use App\Models\PricingSetting;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class PilotCarJob extends Model
@@ -35,7 +36,10 @@ class PilotCarJob extends Model
         'canceled_at',
         'canceled_reason',
         'memo',
+        'public_memo',
         'organization_id',
+        'default_driver_id',
+        'default_truck_driver_id',
         'deleted_at'
     ];
 
@@ -54,6 +58,14 @@ class PilotCarJob extends Model
 
     public function logs(){
         return $this->hasMany(UserLog::class, 'job_id');
+    }
+
+    public function defaultDriver(){
+        return $this->belongsTo(User::class, 'default_driver_id');
+    }
+
+    public function defaultTruckDriver(){
+        return $this->belongsTo(CustomerContact::class, 'default_truck_driver_id');
     }
 
     public function invoices(){
@@ -341,35 +353,105 @@ class PilotCarJob extends Model
             
     }
 
-    public static function rates()
+    /**
+     * Get pricing value for this job's organization with fallback to config
+     */
+    private function getPricingValue(string $key, $default = null)
     {
-        $rates = [
-            'per_mile_rate_1_00' => '$1.00 Per Mile',
-            'per_mile_rate_1_25' => '$1.25 Per Mile',
-            'per_mile_rate_1_50' => '$1.50 Per Mile',
-            'per_mile_rate_2_00' => '$2.00 Per Mile (default)',
-            'per_mile_rate_2_25' => '$2.25 Per Mile',
-            'per_mile_rate_2_50' => '$2.50 Per Mile',
-            'per_mile_rate_2_75' => '$2.75 Per Mile',
-            'per_mile_rate_3_00' => '$3.00 Per Mile',
-            'per_mile_rate_3_25' => '$3.25 Per Mile',
-            'per_mile_rate_3_50' => '$3.50 Per Mile',
-            'new_per_mile_rate' => 'Custom Per Mile Rate (enter below)',
-            'flat_rate_excludes_expenses' => 'Flat Price (excludes expenses)',
-            'flat_rate' => 'Flat Price (includes expenses)',
-        ];
+        return PricingSetting::getValueForOrganization($this->organization_id, $key, $default);
+    }
+
+    public static function rates(?int $organizationId = null)
+    {
+        // If organization ID provided, use organization-scoped pricing
+        $pricingConfig = $organizationId 
+            ? static::getRatesForOrganization($organizationId)
+            : config('pricing.rates', []);
+        $legacyRates = config('pricing.legacy_rates', []);
+        
+        $rates = [];
+        
+        // Add new pricing structure rates
+        foreach ($pricingConfig as $code => $config) {
+            $rates[$code] = $config['name'] . ' - ' . $config['description'];
+        }
+        
+        // Add legacy per-mile rates
+        foreach ($legacyRates as $code => $config) {
+            if (isset($config['rate_per_mile'])) {
+                $rates[$code] = '$' . number_format($config['rate_per_mile'], 2) . ' Per Mile';
+            } elseif ($code === 'flat_rate') {
+                $rates[$code] = 'Flat Price (includes expenses)';
+            } elseif ($code === 'flat_rate_excludes_expenses') {
+                $rates[$code] = 'Flat Price (excludes expenses)';
+            }
+        }
+        
+        // Add custom rate option
+        $rates['new_per_mile_rate'] = 'Custom Per Mile Rate (enter below)';
+        $rates['custom_flat_rate'] = 'Custom Flat Rate (enter below)';
 
         return collect($rates)->map(function (string $title, string $value) {
             return (object) ['value' => $value, 'title' => $title];
         })->values()->all();
     }
 
-    public static function defaultRateValue(?string $rateCode): ?string
+    /**
+     * Get rates for a specific organization (with overrides)
+     */
+    private static function getRatesForOrganization(int $organizationId): array
+    {
+        $configRates = config('pricing.rates', []);
+        $rates = [];
+        
+        foreach ($configRates as $code => $config) {
+            $rates[$code] = $config;
+            
+            // Override with organization-specific values if they exist
+            if (isset($config['rate_per_mile'])) {
+                $orgValue = PricingSetting::getValueForOrganization(
+                    $organizationId,
+                    "rates.{$code}.rate_per_mile",
+                    $config['rate_per_mile']
+                );
+                $rates[$code]['rate_per_mile'] = $orgValue;
+            }
+            
+            if (isset($config['flat_amount'])) {
+                $orgValue = PricingSetting::getValueForOrganization(
+                    $organizationId,
+                    "rates.{$code}.flat_amount",
+                    $config['flat_amount']
+                );
+                $rates[$code]['flat_amount'] = $orgValue;
+            }
+        }
+        
+        return $rates;
+    }
+
+    public static function defaultRateValue(?string $rateCode, ?int $organizationId = null): ?string
     {
         if (! $rateCode) {
             return null;
         }
 
+        // Check new pricing structure first
+        $pricingConfig = $organizationId 
+            ? static::getRatesForOrganization($organizationId)
+            : config('pricing.rates', []);
+            
+        if (isset($pricingConfig[$rateCode])) {
+            $config = $pricingConfig[$rateCode];
+            if (isset($config['rate_per_mile'])) {
+                return number_format($config['rate_per_mile'], 2, '.', '');
+            }
+            if (isset($config['flat_amount'])) {
+                return number_format($config['flat_amount'], 2, '.', '');
+            }
+        }
+
+        // Legacy per-mile rate parsing
         if (preg_match('/per_mile_rate_(\d+)_(\d+)/', $rateCode, $matches)) {
             $dollars = (int) $matches[1];
             $cents = (int) $matches[2];
@@ -413,7 +495,7 @@ class PilotCarJob extends Model
             'trailer_number' =>$this->getTrailerNumbers($logs),
             'pickup_address' =>$this->pickup_address,
             'delivery_address' =>$this->delivery_address,
-            'notes' =>$this->getInvoiceNotes($logs),
+            'notes' =>$this->public_memo ?? '',
             'load_no' =>$this->load_no,
             'check_no' =>$this->check_no,
             'wait_time_hours' =>$this->totalWaitTimeHours($logs),
@@ -428,6 +510,13 @@ class PilotCarJob extends Model
             'total_due' => 0.00,
             'billable_miles' => $miles['total_billable'],
             'nonbillable_miles' => $miles['total_nonbillable'],
+            // Driver details for invoice
+            'pilot_car_driver_name' => $this->getPilotCarDrivers($logs),
+            'pilot_car_driver_position' => $this->getPilotCarDriverPositions($logs),
+            'start_job_mileage' => $this->getStartJobMileage($logs),
+            'end_job_mileage' => $this->getEndJobMileage($logs),
+            'start_job_time' => $this->getStartJobTime($logs),
+            'end_job_time' => $this->getEndJobTime($logs),
         ];
 
         $values['total'] = $this->calculateTotalDue($values);
@@ -444,7 +533,124 @@ class PilotCarJob extends Model
         ];
     }
 
-    /* TODO Implement all this calculation */
+    public function getPilotCarDrivers($logs = false)
+    {
+        if (!$logs) {
+            $logs = $this->logs;
+        }
+        
+        $drivers = [];
+        foreach ($logs as $log) {
+            if ($log->car_driver_id && $log->user) {
+                $name = $log->user->name;
+                if (!in_array($name, $drivers)) {
+                    $drivers[] = $name;
+                }
+            }
+        }
+        
+        return implode(' & ', $drivers) ?: '—';
+    }
+
+    public function getPilotCarDriverPositions($logs = false)
+    {
+        if (!$logs) {
+            $logs = $this->logs;
+        }
+        
+        $positions = [];
+        foreach ($logs as $log) {
+            if ($log->vehicle_position) {
+                $pos = $log->vehicle_position;
+                if (!in_array($pos, $positions)) {
+                    $positions[] = $pos;
+                }
+            }
+        }
+        
+        return implode(' & ', $positions) ?: '—';
+    }
+
+    public function getStartJobMileage($logs = false)
+    {
+        if (!$logs) {
+            $logs = $this->logs;
+        }
+        
+        $mileages = [];
+        foreach ($logs as $log) {
+            if ($log->start_job_mileage !== null) {
+                $mileages[] = (float) $log->start_job_mileage;
+            }
+        }
+        
+        if (empty($mileages)) {
+            return null;
+        }
+        
+        return min($mileages); // Use earliest start mileage
+    }
+
+    public function getEndJobMileage($logs = false)
+    {
+        if (!$logs) {
+            $logs = $this->logs;
+        }
+        
+        $mileages = [];
+        foreach ($logs as $log) {
+            if ($log->end_job_mileage !== null) {
+                $mileages[] = (float) $log->end_job_mileage;
+            }
+        }
+        
+        if (empty($mileages)) {
+            return null;
+        }
+        
+        return max($mileages); // Use latest end mileage
+    }
+
+    public function getStartJobTime($logs = false)
+    {
+        if (!$logs) {
+            $logs = $this->logs;
+        }
+        
+        $times = [];
+        foreach ($logs as $log) {
+            if ($log->started_at) {
+                $times[] = Carbon::parse($log->started_at);
+            }
+        }
+        
+        if (empty($times)) {
+            return null;
+        }
+        
+        return min($times)->toDateTimeString(); // Use earliest start time
+    }
+
+    public function getEndJobTime($logs = false)
+    {
+        if (!$logs) {
+            $logs = $this->logs;
+        }
+        
+        $times = [];
+        foreach ($logs as $log) {
+            if ($log->ended_at) {
+                $times[] = Carbon::parse($log->ended_at);
+            }
+        }
+        
+        if (empty($times)) {
+            return null;
+        }
+        
+        return max($times)->toDateTimeString(); // Use latest end time
+    }
+
     public function getTruckDrivers($logs = false){
 
         if(!$logs) $logs = $this->logs;
@@ -584,8 +790,10 @@ class PilotCarJob extends Model
             $miles['job_start'][] = $log->start_job_mileage;
             $miles['job_end'][] = $log->end_job_mileage;
 
+            // Calculate from job mileage
             $billable = ($log->end_job_mileage - $log->start_job_mileage);
 
+            // Manual override
             if ($log->billable_miles !== null && $log->billable_miles !== '' && is_numeric($log->billable_miles)) {
                 $billable = (float) $log->billable_miles;
             }
@@ -621,12 +829,23 @@ class PilotCarJob extends Model
             'wait_time' => 0.00,
         ];
 
+        // Get organization ID from totals or job
+        $organizationId = $totals['organization_id'] ?? $this->organization_id ?? null;
+        
+        // Extra stops: $30.00 per stop
         if($totals['extra_load_stops_count'] > 0){
-            $values['load_stops'] = $totals['extra_load_stops_count'] * 30.00;
+            $extraStopRate = $organizationId
+                ? PricingSetting::getValueForOrganization($organizationId, 'charges.extra_stop.rate_per_stop', config('pricing.charges.extra_stop.rate_per_stop', 30.00))
+                : config('pricing.charges.extra_stop.rate_per_stop', 30.00);
+            $values['load_stops'] = $totals['extra_load_stops_count'] * $extraStopRate;
         }
 
+        // Wait time: $25.00 per hour (charged after first hour)
         if($totals['wait_time_hours'] > 1){
-            $values['load_stops'] = $totals['wait_time_hours'] * 20.00;
+            $waitTimeRate = $organizationId
+                ? PricingSetting::getValueForOrganization($organizationId, 'charges.wait_time.rate_per_hour', config('pricing.charges.wait_time.rate_per_hour', 25.00))
+                : config('pricing.charges.wait_time.rate_per_hour', 25.00);
+            $values['wait_time'] = ($totals['wait_time_hours'] - 1) * $waitTimeRate;
         }
 
         $expenses = 0.00;
@@ -636,41 +855,306 @@ class PilotCarJob extends Model
         }
 
         $normalizedRateValue = (float) str_replace(',', '', (string) ($totals['rate_value'] ?? 0));
+        $rateCode = $totals['rate_code'] ?? '';
+        $billableMiles = (float) ($totals['billable_miles'] ?? 0);
+        
+        // Get organization-scoped pricing config
+        $pricingConfig = $organizationId
+            ? static::getRatesForOrganization($organizationId)
+            : config('pricing.rates', []);
 
-        if(str_starts_with($totals['rate_code'], 'per_mile_rate')){
-            $value = round($normalizedRateValue, 2);
-            $values['miles_charge'] = $totals['billable_miles'] * $value;
-        }else if(str_starts_with($totals['rate_code'],'flat_rate')){
-            $values['miles_charge'] = 0.00;
-        }
-
-        if($totals['dead_head'] > 0){
-            $values['effective_rate_code'] = 'deadhead';
-            $values['effective_rate_value'] = $totals['dead_head'];
-            $values['total'] = number_format($expenses + ($totals['dead_head'] * 250.00),2);
-        }else if($totals['billable_miles'] <= 125){
-            //is mini
-            $values['effective_rate_code'] = 'mini';
-            $values['effective_rate_value'] = $totals['cars_count'];
-            $values['total'] = number_format($expenses + (250.00 * $totals['cars_count']),2);
-        }else{
-            //figure by given rate
-            if($totals['rate_code'] === 'flat_rate_excludes_expenses'){
-                $values['effective_rate_code'] = 'flat_rate_excludes_expenses';
-                $values['effective_rate_value'] = $normalizedRateValue;
-                $values['total'] = number_format($normalizedRateValue,2);
-            }else if($totals['rate_code'] === 'flat_rate'){
-                $values['effective_rate_code'] = 'flat_rate';
-                $values['effective_rate_value'] = $normalizedRateValue;
-                $values['total'] = number_format($normalizedRateValue + $expenses,2);
-            }else{
-                $values['effective_rate_code'] = 'per_mile_rate';
-                $values['effective_rate_value'] = $normalizedRateValue;
-                $values['total'] = ($values['miles_charge'] ?? 0) + $expenses;
-            }
+        // Check if using new pricing structure
+        if (isset($pricingConfig[$rateCode])) {
+            $rateConfig = $pricingConfig[$rateCode];
             
+            if ($rateConfig['type'] === 'per_mile') {
+                // Per mile rate (Lead/Chase)
+                $ratePerMile = $rateConfig['rate_per_mile'] ?? $normalizedRateValue;
+                $values['miles_charge'] = $billableMiles * $ratePerMile;
+                $values['effective_rate_code'] = $rateCode;
+                $values['effective_rate_value'] = $ratePerMile;
+                $values['total'] = ($values['miles_charge'] ?? 0) + $expenses;
+            } elseif ($rateConfig['type'] === 'flat') {
+                // Flat rate (Mini, Show No-Go, Cancellation, Day Rate, etc.)
+                $flatAmount = $rateConfig['flat_amount'] ?? $normalizedRateValue;
+                $values['miles_charge'] = 0.00;
+                $values['effective_rate_code'] = $rateCode;
+                $values['effective_rate_value'] = $flatAmount;
+                
+                // Check for mini rate: if billable miles <= max_miles, use flat rate
+                if ($rateCode === 'mini_flat_rate' && isset($rateConfig['max_miles'])) {
+                    if ($billableMiles > $rateConfig['max_miles']) {
+                        // Exceeds mini threshold, fall back to per-mile calculation
+                        $fallbackRate = $organizationId
+                            ? PricingSetting::getValueForOrganization($organizationId, 'rates.lead_chase_per_mile.rate_per_mile', config('pricing.rates.lead_chase_per_mile.rate_per_mile', 2.00))
+                            : config('pricing.rates.lead_chase_per_mile.rate_per_mile', 2.00);
+                        $values['miles_charge'] = $billableMiles * $fallbackRate;
+                        $values['effective_rate_code'] = 'lead_chase_per_mile';
+                        $values['effective_rate_value'] = $fallbackRate;
+                        $values['total'] = ($values['miles_charge'] ?? 0) + $expenses;
+                    } else {
+                        $values['total'] = $flatAmount + $expenses;
+                    }
+                } else {
+                    // Other flat rates
+                    $values['total'] = $flatAmount + $expenses;
+                }
+            }
+        } elseif (str_starts_with($rateCode, 'per_mile_rate') || $rateCode === 'new_per_mile_rate') {
+            // Legacy per-mile rates or custom per-mile
+            $value = $normalizedRateValue > 0 ? round($normalizedRateValue, 2) : 2.00; // Default to $2.00
+            $values['miles_charge'] = $billableMiles * $value;
+            $values['effective_rate_code'] = 'per_mile_rate';
+            $values['effective_rate_value'] = $value;
+            $values['total'] = ($values['miles_charge'] ?? 0) + $expenses;
+        } elseif (str_starts_with($rateCode, 'flat_rate') || $rateCode === 'custom_flat_rate') {
+            // Legacy flat rates or custom flat
+            $values['miles_charge'] = 0.00;
+            $flatAmount = $normalizedRateValue > 0 ? $normalizedRateValue : 0;
+            
+            if ($rateCode === 'flat_rate_excludes_expenses') {
+                $values['effective_rate_code'] = 'flat_rate_excludes_expenses';
+                $values['effective_rate_value'] = $flatAmount;
+                $values['total'] = number_format($flatAmount, 2);
+            } else {
+                $values['effective_rate_code'] = 'flat_rate';
+                $values['effective_rate_value'] = $flatAmount;
+                $values['total'] = number_format($flatAmount + $expenses, 2);
+            }
+        } else {
+            // Fallback: default per-mile rate
+            $defaultRate = $organizationId
+                ? PricingSetting::getValueForOrganization($organizationId, 'rates.lead_chase_per_mile.rate_per_mile', 2.00)
+                : 2.00;
+            $values['miles_charge'] = $billableMiles * $defaultRate;
+            $values['effective_rate_code'] = 'per_mile_rate';
+            $values['effective_rate_value'] = $defaultRate;
+            $values['total'] = ($values['miles_charge'] ?? 0) + $expenses;
         }
+        
+        // Format total as number (not string)
+        $values['total'] = (float) str_replace(',', '', (string) $values['total']);
 
         return $values;
+    }
+
+    public function getMilesAttribute(){
+        $miles = (Object)[
+            'total' => 0.0,
+            'personal' => 0.0,
+            'billable' => 0.0
+        ];
+
+        foreach($this->logs as $log){
+            $miles->billable += $log->total_billable_miles ?? 0.0;
+            $miles->total += $log->total_miles ?? 0.0;
+            $miles->personal += $log->personal_miles ?? 0.0;
+        }
+
+        return $miles;
+    }
+
+    /**
+     * Determine the cancellation type based on timing and job status
+     * 
+     * @return string The cancellation rate code to use
+     */
+    public function determineCancellationType(): string
+    {
+        $now = now();
+        $pickupTime = $this->scheduled_pickup_at;
+        
+        if (!$pickupTime) {
+            // No pickup time set, default to no billing
+            return 'cancel_without_billing';
+        }
+
+        $pickupTime = Carbon::parse($pickupTime);
+        $hoursUntilPickup = $now->diffInHours($pickupTime, false); // false = don't return absolute value
+        
+        $organizationId = $this->organization_id;
+        $hoursThreshold = $organizationId
+            ? PricingSetting::getValueForOrganization($organizationId, 'cancellation.hours_before_pickup_for_24hr_charge', config('pricing.cancellation.hours_before_pickup_for_24hr_charge', 24))
+            : config('pricing.cancellation.hours_before_pickup_for_24hr_charge', 24);
+
+        // Check if canceled within 24 hours of pickup
+        if ($hoursUntilPickup >= 0 && $hoursUntilPickup <= $hoursThreshold) {
+            return 'cancellation_24hr';
+        }
+
+        // Check if there are any logs (driver showed up)
+        if ($this->logs()->exists()) {
+            return 'show_no_go';
+        }
+
+        // Default: no billing
+        return 'cancel_without_billing';
+    }
+
+    /**
+     * Get the job status
+     * 
+     * @return string 'ACTIVE', 'CANCELLED', 'CANCELLED_NO_GO', or 'COMPLETED'
+     */
+    public function getStatusAttribute(): string
+    {
+        if ($this->canceled_at) {
+            // Check if it's a "show but no-go" (has logs but was canceled)
+            if ($this->logs()->exists()) {
+                return 'CANCELLED'; // Show but no-go
+            }
+            return 'CANCELLED_NO_GO'; // Cancelled before any work
+        }
+
+        // Check if job has invoices (completed)
+        if ($this->invoices()->exists()) {
+            return 'COMPLETED';
+        }
+
+        return 'ACTIVE';
+    }
+
+    /**
+     * Get human-readable status label
+     */
+    public function getStatusLabelAttribute(): string
+    {
+        return match($this->status) {
+            'ACTIVE' => __('Active'),
+            'CANCELLED' => __('Cancelled (Show But No-Go)'),
+            'CANCELLED_NO_GO' => __('Cancelled (No-Go)'),
+            'COMPLETED' => __('Completed'),
+            default => __('Unknown'),
+        };
+    }
+
+    /**
+     * Compare flat rate vs mini rate and return which is better
+     * Returns the rate code that should be used
+     */
+    public function getOptimalRateCode(): ?string
+    {
+        $billableMiles = (float) ($this->miles->billable ?? 0);
+        
+        if ($billableMiles <= 125) {
+            // Check if mini rate is better than current rate
+            $organizationId = $this->organization_id;
+            $miniRate = $organizationId
+                ? PricingSetting::getValueForOrganization($organizationId, 'rates.mini_flat_rate.flat_amount', config('pricing.rates.mini_flat_rate.flat_amount', 350.00))
+                : config('pricing.rates.mini_flat_rate.flat_amount', 350.00);
+            $currentRateValue = (float) ($this->rate_value ?? 0);
+            
+            // If using per-mile rate, calculate cost
+            if (str_starts_with($this->rate_code ?? '', 'per_mile_rate')) {
+                $perMileCost = $billableMiles * $currentRateValue;
+                if ($perMileCost > $miniRate) {
+                    return 'mini_flat_rate';
+                }
+            }
+        }
+        
+        return $this->rate_code;
+    }
+
+    /**
+     * Get rate comparison data for display
+     * Returns array with current rate cost, mini rate cost, and savings
+     */
+    public function getRateComparison(): ?array
+    {
+        $billableMiles = (float) ($this->miles->billable ?? 0);
+        
+        // Only show comparison if billable miles <= 125 (mini threshold)
+        $organizationId = $this->organization_id;
+        $miniMaxMiles = $organizationId
+            ? PricingSetting::getValueForOrganization($organizationId, 'rates.mini_flat_rate.max_miles', config('pricing.rates.mini_flat_rate.max_miles', 125))
+            : config('pricing.rates.mini_flat_rate.max_miles', 125);
+            
+        if ($billableMiles > $miniMaxMiles) {
+            return null; // Not eligible for mini rate
+        }
+
+        $miniRate = $organizationId
+            ? PricingSetting::getValueForOrganization($organizationId, 'rates.mini_flat_rate.flat_amount', config('pricing.rates.mini_flat_rate.flat_amount', 350.00))
+            : config('pricing.rates.mini_flat_rate.flat_amount', 350.00);
+
+        // Calculate current rate cost
+        $currentCost = 0.00;
+        $currentRateCode = $this->rate_code ?? '';
+        $currentRateValue = (float) ($this->rate_value ?? 0);
+
+        // Get expenses (these apply to both rates)
+        $invoiceValues = $this->invoiceValues();
+        $expenses = 0.00;
+        if (isset($invoiceValues['values'])) {
+            $vals = $invoiceValues['values'];
+            $expenses = (float) ($vals['tolls'] ?? 0) + 
+                       (float) ($vals['hotel'] ?? 0) + 
+                       (float) ($vals['extra'] ?? 0) + 
+                       (float) ($vals['load_stops'] ?? 0) + 
+                       (float) ($vals['wait_time'] ?? 0);
+        }
+
+        // Calculate cost based on current rate
+        if (str_starts_with($currentRateCode, 'per_mile_rate') || $currentRateCode === 'lead_chase_per_mile') {
+            // Per-mile rate
+            $perMileRate = $currentRateValue > 0 ? $currentRateValue : 
+                ($organizationId
+                    ? PricingSetting::getValueForOrganization($organizationId, 'rates.lead_chase_per_mile.rate_per_mile', config('pricing.rates.lead_chase_per_mile.rate_per_mile', 2.00))
+                    : config('pricing.rates.lead_chase_per_mile.rate_per_mile', 2.00));
+            $currentCost = ($billableMiles * $perMileRate) + $expenses;
+        } elseif (str_starts_with($currentRateCode, 'flat_rate') || $currentRateCode === 'custom_flat_rate') {
+            // Flat rate
+            $flatAmount = $currentRateValue > 0 ? $currentRateValue : 0;
+            if ($currentRateCode === 'flat_rate_excludes_expenses') {
+                $currentCost = $flatAmount + $expenses;
+            } else {
+                $currentCost = $flatAmount + $expenses;
+            }
+        } elseif ($currentRateCode === 'mini_flat_rate') {
+            // Already using mini rate
+            $currentCost = $miniRate + $expenses;
+        } else {
+            // Unknown rate type, try to calculate from invoice values
+            if (isset($invoiceValues['values']['total'])) {
+                $currentCost = (float) $invoiceValues['values']['total'];
+            }
+        }
+
+        // Calculate mini rate cost (always includes expenses)
+        $miniCost = $miniRate + $expenses;
+
+        // Determine which is better
+        $savings = $currentCost - $miniCost;
+        $isMiniBetter = $savings > 0;
+
+        return [
+            'current_cost' => $currentCost,
+            'current_rate_code' => $currentRateCode,
+            'current_rate_label' => $this->getRateLabel($currentRateCode),
+            'mini_cost' => $miniCost,
+            'mini_rate' => $miniRate,
+            'savings' => abs($savings),
+            'is_mini_better' => $isMiniBetter,
+            'expenses' => $expenses,
+            'billable_miles' => $billableMiles,
+        ];
+    }
+
+    /**
+     * Get human-readable label for rate code
+     */
+    private function getRateLabel(string $rateCode): string
+    {
+        $labels = [
+            'per_mile_rate' => 'Per Mile Rate',
+            'lead_chase_per_mile' => 'Lead/Chase Per Mile',
+            'flat_rate' => 'Flat Rate',
+            'flat_rate_excludes_expenses' => 'Flat Rate (Excludes Expenses)',
+            'mini_flat_rate' => 'Mini-Run Rate',
+            'custom_flat_rate' => 'Custom Flat Rate',
+        ];
+
+        return $labels[$rateCode] ?? $rateCode;
     }
 }

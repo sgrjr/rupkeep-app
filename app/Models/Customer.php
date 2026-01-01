@@ -17,8 +17,15 @@ class Customer extends Model
     public $timestamps = true;
 
     public $fillable = [
-        'name','street','city','state','zip','organization_id'
+        'name','street','city','state','zip','organization_id','account_credit'
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'account_credit' => 'decimal:2',
+        ];
+    }
 
     public function jobs(){
         return $this->hasMany(PilotCarJob::class);
@@ -30,6 +37,11 @@ class Customer extends Model
 
     public function contacts(){
         return $this->hasMany(CustomerContact::class);
+    }
+
+    public function billingContact()
+    {
+        return $this->hasOne(CustomerContact::class)->where('is_billing_contact', true);
     }
 
     public function users()

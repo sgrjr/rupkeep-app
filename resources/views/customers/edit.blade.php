@@ -46,29 +46,47 @@
                     @csrf
                     <input name="_method" type="hidden" value="PUT">
 
-                    <div class="grid grid-cols-4 gap-1 ">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                         <div class="flex flex-col">
                             <label class="font-bold text-sm" for="nc_name{{$contact->id}}">Name: </label>
-                            <input id="nc_name{{$contact->id}}" name="name" value="{{$contact->name}}" class="p-1 pt-0 pb-0"/>
+                            <input id="nc_name{{$contact->id}}" name="name" value="{{$contact->name}}" class="p-1 pt-0 pb-0 rounded border border-slate-200"/>
                         </div>
                         <div class="flex flex-col">
-                        <label class="font-bold text-sm" for="nc_phone{{$contact->id}}">Phone: </label>
-                        <input id="nc_phone{{$contact->id}}" name="phone" value="{{$contact->phone}}" class="p-1 pt-0 pb-0"/>
+                            <label class="font-bold text-sm" for="nc_phone{{$contact->id}}">Phone: </label>
+                            <input id="nc_phone{{$contact->id}}" name="phone" value="{{$contact->phone}}" class="p-1 pt-0 pb-0 rounded border border-slate-200"/>
                         </div>
                         <div class="flex flex-col">
-                        <label class="font-bold text-sm" for="nc_email{{$contact->id}}">Email: </label>
-                        <input id="nc_email{{$contact->id}}" name="email" value="{{$contact->email}}" type="email" class="p-1 pt-0 pb-0"/>
+                            <label class="font-bold text-sm" for="nc_email{{$contact->id}}">Email: </label>
+                            <input id="nc_email{{$contact->id}}" name="email" value="{{$contact->email}}" type="email" class="p-1 pt-0 pb-0 rounded border border-slate-200"/>
                         </div>
                         <div class="flex flex-col">
-                        <label class="font-bold text-sm" for="nc_memo{{$contact->id}}">Memo: </label>
-                        <input id="nc_memo{{$contact->id}}" name="memo" value="{{$contact->memo}}" class="p-1 pt-0 pb-0"/>
+                            <label class="font-bold text-sm" for="nc_memo{{$contact->id}}">Memo: </label>
+                            <input id="nc_memo{{$contact->id}}" name="memo" value="{{$contact->memo}}" class="p-1 pt-0 pb-0 rounded border border-slate-200"/>
                         </div>
                     </div>
+                    <div class="mt-3">
+                        <label class="font-bold text-sm" for="nc_notification_address{{$contact->id}}">Notification Address (SMS Gateway): </label>
+                        <input id="nc_notification_address{{$contact->id}}" name="notification_address" value="{{$contact->notification_address}}" placeholder="2074168659@mms.uscc.net" class="mt-1 block w-full p-1 pt-0 pb-0 rounded border border-slate-200"/>
+                        <p class="mt-1 text-xs text-slate-500">For SMS notifications, use format: phone@gateway (e.g., 2074168659@mms.uscc.net). Leave blank to use email.</p>
+                    </div>
 
-                    <div class="w-full flex justify-end gap-2">
-                        <label class="font-bold text-sm" for="nc_memo{{$contact->id}}">Delete?: </label>
-                        <input id="nc_delete{{$contact->id}}" name="delete" type="checkbox" class="p-1 pt-0 pb-0"/>
-                        <button class="">save</button>
+                    <div class="mt-3 flex flex-wrap items-center gap-4">
+                        <label class="flex items-center gap-2">
+                            <input type="checkbox" name="is_main_contact" value="1" {{ $contact->is_main_contact ? 'checked' : '' }} class="rounded border-slate-300 text-orange-600 focus:ring-orange-500">
+                            <span class="text-sm font-medium text-slate-700">{{ __('Main Contact') }}</span>
+                        </label>
+                        <label class="flex items-center gap-2">
+                            <input type="checkbox" name="is_billing_contact" value="1" {{ $contact->is_billing_contact ? 'checked' : '' }} class="rounded border-slate-300 text-orange-600 focus:ring-orange-500">
+                            <span class="text-sm font-medium text-slate-700">{{ __('Billing Contact') }}</span>
+                        </label>
+                    </div>
+
+                    <div class="mt-3 w-full flex justify-end gap-2">
+                        <label class="flex items-center gap-2">
+                            <span class="text-sm font-medium text-red-600">{{ __('Delete?') }}</span>
+                            <input id="nc_delete{{$contact->id}}" name="delete" type="checkbox" class="rounded border-slate-300 text-red-600 focus:ring-red-500"/>
+                        </label>
+                        <button class="rounded bg-orange-500 px-4 py-1 text-sm font-semibold text-white hover:bg-orange-600">{{ __('Save') }}</button>
                     </div>
                     
                 </form>
@@ -103,6 +121,23 @@
                     <div class="mt-4">
                         <x-label for="memo" value="{{ __('Memo') }}" />
                         <x-input id="memo" class="block mt-1 w-full"  name="memo" value="" aria-placeholder="memo" />
+                    </div>
+
+                    <div class="mt-4">
+                        <x-label for="notification_address" value="{{ __('Notification Address (SMS Gateway)') }}" />
+                        <x-input id="notification_address" class="block mt-1 w-full"  name="notification_address" value="" placeholder="2074168659@mms.uscc.net" />
+                        <p class="mt-1 text-xs text-slate-500">For SMS notifications, use format: phone@gateway (e.g., 2074168659@mms.uscc.net). Leave blank to use email.</p>
+                    </div>
+
+                    <div class="mt-4 flex flex-wrap items-center gap-4">
+                        <label class="flex items-center gap-2">
+                            <input type="checkbox" name="is_main_contact" value="1" class="rounded border-slate-300 text-orange-600 focus:ring-orange-500">
+                            <span class="text-sm font-medium text-slate-700">{{ __('Main Contact') }}</span>
+                        </label>
+                        <label class="flex items-center gap-2">
+                            <input type="checkbox" name="is_billing_contact" value="1" class="rounded border-slate-300 text-orange-600 focus:ring-orange-500">
+                            <span class="text-sm font-medium text-slate-700">{{ __('Billing Contact') }}</span>
+                        </label>
                     </div>
 
                     <div class="flex items-center justify-end mt-4">

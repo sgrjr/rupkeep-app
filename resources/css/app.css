@@ -109,9 +109,7 @@ a {
 }
 
 
-
 button, .dropdown-link a, .dropdown-link button, input:where([type='submit']), .button {
-    border: none;
     border-radius: 3px;
     padding-left: 2rem;
     padding-right: 2rem;
@@ -119,6 +117,10 @@ button, .dropdown-link a, .dropdown-link button, input:where([type='submit']), .
     padding-bottom: .3rem;
     background: inherit;
     color: inherit;
+}
+
+.dropdown-link a, .dropdown-link button, input:where([type='submit']), .button {
+    border: none;
 }
 
 button:hover, .dropdown-link a:hover, .dropdown-link button:hover, input:where([type='submit']):hover, .button:hover {

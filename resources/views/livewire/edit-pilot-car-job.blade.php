@@ -114,7 +114,50 @@
                 <div class="md:col-span-2">
                     <label for="memo" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Internal Memo') }}</label>
                     <textarea id="memo" wire:model="form.memo" rows="4" placeholder="{{ __('Optional notes for staff reference') }}" class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"></textarea>
+                    <p class="mt-1 text-xs text-slate-400">{{ __('Internal notes for organization users only. Not displayed on invoices.') }}</p>
                     @error('form.memo')
+                        <p class="mt-1 text-xs font-semibold text-red-500">{{ $message }}</p>
+                    @enderror
+                </div>
+                <div class="md:col-span-2">
+                    <label for="public_memo" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Public Memo / Invoice Notes') }}</label>
+                    <textarea id="public_memo" wire:model="form.public_memo" rows="4" placeholder="{{ __('Notes that will appear on invoices sent to customers') }}" class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"></textarea>
+                    <p class="mt-1 text-xs text-slate-400">{{ __('This memo will be displayed on invoices sent to customers. For internal notes, use the internal memo field above.') }}</p>
+                    @error('form.public_memo')
+                        <p class="mt-1 text-xs font-semibold text-red-500">{{ $message }}</p>
+                    @enderror
+                </div>
+            </div>
+        </section>
+
+        <section class="rounded-3xl border border-slate-100 bg-white/80 p-6 shadow-sm">
+            <header class="mb-6 flex items-center justify-between">
+                <div>
+                    <h2 class="text-lg font-semibold text-slate-900">{{ __('Default Assignments') }}</h2>
+                    <p class="text-xs text-slate-500">{{ __('Set default driver and truck driver contact for this job. These will be pre-filled when creating logs.') }}</p>
+                </div>
+            </header>
+            <div class="grid gap-4 md:grid-cols-2">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Default Driver') }}</label>
+                    <select wire:model="form.default_driver_id" class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                        @foreach($drivers as $driver)
+                            <option value="{{ $driver['value'] }}">{{ $driver['name'] }}</option>
+                        @endforeach
+                    </select>
+                    @error('form.default_driver_id')
+                        <p class="mt-1 text-xs font-semibold text-red-500">{{ $message }}</p>
+                    @enderror
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Default Truck Driver Contact') }}</label>
+                    <select wire:model="form.default_truck_driver_id" class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                        @foreach($truckDrivers as $contact)
+                            <option value="{{ $contact['value'] }}">{{ $contact['name'] }}</option>
+                        @endforeach
+                    </select>
+                    <p class="mt-1 text-xs text-slate-400">{{ __('Select from customer contacts') }}</p>
+                    @error('form.default_truck_driver_id')
                         <p class="mt-1 text-xs font-semibold text-red-500">{{ $message }}</p>
                     @enderror
                 </div>

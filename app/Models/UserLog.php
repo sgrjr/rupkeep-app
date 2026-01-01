@@ -49,7 +49,52 @@ class UserLog extends Model
 
     public function getTotalBillableMilesAttribute()
     {
-        //TODO: Calculate Total Billable Miles
+        // If billable_miles is manually set, use that
+        if ($this->billable_miles !== null && $this->billable_miles !== '' && is_numeric($this->billable_miles)) {
+            return (float) $this->billable_miles;
+        }
+
+        // Otherwise calculate from start/end job mileage
+        if ($this->start_job_mileage !== null && $this->end_job_mileage !== null) {
+            $start = (float) $this->start_job_mileage;
+            $end = (float) $this->end_job_mileage;
+            
+            if ($end >= $start) {
+                return $end - $start;
+            }
+        }
+
+        // Fallback: use total miles if job mileage not available
+        return $this->total_miles;
+    }
+
+    
+    public function getTotalMilesAttribute()
+    {
+        // If billable_miles is manually set, use that
+        if ($this->start_mileage === null || $this->end_mileage === null) {
+            return (float) 0.0;
+        }
+
+        $start = (float) $this->start_mileage;
+        $end = (float) $this->end_mileage;
+        
+        if ($end >= $start) {
+            return $end - $start;
+        }
+
+        return 0.0;
+    }
+
+    public function getPersonalMilesAttribute()
+    {
+        $total_miles = $this->total_miles ?? 0.0;
+        $billable_miles = $this->total_billable_miles ?? 0.0;
+
+        if ($total_miles >= $billable_miles) {
+            return $total_miles  - $billable_miles;
+        }
+        return 0.0;
     }
 
     public function organization()

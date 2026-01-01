@@ -52,7 +52,7 @@ class User extends Authenticatable
         'customer_id',
         'organization_role',
         'theme',
-        'notification_address'
+        'notification_address',
     ];
 
     /**
@@ -191,5 +191,86 @@ class User extends Authenticatable
     public function isCustomer(): bool
     {
         return $this->organization_role === self::ROLE_CUSTOMER;
+    }
+
+    /**
+     * Get the SMS gateway email address for this user
+     * 
+     * Uses notification_address if it's already a gateway address (contains @)
+     * Otherwise returns null (will fall back to regular email)
+     * 
+     * @return string|null
+     */
+    public function getSmsGatewayAddress(): ?string
+    {
+        if (empty($this->notification_address)) {
+            return null;
+        }
+
+        $address = trim($this->notification_address);
+        
+        // If it contains @, it's likely an email gateway address
+        if (str_contains($address, '@')) {
+            return $address;
+        }
+
+        return null;
+    }
+
+    /**
+     * Get phone number from notification_address if it's a gateway address
+     * 
+     * @return string|null
+     */
+    public function getPhoneFromNotificationAddress(): ?string
+    {
+        if (empty($this->notification_address)) {
+            return null;
+        }
+
+        $address = trim($this->notification_address);
+        
+        // Extract phone number from format: 2074168659@mms.uscc.net
+        if (preg_match('/^(\d+)@/', $address, $matches)) {
+            return $matches[1];
+        }
+
+        return null;
+    }
+
+    /**
+     * Get SMS provider from notification_address if it's a gateway address
+     * 
+     * @return string|null Provider key (e.g., 'uscc', 'att', 'verizon')
+     */
+    public function getSmsProviderFromNotificationAddress(): ?string
+    {
+        if (empty($this->notification_address)) {
+            return null;
+        }
+
+        $address = trim($this->notification_address);
+        
+        // Extract domain and match to provider
+        if (preg_match('/@([^@]+)$/', $address, $matches)) {
+            $domain = $matches[1];
+            
+            $providers = config('sms_gateways.providers', []);
+            foreach ($providers as $key => $provider) {
+                if (str_contains($domain, $provider['sms']) || str_contains($domain, $provider['mms'] ?? '')) {
+                    return $key;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Check if user has SMS notification capability
+     */
+    public function hasSmsNotification(): bool
+    {
+        return $this->getSmsGatewayAddress() !== null;
     }
 }

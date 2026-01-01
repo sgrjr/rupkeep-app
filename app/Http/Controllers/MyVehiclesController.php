@@ -15,15 +15,22 @@ class MyVehiclesController extends Controller
 
     public function index(Request $request)
     {
-        $vehicles = Vehicle::query()
-            ->withTrashed()
+        $showDeleted = $request->boolean('show_deleted', false);
+        
+        $query = Vehicle::query()
             ->with(['currentAssignment'])
-            ->forOrganization($request->user()->organization_id)
+            ->forOrganization($request->user()->organization_id);
+        
+        if ($showDeleted) {
+            $query->withTrashed();
+        }
+        
+        $vehicles = $query
             ->orderByRaw('CASE WHEN deleted_at IS NULL THEN 0 ELSE 1 END')
             ->orderBy('name')
             ->get();
 
-        return view('vehicles.index', compact('vehicles'));
+        return view('vehicles.index', compact('vehicles', 'showDeleted'));
     }
 
     public function create(Request $request)

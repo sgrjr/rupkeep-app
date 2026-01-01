@@ -4,6 +4,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use App\Http\Middleware\EnsureCustomer;
+use App\Http\Middleware\IsSuperAdmin;
 use App\Http\Middleware\TrackNavigationHistory;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -16,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
             'customer' => EnsureCustomer::class,
+            'super' => IsSuperAdmin::class,
         ]);
 
         $middleware->web(append: [
@@ -23,5 +25,8 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        // Track all exceptions in the experience tracker
+        $exceptions->report(function (\Throwable $e) {
+            \App\Services\ExperienceTrackerService::trackError($e);
+        });
     })->create();

@@ -52,23 +52,44 @@
                 <section class="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm">
                     <header class="mb-4">
                         <h2 class="text-lg font-semibold text-slate-900">{{ __('QuickBooks Export') }}</h2>
-                        <p class="text-xs text-slate-500">{{ __('Filter invoices by date or payment status and export a CSV ready for QuickBooks.') }}</p>
+                        <p class="text-xs text-slate-500">{{ __('Filter invoices by date, customer, or payment status and export a detailed CSV ready for QuickBooks import.') }}</p>
                     </header>
-                    <form method="GET" action="{{ route('my.invoices.export.quickbooks') }}" class="grid gap-4 md:grid-cols-5">
-                        <input type="date" name="from" value="{{ request('from') }}" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200" placeholder="{{ __('From') }}">
-                        <input type="date" name="to" value="{{ request('to') }}" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200" placeholder="{{ __('To') }}">
-                        <select name="paid" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
-                            <option value="">{{ __('Any Status') }}</option>
-                            <option value="yes" @selected(request('paid') === 'yes')>{{ __('Paid') }}</option>
-                            <option value="no" @selected(request('paid') === 'no')>{{ __('Unpaid') }}</option>
-                        </select>
-                        <div class="md:col-span-2 flex justify-end">
-                            <x-button type="submit" variant="secondary">
+                    <form method="GET" action="{{ route('my.invoices.export.quickbooks') }}" class="grid gap-4 md:grid-cols-6">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600 mb-1">{{ __('From Date') }}</label>
+                            <input type="date" name="from" value="{{ request('from') }}" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600 mb-1">{{ __('To Date') }}</label>
+                            <input type="date" name="to" value="{{ request('to') }}" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600 mb-1">{{ __('Customer') }}</label>
+                            <select name="customer_id" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                <option value="">{{ __('All Customers') }}</option>
+                                @foreach(\App\Models\Customer::where('organization_id', auth()->user()->organization_id)->orderBy('name')->get() as $customer)
+                                    <option value="{{ $customer->id }}" @selected(request('customer_id') == $customer->id)>{{ $customer->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600 mb-1">{{ __('Status') }}</label>
+                            <select name="paid" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                <option value="">{{ __('Any Status') }}</option>
+                                <option value="yes" @selected(request('paid') === 'yes')>{{ __('Paid') }}</option>
+                                <option value="no" @selected(request('paid') === 'no')>{{ __('Unpaid') }}</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-2 flex items-end justify-end gap-2">
+                            <x-button type="submit" variant="secondary" class="w-full md:w-auto">
                                 <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582c1.356 0 2.643.543 3.596 1.508L12 12.83l3.822-1.872A4.999 4.999 0 0 1 19.418 9H20V4M4 20h16M4 16h16"/></svg>
-                                {{ __('Export QuickBooks CSV') }}
+                                {{ __('Export CSV') }}
                             </x-button>
                         </div>
                     </form>
+                    <p class="mt-3 text-xs text-slate-500">
+                        {{ __('The export includes invoice details, line items, expenses, and payment information formatted for QuickBooks import.') }}
+                    </p>
                 </section>
             @endcan
 
@@ -93,13 +114,33 @@
                             <option value="is_canceled" @selected(request('search_field') === 'is_canceled')>{{ __('Canceled Jobs') }}</option>
                 </select>
             </div>
-                    <div class="md:w-auto">
-                        <x-button type="submit">
-                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16Z"/></svg>
-                            {{ __('Search') }}
-                        </x-button>
+                        <div class="md:w-auto">
+                            <x-button type="submit">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16Z"/></svg>
+                                {{ __('Search') }}
+                            </x-button>
+                        </div>
                     </div>
-        </form>
+                    @if(request('search_field'))
+                        <input type="hidden" name="search_field" value="{{ request('search_field') }}">
+                    @endif
+                </form>
+                <div class="mt-4 flex items-center justify-end">
+                    <form method="GET" action="{{ route('my.jobs.index') }}" class="inline-flex">
+                        <input type="hidden" name="show_deleted" value="{{ $showDeleted ? '0' : '1' }}">
+                        @if(request('search_field'))
+                            <input type="hidden" name="search_field" value="{{ request('search_field') }}">
+                            <input type="hidden" name="search_value" value="{{ request('search_value') }}">
+                        @endif
+                        <button type="submit" 
+                                class="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold shadow-sm transition {{ $showDeleted ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50' }}">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/>
+                            </svg>
+                            {{ $showDeleted ? __('Hide Archived') : __('Show Archived') }}
+                        </button>
+                    </form>
+                </div>
             </section>
 
             <section class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
@@ -113,6 +154,17 @@
                         $isPaid = $job->invoice_paid >= 1;
                         $pillClasses = $isPaid ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700';
                         $pillText = $isPaid ? __('Paid') : __('Unpaid');
+                        
+                        // Job status
+                        $jobStatus = $job->status;
+                        $statusBadges = [
+                            'ACTIVE' => ['class' => 'bg-blue-100 text-blue-700', 'text' => __('Active')],
+                            'CANCELLED' => ['class' => 'bg-red-100 text-red-700', 'text' => __('Cancelled')],
+                            'CANCELLED_NO_GO' => ['class' => 'bg-amber-100 text-amber-700', 'text' => __('Cancelled (No-Go)')],
+                            'COMPLETED' => ['class' => 'bg-emerald-100 text-emerald-700', 'text' => __('Completed')],
+                        ];
+                        $statusBadge = $statusBadges[$jobStatus] ?? ['class' => 'bg-slate-100 text-slate-700', 'text' => __('Unknown')];
+                        
                         $jobSummary = collect([
                             $job->customer?->name,
                             $job->load_no ? __('Load #:number', ['number' => $job->load_no]) : null,
@@ -126,7 +178,10 @@
                                     <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Job') }}</p>
                                     <p class="text-lg font-bold text-slate-900">{{ $job->job_no }}</p>
                                 </div>
-                                <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $pillClasses }}">{{ $pillText }}</span>
+                                <div class="flex flex-col items-end gap-2">
+                                    <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $pillClasses }}">{{ $pillText }}</span>
+                                    <span class="rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide {{ $statusBadge['class'] }}">{{ $statusBadge['text'] }}</span>
+                                </div>
                             </div>
                             @if($job->customer)
                                 <p class="mt-2 text-sm text-slate-500">
@@ -148,6 +203,17 @@
                             <p><span class="font-semibold text-slate-900">{{ __('Rate Value') }}:</span>
                                 {{ $job->rate_value !== null ? '$'.number_format((float) $job->rate_value, 2) : '—' }}
                             </p>
+                            @php
+                                $miles = $job->miles;
+                            @endphp
+                            @if($miles && ($miles->total > 0 || $miles->billable > 0))
+                                <p><span class="font-semibold text-slate-900">{{ __('Miles') }}:</span> 
+                                    <span class="text-slate-600">{{ number_format($miles->billable ?? 0, 1) }} {{ __('billable') }}</span>
+                                    @if($miles->total > 0)
+                                        <span class="text-slate-400">/ {{ number_format($miles->total, 1) }} {{ __('total') }}</span>
+                                    @endif
+                                </p>
+                            @endif
                             @if($job->canceled_at)
                                 <p class="text-sm font-semibold text-rose-600">{{ __('Canceled At') }}: <span class="font-normal text-slate-700">{{ $job->canceled_at }}</span></p>
                             @endif
@@ -164,26 +230,42 @@
                         </div>
                         <div class="border-t border-slate-100 bg-slate-50 px-5 py-4">
                             <div class="flex flex-wrap justify-end gap-2">
-                                <a href="{{ $showRoute }}" class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-600 transition hover:border-orange-300 hover:text-orange-600">
-                                    {{ __('Show') }}
-                                </a>
-                                @can('update', $job)
-                                    <a href="{{ $editRoute }}" class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-600 transition hover:border-orange-300 hover:text-orange-600">
-                                        {{ __('Edit') }}
+                                @if($job->trashed())
+                                    <span class="inline-flex items-center gap-2 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-[11px] font-semibold text-red-700">
+                                        {{ __('Archived') }}
+                                    </span>
+                                    @can('restore', $job)
+                                        <livewire:restore-button
+                                            :action-url="route('my.jobs.restore', $job->id)"
+                                            button-text="{{ __('Restore') }}"
+                                            :model-class="\App\Models\PilotCarJob::class"
+                                            :record-id="$job->id"
+                                            resource="jobs"
+                                            :redirect-route="$redirect_to_root ? 'jobs.index' : 'my.jobs.index'"
+                                        />
+                                    @endcan
+                                @else
+                                    <a href="{{ $showRoute }}" class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-600 transition hover:border-orange-300 hover:text-orange-600">
+                                        {{ __('Show') }}
                                     </a>
-                                @endcan
-                                @can('delete', $job)
-                            <livewire:delete-confirmation-button
-                                        :action-url="$destroyRoute"
-                                        button-text="{{ __('Delete') }}"
-                                        :model-class="\App\Models\PilotCarJob::class"
-                                        :record-id="$job->id"
-                                        resource="jobs"
-                                        :redirect-route="$redirect_to_root ? 'jobs.index' : 'my.jobs.index'"
-                                    />
-                                @endcan
-                    </div>
-                </div>
+                                    @can('update', $job)
+                                        <a href="{{ $editRoute }}" class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-600 transition hover:border-orange-300 hover:text-orange-600">
+                                            {{ __('Edit') }}
+                                        </a>
+                                    @endcan
+                                    @can('delete', $job)
+                                        <livewire:delete-confirmation-button
+                                            :action-url="$destroyRoute"
+                                            button-text="{{ __('Delete') }}"
+                                            :model-class="\App\Models\PilotCarJob::class"
+                                            :record-id="$job->id"
+                                            resource="jobs"
+                                            :redirect-route="$redirect_to_root ? 'jobs.index' : 'my.jobs.index'"
+                                        />
+                                    @endcan
+                                @endif
+                            </div>
+                        </div>
                     </article>
             @endforeach
             </section>

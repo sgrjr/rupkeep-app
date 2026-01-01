@@ -45,7 +45,7 @@
                 @csrf
                 <x-input id="email" class="block w-full text-black" type="email" name="email" :value="old('email')" required autofocus autocomplete="username" aria-placeholder="email" placeholder="email"/>
                 <x-input id="password" class="block mb-2 mt-2 md:mb-0 md:mt-0 w-full md:ml-2 text-black" type="password" name="password" required autocomplete="current-password" aria-placeholder="password" placeholder="password"/>
-                <button class="block md:ml-4 text-center align-right flex-end float-right text-black">
+                <button class="block md:ml-4 text-center align-right flex-end float-right text-white border border-white hover:border-gray-400 hover:text-gray-400">
                     {{ __('Log in') }}
                 </button>
                 </div>

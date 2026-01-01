@@ -35,10 +35,22 @@ class Dashboard extends Component
        $cards = [];
         //dd(PilotCarJob::all());
        if(auth()->user()->can('viewAny', new Organization)){
-        $cards[] = (Object)['title'=>'Organizations', 'count'=> Organization::count(), 'links'=> [
+        $links = [
              ['url'=> route('organizations.index'), 'title'=>'View All'],
              ['url'=> route('organizations.create'), 'title'=>'+Create New'],
-         ]];
+         ];
+        if(auth()->user()->is_super){
+            $links[] = ['url'=> route('organizations.onboard'), 'title'=>'Onboard New'];
+        }
+        $cards[] = (Object)['title'=>'Organizations', 'count'=> Organization::count(), 'links'=> $links];
+       }
+
+       // Experience Tracker for super users
+       if(Auth::user()->is_super){
+           $errorCount = \App\Models\UserEvent::errors()->whereDate('created_at', '>=', now()->subDays(7))->count();
+           $cards[] = (Object)['title'=>'Experience Tracker', 'count'=> $errorCount, 'links'=> [
+               ['url'=> route('user-events.index'), 'title'=>'View Events'],
+           ]];
        }
 
        if(auth()->user()->can('createJob', $organization)){
@@ -82,7 +94,59 @@ class Dashboard extends Component
             $jobs = false;
         }
 
-        return view('livewire.dashboard', compact('organization', 'organizations','cards','jobs'));
+        // Manager dashboard stats
+        $managerStats = null;
+        $recentJobs = null;
+        $jobsMarkedForAttention = null;
+        if(auth()->user()->can('createJob', $organization)){
+            $allJobs = $organization->jobs()->with(['customer', 'invoices'])->get();
+            
+            // Calculate job statuses
+            $activeJobs = $allJobs->filter(fn($job) => $job->status === 'ACTIVE');
+            $cancelledJobs = $allJobs->filter(fn($job) => in_array($job->status, ['CANCELLED', 'CANCELLED_NO_GO']));
+            $completedJobs = $allJobs->filter(fn($job) => $job->status === 'COMPLETED');
+            
+            // Calculate invoice stats
+            $allInvoices = \App\Models\Invoice::where('organization_id', $organization->id)->get();
+            $unpaidInvoices = $allInvoices->filter(fn($inv) => !$inv->paid_in_full);
+            $totalRevenue = $allInvoices->sum(fn($inv) => (float)($inv->values['total'] ?? 0));
+            $unpaidAmount = $unpaidInvoices->sum(fn($inv) => (float)($inv->values['total'] ?? 0));
+            
+            $managerStats = (object)[
+                'total_jobs' => $allJobs->count(),
+                'active_jobs' => $activeJobs->count(),
+                'cancelled_jobs' => $cancelledJobs->count(),
+                'completed_jobs' => $completedJobs->count(),
+                'total_invoices' => $allInvoices->count(),
+                'unpaid_invoices' => $unpaidInvoices->count(),
+                'total_revenue' => $totalRevenue,
+                'unpaid_amount' => $unpaidAmount,
+            ];
+            
+            // Get jobs with invoices marked for attention
+            // Check both direct pilot_car_job_id and via jobs_invoices pivot table
+            $invoicesMarkedForAttention = \App\Models\Invoice::where('organization_id', $organization->id)
+                ->where('marked_for_attention', true)
+                ->get();
+            
+            $jobIdsFromDirect = $invoicesMarkedForAttention->pluck('pilot_car_job_id')->filter()->unique();
+            $jobIdsFromPivot = \App\Models\JobInvoice::whereIn('invoice_id', $invoicesMarkedForAttention->pluck('id'))
+                ->pluck('pilot_car_job_id')
+                ->unique();
+            
+            $allJobIdsMarked = $jobIdsFromDirect->merge($jobIdsFromPivot)->unique();
+            
+            $jobsMarkedForAttention = $organization->jobs()
+                ->with(['customer', 'invoices'])
+                ->whereIn('id', $allJobIdsMarked)
+                ->orderByDesc('scheduled_pickup_at')
+                ->get();
+            
+            // Get recent jobs (last 10)
+            $recentJobs = $allJobs->sortByDesc('created_at')->take(10);
+        }
+
+        return view('livewire.dashboard', compact('organization', 'organizations','cards','jobs', 'managerStats', 'recentJobs', 'jobsMarkedForAttention'));
     }
 
     public function uploadFile()

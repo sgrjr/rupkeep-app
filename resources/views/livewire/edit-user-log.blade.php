@@ -200,8 +200,52 @@
                             @error('form.total_miles') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                         </div>
                         <div>
-                            <label for="billable_miles" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Billable Miles Override') }}</label>
-                            <input type="number" id="billable_miles" wire:model.blur="form.billable_miles" class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                            <label for="billable_miles" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Billable Miles') }}</label>
+                            <div class="mt-2 space-y-2">
+                                @php
+                                    $calculatedBillable = $calculatedBillableMiles ?? ($log->total_billable_miles ?? 0);
+                                    $overrideValue = $form->billable_miles ?? $log->billable_miles;
+                                    $hasOverride = $overrideValue !== null && $overrideValue !== '' && (float)$overrideValue != (float)$calculatedBillable;
+                                    $overrideDiff = $hasOverride ? ((float)$overrideValue - (float)$calculatedBillable) : 0;
+                                @endphp
+                                
+                                <div class="grid gap-2 sm:grid-cols-2">
+                                    <div class="rounded-lg border {{ $hasOverride ? 'border-amber-200 bg-amber-50' : 'border-slate-200 bg-slate-50' }} px-3 py-2 text-xs">
+                                        <p class="font-semibold {{ $hasOverride ? 'text-amber-700' : 'text-slate-700' }}">
+                                            {{ $hasOverride ? __('Manual Override') : __('Calculated Value') }}
+                                        </p>
+                                        <p class="{{ $hasOverride ? 'text-amber-600' : 'text-slate-600' }}">
+                                            {{ number_format($calculatedBillable, 1) }} {{ __('miles') }}
+                                        </p>
+                                    </div>
+                                    @if($hasOverride)
+                                        <div class="rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-xs">
+                                            <p class="font-semibold text-orange-700">{{ __('Override Value') }}</p>
+                                            <p class="text-orange-600">
+                                                {{ number_format((float)$overrideValue, 1) }} {{ __('miles') }}
+                                                @if($overrideDiff != 0)
+                                                    <span class="ml-1 {{ $overrideDiff > 0 ? 'text-red-600' : 'text-emerald-600' }}">
+                                                        ({{ $overrideDiff > 0 ? '+' : '' }}{{ number_format($overrideDiff, 1) }})
+                                                    </span>
+                                                @endif
+                                            </p>
+                                        </div>
+                                    @endif
+                                </div>
+                                
+                                <div class="flex gap-2">
+                                    <input type="number" id="billable_miles" wire:model.blur="form.billable_miles" step="0.1" min="0" placeholder="{{ __('Leave blank for calculated value') }}" class="flex-1 rounded-xl border {{ $hasOverride ? 'border-orange-300' : 'border-slate-200' }} px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                    @if($hasOverride)
+                                        <button type="button" wire:click="$set('form.billable_miles', null)" class="inline-flex items-center gap-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:border-slate-400 hover:bg-slate-50" title="{{ __('Clear override and use calculated value') }}">
+                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                            {{ __('Clear') }}
+                                        </button>
+                                    @endif
+                                </div>
+                            </div>
+                            <p class="mt-1 text-xs text-slate-400">
+                                {{ $hasOverride ? __('Override is active. Click "Clear" to use the calculated value.') : __('Enter a value to manually override the calculated billable miles.') }}
+                            </p>
                             @error('form.billable_miles') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                         </div>
                         <div>
@@ -267,8 +311,9 @@
                             @error('form.truck_number') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                         </div>
                         <div class="md:col-span-2">
-                            <label for="memo" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Job Memo / Notes') }}</label>
+                            <label for="memo" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Log Memo (Internal)') }}</label>
                             <textarea id="memo" wire:model.blur="form.memo" rows="4" class="mt-2 block w-full rounded-2xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"></textarea>
+                            <p class="mt-1 text-xs text-slate-400">{{ __('This memo is internal and private. It will NOT be displayed on invoices. Only organization users can view this. To add notes that appear on invoices, use the job-level public memo field.') }}</p>
                             @error('form.memo') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                         </div>
                     </div>
@@ -282,24 +327,44 @@
                         <svg class="h-4 w-4 transition group-open:rotate-180" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>
                     </summary>
                     <div class="space-y-4">
-                        <div class="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                            <input type="file" wire:model="file" class="grow rounded-xl border border-dashed border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none" />
-                            <x-button type="button" wire:click="uploadFile" wire:loading.attr="disabled" class="w-full justify-center sm:w-auto">
-                                <span wire:loading wire:target="uploadFile" class="h-4 w-4 animate-spin border-2 border-white/80 border-t-transparent rounded-full"></span>
-                                {{ __('Upload Attachment') }}
-                            </x-button>
-                            <x-action-message class="text-xs font-semibold text-emerald-600" on="uploaded">
-                                {{ __('File Uploaded.') }}
-                            </x-action-message>
-                            @error('file') <p class="text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
+                        <div class="space-y-3">
+                            <div class="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                <input type="file" wire:model="file" class="grow rounded-xl border border-dashed border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none" />
+                                <x-button type="button" wire:click="uploadFile" wire:loading.attr="disabled" class="w-full justify-center sm:w-auto">
+                                    <span wire:loading wire:target="uploadFile" class="h-4 w-4 animate-spin border-2 border-white/80 border-t-transparent rounded-full"></span>
+                                    {{ __('Upload Attachment') }}
+                                </x-button>
+                                <x-action-message class="text-xs font-semibold text-emerald-600" on="uploaded">
+                                    {{ __('File Uploaded.') }}
+                                </x-action-message>
+                                @error('file') <p class="text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
+                            </div>
+                            <div class="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2">
+                                <input type="checkbox" id="isPublicUpload" wire:model="isPublicUpload" 
+                                       class="h-4 w-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500" />
+                                <label for="isPublicUpload" class="flex-1 cursor-pointer text-xs text-slate-700">
+                                    <span class="font-semibold">{{ __('Make visible to customer') }}</span>
+                                    <p class="mt-0.5 text-[10px] text-slate-500">{{ __('This file will be visible in the customer portal') }}</p>
+                                </label>
+                            </div>
                         </div>
                         <div class="space-y-3">
                             @forelse($log->attachments as $att)
-                                <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+                                <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border px-4 py-3 shadow-sm {{ $att->is_public ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-200 bg-white' }}">
                                     <div class="min-w-0 flex-1">
-                                        <a class="text-sm font-semibold text-orange-600 hover:text-orange-700" href="{{route('attachments.download', ['attachment'=>$att->id])}}">
-                                            {{ $att->file_name }}
-                                        </a>
+                                        <div class="flex items-center gap-2">
+                                            <a class="text-sm font-semibold text-orange-600 hover:text-orange-700" href="{{route('attachments.download', ['attachment'=>$att->id])}}">
+                                                {{ $att->file_name }}
+                                            </a>
+                                            @if($att->is_public)
+                                                <span class="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                                                    <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/>
+                                                    </svg>
+                                                    {{ __('Public') }}
+                                                </span>
+                                            @endif
+                                        </div>
                                         <p class="text-xs text-slate-500">{{ $att->created_at->diffForHumans() }}</p>
                                     </div>
                                     <div class="flex flex-wrap items-center gap-2">
@@ -308,6 +373,8 @@
                                         @else
                                             @if($att->is_public)
                                                 <span class="text-xs font-semibold text-emerald-600">{{ __('Visible to customer') }}</span>
+                                            @else
+                                                <span class="text-xs font-semibold text-slate-500">{{ __('Staff only') }}</span>
                                             @endif
                                         @endcan
                                         <livewire:delete-confirmation-button

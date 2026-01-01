@@ -7,6 +7,9 @@ use Livewire\Form;
 use Livewire\Attributes\Validate;
 use App\Models\Customer;
 use App\Models\PilotCarJob;
+use App\Models\User;
+use App\Models\CustomerContact;
+use Illuminate\Support\Facades\Auth;
 
 class EditJobForm extends Form
 {
@@ -51,6 +54,15 @@ class EditJobForm extends Form
     #[Validate('nullable|string|min:3')]
     public $memo = null;
 
+    #[Validate('nullable|string|max:1000')]
+    public $public_memo = null;
+
+    #[Validate('nullable|exists:users,id')]
+    public $default_driver_id = null;
+
+    #[Validate('nullable|exists:customer_contacts,id')]
+    public $default_truck_driver_id = null;
+
 }
 
 class EditPilotCarJob extends Component
@@ -62,29 +74,56 @@ class EditPilotCarJob extends Component
 
     public $rates = [];
 
+    public $drivers = [];
+
+    public $truckDrivers = [];
+
     public $job;
 
     public function mount(Int $job){
-       $this->customers = auth()->user()->organization->customers;
-       $this->rates = PilotCarJob::rates();
-       $job = PilotCarJob::find($job);
+       $user = Auth::user();
+       $this->customers = $user->organization->customers;
+       $this->rates = PilotCarJob::rates($user->organization_id);
+       
+       // Load drivers
+       $this->drivers = [
+           ['name' => '(none selected)', 'value' => null]
+       ];
+       User::where('organization_id', $user->organization_id)
+           ->get()
+           ->each(fn($user) => $this->drivers[] = ['name' => $user->name, 'value' => $user->id]);
+       
+       $jobModel = PilotCarJob::find($job);
 
-        if($this->authorize('update', $job)){
-            $this->job = $job;
-            $this->form->job_no = $job->job_no;
-            $this->form->customer_id = $job->customer_id;
+        if($this->authorize('update', $jobModel)){
+            $this->job = $jobModel;
+            $this->form->job_no = $jobModel->job_no;
+            $this->form->customer_id = $jobModel->customer_id;
             $this->form->new_customer_name = null;
-            $this->form->scheduled_pickup_at = $job->scheduled_pickup_at;
-            $this->form->scheduled_delivery_at = $job->scheduled_delivery_at;
-            $this->form->load_no = $job->load_no;
-            $this->form->pickup_address = $job->pickup_address;
-            $this->form->delivery_address = $job->delivery_address;
-            $this->form->check_no = $job->check_no;
-            $this->form->invoice_paid = $job->invoice_paid;
-            $this->form->invoice_no = $job->invoice_no;
-            $this->form->rate_code = $job->rate_code;
-            $this->form->rate_value = $job->rate_value ?? PilotCarJob::defaultRateValue($job->rate_code);
-            $this->form->memo = $job->memo;
+            $this->form->scheduled_pickup_at = $jobModel->scheduled_pickup_at;
+            $this->form->scheduled_delivery_at = $jobModel->scheduled_delivery_at;
+            $this->form->load_no = $jobModel->load_no;
+            $this->form->pickup_address = $jobModel->pickup_address;
+            $this->form->delivery_address = $jobModel->delivery_address;
+            $this->form->check_no = $jobModel->check_no;
+            $this->form->invoice_paid = $jobModel->invoice_paid;
+            $this->form->invoice_no = $jobModel->invoice_no;
+            $this->form->rate_code = $jobModel->rate_code;
+            $this->form->rate_value = $jobModel->rate_value ?? PilotCarJob::defaultRateValue($jobModel->rate_code, $user->organization_id);
+            $this->form->memo = $jobModel->memo;
+            $this->form->public_memo = $jobModel->public_memo;
+            $this->form->default_driver_id = $jobModel->default_driver_id;
+            $this->form->default_truck_driver_id = $jobModel->default_truck_driver_id;
+            
+            // Load truck drivers for this customer
+            if ($jobModel->customer_id) {
+                $this->truckDrivers = [
+                    ['name' => '(none selected)', 'value' => null]
+                ];
+                CustomerContact::where('customer_id', $jobModel->customer_id)
+                    ->get()
+                    ->each(fn($contact) => $this->truckDrivers[] = ['name' => $contact->name, 'value' => $contact->id]);
+            }
         }
     }
 
@@ -97,7 +136,12 @@ class EditPilotCarJob extends Component
         $this->form->validate();
 
         $form = $this->form->all();
-        $form['rate_value'] = $this->sanitizeRateValue($this->form->rate_value, $this->form->rate_code);
+        
+        // Ensure rate_code is explicitly set
+        $form['rate_code'] = $this->form->rate_code ?? $this->job->rate_code ?? 'per_mile_rate_2_00';
+        
+        // Sanitize and set rate_value explicitly
+        $form['rate_value'] = $this->sanitizeRateValue($this->form->rate_value, $form['rate_code']);
 
         $this->job->update($form);
         $this->dispatch('saved');
@@ -107,6 +151,7 @@ class EditPilotCarJob extends Component
     protected function sanitizeRateValue($rawValue, ?string $rateCode): ?string
     {
         $value = null;
+        $user = Auth::user();
 
         if ($rawValue !== null && $rawValue !== '') {
             $normalized = preg_replace('/[^0-9\.\-]/', '', (string) $rawValue);
@@ -117,7 +162,7 @@ class EditPilotCarJob extends Component
         }
 
         if ($value === null) {
-            $value = PilotCarJob::defaultRateValue($rateCode);
+            $value = PilotCarJob::defaultRateValue($rateCode, $user->organization_id);
         }
 
         return $value;
@@ -125,7 +170,8 @@ class EditPilotCarJob extends Component
 
     public function updatedFormRateCode($value): void
     {
-        $default = PilotCarJob::defaultRateValue($value);
+        $user = Auth::user();
+        $default = PilotCarJob::defaultRateValue($value, $user->organization_id);
 
         if ($default !== null) {
             $this->form->rate_value = $default;

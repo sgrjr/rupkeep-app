@@ -14,26 +14,23 @@
         <div class="absolute inset-0 bg-gradient-to-r from-orange-600 via-orange-500 to-orange-400"></div>
         <div class="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_top,_white,_transparent_55%)]"></div>
         <div class="relative">
-            <div class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-                <div class="flex flex-1 items-center gap-6">
-                    <a href="{{ route('dashboard') }}" class="flex items-center gap-3 rounded-full bg-white/10 px-3 py-1.5 backdrop-blur transition hover:bg-white/20">
-                        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-white text-orange-600 shadow-md">
+            <div class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-2 px-4 sm:px-6 lg:px-8">
+                <div class="flex flex-1 items-center gap-3 min-w-0">
+                    <a href="{{ route('dashboard') }}" class="flex items-center gap-2 sm:gap-3 rounded-xl border border-white/30 bg-white/20 backdrop-blur-sm px-2 sm:px-3 py-1.5 sm:py-2 shadow-md transition hover:bg-white/30 hover:shadow-lg hover:scale-[1.02] shrink-0">
+                        <div class="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg bg-orange-500 text-white shadow-md ring-2 ring-white/50">
                             @if(Auth::user()->organization?->logo)
-                                <img src="{{ Auth::user()->organization->logo }}" alt="{{ Auth::user()->organization->name }} Logo" class="h-8 w-8 object-contain">
+                                <img src="{{ Auth::user()->organization->logo }}" alt="{{ Auth::user()->organization->name }} Logo" class="h-6 w-6 sm:h-7 sm:w-7 object-contain">
                             @else
-                                <span class="text-lg font-bold">RP</span>
+                                <span class="text-xs sm:text-sm font-bold">RP</span>
                             @endif
                         </div>
-                        <div class="hidden sm:block">
-                            <p class="text-xs uppercase tracking-widest text-white/70">Rupkeep</p>
-                            <p class="text-sm font-semibold">{{ Auth::user()->organization->name }}</p>
+                        <div class="hidden sm:block min-w-0">
+                            <p class="text-[10px] uppercase tracking-widest text-white/70">Rupkeep</p>
+                            <p class="truncate text-sm font-semibold text-white max-w-[140px] lg:max-w-none">{{ Auth::user()->organization->name }}</p>
                         </div>
                     </a>
 
                     <div class="hidden lg:flex items-center gap-2">
-                        <x-nav-link href="{{ route('dashboard') }}" :active="request()->routeIs('dashboard')">
-                            {{ __('Dashboard') }}
-                        </x-nav-link>
 
                         @if(auth()->user()->can('createJob', auth()->user()->organization))
                             <x-dropdown :active="request()->routeIs('my.jobs.*')" dropdownClasses="bg-white/95 text-slate-700 ring-1 ring-slate-900/10 shadow-xl" contentClasses="py-2 space-y-1">
@@ -131,7 +128,13 @@
                             </x-dropdown>
                         @endif
 
-                        @can('viewAny', new \App\Models\Organization)
+                        @if(auth()->user()->can('createJob', auth()->user()->organization))
+                            <x-nav-link href="{{ route('my.pricing.index') }}" :active="request()->routeIs('my.pricing.*')">
+                                {{ __('Pricing') }}
+                            </x-nav-link>
+                        @endif
+
+                @can('viewAny', new \App\Models\Organization)
                             <x-dropdown :active="request()->routeIs('organizations.*')" dropdownClasses="bg-white/95 text-slate-700 ring-1 ring-slate-900/10 shadow-xl max-h-96 overflow-y-auto" contentClasses="py-2 space-y-1">
                                 <x-slot name="trigger">
                                     @php $organizationsActive = request()->routeIs('organizations.*'); @endphp
@@ -163,24 +166,16 @@
                     </div>
                 </div>
 
-                <div class="hidden sm:flex items-center gap-4">
-                    <div class="hidden sm:flex flex-col items-end text-xs text-white/80">
-                        <span class="uppercase tracking-widest">{{ __('Role') }}</span>
-                        <span class="font-semibold text-white">{{ Auth::user()->role_label }}</span>
-                    </div>
-
+                <div class="hidden lg:flex items-center gap-3 shrink-0">
                     <x-dropdown align="right" width="48" class="no-border" dropdownClasses="bg-white/95 text-slate-700 ring-1 ring-slate-900/10 shadow-xl" contentClasses="py-2 space-y-1">
                         <x-slot name="trigger">
-                            <button class="flex items-center gap-3 rounded-full border border-white/20 bg-white/10 px-2 py-1 pr-3 text-sm font-medium text-white/85 shadow-sm backdrop-blur transition hover:bg-white/20 focus:outline-none">
-                                <span class="relative inline-flex">
-                                    <span class="absolute inset-0 rounded-full bg-white/30 blur-sm"></span>
-                                    <img class="relative h-9 w-9 rounded-full object-cover ring-2 ring-white/40" src="{{ Auth::user()->profile_photo_url }}" alt="{{ Auth::user()->name }}" />
+                            <button class="flex items-center gap-2 rounded-xl border border-white/30 bg-white/20 backdrop-blur-sm px-2 py-1.5 shadow-md transition hover:bg-white/30 hover:shadow-lg hover:scale-[1.02] focus:outline-none shrink-0">
+                                <img class="h-8 w-8 shrink-0 rounded-lg object-cover ring-2 ring-white/50" src="{{ Auth::user()->profile_photo_url }}" alt="{{ Auth::user()->name }}" />
+                                <span class="hidden xl:inline-flex flex-col text-left leading-tight min-w-0">
+                                    <span class="text-[10px] text-white/70 truncate">{{ Auth::user()->role_label }}</span>
+                                    <span class="text-xs font-semibold text-white truncate max-w-[120px]">{{ Auth::user()->name }}</span>
                                 </span>
-                                <span class="hidden sm:inline-flex flex-col text-left leading-tight">
-                                    <span class="text-xs text-white/60">{{ __('Signed in as') }}</span>
-                                    <span class="text-sm font-semibold text-white">{{ Auth::user()->name }}</span>
-                                </span>
-                                <svg class="h-4 w-4 text-white/70" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <svg class="h-4 w-4 shrink-0 text-white/80" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
                                 </svg>
                             </button>
@@ -188,7 +183,7 @@
 
                         <x-slot name="content">
                             <div class="px-4 pb-2 pt-1 text-xs font-semibold uppercase tracking-widest text-orange-500">
-                                {{ Auth::user()->organization->name }} • {{ Auth::user()->role_label }}
+                                {{ Auth::user()->organization->name }}
                             </div>
 
                             <x-dropdown-link href="{{ route('my.profile') }}">
@@ -201,7 +196,9 @@
                                 </x-dropdown-link>
                             @endif
 
-                            <div class="border-t border-slate-100"></div>
+                            <x-dropdown-link href="{{ route('feedback.index') }}">
+                                {{ __('Send Feedback') }}
+                            </x-dropdown-link>
 
                             <form method="POST" action="{{ route('logout') }}" x-data>
                                 @csrf
@@ -229,11 +226,11 @@
                     </x-dropdown>
                 </div>
 
-                <div class="flex items-center lg:hidden">
-                    <button @click="open = ! open" class="inline-flex items-center justify-center rounded-full border border-white/30 bg-white/10 p-2 text-white/80 shadow-sm backdrop-blur transition hover:bg-white/20 focus:outline-none">
-                        <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                            <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                            <path :class="{'hidden': ! open, 'inline-flex': open }" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                <div class="flex items-center lg:hidden shrink-0">
+                    <button @click="open = ! open" type="button" class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border-2 border-white/40 bg-white/20 backdrop-blur-sm shadow-md transition-all hover:bg-white/30 hover:border-white/60 hover:shadow-lg active:scale-95 focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-1">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="#f9b104">
+                            <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                            <path :class="{'hidden': ! open, 'inline-flex': open }" class="hidden" stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
                 </div>
@@ -247,6 +244,12 @@
                 <x-responsive-nav-link href="{{ route('dashboard') }}" :active="request()->routeIs('dashboard')">
                     {{ __('Dashboard') }}
                 </x-responsive-nav-link>
+
+                @if(auth()->user()->can('createJob', auth()->user()->organization))
+                    <x-responsive-nav-link href="{{ route('my.pricing.index') }}" :active="request()->routeIs('my.pricing.*')">
+                        {{ __('Pricing') }}
+                    </x-responsive-nav-link>
+                @endif
 
                 @if(auth()->user()->can('createJob', auth()->user()->organization))
                     <x-responsive-nav-link href="{{ route('my.jobs.index') }}" :active="request()->routeIs('my.jobs.*')">
@@ -285,10 +288,10 @@
                 @endif
 
                 @if(auth()->user()->can('createOrganization', auth()->user()->organization))
-                    <x-responsive-nav-link href="{{ route('my.organizations.index') }}" :active="request()->routeIs('my.organizations.*')">
+                    <x-responsive-nav-link href="{{ route('organizations.index') }}" :active="request()->routeIs('organizations.*')">
                         {{ __('Organizations') }}
                     </x-responsive-nav-link>
-                    <x-responsive-nav-link href="{{ route('my.organizations.create') }}">
+                    <x-responsive-nav-link href="{{ route('organizations.create') }}">
                         {{ __('Create Organization') }}
                     </x-responsive-nav-link>
                 @endif
@@ -313,6 +316,10 @@
                             {{ __('API Tokens') }}
                         </x-responsive-nav-link>
                     @endif
+
+                    <x-responsive-nav-link href="{{ route('feedback.index') }}" :active="request()->routeIs('feedback.index')">
+                        {{ __('Send Feedback') }}
+                    </x-responsive-nav-link>
 
                     <form method="POST" action="{{ route('logout') }}" x-data>
                         @csrf

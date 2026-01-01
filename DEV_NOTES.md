@@ -33,3 +33,14 @@
   git clean -fd    # optional: removes untracked files/dirs
   ```
   *Alternatively set a pull strategy, e.g. `git config pull.rebase false`, before running `git pull` if you prefer merges.*
+
+## Deployment - In-App Git Update (Super User)
+
+- Super users can pull latest code from the Dashboard via “Pull Latest Code”.
+- This runs the following commands in project root:
+  - `git fetch origin`
+  - `git reset --hard origin/master`
+  - `git clean -fd`
+- Output is displayed inline after execution. Any failure stops the sequence.
+
+Security: Endpoint is protected by auth and `is_super` check on the server.

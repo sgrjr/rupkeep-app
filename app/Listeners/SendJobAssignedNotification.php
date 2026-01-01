@@ -44,8 +44,12 @@ class SendJobAssignedNotification implements ShouldQueue
 
         $subject = sprintf('Job Assigned: %s', $job->job_no ?? ('Job '.$job->id));
 
+        // Use standard Laravel Mail facade (respects mail configuration)
         Mail::to($recipient)->send(
-            new UserNotification($message, $subject)
+            new UserNotification($message, $subject, 'mail.job-assigned', [
+                'job' => $job,
+                'driver' => $driver,
+            ])
         );
     }
 

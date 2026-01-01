@@ -15,14 +15,18 @@ class UserNotification extends Mailable
 
     public $subject;
     private $message;
+    private $view;
+    private $viewData;
 
     /**
      * Create a new message instance.
      */
-    public function __construct($message, $subject = 'User Notification')
+    public function __construct($message, $subject = 'User Notification', $view = 'mail.notification-text', $viewData = [])
     {
         $this->subject = $subject;
         $this->message = $message;
+        $this->view = $view;
+        $this->viewData = $viewData;
     }
 
     /**
@@ -40,11 +44,15 @@ class UserNotification extends Mailable
      */
     public function content(): Content
     {
+        $with = array_merge([
+            'message_body' => $this->message,
+            'subject' => $this->subject,
+        ], $this->viewData);
+
         return new Content(
+            view: $this->view,
             text: 'mail.notification-text',
-            with: [
-                'message_body' => $this->message,
-            ],
+            with: $with,
         );
     }
 

@@ -85,8 +85,22 @@
         </div>
         
         <div class="col-span-6 sm:col-span-4">
-            <x-label for="notification_address" value="{{ __('Notification Address (Email or Telephone #)') }}" />
-            <x-input id="notification_address" class="mt-1 block w-full" wire:model="state.notification_address" autocomplete="string" />
+            <x-label for="notification_address" value="{{ __('Notification Address') }}" />
+            <x-input id="notification_address" class="mt-1 block w-full" wire:model="state.notification_address" autocomplete="string" placeholder="email@example.com or 2074168659@mms.uscc.net" />
+            <div class="mt-1 text-xs text-gray-500">
+                <p class="mb-2">{{ __('For SMS notifications, use format: phone@gateway. Leave blank to use your email address.') }}</p>
+                <details class="mt-2">
+                    <summary class="cursor-pointer text-blue-600 hover:text-blue-800 underline">{{ __('View supported MMS gateway formats') }}</summary>
+                    <div class="mt-2 pl-4 space-y-1 text-xs">
+                        @php
+                            $examplePhone = '2074168659';
+                        @endphp
+                        @foreach($smsGateways as $key => $provider)
+                            <p>{{ $provider['name'] }} (MMS) <code class="bg-gray-100 px-1 rounded">{{ $examplePhone }}{{ $provider['mms'] }}</code></p>
+                        @endforeach
+                    </div>
+                </details>
+            </div>
             <x-input-error for="notification_address" class="mt-2" />
         </div>
 

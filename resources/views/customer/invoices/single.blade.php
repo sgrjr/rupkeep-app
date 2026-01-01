@@ -48,8 +48,14 @@
                 </div>
             @endif
 
+            <div class="invoice-comments-section" style="margin-top: 3rem; padding: 2rem; background: #f9fafb; border-radius: 12px;">
+                <h2 style="margin: 0 0 1rem 0; font-size: 1.25rem; font-weight: 700; color: #111827;">{{ __('Comments & Questions') }}</h2>
+                <p style="margin: 0 0 1.5rem 0; color: #6b7280; font-size: 0.875rem;">{{ __('Add a comment or flag this invoice for attention if you need clarification or changes.') }}</p>
+                <livewire:invoice-comments :invoice="$invoice" :key="'customer-invoice-comments-' . $invoice->id" />
+            </div>
+
             <div class="invoice-support-message">
-                <p>{{ __('Need clarification or an updated invoice? Reply to the email that delivered this invoice or contact your Casco Bay Pilot Car coordinator.') }}</p>
+                <p>{{ __('Need clarification or an updated invoice? Add a comment above or contact your Casco Bay Pilot Car coordinator.') }}</p>
             </div>
 
             <div class="invoice-portal-footer">

@@ -4,16 +4,17 @@ namespace App\Livewire;
 
 use Livewire\Component;
 use App\Models\Organization;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class OrganizationsIndex extends Component
 {
+    use AuthorizesRequests;
 
     public $organizations;
 
     public function mount(){
-        if($this->authorize('viewAny', Organization::class)){
-            $this->organizations = Organization::all();
-        }
+        $this->authorize('viewAny', Organization::class);
+        $this->organizations = Organization::all();
     }
     public function render()
     {

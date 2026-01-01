@@ -41,6 +41,41 @@ class MyInvoicesController extends Controller
         ]);
     }
 
+    public function pdf(Request $request, Invoice $invoice)
+    {
+        // Check if PDF downloads are enabled
+        if (!config('features.invoice_pdf_downloads', false)) {
+            abort(404, 'PDF downloads are not currently available.');
+        }
+
+        $user = $request->user();
+
+        if (! $user->is_super && ! $user->isAdmin() && ! $user->isManager()) {
+            abort(403);
+        }
+
+        $this->authorize('view', $invoice);
+
+        // Load relationships needed for PDF
+        $invoice->loadMissing(['customer', 'organization', 'job', 'children']);
+
+        $values = is_array($invoice->values) ? $invoice->values : [];
+
+        // Use the existing print template which handles both single and summary invoices
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('invoices.print', [
+            'invoice' => $invoice,
+            'values' => $values,
+        ]);
+
+        // Set paper size and orientation
+        $pdf->setPaper('letter', 'portrait');
+
+        $invoiceType = $invoice->isSummary() ? 'Summary' : 'Invoice';
+        $filename = $invoiceType . '-' . $invoice->invoice_number . '.pdf';
+
+        return $pdf->download($filename);
+    }
+
     public function update(Request $request, Invoice $invoice){
 
         $this->authorize('update', $invoice);
@@ -129,6 +164,63 @@ class MyInvoicesController extends Controller
         session()->flash('success', __('Invoice updated.'));
 
         return redirect()->route('my.invoices.edit', ['invoice' => $invoice->id]);
+    }
+
+    public function applyLateFees(Request $request, Invoice $invoice)
+    {
+        $this->authorize('update', $invoice);
+
+        if ($invoice->paid_in_full) {
+            session()->flash('error', __('Cannot apply late fees to a paid invoice.'));
+            return redirect()->route('my.invoices.edit', ['invoice' => $invoice->id]);
+        }
+
+        $lateFees = $invoice->calculateLateFees();
+
+        if (!$lateFees['is_past_due'] || $lateFees['late_fee_amount'] <= 0) {
+            session()->flash('info', __('This invoice is not past due. No late fees to apply.'));
+            return redirect()->route('my.invoices.edit', ['invoice' => $invoice->id]);
+        }
+
+        $values = $invoice->values ?? [];
+        
+        // Save late fee information to invoice values
+        $values['late_fees'] = [
+            'applied_at' => now()->toDateTimeString(),
+            'applied_by' => $request->user()->id,
+            'is_past_due' => $lateFees['is_past_due'],
+            'days_overdue' => $lateFees['days_overdue'],
+            'late_fee_periods' => $lateFees['late_fee_periods'],
+            'late_fee_amount' => $lateFees['late_fee_amount'],
+            'original_total' => (float) ($values['total'] ?? 0),
+            'total_with_late_fees' => $lateFees['total_with_late_fees'],
+        ];
+
+        // Update the total to include late fees
+        $values['total'] = $lateFees['total_with_late_fees'];
+        
+        $invoice->values = $values;
+        $invoice->save();
+
+        session()->flash('success', __('Late fees applied. Invoice total updated to $:amount.', [
+            'amount' => number_format($lateFees['total_with_late_fees'], 2)
+        ]));
+
+        return redirect()->route('my.invoices.edit', ['invoice' => $invoice->id]);
+    }
+
+    public function toggleMarkedForAttention(Request $request, Invoice $invoice)
+    {
+        $this->authorize('update', $invoice);
+
+        $invoice->marked_for_attention = !$invoice->marked_for_attention;
+        $invoice->save();
+        $invoice->refresh();
+
+        return response()->json([
+            'success' => true,
+            'marked_for_attention' => $invoice->marked_for_attention,
+        ]);
     }
 
     public function store(Request $request){
@@ -228,14 +320,24 @@ class MyInvoicesController extends Controller
             $total += $childTotal;
             $billableMiles += $childMiles;
 
+            // Generate description of work from pickup and delivery addresses
+            $pickupAddress = data_get($childValues, 'pickup_address');
+            $deliveryAddress = data_get($childValues, 'delivery_address');
+            $description = \App\Models\Invoice::generateDescriptionOfWork($pickupAddress, $deliveryAddress);
+
             $items[] = [
                 'invoice_id' => $child->id,
                 'invoice_number' => $child->invoice_number,
                 'title' => data_get($childValues, 'title', 'INVOICE'),
-                'job_no' => data_get($childValues, 'load_no'),
+                'job_no' => data_get($childValues, 'job_no') ?? data_get($childValues, 'load_no'),
+                'load_no' => data_get($childValues, 'load_no'),
+                'pickup_address' => $pickupAddress,
+                'delivery_address' => $deliveryAddress,
+                'description' => $description,
                 'total' => $childTotal,
                 'billable_miles' => $childMiles,
                 'rate_code' => data_get($childValues, 'effective_rate_code') ?? data_get($childValues, 'rate_code'),
+                'date_of_service' => $child->created_at?->format('Y-m-d'),
             ];
         }
 

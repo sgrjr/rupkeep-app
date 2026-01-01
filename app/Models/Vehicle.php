@@ -76,6 +76,88 @@ class Vehicle extends Model
         return (bool) $this->current_user_id;
     }
 
+    /**
+     * Check if oil change is overdue
+     */
+    public function isOilChangeOverdue(): bool
+    {
+        if (!$this->next_oil_change_due_at) {
+            return false;
+        }
+        return $this->next_oil_change_due_at->isPast();
+    }
+
+    /**
+     * Check if oil change is due soon (within 7 days)
+     */
+    public function isOilChangeDueSoon(): bool
+    {
+        if (!$this->next_oil_change_due_at) {
+            return false;
+        }
+        return $this->next_oil_change_due_at->isFuture() && 
+               $this->next_oil_change_due_at->lte(now()->addDays(7));
+    }
+
+    /**
+     * Check if inspection is overdue
+     */
+    public function isInspectionOverdue(): bool
+    {
+        if (!$this->next_inspection_due_at) {
+            return false;
+        }
+        return $this->next_inspection_due_at->isPast();
+    }
+
+    /**
+     * Check if inspection is due soon (within 7 days)
+     */
+    public function isInspectionDueSoon(): bool
+    {
+        if (!$this->next_inspection_due_at) {
+            return false;
+        }
+        return $this->next_inspection_due_at->isFuture() && 
+               $this->next_inspection_due_at->lte(now()->addDays(7));
+    }
+
+    /**
+     * Get maintenance status for oil change
+     * Returns: 'overdue', 'due_soon', 'ok', or 'not_set'
+     */
+    public function getOilChangeStatus(): string
+    {
+        if (!$this->next_oil_change_due_at) {
+            return 'not_set';
+        }
+        if ($this->isOilChangeOverdue()) {
+            return 'overdue';
+        }
+        if ($this->isOilChangeDueSoon()) {
+            return 'due_soon';
+        }
+        return 'ok';
+    }
+
+    /**
+     * Get maintenance status for inspection
+     * Returns: 'overdue', 'due_soon', 'ok', or 'not_set'
+     */
+    public function getInspectionStatus(): string
+    {
+        if (!$this->next_inspection_due_at) {
+            return 'not_set';
+        }
+        if ($this->isInspectionOverdue()) {
+            return 'overdue';
+        }
+        if ($this->isInspectionDueSoon()) {
+            return 'due_soon';
+        }
+        return 'ok';
+    }
+
     public static function positionOptions()
     {
         return [

@@ -12,6 +12,8 @@ use App\Models\Vehicle; // Corrected typo here
 use App\Models\CustomerContact;
 use App\Models\Attachment;
 use Livewire\WithFileUploads;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class EditLogForm extends Form
 {
@@ -78,7 +80,7 @@ class EditLogForm extends Form
 
 class EditUserLog extends Component
 {
-    use WithFileUploads;
+    use WithFileUploads, AuthorizesRequests;
 
     public EditLogForm $form;
 
@@ -101,6 +103,8 @@ class EditUserLog extends Component
     public $isLoadInformationOpen = false;
     public $isAttachmentsOpen = false;
 
+    public $calculatedBillableMiles = 0;
+
     protected $listeners = [
         'saved' => '$refresh',
     ];
@@ -109,9 +113,7 @@ class EditUserLog extends Component
     {
         $this->log = $log->load('organization', 'job', 'job.customer', 'attachments');
 
-        if (!auth()->user()?->can('update', $this->log)) {
-            abort(403, 'Unauthorized action.');
-        }
+        $this->authorize('update', $this->log);
 
         $this->car_drivers = [['name' => '(none selected)', 'value' => null]];
         User::where('organization_id', $this->log->organization_id)->get()->each(function ($user) {
@@ -160,6 +162,9 @@ class EditUserLog extends Component
             'new_truck_driver_phone' => null,
             'new_truck_driver_memo' => null,
         ]);
+        
+        // Calculate and store the calculated billable miles for display
+        $this->calculatedBillableMiles = $this->log->total_billable_miles ?? 0.0;
     }
 
     public function render()
@@ -249,6 +254,8 @@ class EditUserLog extends Component
         return number_format((float) $normalized, 2, '.', '');
     }
 
+    public $isPublicUpload = false;
+
     public function uploadFile()
     {
         $this->validate([
@@ -266,8 +273,10 @@ class EditUserLog extends Component
                 'location' => $path . '/' . $originalName,
                 'file_name' => $originalName,
                 'organization_id' => $this->log->organization_id,
+                'is_public' => $this->isPublicUpload,
             ]);
 
+            $this->isPublicUpload = false;
             $this->dispatch('uploaded');
             $this->log->refresh();
             $this->dispatch('$refresh');

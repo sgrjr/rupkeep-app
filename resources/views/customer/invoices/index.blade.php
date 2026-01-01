@@ -51,6 +51,39 @@
                 </div>
             @else
                 <section class="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm">
+                    <!-- Filters -->
+                    <form method="GET" action="{{ route('customer.invoices.index') }}" class="mb-6 space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                        <div class="grid gap-4 sm:grid-cols-3">
+                            <div>
+                                <label for="status" class="block text-xs font-semibold uppercase tracking-wide text-slate-600 mb-2">{{ __('Payment Status') }}</label>
+                                <select id="status" name="status" class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                    <option value="">{{ __('All invoices') }}</option>
+                                    <option value="paid" @selected(request('status') === 'paid')>{{ __('Paid') }}</option>
+                                    <option value="unpaid" @selected(request('status') === 'unpaid')>{{ __('Unpaid') }}</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="date_from" class="block text-xs font-semibold uppercase tracking-wide text-slate-600 mb-2">{{ __('From Date') }}</label>
+                                <input type="date" id="date_from" name="date_from" value="{{ request('date_from') }}" class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                            </div>
+                            <div>
+                                <label for="date_to" class="block text-xs font-semibold uppercase tracking-wide text-slate-600 mb-2">{{ __('To Date') }}</label>
+                                <input type="date" id="date_to" name="date_to" value="{{ request('date_to') }}" class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <button type="submit" class="inline-flex items-center gap-2 rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-600">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16Z"/></svg>
+                                {{ __('Apply Filters') }}
+                            </button>
+                            @if(request()->hasAny(['status', 'date_from', 'date_to']))
+                                <a href="{{ route('customer.invoices.index') }}" class="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
+                                    {{ __('Clear') }}
+                                </a>
+                            @endif
+                        </div>
+                    </form>
+
                     <div class="rounded-2xl border border-slate-200">
                         <div class="overflow-x-auto rounded-2xl">
                             <table class="min-w-full divide-y divide-slate-200 text-sm text-slate-600">
@@ -85,10 +118,22 @@
                                                 @endif
                                             </td>
                                             <td class="px-4 py-3">
-                                                <a href="{{ route('customer.invoices.show', $invoice) }}"
-                                                   class="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-white px-3 py-1 text-[11px] font-semibold text-orange-600 transition hover:border-orange-300 hover:text-orange-700">
-                                                    {{ __('View invoice') }}
-                                                </a>
+                                                <div class="flex items-center gap-2">
+                                                    <a href="{{ route('customer.invoices.show', $invoice) }}"
+                                                       class="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-white px-3 py-1 text-[11px] font-semibold text-orange-600 transition hover:border-orange-300 hover:text-orange-700">
+                                                        {{ __('View') }}
+                                                    </a>
+                                                    @if(config('features.invoice_pdf_downloads', false))
+                                                        <a href="{{ route('my.invoices.pdf', ['invoice' => $invoice->id]) }}"
+                                                           class="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-600 transition hover:border-emerald-300 hover:text-emerald-700"
+                                                           title="{{ __('Download PDF') }}">
+                                                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/>
+                                                            </svg>
+                                                            {{ __('PDF') }}
+                                                        </a>
+                                                    @endif
+                                                </div>
                                             </td>
                                         </tr>
                                     @endforeach
