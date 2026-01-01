@@ -8,9 +8,9 @@
     <x-slot name="header">
         <div class="flex flex-wrap items-center justify-between gap-4">
     <div>
-                <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">{{ __('Team Directory') }}</p>
-                <h1 class="text-xl font-semibold text-slate-900">{{ __('My Users') }}</h1>
-                <p class="text-xs text-slate-500">{{ trans_choice('You have :count active teammate|You have :count active teammates', $organizationUserCount) }}</p>
+                <p class="text-xs font-semibold uppercase tracking-wide">{{ __('Team Directory') }}</p>
+                <h1 class="text-xl font-semibold">{{ __('My Users') }}</h1>
+                <p class="text-xs">{{ trans_choice('You have :count active teammate|You have :count active teammates', $organizationUserCount) }}</p>
                         </div>
             <div class="flex flex-wrap items-center gap-2">
                 <a href="{{ route('my.users.create') }}"

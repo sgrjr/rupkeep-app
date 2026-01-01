@@ -13,15 +13,27 @@ class MyCustomersController extends Controller
     use AuthorizesRequests;
 
     public function index(Request $request){
-        $customers = Customer::with(['contacts', 'jobs'])->where('organization_id', auth()->user()->organization_id)->get();
+        // Always get all customers for metrics and full listing
+        $allCustomers = Customer::with(['contacts', 'jobs'])->where('organization_id', auth()->user()->organization_id)->get();
         
-        // Calculate metrics
-        $totalJobs = $customers->sum(fn ($customer) => $customer->jobs->count());
-        $customerCount = $customers->count();
+        // Get filtered customers if filter is applied
+        $filteredCustomers = collect();
+        $hasFilter = false;
+        $filterTitle = '';
+        
+        if ($request->has('has_account_credit') && $request->boolean('has_account_credit')) {
+            $filteredCustomers = $allCustomers->filter(fn ($customer) => $customer->account_credit > 0);
+            $hasFilter = true;
+            $filterTitle = __('Has Account Credit');
+        }
+        
+        // Calculate metrics from all customers
+        $totalJobs = $allCustomers->sum(fn ($customer) => $customer->jobs->count());
+        $customerCount = $allCustomers->count();
         $averageJobsPerCustomer = $customerCount > 0 ? round($totalJobs / $customerCount, 1) : 0;
-        $customersWithCredit = $customers->filter(fn ($customer) => $customer->account_credit > 0)->count();
+        $customersWithCredit = $allCustomers->filter(fn ($customer) => $customer->account_credit > 0)->count();
         
-        return view('customers.index', compact('customers', 'averageJobsPerCustomer', 'customersWithCredit'));
+        return view('customers.index', compact('allCustomers', 'filteredCustomers', 'hasFilter', 'filterTitle', 'averageJobsPerCustomer', 'customersWithCredit'));
     }
 
     public function create(Request $request){

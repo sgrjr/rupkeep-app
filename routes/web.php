@@ -31,6 +31,7 @@ use App\Http\Controllers\Admin\GitUpdateController;
 use App\Http\Controllers\AdminToolsController;
 use App\Http\Controllers\UserEventController;
 use App\Http\Controllers\MyReportsController;
+use App\Http\Controllers\PricingController;
 use App\Livewire\ManagePricing;
 
 Route::middleware([
@@ -61,6 +62,11 @@ Route::middleware([
 
     // Experience Tracker (super users only)
     Route::resource('user-events', UserEventController::class)->only(['index', 'show']);
+    Route::post('/user-events/prune', [UserEventController::class, 'prune'])->name('user-events.prune');
+    Route::post('/user-events/clear-all', [UserEventController::class, 'clearAll'])->name('user-events.clear-all');
+    
+    // Feedback submissions (super users only)
+    Route::get('/admin/feedback', [UserEventController::class, 'feedback'])->name('admin.feedback.index');
 
     Route::get('/organizations', OrganizationsIndex::class)->name('organizations.index');
     Route::get('/organizations/create', OrganizationCreate::class)->name('organizations.create');
@@ -76,7 +82,15 @@ Route::middleware([
     Route::delete('/users/{user}', [UsersController::class, 'delete'])->name('user.delete');
 
     Route::resource('/customers', CustomersController::class);
-    Route::resource('/customers/{customer}/contacts', CustomerContactsController::class);
+    Route::resource('/customers/{customer}/contacts', CustomerContactsController::class)->names([
+        'index' => 'customers.contacts.index',
+        'create' => 'customers.contacts.create',
+        'store' => 'customers.contacts.store',
+        'show' => 'customers.contacts.show',
+        'edit' => 'customers.contacts.edit',
+        'update' => 'customers.contacts.update',
+        'destroy' => 'customers.contacts.destroy',
+    ]);
 
     // Customers routes - explicitly defined to ensure all routes are registered
     Route::get('/my/customers', [MyCustomersController::class, 'index'])->name('my.customers.index');
@@ -152,6 +166,8 @@ Route::middleware([
     Route::get('/', function () {
         return view('cbpc');
     })->name('home');    
+
+    Route::get('/pricing', [PricingController::class, 'show'])->name('pricing');
 
     Route::middleware('guest')->group(function () {
         Route::get('/login-code', [\App\Http\Controllers\Auth\LoginCodeController::class, 'create'])->name('login-code.create');

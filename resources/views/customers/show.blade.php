@@ -6,9 +6,9 @@
     <x-slot name="header">
         <div class="flex flex-wrap items-center justify-between gap-4">
             <div>
-                <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">{{ __('Customer Profile') }}</p>
-                <h1 class="text-xl font-semibold text-slate-900">{{ $customer->name }}</h1>
-                <p class="text-xs text-slate-500">{{ $customer->city }}, {{ $customer->state }} {{ $customer->zip }}</p>
+                <p class="text-xs font-semibold uppercase tracking-wide">{{ __('Customer Profile') }}</p>
+                <h1 class="text-xl font-semibold">{{ $customer->name }}</h1>
+                <p class="text-xs">{{ $customer->city }}, {{ $customer->state }} {{ $customer->zip }}</p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
                 <a href="{{ route('customers.edit', ['customer' => $customer->id]) }}"

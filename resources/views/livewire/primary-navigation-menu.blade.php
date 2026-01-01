@@ -200,6 +200,13 @@
                                 {{ __('Send Feedback') }}
                             </x-dropdown-link>
 
+                            @if(auth()->user()->is_super)
+                                <div class="border-t border-slate-100"></div>
+                                <x-dropdown-link href="{{ route('user-events.index', ['type' => 'feedback']) }}">
+                                    {{ __('View All Feedback') }}
+                                </x-dropdown-link>
+                            @endif
+
                             <form method="POST" action="{{ route('logout') }}" x-data>
                                 @csrf
                                 <x-dropdown-link href="{{ route('logout') }}"
@@ -320,6 +327,12 @@
                     <x-responsive-nav-link href="{{ route('feedback.index') }}" :active="request()->routeIs('feedback.index')">
                         {{ __('Send Feedback') }}
                     </x-responsive-nav-link>
+
+                    @if(auth()->user()->is_super)
+                        <x-responsive-nav-link href="{{ route('user-events.index', ['type' => 'feedback']) }}" :active="request()->routeIs('user-events.index') && request()->get('type') === 'feedback'">
+                            {{ __('View All Feedback') }}
+                        </x-responsive-nav-link>
+                    @endif
 
                     <form method="POST" action="{{ route('logout') }}" x-data>
                         @csrf

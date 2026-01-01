@@ -22,6 +22,12 @@
             <p class="mt-4 text-lg text-slate-600">
                 {{ __('This guide will help you get started with the Rupkeep Pilot Car Management System. We\'ve designed this system to replace your Google Sheets workflow with a comprehensive, user-friendly platform for managing jobs, logs, invoices, and customer relationships.') }}
             </p>
+            <div class="mt-6 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                <p class="text-slate-700">
+                    <strong>{{ __('Public Pricing Page:') }}</strong> {{ __('We\'ve created a public pricing page that displays your service rates, charges, cancellation policies, and payment terms. This marketing page is accessible to both guests and authenticated users, making it easy for potential customers to review your pricing.') }}
+                    <a href="{{ route('pricing') }}" target="_blank" class="text-orange-600 hover:text-orange-700 underline font-semibold ml-1">{{ __('View Pricing Page →') }}</a>
+                </p>
+            </div>
         </section>
 
         <!-- Customer Concerns & Feature Requests -->
@@ -681,7 +687,7 @@
             <p class="mt-2 text-slate-600">{{ __('If you have questions or need assistance:') }}</p>
             <ul class="mt-4 space-y-2 text-slate-600 list-disc list-inside">
                 <li>{{ __('Use the feedback form in the application to report issues or request features') }}</li>
-                <li>{{ __('Contact your system administrator for access or permission questions') }}</li>
+                <li>{{ __('Contact Stephen Reynolds Jr. for access or permission questions') }}</li>
                 <li>{{ __('Refer back to this documentation anytime by visiting the Documentation section') }}</li>
             </ul>
         </section>

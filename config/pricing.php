@@ -11,6 +11,19 @@ return [
     |
     */
 
+    /*
+    |--------------------------------------------------------------------------
+    | Default Organization ID for Public Pricing Page
+    |--------------------------------------------------------------------------
+    |
+    | Set the organization ID to use for the public pricing page.
+    | If not set, the system will search for an organization named
+    | "Casco Bay Pilot Car". If no organization is found, config
+    | defaults will be used.
+    |
+    */
+    'default_organization_id' => null,
+
     'rates' => [
         // Per mile rates
         'lead_chase_per_mile' => [

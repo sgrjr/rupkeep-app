@@ -40,7 +40,7 @@
 
             <hr/>
 
-            <form action="{{route('customer.contacts.store', ['customer'=> $customer->id])}}" method="post" class="mt-8">
+            <form action="{{route('customers.contacts.store', ['customer'=> $customer->id])}}" method="post" class="mt-8">
                 @csrf
 
                 <input type="hidden" name="_method" value="post" />

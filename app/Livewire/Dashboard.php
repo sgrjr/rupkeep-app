@@ -51,6 +51,22 @@ class Dashboard extends Component
            $cards[] = (Object)['title'=>'Experience Tracker', 'count'=> $errorCount, 'links'=> [
                ['url'=> route('user-events.index'), 'title'=>'View Events'],
            ]];
+           
+           // Recent feedback for super users
+           $recentFeedback = \App\Models\UserEvent::where('type', \App\Models\UserEvent::TYPE_FEEDBACK)
+               ->with('user')
+               ->orderBy('created_at', 'desc')
+               ->take(5)
+               ->get();
+           $totalFeedback = \App\Models\UserEvent::where('type', \App\Models\UserEvent::TYPE_FEEDBACK)->count();
+           
+           // Add Feedback card for super users
+           $cards[] = (Object)['title'=>'Feedback', 'count'=> $totalFeedback, 'links'=> [
+               ['url'=> route('admin.feedback.index'), 'title'=>'View All'],
+           ]];
+       } else {
+           $recentFeedback = collect();
+           $totalFeedback = 0;
        }
 
        if(auth()->user()->can('createJob', $organization)){
@@ -151,7 +167,7 @@ class Dashboard extends Component
             $recentJobs = $allJobs->sortByDesc('created_at')->take(10);
         }
 
-        return view('livewire.dashboard', compact('organization', 'organizations','cards','jobs', 'managerStats', 'recentJobs', 'jobsMarkedForAttention'));
+        return view('livewire.dashboard', compact('organization', 'organizations','cards','jobs', 'managerStats', 'recentJobs', 'jobsMarkedForAttention', 'recentFeedback', 'totalFeedback'));
     }
 
     public function uploadFile()
@@ -173,8 +189,16 @@ class Dashboard extends Component
     }
 
     public function deleteJobs(){
+        // Delete invoices and their pivot table entries first
+        \App\Models\JobInvoice::where('id', '!=', 0)->delete();
+        \App\Models\Invoice::where('id', '!=', 0)->forceDelete();
+        
+        // Delete logs
         UserLog::where('id','!=', 0)->forceDelete();
+        
+        // Delete jobs (this should cascade, but being explicit)
         PilotCarJob::where('id','!=', 0)->forceDelete();
+        
         return back();
     }
 }

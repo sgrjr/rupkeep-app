@@ -7,6 +7,7 @@
         'Users' => '<svg class="h-10 w-10 text-orange-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 7.5C7.5 5.57 9.07 4 11 4C12.93 4 14.5 5.57 14.5 7.5C14.5 9.43 12.93 11 11 11C9.07 11 7.5 9.43 7.5 7.5ZM4 19C4 16.24 6.24 14 9 14H13C15.76 14 18 16.24 18 19M18.5 8.5H20M19.25 7.75V9.25"/></svg>',
         'Customers' => '<svg class="h-10 w-10 text-orange-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 7.5C7.5 5.57 9.07 4 11 4C12.93 4 14.5 5.57 14.5 7.5C14.5 9.43 12.93 11 11 11C9.07 11 7.5 9.43 7.5 7.5ZM4 19C4 16.24 6.24 14 9 14H13C15.76 14 18 16.24 18 19M18.5 8.5H20M19.25 7.75V9.25"/></svg>',
         'Organizations' => '<svg class="h-10 w-10 text-orange-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9L12 3L21 9V20H3V9ZM9 20V12H15V20"/></svg>',
+        'Feedback' => '<svg class="h-10 w-10 text-orange-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z"/></svg>',
     ];
 @endphp
 
@@ -122,6 +123,26 @@
                     </div>
                             </div>
                     @endif
+
+                    @if($card->title === 'Feedback' && $recentFeedback && $recentFeedback->count() > 0)
+                        <div class="space-y-3">
+                            <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">{{ __('Recent Submissions') }}</p>
+                            <div class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                                @foreach($recentFeedback as $feedback)
+                                    <div class="rounded-xl border border-slate-100 bg-white px-3 py-2 shadow-sm">
+                                        <div class="flex items-center justify-between gap-2 mb-1">
+                                            <span class="text-xs font-semibold text-slate-800 truncate">{{ $feedback->user?->name ?? __('Anonymous') }}</span>
+                                            <span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide shrink-0 {{ $feedback->severity === 'error' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700' }}">
+                                                {{ ucfirst($feedback->severity) }}
+                                            </span>
+                                        </div>
+                                        <p class="text-xs text-slate-600 line-clamp-2 mt-1">{{ $feedback->context['feedback'] ?? __('No feedback text') }}</p>
+                                        <span class="text-[10px] text-slate-400 mt-1 block">{{ $feedback->created_at->diffForHumans() }}</span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
                 </div>
 
                     <div class="relative mt-6 flex flex-wrap gap-2">
@@ -206,11 +227,11 @@
                     </summary>
 
                     <div>
-                        <p class="font-semibold">{{ __('Delete ALL Jobs + Logs') }}</p>
-                        <p class="mt-2 text-xs text-red-500">{{ __('This operation cannot be undone and will remove every job and associated log across the platform.') }}</p>
+                        <p class="font-semibold">{{ __('Delete ALL Jobs + Logs + Invoices') }}</p>
+                        <p class="mt-2 text-xs text-red-500">{{ __('This operation cannot be undone and will remove every job, log, and invoice across the platform.') }}</p>
                         <button class="mt-4 inline-flex items-center gap-2 rounded-full bg-red-500 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white shadow-sm transition hover:bg-red-600"
                                 wire:click="deleteJobs"
-                                wire:confirm="Are you sure you want to Delete ALL Jobs and Logs? This is not reversible!">
+                                wire:confirm="Are you sure you want to Delete ALL Jobs, Logs, and Invoices? This is not reversible!">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v3M4 7h16"/>
                             </svg>
@@ -350,10 +371,10 @@
                     <p class="text-xs font-semibold uppercase tracking-wider text-red-600">{{ __('Outstanding') }}</p>
                     <p class="mt-2 text-2xl font-bold text-red-700">${{ number_format($managerStats->unpaid_amount, 2) }}</p>
                 </div>
-                <div class="rounded-2xl border border-blue-200 bg-blue-50 p-4 shadow-sm">
+                <a href="{{ route('my.customers.index', ['has_account_credit' => 1]) }}" class="rounded-2xl border border-blue-200 bg-blue-50 p-4 shadow-sm transition hover:border-blue-300 hover:shadow-md">
                     <p class="text-xs font-semibold uppercase tracking-wider text-blue-600">{{ __('Sum of Account Credits') }}</p>
                     <p class="mt-2 text-2xl font-bold text-blue-700">${{ number_format($managerStats->total_account_credits, 2) }}</p>
-                </div>
+                </a>
             </div>
 
             @if($recentJobs && $recentJobs->count() > 0)

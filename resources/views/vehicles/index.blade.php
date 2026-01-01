@@ -10,9 +10,9 @@
     <x-slot name="header">
         <div class="flex flex-wrap items-center justify-between gap-4">
             <div>
-                <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">{{ __('Fleet Management') }}</p>
-                <h1 class="text-xl font-semibold text-slate-900">{{ __('Vehicles') }}</h1>
-                <p class="text-xs text-slate-500">{{ trans_choice(':count vehicle on file|:count vehicles on file', $vehicles->count()) }}</p>
+                <p class="text-xs font-semibold uppercase tracking-wide">{{ __('Fleet Management') }}</p>
+                <h1 class="text-xl font-semibold">{{ __('Vehicles') }}</h1>
+                <p class="text-xs">{{ trans_choice(':count vehicle on file|:count vehicles on file', $vehicles->count()) }}</p>
             </div>
             @can('create', \App\Models\Vehicle::class)
                 <a href="{{ route('my.vehicles.create') }}"
