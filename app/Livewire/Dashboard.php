@@ -92,6 +92,13 @@ class Dashboard extends Component
             ['url'=> route('my.customers.create'), 'title'=>'+Create New'],
         ]];
        }
+
+       if(auth()->user()->can('createVehicle', $organization)){
+        $cards[] = (Object)['title'=>'Vehicles', 'count'=> $organization->vehicles()->count(), 'links'=> [
+            ['url'=> route('my.vehicles.index'), 'title'=>'View All'],
+            ['url'=> route('my.vehicles.create'), 'title'=>'+Create New'],
+        ]];
+       }
        
         if(Auth::user()->is_super){
             $organizations = \App\Models\Organization::all();

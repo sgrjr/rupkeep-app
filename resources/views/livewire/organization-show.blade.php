@@ -85,10 +85,10 @@
                                             <td class="p-3 text-sm text-gray-800">
                                                 <div class="flex flex-wrap gap-2">
                                                     @if(auth()->user()->can('createUser', $organization))
-                                                    <a class="underline text-blue-600 hover:text-blue-800" href="{{ route('user.profile', ['user'=>$user->id]) }}">Profile</a>
+                                                    <a class="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-white px-3 py-1 text-[11px] font-semibold text-blue-600 transition hover:border-blue-300 hover:text-blue-700" href="{{ route('user.profile', ['user'=>$user->id]) }}">{{ __('Profile') }}</a>
                                                     @endif
                                                     @can('impersonate', $user)
-                                                    <a href="{{route('impersonate', ['user'=>$user->id])}}" class="underline text-purple-600 hover:text-purple-800">Impersonate</a>
+                                                    <a href="{{route('impersonate', ['user'=>$user->id])}}" class="inline-flex items-center gap-1 rounded-full border border-purple-200 bg-white px-3 py-1 text-[11px] font-semibold text-purple-600 transition hover:border-purple-300 hover:text-purple-700">{{ __('Impersonate') }}</a>
                                                     @endcan
                                                 </div>
                                             </td>
@@ -128,10 +128,10 @@
                                         <div class="flex flex-wrap gap-2 text-sm">
                                             {{-- Actions --}}
                                             @if(auth()->user()->can('createUser', $organization))
-                                            <a class="underline text-blue-600 hover:text-blue-800" href="{{ route('user.profile', ['user'=>$user->id]) }}">Profile</a>
+                                            <a class="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-white px-3 py-1 text-[11px] font-semibold text-blue-600 transition hover:border-blue-300 hover:text-blue-700" href="{{ route('user.profile', ['user'=>$user->id]) }}">{{ __('Profile') }}</a>
                                             @endif
                                             @can('impersonate', $user)
-                                            <a href="{{route('impersonate', ['user'=>$user->id])}}" class="underline text-purple-600 hover:text-purple-800">Impersonate</a>
+                                            <a href="{{route('impersonate', ['user'=>$user->id])}}" class="inline-flex items-center gap-1 rounded-full border border-purple-200 bg-white px-3 py-1 text-[11px] font-semibold text-purple-600 transition hover:border-purple-300 hover:text-purple-700">{{ __('Impersonate') }}</a>
                                             @endcan
                                         </div>
                                     </div>
@@ -141,11 +141,14 @@
                             </div>
                         </div>
 
-
                         @if($deleted_users && count($deleted_users) > 0)
-                        <div class="mt-5 md:mt-0 md:col-span-2 bg-red-200 border-red-200">
-                            <h2>Deleted Users: </h2>
-                            <div class="px-4 py-5 dark:bg-gray-800 sm:p-6 shadow {{ isset($actions) ? 'sm:rounded-tl-md sm:rounded-tr-md' : 'sm:rounded-md' }}">
+                        <x-section-title>
+                            <x-slot name="title">{{ __('Deleted Users') }}</x-slot>
+                            <x-slot name="description">{{ __('Restore or permanently delete removed users.') }}</x-slot>
+                        </x-section-title>
+
+                        <div class="mt-5 md:mt-0 md:col-span-2">
+                            <div class="px-4 py-5 bg-white dark:bg-gray-800 sm:p-6 shadow {{ isset($actions) ? 'sm:rounded-tl-md sm:rounded-tr-md' : 'sm:rounded-md' }}">
                                 <table class="w-full">
                                     <thead>
                                         <tr class="bg-gray-100 border">
@@ -159,8 +162,21 @@
                                     <tbody>
                                         @foreach($deleted_users as $user)
                                         <tr class="border">
-                                            <td><x-post-form class="inline-block underline" action="{{route('user.restore', ['user'=> $user->id])}}" title="restore"/></td>
-                                            <td><x-delete-form class="inline-block underline" action="{{route('user.delete', ['user'=> $user->id])}}" title="delete"/></td>
+                                            <td>
+                                                <form action="{{route('user.restore', ['user'=> $user->id])}}" method="post">
+                                                    @csrf
+                                                    <input type="hidden" name="_method" value="post" />
+                                                    <button type="submit" class="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100 hover:border-emerald-300">
+                                                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
+                                                        {{ __('Restore') }}
+                                                    </button>
+                                                </form>
+                                            </td>
+                                            <td>
+                                                <x-delete-form action="{{route('user.delete', ['user'=> $user->id])}}" 
+                                                               title="{{ __('Delete') }}"
+                                                               button-class="inline-flex items-center gap-1 rounded-full border border-red-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-red-600 transition hover:border-red-300 hover:text-red-700" />
+                                            </td>
                                             <td>{{$user->name}}</td>
                                             <td>{{$user->email}}</td>
                                             <td>{{$user->role_label}}</td>

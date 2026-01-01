@@ -1,27 +1,32 @@
-<x-app-layout>
-    <x-slot name="header">
-        <div class="flex flex-wrap items-center justify-between gap-4">
-            <div>
-                <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">{{ __('Organization Management') }}</p>
-                <h1 class="text-xl font-semibold text-slate-900">{{ __('Organizations') }}</h1>
-                <p class="text-xs text-slate-500">{{ trans_choice(':count organization on file|:count organizations on file', $organizations->count()) }}</p>
+<div>
+    <div class="mx-auto space-y-8">
+        <section class="relative overflow-hidden bg-gradient-to-r from-orange-500 via-orange-400 to-orange-300 p-6 text-white shadow-xl">
+            <div class="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.25),_transparent_60%)] opacity-70"></div>
+            <div class="relative flex flex-wrap items-center justify-between gap-4">
+                <div class="space-y-2">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-white/75">{{ __('Organization Management') }}</p>
+                    <h1 class="text-3xl font-bold tracking-tight">{{ __('Organizations') }}</h1>
+                    <p class="text-sm text-white/85">
+                        {{ __('Manage organizations and their settings.') }}
+                    </p>
+                </div>
+                <div class="flex flex-wrap items-center gap-3">
+                    <span class="rounded-full border border-white/25 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white/85 shadow-sm backdrop-blur">
+                        {{ trans_choice('{0} No organizations|{1} :count organization|[2,*] :count organizations', $organizations->count(), ['count' => $organizations->count()]) }}
+                    </span>
+                    @can('create', \App\Models\Organization::class)
+                        <a href="{{ route('organizations.create') }}"
+                           class="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white/85 shadow-sm backdrop-blur transition hover:bg-white/20">
+                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                            {{ __('Create') }}
+                        </a>
+                    @endcan
+                </div>
             </div>
-            @can('create', \App\Models\Organization::class)
-                <a href="{{ route('organizations.create') }}"
-                   class="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-500 px-3 py-1 text-xs font-semibold text-white shadow-sm transition hover:bg-orange-600">
-                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-                    {{ __('Create Organization') }}
-                </a>
-            @endcan
-        </div>
-    </x-slot>
+        </section>
 
-    <div class="mx-auto max-w-6xl space-y-8 px-4 py-6 sm:px-6 lg:px-8">
-        <section class="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm">
-            <header class="mb-5">
-                <h2 class="text-lg font-semibold text-slate-900">{{ __('All Organizations') }}</h2>
-                <p class="text-xs text-slate-500">{{ __('Manage organizations and their settings.') }}</p>
-            </header>
+        <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+            <section class="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm">
 
             <div class="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
                 @forelse($organizations as $org)
@@ -103,5 +108,6 @@
                 @endforelse
             </div>
         </section>
+        </div>
     </div>
-</x-app-layout>
+</div>
