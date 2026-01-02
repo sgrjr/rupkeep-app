@@ -20,11 +20,113 @@ class Dashboard extends Component
 
     use WithFileUploads;
  
-    #[Validate('max:1024')] // 1MB Max
+    #[Validate('nullable|file|max:10240')] // 10MB Max
     public $file;
+    
+    public $headerMappings = [];
+    public $showPreview = false;
+    public $previewConfirmed = false;
+    public $recordCount = 0;
 
     public function mount($component = null){
         $this->component = $component;
+    }
+    
+    public function previewHeaders()
+    {
+        if (!$this->file) {
+            $this->addError('file', __('Please select a file before previewing.'));
+            return;
+        }
+
+        try {
+            if (!method_exists($this->file, 'getPathname') || !file_exists($this->file->getPathname())) {
+                $this->addError('file', __('The selected file is invalid or could not be processed.'));
+                return;
+            }
+
+            // Read header row and count records
+            $handle = fopen($this->file->getPathname(), "r");
+            if ($handle === FALSE) {
+                $this->addError('file', __('Could not open file for reading.'));
+                return;
+            }
+
+            // Read header row
+            $data = fgetcsv($handle, separator: ",");
+            if ($data === FALSE || empty($data)) {
+                fclose($handle);
+                $this->addError('file', __('Could not read headers from file.'));
+                return;
+            }
+
+            // Count data rows (skip header)
+            $recordCount = 0;
+            while (($row = fgetcsv($handle, separator: ",")) !== FALSE) {
+                // Only count non-empty rows (at least one non-empty field)
+                $hasData = false;
+                foreach ($row as $field) {
+                    if (trim($field) !== '') {
+                        $hasData = true;
+                        break;
+                    }
+                }
+                if ($hasData) {
+                    $recordCount++;
+                }
+            }
+            fclose($handle);
+            
+            $this->recordCount = $recordCount;
+
+            // Trim trailing empty columns
+            $originalHeaders = $data;
+            while (!empty($originalHeaders) && trim(end($originalHeaders)) === '') {
+                array_pop($originalHeaders);
+            }
+
+            // Normalize headers
+            $normalizedHeaders = [];
+            foreach($originalHeaders as $h){
+                $normalized = str_replace('__','_',str_replace([' ','-'],'_',trim(str_replace(['#','(',')','/','?'],'', strtolower($h)))));
+                $normalizedHeaders[] = $normalized;
+            }
+
+            // Get mappings - use a helper method that doesn't throw for preview
+            $mappedHeaders = $this->previewHeaderMappings($normalizedHeaders, $originalHeaders);
+            
+            // Build mapping display
+            $this->headerMappings = [];
+            foreach($originalHeaders as $index => $original) {
+                $this->headerMappings[] = [
+                    'column' => $index + 1,
+                    'original' => $original ?: '(empty)',
+                    'normalized' => $normalizedHeaders[$index] ?? '',
+                    'mapped_to' => $mappedHeaders[$index] ?? '(unmapped)',
+                    'status' => isset($mappedHeaders[$index]) && $mappedHeaders[$index] !== null ? 'mapped' : 'unmapped'
+                ];
+            }
+            
+            $this->showPreview = true;
+            $this->previewConfirmed = false;
+        } catch (\Exception $e) {
+            $this->addError('file', __('Error previewing file: :message', ['message' => $e->getMessage()]));
+            $this->showPreview = false;
+        }
+    }
+    
+    private function previewHeaderMappings($normalizedHeaders, $originalHeaders)
+    {
+        // Use the same dictionary as translateHeaders but don't throw on unmapped
+        $dictionary = \App\Models\PilotCarJob::getHeaderDictionary();
+        $values = [];
+        
+        foreach($normalizedHeaders as $index => $hdr){
+            $value = collect($dictionary)->filter(fn($entry)=> in_array($hdr, $entry))->keys()->first();
+            $values[] = $value; // Can be null for unmapped - use array append to maintain index
+        }
+        
+        return $values;
     }
 
     public function render(Request $request)
@@ -177,22 +279,69 @@ class Dashboard extends Component
         return view('livewire.dashboard', compact('organization', 'organizations','cards','jobs', 'managerStats', 'recentJobs', 'jobsMarkedForAttention', 'recentFeedback', 'totalFeedback'));
     }
 
+    public function confirmImport()
+    {
+        // Clear previous errors and hide preview
+        $this->resetErrorBag();
+        session()->forget(['error', 'success']);
+        $this->showPreview = false;
+        $this->previewConfirmed = true;
+        
+        $this->uploadFile();
+    }
+    
     public function uploadFile()
     {
-        //$this->file->storeAs(path: 'jobs', name: 'org_logs_'.auth()->user()->organization_role.'_'.auth()->user()->organization_id.'_'.now()->timestamp .'.'.$this->file->extension());
-        $originalName = $this->file->getClientOriginalName();
-        $this->file->storeAs(path: 'jobs/org_'.auth()->user()->organization_id, name:$originalName);
-        $this->dispatch('uploaded');
+        // Backend safety net: Check if file exists
+        if (!$this->file) {
+            $this->addError('file', __('Please select a file before uploading.'));
+            return;
+        }
 
-        $files = [[
-            'full_path' => $this->file->getPathName(),
-            'original_name' => $this->file->getClientOriginalName(),
-            //'contents' => file_get_contents($this->file->getPathName())
-        ]];
+        // If preview is shown but not confirmed, require confirmation
+        if ($this->showPreview && !$this->previewConfirmed) {
+            $this->addError('file', __('Please confirm the import by clicking "Confirm and Import".'));
+            return;
+        }
 
-        PilotCarJob::import($files, auth()->user()->organization_id);
+        // Validate file exists and is valid
+        try {
+            if (!method_exists($this->file, 'getPathname') || !file_exists($this->file->getPathname())) {
+                $this->addError('file', __('The selected file is invalid or could not be processed.'));
+                return;
+            }
 
-        return back();
+            $originalName = $this->file->getClientOriginalName();
+            $this->file->storeAs(path: 'jobs/org_'.auth()->user()->organization_id, name:$originalName);
+            
+            $files = [[
+                'full_path' => $this->file->getPathName(),
+                'original_name' => $this->file->getClientOriginalName(),
+                //'contents' => file_get_contents($this->file->getPathName())
+            ]];
+
+            PilotCarJob::import($files, auth()->user()->organization_id);
+            
+            // Only dispatch success if import completed without throwing
+            $this->dispatch('uploaded');
+            session()->flash('success', __('File uploaded and imported successfully.'));
+            
+            // Reset preview state
+            $this->showPreview = false;
+            $this->previewConfirmed = false;
+            $this->headerMappings = [];
+            $this->recordCount = 0;
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('File upload/import error', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            // Don't duplicate "Import failed:" prefix if it's already in the message
+            $errorMessage = $e->getMessage();
+            if (str_starts_with($errorMessage, 'Import failed:')) {
+                $displayMessage = $errorMessage;
+            } else {
+                $displayMessage = __('Import failed: :message', ['message' => $errorMessage]);
+            }
+            $this->addError('file', $displayMessage);
+        }
     }
 
     public function deleteJobs(){

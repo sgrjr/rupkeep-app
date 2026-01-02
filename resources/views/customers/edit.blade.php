@@ -91,6 +91,18 @@
                                 <x-label for="zip" value="{{ __('Zip') }}" />
                                 <x-input id="zip" class="block mt-1 w-full"  name="zip" value="{{$customer->zip}}" required />
                             </div>
+
+                            <div>
+                                <x-label for="account_credit" value="{{ __('Account Credit') }}" />
+                                <x-input id="account_credit" 
+                                         class="block mt-1 w-full" 
+                                         name="account_credit" 
+                                         type="number" 
+                                         step="0.01" 
+                                         min="0"
+                                         value="{{ number_format($customer->account_credit ?? 0, 2, '.', '') }}" />
+                                <p class="mt-1 text-xs text-slate-500">{{ __('Current account credit balance. This can be applied to invoices.') }}</p>
+                            </div>
                         </div>
 
                         <div class="flex items-center justify-end mt-6">

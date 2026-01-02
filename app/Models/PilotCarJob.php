@@ -15,6 +15,7 @@ use App\Models\Traits\HasJobScopes;
 use App\Models\Attachment;
 use App\Models\PricingSetting;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Facades\Log;
 
 class PilotCarJob extends Model
 {
@@ -93,53 +94,176 @@ class PilotCarJob extends Model
         return $log->schema()->remove(['id'])->hide(['maintenance_memo']);
     }
     public static function import($files, $organization_id){
+        // Increase execution time limit for bulk import operations
+        set_time_limit(600); // 10 minutes should be sufficient for large imports
+        
         //add each file details to database
 
         $number = 0;
         $header = [];
         $l = [];
+        $errors = [];
 
-        if (($handle = fopen($files[0]['full_path'], "r")) !== FALSE) {
-            while (($data = fgetcsv($handle, separator: ",")) !== FALSE) {  
-                if($number == 0){
-                    $h_eader = [];
-                    foreach($data as $h){
-                        $h_eader[] = str_replace('__','_',str_replace([' ','-'],'_',trim(str_replace(['#','(',')','/','?'],'', strtolower($h)))));
-                    }
-        
-                    $header = static::translateHeaders($h_eader);
-                }else{
+        try {
+            if (!isset($files[0]['full_path']) || !file_exists($files[0]['full_path'])) {
+                throw new \Exception('Import file not found or invalid.');
+            }
 
-                    if(count($data) != 57){
-                        //dd('line#: '.$number, $values, $line);
-                    }else{
-                        $new_values = [];
-                        foreach($data as $index=>$v){
-                            $new_values[$header[$index]] = $v;
+            if (($handle = fopen($files[0]['full_path'], "r")) !== FALSE) {
+                while (($data = fgetcsv($handle, separator: ",")) !== FALSE) {  
+                    if($number == 0){
+                        $originalHeaders = $data; // Keep original headers for error reporting
+                        
+                        // Trim trailing empty columns from headers (same as preview)
+                        while (!empty($originalHeaders) && trim(end($originalHeaders)) === '') {
+                            array_pop($originalHeaders);
                         }
                         
-                        static::validate($new_values, count($header));
-                        $l[] = $new_values;
+                        $h_eader = [];
+                        foreach($originalHeaders as $h){
+                            $normalized = str_replace('__','_',str_replace([' ','-'],'_',trim(str_replace(['#','(',')','/','?'],'', strtolower($h)))));
+                            $h_eader[] = $normalized;
+                        }
+            
+                        try {
+                            // Pass the trimmed original headers to translateHeaders
+                            $header = static::translateHeaders($h_eader, $originalHeaders);
+                        } catch (\Exception $e) {
+                            fclose($handle);
+                            throw $e;
+                        }
+                    }else{
+                        // Trim trailing empty columns from data rows to match trimmed headers
+                        while (!empty($data) && trim(end($data)) === '') {
+                            array_pop($data);
+                        }
+                        
+                        $expectedColumnCount = count($header);
+                        
+                        // STRICT MODE: Require exact column count (after trimming empty columns)
+                        if(count($data) != $expectedColumnCount){
+                            $errorMsg = "Row " . ($number + 1) . " has " . count($data) . " columns but expected {$expectedColumnCount}. Please check your CSV file format.";
+                            Log::error('Import: Row with incorrect column count', ['line' => $number, 'expected' => $expectedColumnCount, 'actual' => count($data)]);
+                            $errors[] = $errorMsg;
+                            // Continue collecting errors but don't process this row
+                        }else{
+                            $new_values = [];
+                            foreach($data as $index=>$v){
+                                if(isset($header[$index]) && $header[$index] !== null){
+                                    $new_values[$header[$index]] = $v;
+                                }
+                            }
+                            
+                            // STRICT MODE: Validation failures are collected and reported
+                            try {
+                                $expectedCount = count($header);
+                                static::validate($new_values, $expectedCount);
+                                $l[] = $new_values;
+                            } catch (\Exception $e) {
+                                $errorMsg = "Row " . ($number + 1) . ": " . $e->getMessage();
+                                Log::error('Import: Validation failed for row', ['line' => $number, 'error' => $e->getMessage(), 'row_data' => $new_values]);
+                                $errors[] = $errorMsg;
+                                // Continue collecting errors but don't process this row
+                            }
+                        }
+                        
                     }
-                    
+                    $number++;
                 }
-                $number++;
+                fclose($handle);
+            } else {
+                throw new \Exception('Could not open import file for reading.');
             }
-            fclose($handle);
+              
+            // STRICT MODE: Don't process any rows if there are validation errors
+            if (!empty($errors)) {
+                $errorCount = count($errors);
+                $errorSummary = implode("\n", array_slice($errors, 0, 10));
+                if ($errorCount > 10) {
+                    $errorSummary .= "\n... and " . ($errorCount - 10) . " more error(s)";
+                }
+                Log::error('Import failed: Validation errors detected', ['error_count' => $errorCount, 'errors' => $errors, 'valid_rows' => count($l)]);
+                throw new \Exception("Import failed with {$errorCount} error(s). Please fix these issues and try again:\n\n" . $errorSummary);
+            }
+
+            // Only process rows if validation passed
+            // Disable events during import to prevent job assignment notifications
+            $originalDispatcher = UserLog::getEventDispatcher();
+            UserLog::unsetEventDispatcher();
+            
+            try {
+                foreach($l as $lineIndex => $line){
+                    try {
+                        static::processLog($line, $organization_id);
+                    } catch (\Exception $e) {
+                        Log::error('Import: Failed to process log', ['line_index' => $lineIndex, 'line' => $line, 'error' => $e->getMessage()]);
+                        $errors[] = "Processing error for row " . ($lineIndex + 2) . ": " . $e->getMessage();
+                    }
+                }
+            } finally {
+                // Always re-enable events, even if there was an error
+                UserLog::setEventDispatcher($originalDispatcher);
+            }
+
+            // STRICT MODE: Fail if any processing errors occurred
+            if (!empty($errors)) {
+                $errorCount = count($errors);
+                $errorSummary = implode("\n", array_slice($errors, 0, 10));
+                if ($errorCount > 10) {
+                    $errorSummary .= "\n... and " . ($errorCount - 10) . " more error(s)";
+                }
+                Log::error('Import failed: Processing errors', ['error_count' => $errorCount, 'errors' => $errors]);
+                throw new \Exception("Import failed with {$errorCount} processing error(s):\n\n" . $errorSummary);
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Import failed', ['error' => $e->getMessage(), 'file' => $files[0]['full_path'] ?? 'unknown']);
+            throw $e;
         }
-          
-        foreach($l as $line){
-            static::processLog($line, $organization_id);
+    }
+
+    /**
+     * Normalize numeric values from CSV (remove commas, handle empty strings)
+     */
+    public static function normalizeNumericValue($value)
+    {
+        if ($value === null || $value === '') {
+            return null;
         }
+        
+        // Remove commas and whitespace, then convert to numeric
+        $cleaned = str_replace([',', ' '], '', trim($value));
+        
+        if ($cleaned === '' || $cleaned === null) {
+            return null;
+        }
+        
+        // Convert to float/int - let PHP handle the conversion
+        $numeric = is_numeric($cleaned) ? (float)$cleaned : null;
+        
+        return $numeric;
     }
 
     public static function validate($row, $count): void{
-        if(empty($row['invoice_no'])) dd($row);
-        if(count($row) != $count) dd($row);
+        // Check if invoice_no key exists and has a non-empty value
+        if(!isset($row['invoice_no']) || trim($row['invoice_no']) === '') {
+            $invoiceNoValue = $row['invoice_no'] ?? 'NOT SET';
+            Log::error('Import validation failed: Missing or empty invoice_no', [
+                'row' => $row, 
+                'invoice_no_value' => $invoiceNoValue,
+                'invoice_no_is_set' => isset($row['invoice_no']),
+                'invoice_no_trimmed' => isset($row['invoice_no']) ? trim($row['invoice_no']) : 'N/A'
+            ]);
+            throw new \Exception('Import failed: Row is missing required field "invoice_no" or it is empty. Please check your CSV file.');
+        }
+        if(count($row) != $count) {
+            Log::error('Import validation failed: Column count mismatch', ['row' => $row, 'expected' => $count, 'actual' => count($row)]);
+            throw new \Exception('Import failed: Row has ' . count($row) . ' columns but expected ' . $count . '. Please check your CSV file format.');
+        }
     }
 
-    public static function translateHeaders($headers){
-        $dictionary = [
+    public static function getHeaderDictionary(){
+        return [
             'job_no' => ['job','job_no'],
             'load_no' => ['load','load_no'],
             'timestamp' => ['timestamp','Timestamp','229',229],
@@ -198,19 +322,76 @@ class PilotCarJob extends Model
             'link_to_merged_doc__invoice_2024' => ['link_to_merged_doc__invoice_2024','link_to_merged_doc_invoice_2024'],
             'document_merge_status__invoice_2024' => ['document_merge_status__invoice_2024','document_merge_status_invoice_2024']
         ];
+    }
+
+    public static function translateHeaders($headers, $originalHeaders = null){
+        $dictionary = static::getHeaderDictionary();
 
         $values = [];
-        foreach($headers as $hdr){
+        $unknownHeaders = [];
+        $unknownHeadersWithIndex = [];
+        
+        foreach($headers as $index => $hdr){
             $value = collect($dictionary)->filter(fn($entry)=> in_array($hdr, $entry))->keys()->first();
 
             if($value){
                 $values[] = $value;
             }else{
-                dd($hdr);
+                // STRICT MODE: Unknown headers are errors, not warnings
+                $originalHeader = ($originalHeaders && isset($originalHeaders[$index])) ? $originalHeaders[$index] : $hdr;
+                $originalHeaderTrimmed = trim($originalHeader ?? '');
+                $displayHeader = !empty($originalHeaderTrimmed) ? $originalHeader : '(empty column ' . ($index + 1) . ')';
+                
+                $unknownHeaders[] = $displayHeader;
+                $unknownHeadersWithIndex[] = [
+                    'index' => $index + 1,
+                    'original' => $originalHeader,
+                    'normalized' => $hdr,
+                    'display' => $displayHeader
+                ];
+                
+                Log::error('Import: Unknown header found in CSV', [
+                    'column_index' => $index + 1,
+                    'original_header' => $originalHeader,
+                    'normalized_header' => $hdr,
+                    'all_headers' => $headers,
+                    'all_original_headers' => $originalHeaders
+                ]);
             }
             
         }
-        if(count($headers) != count($values)) dd($headers, $values);
+        
+        // STRICT MODE: Fail immediately if any unknown headers are found
+        if(!empty($unknownHeaders)) {
+            $headerList = [];
+            foreach($unknownHeadersWithIndex as $info) {
+                $originalTrimmed = trim($info['original'] ?? '');
+                if (!empty($originalTrimmed) && $info['original'] !== $info['normalized']) {
+                    $headerList[] = "Column {$info['index']}: \"{$info['original']}\" (normalized to: \"{$info['normalized']}\")";
+                } else if (!empty($originalTrimmed)) {
+                    $headerList[] = "Column {$info['index']}: \"{$info['original']}\"";
+                } else {
+                    $headerList[] = "Column {$info['index']}: {$info['display']}";
+                }
+            }
+            
+            $errorMessage = "Import failed: The following " . count($unknownHeaders) . " header(s) in your CSV file are not recognized:\n\n" . 
+                          implode("\n", $headerList) . 
+                          "\n\nPlease check your file format. All headers must match the expected format.";
+            
+            Log::error('Import: Unknown headers detected', [
+                'unknown_headers' => $unknownHeadersWithIndex,
+                'all_headers' => $headers,
+                'all_original_headers' => $originalHeaders
+            ]);
+            throw new \Exception($errorMessage);
+        }
+        
+        if(count($headers) != count($values)) {
+            Log::error('Import: Header/Value count mismatch', ['headers' => $headers, 'values' => $values]);
+            throw new \Exception('Import failed: Header translation error. Found ' . count($headers) . ' headers but ' . count($values) . ' values.');
+        }
+        
         return $values; 
     }
 
@@ -283,13 +464,13 @@ class PilotCarJob extends Model
             if(!$car){
                 $car = Vehicle::create([
                     'name'=> $values['pilot_car_name'],
-                    'odometer'=> $values['end_mileage'],
+                    'odometer'=> static::normalizeNumericValue($values['end_mileage'] ?? null),
                     'odometer_updated_at'=> $job_ended?->toDateTimeString(),
                     'organization_id' => $organization_id
                 ]);
             }else{
                 $car->update([
-                    'odometer'=> $values['end_mileage'],
+                    'odometer'=> static::normalizeNumericValue($values['end_mileage'] ?? null),
                     'odometer_updated_at'=> $job_ended?->toDateTimeString()
                 ]);
             }
@@ -340,17 +521,17 @@ class PilotCarJob extends Model
                     'pretrip_check'=> strtolower($values['pretrip_check_answer']) === 'yes',
                     'truck_no'=>$values['truck_no'],
                     'trailer_no'=>$values['trailer_no'],
-                    'start_mileage'=>empty($values['start_mileage'])?null:$values['start_mileage'],
-                    'end_mileage'=> empty($values['end_mileage'])?null:$values['end_mileage'],
-                    'start_job_mileage'=> empty($values['start_job_mileage'])?null:$values['start_job_mileage'],
-                    'end_job_mileage'=> empty($values['end_job_mileage'])?null:$values['end_job_mileage'],
+                    'start_mileage'=> static::normalizeNumericValue($values['start_mileage'] ?? null),
+                    'end_mileage'=> static::normalizeNumericValue($values['end_mileage'] ?? null),
+                    'start_job_mileage'=> static::normalizeNumericValue($values['start_job_mileage'] ?? null),
+                    'end_job_mileage'=> static::normalizeNumericValue($values['end_job_mileage'] ?? null),
                     'load_canceled'=>$values['if_load_canceled'] && strtolower($values['if_load_canceled']) === 'canceled',
                     'is_deadhead'=>$values['is_deadhead'] && strtolower($values['is_deadhead']) === 'yes',
-                    'extra_load_stops_count'=> empty($values['extra_load_stops_count'])?0:(int)$values['extra_load_stops_count'],
-                    'wait_time_hours'=> empty($values['wait_time_hours'])?0.00:$values['wait_time_hours'],
-                    'tolls'=> empty($values['tolls'])?0.00:$values['tolls'],
-                    'gas'=>empty($values['gas'])?0.00:$values['gas'],
-                    'extra_charge'=>empty($values['extra_charge'])?0.00:$values['extra_charge'],
+                    'extra_load_stops_count'=> static::normalizeNumericValue($values['extra_load_stops_count'] ?? null) ?? 0,
+                    'wait_time_hours'=> static::normalizeNumericValue($values['wait_time_hours'] ?? null) ?? 0.00,
+                    'tolls'=> static::normalizeNumericValue($values['tolls'] ?? null) ?? 0.00,
+                    'gas'=> static::normalizeNumericValue($values['gas'] ?? null) ?? 0.00,
+                    'extra_charge'=> static::normalizeNumericValue($values['extra_charge'] ?? null) ?? 0.00,
                     'hotel'=> $hotel,
                     'memo'=>$values['wait_time_reason'],
                     'maintenance_memo'=>$values['maintenance_memo'],

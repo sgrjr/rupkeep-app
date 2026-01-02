@@ -8,6 +8,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 
 class SendJobAssignedNotification implements ShouldQueue
 {
@@ -18,14 +19,32 @@ class SendJobAssignedNotification implements ShouldQueue
      */
     public function handle(JobAssigned $event): void
     {
+        $job = $event->job;
+        
+        // Safety net: Only send notifications for jobs scheduled today or in the future
+        // This prevents notifications when retroactively editing past jobs
+        if ($job->scheduled_pickup_at) {
+            $scheduledDate = Carbon::parse($job->scheduled_pickup_at)->startOfDay();
+            $today = Carbon::today()->startOfDay();
+            
+            // If scheduled pickup is in the past, skip notification
+            if ($scheduledDate->lt($today)) {
+                Log::info('SendJobAssignedNotification: Skipping notification for past job', [
+                    'job_id' => $job->id,
+                    'job_no' => $job->job_no,
+                    'scheduled_pickup_at' => $job->scheduled_pickup_at,
+                    'driver_id' => $event->driver->id,
+                ]);
+                return;
+            }
+        }
+        
         $driver = $event->driver;
         $recipient = $this->resolveAddress($driver->notification_address, $driver->email);
 
         if (! $recipient) {
             return;
         }
-
-        $job = $event->job;
 
         $scheduledAt = null;
 

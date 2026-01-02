@@ -44,7 +44,7 @@
         <section class="rounded-3xl border border-blue-200 bg-blue-50/50 p-6 shadow-sm">
             <header class="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                    <h2 class="text-lg font-semibold text-slate-900">{{ __('Customer Accounts') }} ({{ $filterTitle }})</h2>
+                    <h2 class="text-lg font-semibold text-slate-900">{{ __('Filtered Customers') }} ({{ $filterTitle }})</h2>
                     <p class="text-xs text-slate-500">{{ __('Filtered customers matching the selected criteria.') }}</p>
                 </div>
             </header>
@@ -154,7 +154,7 @@
         <section class="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm">
             <header class="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                    <h2 class="text-lg font-semibold text-slate-900">{{ __('Customer Accounts') }}</h2>
+                    <h2 class="text-lg font-semibold text-slate-900">{{ __('All Customers') }}</h2>
                     <p class="text-xs text-slate-500">{{ __('Keep customer data current to streamline job assignment and invoicing.') }}</p>
                 </div>
             </header>
