@@ -4,12 +4,7 @@
 
 @font-face {
     font-family: 'nimbus_sans_lregular';
-    src: url('/fonts/NimbusSanL-Reg-webfont.eot');
-    src: url('/fonts/NimbusSanL-Reg-webfont.eot?#iefix') format('embedded-opentype'),
-         url('/fonts/NimbusSanL-Reg-webfont.woff2') format('woff2'),
-         url('/fonts/NimbusSanL-Reg-webfont.woff') format('woff'),
-         url('/fonts/NimbusSanL-Reg-webfont.ttf') format('truetype'),
-         url('/fonts/NimbusSanL-Reg-webfont.svg#nimbus_sans_lregular') format('svg');
+    src: url('/fonts/NimbusSanL-Reg-webfont.woff') format('woff');
     font-weight: normal;
     font-style: normal;
 }
@@ -28,14 +23,9 @@
 
 @font-face {
     font-family: 'nimbus_sans_lbold';
-    src: url('/fonts/NimbusSanL-Bol-webfont.eot');
-    src: url('/fonts/NimbusSanL-Bol-webfont.eot?#iefix') format('embedded-opentype'),
-         url('/fonts/NimbusSanL-Bol-webfont.woff2') format('woff2'),
-         url('/fonts/NimbusSanL-Bol-webfont.woff') format('woff'),
-         url('/fonts/NimbusSanL-Bol-webfont.ttf') format('truetype'),
-         url('/fonts/NimbusSanL-Bol-webfont.svg#nimbus_sans_lbold') format('svg');
+    src: url('/fonts/NimbusSanL-Bol-webfont.woff') format('woff');
     font-weight: bold;
-    font-style: bold;
+    font-style: normal;
 }
 
 :root {

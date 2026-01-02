@@ -12,4 +12,16 @@ export default defineConfig({
             refresh: true,
         }),
     ],
+    build: {
+        rollupOptions: {
+            onwarn(warning, warn) {
+                // Suppress warnings about unresolved font files (they're resolved at runtime)
+                if (warning.message && warning.message.includes("didn't resolve at build time")) {
+                    return;
+                }
+                // Use default warning handler for other warnings
+                warn(warning);
+            },
+        },
+    },
 });
