@@ -2,7 +2,7 @@
     <div class="bg-black text-white py-16">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-12">
-                <img src="/images/cbpc/cascobpc.png" class="block m-auto w-64">
+                <img src="/images/cbpc/cascobpc.png" class="block m-auto w-64" style="width:200px;">
                 <h1 class="text-4xl md:text-5xl font-bold mb-4">Pricing & Policies</h1>
                 <p class="text-xl text-gray-300">Transparent pricing for pilot car services</p>
             </div>
