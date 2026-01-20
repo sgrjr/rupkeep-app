@@ -21,7 +21,7 @@ class DBReset extends Command
      *
      * @var string
      */
-    protected $description = 'Reseults database to default.';
+    protected $description = 'Results database to default.';
 
     /**
      * Execute the console command.
