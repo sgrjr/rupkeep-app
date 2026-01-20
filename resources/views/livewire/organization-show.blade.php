@@ -302,23 +302,95 @@
                     <div class="mt-10 sm:mt-0">
                         <div class="md:grid md:grid-cols-3 md:gap-6" >
                             <x-section-title>
-                                <x-slot name="title">{{ __('Upload Data from CSV') }}</x-slot>
-                                <x-slot name="description">{{ __('Upload job data from csv backup.') }}</x-slot>
+                                <x-slot name="title">{{ __('Import from Spreadsheet') }}</x-slot>
+                                <x-slot name="description">{{ __('Upload job data from CSV file.') }}</x-slot>
                             </x-section-title>
 
                             <div class="mt-5 md:mt-0 md:col-span-2">
-                                <div class="px-4 py-5 bg-white dark:bg-gray-800 sm:p-6 shadow sm:rounded-tl-md sm:rounded-tr-md">
-                                    <div class="grid grid-cols-6 gap-6">
-                                    <form wire:submit="uploadFile">
-                                <input type="file" wire:model="file">
-                                @error('file') <span class="error">{{ $message }}</span> @enderror
+                                <div class="px-4 py-5 bg-white dark:bg-gray-800 sm:p-6 shadow sm:rounded-md">
+                                    <div class="space-y-4">
+                                        {{-- File Input --}}
+                                        <label class="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-dashed border-orange-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-600 shadow-sm transition hover:border-orange-300 hover:text-orange-600">
+                                            <span class="truncate">
+                                                @if($file)
+                                                    {{ Str::limit($file->getClientOriginalName(), 48) }}
+                                                @else
+                                                    {{ __('Choose CSV file to import') }}
+                                                @endif
+                                            </span>
+                                            <span class="inline-flex items-center rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold text-orange-600">{{ __('Browse') }}</span>
+                                            <input type="file" wire:model="file" class="hidden" accept=".csv,.xlsx" wire:change="$set('showPreview', false)">
+                                        </label>
 
-                                <x-action-message class="me-3" on="uploaded">
-                                    {{ __('File Uploaded.') }}
-                                </x-action-message>
-                                <button type="submit">Upload Data File</button>
-                            </form>
-                                   
+                                        @error('file')
+                                            <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{{ $message }}</div>
+                                        @enderror
+
+                                        {{-- Preview Headers Button --}}
+                                        <button type="button"
+                                                wire:click="previewHeaders"
+                                                @disabled(!$file)
+                                                class="inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-white shadow-sm transition {{ $file ? 'bg-orange-500 hover:bg-orange-600' : 'bg-slate-300 cursor-not-allowed' }}">
+                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                            {{ __('Preview Headers') }}
+                                        </button>
+
+                                        {{-- Header Mappings Preview Table --}}
+                                        @if($showPreview && !empty($headerMappings))
+                                            <div class="rounded-lg border border-slate-200 bg-white p-4 space-y-4">
+                                                <div class="flex items-center justify-between">
+                                                    <p class="text-sm font-semibold text-slate-700">{{ __('Column Mappings') }}</p>
+                                                    <span class="text-xs text-slate-500">{{ $recordCount }} {{ __('records found') }}</span>
+                                                </div>
+
+                                                <div class="max-h-64 overflow-y-auto space-y-1">
+                                                    <div class="grid grid-cols-12 gap-2 text-[10px] font-semibold uppercase tracking-wide text-slate-500 border-b border-slate-200 pb-1">
+                                                        <div class="col-span-1">#</div>
+                                                        <div class="col-span-4">{{ __('CSV Header') }}</div>
+                                                        <div class="col-span-3">{{ __('Normalized') }}</div>
+                                                        <div class="col-span-4">{{ __('Maps To') }}</div>
+                                                    </div>
+                                                    @foreach($headerMappings as $mapping)
+                                                        <div class="grid grid-cols-12 gap-2 py-1 text-xs rounded {{ $mapping['status'] === 'unmapped' ? 'bg-red-50 text-red-700' : 'text-slate-600' }}">
+                                                            <div class="col-span-1 font-medium">{{ $mapping['column'] }}</div>
+                                                            <div class="col-span-4 truncate">{{ $mapping['original'] }}</div>
+                                                            <div class="col-span-3 truncate text-slate-500">{{ $mapping['normalized'] }}</div>
+                                                            <div class="col-span-4 font-medium {{ $mapping['status'] === 'mapped' ? 'text-emerald-600' : 'text-red-600' }}">
+                                                                {{ $mapping['mapped_to'] }}
+                                                            </div>
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+
+                                                {{-- Auto-Create Invoices Checkbox --}}
+                                                <div class="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                                    <input type="checkbox" id="autoCreateInvoices" wire:model="autoCreateInvoices" class="h-4 w-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500">
+                                                    <label for="autoCreateInvoices" class="flex-1 cursor-pointer text-sm text-slate-700">
+                                                        <span class="font-semibold">{{ __('Create invoices for imported jobs') }}</span>
+                                                        <p class="mt-0.5 text-xs text-slate-500">{{ __('Automatically generate invoices for all imported jobs (useful for historical data)') }}</p>
+                                                    </label>
+                                                </div>
+
+                                                {{-- Confirm and Import Button --}}
+                                                <button type="button"
+                                                        wire:click="confirmImport"
+                                                        wire:loading.attr="disabled"
+                                                        wire:target="confirmImport"
+                                                        class="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600 disabled:opacity-75 disabled:cursor-wait">
+                                                    <svg wire:loading.remove wire:target="confirmImport" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+                                                    <svg wire:loading wire:target="confirmImport" class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                                    <span wire:loading.remove wire:target="confirmImport">{{ __('Confirm and Import') }}</span>
+                                                    <span wire:loading wire:target="confirmImport">{{ __('Importing...') }}</span>
+                                                </button>
+                                            </div>
+                                        @endif
+
+                                        <x-action-message class="text-sm text-emerald-600 font-medium" on="uploaded">
+                                            {{ __('File uploaded and imported successfully.') }}
+                                        </x-action-message>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 @endif
