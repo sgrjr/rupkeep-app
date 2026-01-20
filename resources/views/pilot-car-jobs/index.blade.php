@@ -40,6 +40,12 @@
                     <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Canceled') }}</p>
                     <p class="mt-2 text-3xl font-semibold text-slate-900">{{ $canceledJobs }}</p>
                 </div>
+                @if(isset($missingJobNo) && $missingJobNo > 0)
+                <a href="{{ route('my.jobs.index', ['search_field' => 'missing_job_no', 'search_value' => '']) }}" class="rounded-3xl border border-amber-200 bg-amber-50/90 p-4 shadow-sm transition hover:border-amber-300 hover:bg-amber-100">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-amber-700">{{ __('Missing Job #') }}</p>
+                    <p class="mt-2 text-3xl font-semibold text-amber-900">{{ $missingJobNo }}</p>
+                </a>
+                @endif
             </section>
 
             @can('viewAny', \App\Models\Invoice::class)
@@ -88,7 +94,25 @@
             @endcan
 
             <section class="rounded-3xl border border-slate-200 bg-white/90 p-6 m-6 shadow-sm">
-                <form class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                <div class="mb-4 flex flex-wrap items-center gap-2">
+                    <a href="{{ route('my.jobs.index', ['filter' => 'recent']) }}" class="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold shadow-sm transition {{ request('filter') === 'recent' ? 'border-orange-300 bg-orange-50 text-orange-700 hover:bg-orange-100' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50' }}">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+                        {{ __('Recent Jobs') }}
+                    </a>
+                </div>
+                
+                <form method="GET" action="{{ route('my.jobs.index') }}" id="filterForm" class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                    <div class="md:w-56">
+                        <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Filter/Scope') }}</label>
+                        <select name="filter" onchange="document.getElementById('filterForm').submit();" class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                            <option value="">{{ __('All Jobs') }}</option>
+                            <option value="recent" @selected(request('filter') === 'recent')>{{ __('Recent (Newest First)') }}</option>
+                            <option value="is_paid" @selected(request('filter') === 'is_paid')>{{ __('Paid Jobs') }}</option>
+                            <option value="is_not_paid" @selected(request('filter') === 'is_not_paid')>{{ __('Unpaid Jobs') }}</option>
+                            <option value="is_canceled" @selected(request('filter') === 'is_canceled')>{{ __('Canceled Jobs') }}</option>
+                            <option value="missing_job_no" @selected(request('filter') === 'missing_job_no')>{{ __('Missing Job #') }}</option>
+                        </select>
+                    </div>
                     <div class="flex-1">
                         <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Search Jobs') }}</label>
                         <input type="text" name="search_value" value="{{ request('search_value') }}" placeholder="{{ __('Search by keyword') }}" class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200" />
@@ -103,20 +127,19 @@
                             <option value="check_no" @selected(request('search_field') === 'check_no')>{{ __('Check #') }}</option>
                             <option value="delivery_address" @selected(request('search_field') === 'delivery_address')>{{ __('Delivery Address') }}</option>
                             <option value="pickup_address" @selected(request('search_field') === 'pickup_address')>{{ __('Pickup Address') }}</option>
-                            <option value="is_paid" @selected(request('search_field') === 'is_paid')>{{ __('Paid Jobs') }}</option>
-                            <option value="is_not_paid" @selected(request('search_field') === 'is_not_paid')>{{ __('Unpaid Jobs') }}</option>
-                            <option value="is_canceled" @selected(request('search_field') === 'is_canceled')>{{ __('Canceled Jobs') }}</option>
-                </select>
-            </div>
-                        <div class="md:w-auto">
-                            <x-button type="submit">
-                                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16Z"/></svg>
-                                {{ __('Search') }}
-                            </x-button>
-                        </div>
+                        </select>
+                    </div>
+                    <div class="md:w-auto">
+                        <x-button type="submit">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16Z"/></svg>
+                            {{ __('Search') }}
+                        </x-button>
                     </div>
                     @if(request('search_field'))
                         <input type="hidden" name="search_field" value="{{ request('search_field') }}">
+                    @endif
+                    @if(request('filter'))
+                        <input type="hidden" name="filter" value="{{ request('filter') }}">
                     @endif
                 </form>
                 <div class="mt-4 flex items-center justify-end">
@@ -125,6 +148,9 @@
                         @if(request('search_field'))
                             <input type="hidden" name="search_field" value="{{ request('search_field') }}">
                             <input type="hidden" name="search_value" value="{{ request('search_value') }}">
+                        @endif
+                        @if(request('filter'))
+                            <input type="hidden" name="filter" value="{{ request('filter') }}">
                         @endif
                         <button type="submit" 
                                 class="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold shadow-sm transition {{ $showDeleted ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50' }}">
@@ -186,15 +212,23 @@
                         </div>
                         <div class="space-y-2 px-5 py-4 text-sm text-slate-600">
                             @can('viewAny', new \App\Models\Organization)
-                                <p><span class="font-semibold text-slate-900">{{ __('Organization') }}:</span> {{ $job->organization->name }}</p>
+                                <p class="hidden md:block"><span class="font-semibold text-slate-900">{{ __('Organization') }}:</span> {{ $job->organization->name }}</p>
                             @endcan
                             <p><span class="font-semibold text-slate-900">{{ __('Load #') }}:</span> {{ $job->load_no ?? '—' }}</p>
-                            <p><span class="font-semibold text-slate-900">{{ __('Scheduled Pickup') }}:</span> {{ $job->pickup_address }} @ {{ $job->scheduled_pickup_at }}</p>
-                            <p><span class="font-semibold text-slate-900">{{ __('Scheduled Delivery') }}:</span> {{ $job->delivery_address }} @ {{ $job->scheduled_delivery_at }}</p>
-                            <p><span class="font-semibold text-slate-900">{{ __('Invoice #') }}:</span> {{ $job->invoice_no ?? '—' }}</p>
-                            <p><span class="font-semibold text-slate-900">{{ __('Check #') }}:</span> {{ $job->check_no ?? '—' }}</p>
-                            <p><span class="font-semibold text-slate-900">{{ __('Rate Code') }}:</span> {{ $job->rate_code ?? '—' }}</p>
-                            <p><span class="font-semibold text-slate-900">{{ __('Rate Value') }}:</span>
+                            <p><span class="font-semibold text-slate-900">{{ __('Scheduled') }}:</span> 
+                                <span class="text-slate-900">{{ optional($job->scheduled_pickup_at)->format('M j, Y g:i A') ?? $job->scheduled_pickup_at ?? '—' }}</span>
+                            </p>
+                            <p><span class="font-semibold text-slate-900">{{ __('Pickup') }}:</span> 
+                                <span class="text-slate-600">{{ \Illuminate\Support\Str::limit($job->pickup_address ?? '—', 40) }}</span>
+                            </p>
+                            <p class="hidden sm:block"><span class="font-semibold text-slate-900">{{ __('Delivery') }}:</span> 
+                                <span class="text-slate-600">{{ \Illuminate\Support\Str::limit($job->delivery_address ?? '—', 40) }}</span>
+                            </p>
+                            <p class="hidden md:block"><span class="font-semibold text-slate-900">{{ __('Scheduled Delivery') }}:</span> {{ optional($job->scheduled_delivery_at)->format('M j, Y g:i A') ?? $job->scheduled_delivery_at ?? '—' }}</p>
+                            <p class="hidden md:block"><span class="font-semibold text-slate-900">{{ __('Invoice #') }}:</span> {{ $job->invoice_no ?? '—' }}</p>
+                            <p class="hidden md:block"><span class="font-semibold text-slate-900">{{ __('Check #') }}:</span> {{ $job->check_no ?? '—' }}</p>
+                            <p class="hidden lg:block"><span class="font-semibold text-slate-900">{{ __('Rate Code') }}:</span> {{ $job->rate_code ?? '—' }}</p>
+                            <p class="hidden lg:block"><span class="font-semibold text-slate-900">{{ __('Rate Value') }}:</span>
                                 {{ $job->rate_value !== null ? '$'.number_format((float) $job->rate_value, 2) : '—' }}
                             </p>
                             @php

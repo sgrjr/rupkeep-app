@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Invoice;
 use App\Models\PilotCarJob;
 use App\Models\JobInvoice;
+use App\Models\UserLog;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -92,6 +93,7 @@ class MyInvoicesController extends Controller
                         $child->update(['parent_invoice_id' => null]);
                     }
 
+                    // Delete pivot entries for summary invoice (summary invoices use pivot table)
                     JobInvoice::where('invoice_id', $invoice->id)->delete();
                     $invoice->forceDelete();
 
@@ -100,13 +102,22 @@ class MyInvoicesController extends Controller
                     return redirect()->route('my.jobs.show', ['job' => $jobId]);
                 }
 
+                // Delete children and their pivot entries (if they're summaries)
                 foreach ($children as $child) {
-                    JobInvoice::where('invoice_id', $child->id)->delete();
+                    if ($child->isSummary()) {
+                        // Only summary invoices have pivot entries
+                        JobInvoice::where('invoice_id', $child->id)->delete();
+                    }
                     $child->forceDelete();
                 }
             }
 
-            JobInvoice::where('invoice_id', $invoice->id)->delete();
+            // For single invoices, no pivot entries to delete (they use pilot_car_job_id only)
+            // For summary invoices, delete pivot entries
+            if ($invoice->isSummary()) {
+                JobInvoice::where('invoice_id', $invoice->id)->delete();
+            }
+            
             $invoice->forceDelete();
 
             session()->flash('success', __('Invoice deleted.'));
@@ -235,7 +246,7 @@ class MyInvoicesController extends Controller
             return back()->with('error', __('Please select at least one job to invoice.'));
         }
 
-        $jobs = PilotCarJob::with('customer', 'organization')
+        $jobs = PilotCarJob::with('customer', 'organization', 'singleInvoices', 'summaryInvoices')
             ->whereIn('id', $jobIds)
             ->get();
 
@@ -247,39 +258,56 @@ class MyInvoicesController extends Controller
             return back()->with('error', __('Invoices can only be generated for one customer at a time.'));
         }
 
+        // Validate that jobs with invoices are not already in a summary
+        $jobsInSummary = collect();
+        foreach ($jobs as $job) {
+            $primaryInvoice = $job->invoices->whereNull('parent_invoice_id')->sortByDesc('created_at')->first();
+            if ($primaryInvoice && $primaryInvoice->isSummary()) {
+                $jobsInSummary->push($job);
+            }
+        }
+
+        if ($jobsInSummary->isNotEmpty()) {
+            $jobNumbers = $jobsInSummary->pluck('job_no')->filter()->implode(', ');
+            return back()->with('error', __('Some selected jobs are already part of a summary invoice: :jobs', ['jobs' => $jobNumbers ?: __('Job IDs: ') . $jobsInSummary->pluck('id')->implode(', ')]));
+        }
+
         $createdInvoices = DB::transaction(function () use ($jobs) {
             $createdInvoices = collect();
+            $existingInvoices = collect();
 
+            // Separate jobs into those needing new invoices and those with existing invoices
             foreach ($jobs as $job) {
-                $invoiceValues = $job->invoiceValues();
+                $primaryInvoice = $job->invoices->whereNull('parent_invoice_id')->sortByDesc('created_at')->first();
+                
+                if ($primaryInvoice && !$primaryInvoice->isSummary()) {
+                    // Job already has an invoice - use it for grouping
+                    $existingInvoices->push($primaryInvoice);
+                } else {
+                    // Job needs a new invoice - create single invoice (no pivot entry)
+                    $invoice = $job->createInvoice([
+                        'paid_in_full' => false,
+                        'invoice_type' => 'single',
+                    ]);
 
-                $invoice = Invoice::create([
-                    'paid_in_full' => false,
-                    'values' => $invoiceValues,
-                    'organization_id' => $invoiceValues['organization_id'],
-                    'customer_id' => $invoiceValues['customer_id'],
-                    'pilot_car_job_id' => $job->id,
-                    'invoice_type' => 'single',
-                ]);
-
-                JobInvoice::firstOrCreate([
-                    'invoice_id' => $invoice->id,
-                    'pilot_car_job_id' => $job->id,
-                ]);
-
-                $createdInvoices->push($invoice->fresh());
+                    $createdInvoices->push($invoice->fresh());
+                }
             }
 
-            if ($createdInvoices->count() > 1) {
+            // Combine new and existing invoices
+            $allInvoices = $createdInvoices->merge($existingInvoices);
+
+            // If we have multiple invoices (new or existing), create a summary
+            if ($allInvoices->count() > 1) {
                 $summary = Invoice::create([
                     'paid_in_full' => false,
-                    'values' => $this->buildSummaryValues($createdInvoices),
-                    'organization_id' => $createdInvoices->first()->organization_id,
-                    'customer_id' => $createdInvoices->first()->customer_id,
+                    'values' => $this->buildSummaryValues($allInvoices),
+                    'organization_id' => $allInvoices->first()->organization_id,
+                    'customer_id' => $allInvoices->first()->customer_id,
                     'invoice_type' => 'summary',
                 ]);
 
-                foreach ($createdInvoices as $child) {
+                foreach ($allInvoices as $child) {
                     $child->update(['parent_invoice_id' => $summary->id]);
                 }
 
@@ -293,7 +321,8 @@ class MyInvoicesController extends Controller
                 return collect([$summary]);
             }
 
-            return $createdInvoices;
+            // Single invoice - return it (either newly created or existing)
+            return $allInvoices;
         });
 
         /** @var \App\Models\Invoice $invoice */
@@ -302,6 +331,92 @@ class MyInvoicesController extends Controller
         event(new InvoiceReady($invoice));
 
         return redirect()->route('my.invoices.edit', ['invoice' => $invoice->id]);
+    }
+
+    /**
+     * Create a summary invoice from selected existing invoices
+     */
+    public function createSummaryFromInvoices(Request $request)
+    {
+        $this->authorize('create', Invoice::class);
+
+        $invoiceIds = collect($request->input('invoice_ids', []))
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+
+        if ($invoiceIds->isEmpty()) {
+            return back()->with('error', __('Please select at least one invoice to group.'));
+        }
+
+        if ($invoiceIds->count() < 2) {
+            return back()->with('error', __('Please select at least two invoices to create a summary.'));
+        }
+
+        $invoices = Invoice::with('customer', 'organization', 'job')
+            ->whereIn('id', $invoiceIds)
+            ->get();
+
+        if ($invoices->isEmpty()) {
+            return back()->with('error', __('No matching invoices were found.'));
+        }
+
+        // Check all invoices belong to same customer
+        if ($invoices->pluck('customer_id')->unique()->count() > 1) {
+            return back()->with('error', __('All selected invoices must belong to the same customer.'));
+        }
+
+        // Check all invoices belong to same organization
+        if ($invoices->pluck('organization_id')->unique()->count() > 1) {
+            return back()->with('error', __('All selected invoices must belong to the same organization.'));
+        }
+
+        // Check that invoices are not already part of a summary
+        $alreadyInSummary = $invoices->filter(fn($inv) => $inv->parent_invoice_id !== null || $inv->isSummary());
+        if ($alreadyInSummary->isNotEmpty()) {
+            return back()->with('error', __('Some selected invoices are already part of a summary invoice.'));
+        }
+
+        $summary = DB::transaction(function () use ($invoices) {
+            $summary = Invoice::create([
+                'paid_in_full' => false,
+                'values' => $this->buildSummaryValues($invoices),
+                'organization_id' => $invoices->first()->organization_id,
+                'customer_id' => $invoices->first()->customer_id,
+                'invoice_type' => 'summary',
+            ]);
+
+            foreach ($invoices as $child) {
+                $child->update(['parent_invoice_id' => $summary->id]);
+                
+                // Link summary to all jobs from child invoices
+                // Single invoices: use job() relationship (singular)
+                // Summary invoices: use jobs() relationship (plural via pivot)
+                if ($child->isSummary()) {
+                    $childJobs = $child->jobs;
+                } else {
+                    // Single invoice - get job via pilot_car_job_id
+                    $childJob = $child->job;
+                    $childJobs = $childJob ? collect([$childJob]) : collect();
+                }
+                
+                foreach ($childJobs as $job) {
+                    JobInvoice::firstOrCreate([
+                        'invoice_id' => $summary->id,
+                        'pilot_car_job_id' => $job->id,
+                    ]);
+                }
+            }
+
+            return $summary;
+        });
+
+        session()->flash('success', __('Summary invoice created successfully from :count invoice(s).', [
+            'count' => $invoices->count()
+        ]));
+
+        return redirect()->route('my.invoices.edit', ['invoice' => $summary->id]);
     }
 
     protected function buildSummaryValues(Collection $childInvoices): array
@@ -325,19 +440,21 @@ class MyInvoicesController extends Controller
             $deliveryAddress = data_get($childValues, 'delivery_address');
             $description = \App\Models\Invoice::generateDescriptionOfWork($pickupAddress, $deliveryAddress);
 
+            // Get job info if available
+            $job = $child->job;
             $items[] = [
                 'invoice_id' => $child->id,
-                'invoice_number' => $child->invoice_number,
+                'invoice_number' => $child->invoice_number ?? '—',
                 'title' => data_get($childValues, 'title', 'INVOICE'),
-                'job_no' => data_get($childValues, 'job_no') ?? data_get($childValues, 'load_no'),
-                'load_no' => data_get($childValues, 'load_no'),
-                'pickup_address' => $pickupAddress,
-                'delivery_address' => $deliveryAddress,
-                'description' => $description,
-                'total' => $childTotal,
-                'billable_miles' => $childMiles,
-                'rate_code' => data_get($childValues, 'effective_rate_code') ?? data_get($childValues, 'rate_code'),
-                'date_of_service' => $child->created_at?->format('Y-m-d'),
+                'job_no' => data_get($childValues, 'job_no') ?? $job->job_no ?? data_get($childValues, 'load_no') ?? '—',
+                'load_no' => data_get($childValues, 'load_no') ?? $job->load_no ?? '—',
+                'pickup_address' => $pickupAddress ?? $job->pickup_address ?? '—',
+                'delivery_address' => $deliveryAddress ?? $job->delivery_address ?? '—',
+                'description' => $description ?? '—',
+                'total' => $childTotal > 0 ? $childTotal : (float)data_get($childValues, 'total', 0),
+                'billable_miles' => $childMiles > 0 ? $childMiles : (float)data_get($childValues, 'billable_miles', 0),
+                'rate_code' => data_get($childValues, 'effective_rate_code') ?? data_get($childValues, 'rate_code') ?? $job->rate_code ?? '—',
+                'date_of_service' => $child->created_at?->format('Y-m-d') ?? '—',
             ];
         }
 

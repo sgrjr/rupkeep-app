@@ -19,7 +19,7 @@ class InvoiceObserver
 
         $isPaid = $invoice->paid_in_full;
 
-        // Sync to related jobs via pivot table (jobs_invoices)
+        // Sync to related jobs (summary invoices use pivot table, single invoices use pilot_car_job_id)
         $relatedJobs = $invoice->jobs()->get();
         foreach ($relatedJobs as $job) {
             $this->syncJobPaymentStatus($job, $isPaid, $invoice);
@@ -60,9 +60,9 @@ class InvoiceObserver
     {
         // Always recalculate from all paid invoices to ensure accuracy
         // This handles both paid and unpaid scenarios correctly
-        $allPaidInvoices = $job->invoices()
-            ->where('paid_in_full', true)
-            ->get();
+        // Use getAllInvoices() to get both single and summary invoices
+        $allPaidInvoices = $job->getAllInvoices()
+            ->where('paid_in_full', true);
         
         if ($allPaidInvoices->isEmpty()) {
             // No paid invoices, mark job as unpaid
@@ -81,15 +81,16 @@ class InvoiceObserver
      */
     private function syncChildInvoiceJobs(Invoice $childInvoice): void
     {
-        // Sync to related jobs via pivot table
-        $relatedJobs = $childInvoice->jobs()->get();
-        foreach ($relatedJobs as $job) {
-            $this->syncJobPaymentStatus($job, true, $childInvoice);
-        }
-
-        // Also sync via direct relationship
-        if ($childInvoice->job) {
-            if (!$relatedJobs->contains('id', $childInvoice->job->id)) {
+        // Handle single vs summary child invoices
+        if ($childInvoice->isSummary()) {
+            // Summary child invoice: sync to jobs via pivot table
+            $relatedJobs = $childInvoice->jobs()->get();
+            foreach ($relatedJobs as $job) {
+                $this->syncJobPaymentStatus($job, true, $childInvoice);
+            }
+        } else {
+            // Single child invoice: sync to job via pilot_car_job_id
+            if ($childInvoice->job) {
                 $this->syncJobPaymentStatus($childInvoice->job, true, $childInvoice);
             }
         }

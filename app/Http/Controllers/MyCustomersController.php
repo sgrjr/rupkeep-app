@@ -43,8 +43,12 @@ class MyCustomersController extends Controller
     public function show(Request $request, int $customer_id){
         $customer = Customer::with([
             'contacts',
-            'jobs.invoices.children',
+            'jobs.singleInvoices.children',
+            'jobs.summaryInvoices.children',
         ])->where('id', $customer_id)->first();
+        
+        // The invoices() method on PilotCarJob will merge singleInvoices and summaryInvoices
+        // when accessed, so we don't need additional merging logic
         
         // Prepare transaction register data
         $transactions = collect();

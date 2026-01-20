@@ -19,7 +19,7 @@
                         </a>
                     </div>
                 </div>
-                <div class="grid gap-3 rounded-2xl border border-white/25 bg-white/10 px-4 py-3 text-xs font-semibold uppercase tracking-wider text-white/85 shadow-sm backdrop-blur sm:grid-cols-2">
+                <div class="grid gap-3 rounded-2xl border border-white/25 bg-white/10 px-4 py-3 text-xs font-semibold uppercase tracking-wider text-white/85 shadow-sm backdrop-blur sm:grid-cols-3">
                     <div>
                         {{ __('Pickup') }}
                         <p class="mt-1 text-sm font-medium normal-case text-white">
@@ -32,14 +32,137 @@
                             {{ \Carbon\Carbon::parse($log->job->scheduled_delivery_at)->format('M j, Y g:i A') }}
                         </p>
                     </div>
+                    <div>
+                        {{ __('Billable Miles') }}
+                        <p class="mt-1 text-sm font-medium normal-case text-white">
+                            @php
+                                $calculatedBillable = $calculatedBillableMiles ?? ($log->total_billable_miles ?? 0);
+                                $overrideValue = $form->billable_miles ?? $log->billable_miles;
+                                $displayValue = ($overrideValue !== null && $overrideValue !== '' && (float)$overrideValue != (float)$calculatedBillable) 
+                                    ? number_format((float)$overrideValue, 1) . ' (override)'
+                                    : number_format($calculatedBillable, 1);
+                            @endphp
+                            {{ $displayValue }}
+                        </p>
+                    </div>
                 </div>
             </div>
         </section>
 
-        <form id="user_log_form" wire:submit="saveLog" class="space-y-6">
+        @if($log->approval_status === 'pending' && $log->car_driver_id && auth()->user()->id === $log->car_driver_id)
+            <section class="rounded-3xl border-2 border-amber-200 bg-amber-50 p-5 shadow-sm sm:p-6">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-lg font-semibold text-amber-900">{{ __('Log Assignment Pending Approval') }}</h2>
+                        <p class="text-sm text-amber-700">{{ __('This log has been assigned to you. Please confirm or deny this assignment before editing.') }}</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        @can('confirm', $log)
+                            <button wire:click="confirmLog" class="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+                                {{ __('Confirm') }}
+                            </button>
+                        @endcan
+                        @can('deny', $log)
+                            <button wire:click="denyLog" class="inline-flex items-center gap-2 rounded-full bg-red-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-red-600">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                {{ __('Deny') }}
+                            </button>
+                        @endcan
+                    </div>
+                </div>
+            </section>
+        @endif
+
+        @if($log->approval_status === 'denied')
+            <section class="rounded-3xl border-2 border-red-200 bg-red-50 p-5 shadow-sm sm:p-6">
+                <div class="flex items-center gap-3">
+                    <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                    <div>
+                        <h2 class="text-lg font-semibold text-red-900">{{ __('Log Denied') }}</h2>
+                        <p class="text-sm text-red-700">{{ __('This log has been denied and cannot be edited.') }}</p>
+                        @if($log->approved_at)
+                            <p class="text-xs text-red-600 mt-1">{{ __('Denied on :date', ['date' => $log->approved_at->format('M j, Y g:i A')]) }}</p>
+                        @endif
+                    </div>
+                </div>
+            </section>
+        @endif
+
+        <section class="rounded-3xl border border-slate-200 bg-white/90 p-5 shadow-sm sm:p-6">
+            <header class="mb-6 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <h2 class="text-lg font-semibold text-slate-900">{{ __('Job Overview') }}</h2>
+                    <p class="text-xs text-slate-500">{{ __('Customer, schedule, and financial information for this job.') }}</p>
+                </div>
+                <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{{ __('Rate: :code', ['code' => $log->job->rate_code ?? '—']) }}</span>
+            </header>
+
+            <div class="grid gap-4 md:grid-cols-2">
+                <article class="space-y-3 text-sm text-slate-600">
+                    @can('viewAny', new \App\Models\Organization)
+                        <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Organization') }}:</span> <span class="text-slate-900">{{ $log->job->organization->name }}</span></p>
+                    @endcan
+                    <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Job #') }}:</span> <span class="text-slate-900 font-semibold">{{ $log->job->job_no }}</span></p>
+                    <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Load #') }}:</span> <span class="text-slate-900">{{ $log->job->load_no ?? '—' }}</span></p>
+                    <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Customer') }}:</span> <span class="text-slate-900">{{ $log->job->customer?->name ?? '—' }}</span></p>
+                    @if($log->job->default_driver_id)
+                        <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Default Driver') }}:</span> <span class="text-slate-900">{{ $log->job->defaultDriver?->name ?? '—' }}</span></p>
+                    @endif
+                    @if($log->job->default_truck_driver_id)
+                        <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Default Truck Driver') }}:</span> <span class="text-slate-900">{{ $log->job->defaultTruckDriver?->name ?? '—' }}</span></p>
+                    @endif
+                    <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Check #') }}:</span> <span class="text-slate-900">{{ $log->job->check_no ?? '—' }}</span></p>
+                    <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Invoice Paid') }}:</span> <span class="font-semibold {{ $log->job->invoice_paid < 1 ? 'text-red-500' : 'text-emerald-600' }}">{{ $log->job->invoice_paid < 1 ? __('No') : __('Yes') }}</span></p>
+                    <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Invoice #') }}:</span> <span class="text-slate-900">{{ $log->job->invoice_no ?? '—' }}</span></p>
+                    <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Rate Value') }}:</span> <span class="text-slate-900">{{ $log->job->rate_value !== null ? '$'.number_format((float) $log->job->rate_value, 2) : '—' }}</span></p>
+                    @if($log->job->canceled_at)
+                        <div class="rounded-xl border border-red-200 bg-red-50 p-3">
+                            <p><span class="text-xs font-semibold uppercase tracking-wide text-red-600">{{ __('Canceled At') }}:</span> <span class="text-red-700">{{ optional($log->job->canceled_at)->format('M j, Y g:i A') }}</span></p>
+                            @if($log->job->canceled_reason)
+                                <p class="mt-2"><span class="text-xs font-semibold uppercase tracking-wide text-red-600">{{ __('Cancellation Reason') }}:</span> <span class="text-red-700">{{ $log->job->canceled_reason }}</span></p>
+                            @endif
+                        </div>
+                    @endif
+                </article>
+
+                <article class="space-y-3 text-sm text-slate-600">
+                    <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Pickup') }}:</span> <a class="text-orange-600 hover:text-orange-700" target="_blank" href="http://maps.google.com/?daddr={{$log->job->pickup_address}}">{{ $log->job->pickup_address ?? '—' }}</a></p>
+                    <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Pickup Time') }}:</span> <span class="text-slate-900">{{ optional($log->job->scheduled_pickup_at)->format('M j, Y g:i A') ?? $log->job->scheduled_pickup_at ?? '—' }}</span></p>
+                    <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Delivery') }}:</span> <a class="text-orange-600 hover:text-orange-700" target="_blank" href="http://maps.google.com/?daddr={{$log->job->delivery_address}}">{{ $log->job->delivery_address ?? '—' }}</a></p>
+                    <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Delivery Time') }}:</span> <span class="text-slate-900">{{ optional($log->job->scheduled_delivery_at)->format('M j, Y g:i A') ?? $log->job->scheduled_delivery_at ?? '—' }}</span></p>
+                    <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Memo') }}:</span>
+                        @if(str_starts_with($log->job->memo ?? '', 'http'))
+                            <a target="_blank" href="{!!$log->job->memo!!}" class="text-orange-600 hover:text-orange-700">{{ __('View Link') }}</a>
+                        @else
+                            <span class="text-slate-900">{{ $log->job->memo ?? '—' }}</span>
+                        @endif
+                    </p>
+                </article>
+            </div>
+        </section>
+
+        <form id="user_log_form" wire:submit="saveLog" class="space-y-6" @if($log->approval_status === 'pending' && $log->car_driver_id && auth()->user()->id === $log->car_driver_id) onsubmit="event.preventDefault(); alert('{{ __('Please confirm or deny this log assignment before editing.') }}'); return false;" @endif>
             @csrf
 
-            <div class="sticky bottom-6 z-30 flex flex-col items-stretch gap-3 rounded-3xl border border-slate-200 bg-white/90 px-4 py-4 shadow-lg backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Section Controls') }}</p>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button type="button" wire:click="openAllSections" class="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50">
+                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                        {{ __('Open All') }}
+                    </button>
+                    <button type="button" wire:click="closeAllSections" class="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50">
+                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg>
+                        {{ __('Close All') }}
+                    </button>
+                </div>
+            </div>
+
+            <!-- Desktop Save Button (sticky at bottom) - Hidden on mobile -->
+            <div class="hidden sm:sticky sm:bottom-6 sm:z-30 sm:flex sm:flex-col sm:items-stretch sm:gap-3 sm:rounded-3xl sm:border sm:border-slate-200 sm:bg-white/90 sm:px-6 sm:py-4 sm:shadow-lg sm:backdrop-blur sm:flex-row sm:items-center sm:justify-between">
                 <div class="flex flex-wrap items-center gap-3 text-sm">
                     @if (session()->has('error'))
                         <div class="inline-flex items-center gap-2 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-red-600">
@@ -65,7 +188,7 @@
             <section class="rounded-3xl border border-slate-200 bg-white/90 p-5 shadow-sm sm:p-6">
                 <details {{ $isDriverVehicleOpen ? 'open' : '' }} class="group space-y-5">
                     @php
-                        $driverName = $log->driver?->name ?? __('Unassigned');
+                        $driverName = $log->user?->name ?? __('Unassigned');
                         $vehicleName = $log->vehicle?->name ?? __('No vehicle');
                         $driverVehicleSummary = __('Driver & Vehicle') . ': ' . $driverName . ' • ' . $vehicleName;
                         $tripTimingSummary = implode(' → ', array_filter([
@@ -74,7 +197,7 @@
                         ]));
                         $mileageSummary = __('Miles') . ': ' . ($log->total_miles ?? '—') . ' • ' . __('Billable') . ': ' . ($log->billable_miles ?? '—');
                         $expenseSummary = __('Tolls') . ': ' . ($log->tolls ?? 0) . ' • ' . __('Hotel') . ': ' . ($log->hotel ?? 0);
-                        $loadSummary = __('Truck') . ': ' . ($log->truck_number ?? '—') . ' • ' . __('Trailer') . ': ' . ($log->trailer_number ?? '—');
+                        $loadSummary = __('Truck') . ': ' . ($log->truck_no ?? '—') . ' • ' . __('Trailer') . ': ' . ($log->trailer_no ?? '—');
                         $attachmentsCount = $log->attachments?->count() ?? 0;
                     @endphp
                     <summary wire:click="$toggle('isDriverVehicleOpen')" class="flex flex-wrap cursor-pointer items-center justify-between gap-3 border-b border-slate-100 pb-3 text-lg font-semibold text-slate-900 sm:flex-nowrap">
@@ -112,37 +235,6 @@
                             </select>
                             @error('form.vehicle_position') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                         </div>
-                        <div>
-                            <label for="truck_driver_id" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Truck Driver') }}</label>
-                            <select id="truck_driver_id" wire:model.blur="form.truck_driver_id" class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
-                                <option value="">{{ __('Select Truck Driver') }}</option>
-                                @foreach($customer_contacts as $contact)
-                                    <option value="{{ $contact['value'] }}">{{ $contact['name'] }}</option>
-                                @endforeach
-                            </select>
-                            @error('form.truck_driver_id') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
-                        </div>
-                    </div>
-                    <details class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                        <summary class="cursor-pointer text-sm font-semibold text-orange-600 hover:text-orange-700">{{ __('New Truck Driver') }}</summary>
-                        <div class="mt-3 grid gap-3 sm:grid-cols-2 md:grid-cols-3">
-                            <div>
-                                <label for="new_truck_driver_name" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Name') }}</label>
-                                <input type="text" id="new_truck_driver_name" wire:model.blur="form.new_truck_driver_name" class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
-                                @error('form.new_truck_driver_name') <p class="mt-1 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
-                            </div>
-                            <div>
-                                <label for="new_truck_driver_phone" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Phone') }}</label>
-                                <input type="tel" id="new_truck_driver_phone" wire:model.blur="form.new_truck_driver_phone" class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
-                                @error('form.new_truck_driver_phone') <p class="mt-1 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
-                            </div>
-                            <div class="md:col-span-3">
-                                <label for="new_truck_driver_memo" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Notes') }}</label>
-                                <textarea id="new_truck_driver_memo" wire:model.blur="form.new_truck_driver_memo" rows="2" class="mt-2 block w-full rounded-2xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"></textarea>
-                                @error('form.new_truck_driver_memo') <p class="mt-1 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
-                            </div>
-                        </div>
-                    </details>
                 </details>
             </section>
 
@@ -195,11 +287,6 @@
                             @error('form.end_mileage') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                         </div>
                         <div>
-                            <label for="total_miles" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Total Miles') }}</label>
-                            <input type="number" id="total_miles" wire:model.blur="form.total_miles" class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
-                            @error('form.total_miles') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
-                        </div>
-                        <div>
                             <label for="billable_miles" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Billable Miles') }}</label>
                             <div class="mt-2 space-y-2">
                                 @php
@@ -249,14 +336,17 @@
                             @error('form.billable_miles') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                         </div>
                         <div>
-                            <label for="dead_head_times" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Deadhead Count') }}</label>
-                            <input type="number" id="dead_head_times" wire:model.blur="form.dead_head_times" class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
-                            @error('form.dead_head_times') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
+                            <label for="is_deadhead" class="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2">
+                                <input type="checkbox" id="is_deadhead" wire:model.blur="form.is_deadhead" class="h-4 w-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500">
+                                <span class="text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Deadhead Run') }}</span>
+                            </label>
+                            <p class="mt-1 text-xs text-slate-400">{{ __('Check if this is a deadhead (empty return) trip. Each deadhead log counts as one deadhead leg.') }}</p>
+                            @error('form.is_deadhead') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                         </div>
                         <div>
-                            <label for="extra_load_stops" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Extra Load Stops') }}</label>
-                            <input type="number" id="extra_load_stops" wire:model.blur="form.extra_load_stops" class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
-                            @error('form.extra_load_stops') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
+                            <label for="extra_load_stops_count" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Extra Load Stops') }}</label>
+                            <input type="number" id="extra_load_stops_count" wire:model.blur="form.extra_load_stops_count" min="0" step="1" class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                            @error('form.extra_load_stops_count') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                         </div>
                     </div>
                 </details>
@@ -280,9 +370,9 @@
                             @error('form.hotel') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                         </div>
                         <div>
-                            <label for="wait_time" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Wait Time (hrs)') }}</label>
-                            <input type="number" id="wait_time" wire:model.blur="form.wait_time" step="0.25" min="0" class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
-                            @error('form.wait_time') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
+                            <label for="wait_time_hours" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Wait Time (hrs)') }}</label>
+                            <input type="number" id="wait_time_hours" wire:model.blur="form.wait_time_hours" step="0.25" min="0" class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                            @error('form.wait_time_hours') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                         </div>
                         <div>
                             <label for="extra_charge" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Extra Charge') }}</label>
@@ -301,14 +391,46 @@
                     </summary>
                     <div class="grid gap-4 sm:grid-cols-2">
                         <div>
-                            <label for="trailer_number" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Trailer #') }}</label>
-                            <input type="text" id="trailer_number" wire:model.blur="form.trailer_number" class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
-                            @error('form.trailer_number') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
+                            <label for="truck_driver_id" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Truck Driver') }}</label>
+                            <select id="truck_driver_id" wire:model.blur="form.truck_driver_id" class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                <option value="">{{ __('Select Truck Driver') }}</option>
+                                @foreach($customer_contacts as $contact)
+                                    <option value="{{ $contact['value'] }}">{{ $contact['name'] }}</option>
+                                @endforeach
+                            </select>
+                            @error('form.truck_driver_id') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                         </div>
                         <div>
-                            <label for="truck_number" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Truck #') }}</label>
-                            <input type="text" id="truck_number" wire:model.blur="form.truck_number" class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
-                            @error('form.truck_number') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
+                            <label for="truck_no" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Truck #') }}</label>
+                            <input type="text" id="truck_no" wire:model.blur="form.truck_no" class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                            @error('form.truck_no') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
+                        </div>
+                        <div>
+                            <label for="trailer_no" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Trailer #') }}</label>
+                            <input type="text" id="trailer_no" wire:model.blur="form.trailer_no" class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                            @error('form.trailer_no') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
+                        </div>
+                        <div class="sm:col-span-2">
+                            <details class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                <summary class="cursor-pointer text-sm font-semibold text-orange-600 hover:text-orange-700">{{ __('New Truck Driver') }}</summary>
+                                <div class="mt-3 grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+                                    <div>
+                                        <label for="new_truck_driver_name" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Name') }}</label>
+                                        <input type="text" id="new_truck_driver_name" wire:model.blur="form.new_truck_driver_name" class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                        @error('form.new_truck_driver_name') <p class="mt-1 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
+                                    </div>
+                                    <div>
+                                        <label for="new_truck_driver_phone" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Phone') }}</label>
+                                        <input type="tel" id="new_truck_driver_phone" wire:model.blur="form.new_truck_driver_phone" class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                        @error('form.new_truck_driver_phone') <p class="mt-1 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
+                                    </div>
+                                    <div class="md:col-span-3">
+                                        <label for="new_truck_driver_memo" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Notes') }}</label>
+                                        <textarea id="new_truck_driver_memo" wire:model.blur="form.new_truck_driver_memo" rows="2" class="mt-2 block w-full rounded-2xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"></textarea>
+                                        @error('form.new_truck_driver_memo') <p class="mt-1 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
+                                    </div>
+                                </div>
+                            </details>
                         </div>
                         <div class="md:col-span-2">
                             <label for="memo" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Log Memo (Internal)') }}</label>
@@ -396,6 +518,28 @@
             </section>
         </form>
     </div>
+
+    <!-- Fixed Save Button for Mobile -->
+    <button 
+        type="button"
+        wire:loading.attr="disabled"
+        wire:target="saveLog"
+        class="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-orange-600 text-white shadow-lg transition hover:bg-orange-700 active:scale-95 sm:hidden"
+        @if($log->approval_status === 'pending' && $log->car_driver_id && auth()->user()->id === $log->car_driver_id) 
+            onclick="event.preventDefault(); alert('{{ __('Please confirm or deny this log assignment before editing.') }}'); return false;"
+        @else
+            onclick="document.getElementById('user_log_form').requestSubmit();"
+        @endif
+        title="{{ __('Save Changes') }}"
+    >
+        <svg wire:loading.remove wire:target="saveLog" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+        </svg>
+        <svg wire:loading wire:target="saveLog" class="h-6 w-6 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+    </button>
 </div>
 
 @script

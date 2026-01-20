@@ -194,11 +194,11 @@
             </div>
         </section>
 
-        <div class="flex flex-wrap items-center justify-end gap-3">
+        <div class="sticky bottom-6 z-30 flex flex-col items-stretch gap-3 rounded-3xl border border-slate-200 bg-white/90 px-4 py-4 shadow-lg backdrop-blur sm:flex-row sm:items-center sm:justify-end sm:px-6">
             <x-action-message class="text-sm font-semibold text-emerald-500" on="saved">
                 {{ __('Changes saved successfully.') }}
             </x-action-message>
-            <x-button>
+            <x-button class="w-full justify-center sm:w-auto">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                 {{ __('Save Changes') }}
             </x-button>

@@ -61,9 +61,17 @@ class Invoice extends Model
         return $this->belongsTo(PilotCarJob::class, 'pilot_car_job_id');
     }
 
+    /**
+     * Get all jobs linked to this invoice via pivot table.
+     * 
+     * Only used for summary invoices that link to multiple jobs.
+     * Single invoices use the job() relationship via pilot_car_job_id.
+     * 
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     */
     public function jobs()
     {
-        return $this->belongsToMany(PilotCarJob::class, 'jobs_invoices');
+        return $this->belongsToMany(PilotCarJob::class, 'summary_invoice_jobs');
     }
 
     public function parent()

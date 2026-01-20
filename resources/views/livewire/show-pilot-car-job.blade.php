@@ -510,18 +510,37 @@
                     </p>
                     <div class="pt-2">
                         <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">{{ __('Invoices') }}</p>
-                        <div class="mt-2 flex flex-wrap gap-2">
+                        <div class="mt-2 space-y-2">
                             @if($primaryInvoices->isEmpty())
                                 <span class="text-xs text-slate-400">{{ __('No invoices yet.') }}</span>
                             @else
-                                <span class="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-600">
-                                    {{ trans_choice('{0} No invoices|{1} :count invoice|[2,*] :count invoices', $primaryInvoices->count(), ['count' => $primaryInvoices->count()]) }}
-                                </span>
-                                @if($latestInvoice)
-                                    <span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-semibold text-emerald-700">
-                                        {{ __('Latest Invoice #:number ready', ['number' => $latestInvoice->invoice_number]) }}
-                                    </span>
-                                @endif
+                                @foreach($primaryInvoices as $inv)
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <a href="{{ route('my.invoices.edit', ['invoice' => $inv->id]) }}" 
+                                           class="inline-flex items-center gap-1.5 rounded-full border {{ $inv->isSummary() ? 'border-blue-200 bg-blue-50' : 'border-orange-200 bg-orange-50' }} px-3 py-1.5 text-xs font-semibold {{ $inv->isSummary() ? 'text-blue-700' : 'text-orange-600' }} transition hover:{{ $inv->isSummary() ? 'bg-blue-100' : 'bg-orange-100' }}">
+                                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-4.536a2.5 2.5 0 11-3.536 3.536L4.5 16.5V19.5H7.5l8.5-8.5"/></svg>
+                                            {{ __('Invoice #:number', ['number' => $inv->invoice_number]) }}
+                                            @if($inv->isSummary())
+                                                <span class="ml-1 rounded-full bg-blue-200 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-blue-700">{{ __('Summary') }}</span>
+                                            @endif
+                                        </a>
+                                        @if($inv->isSummary() && $inv->children()->count() > 0)
+                                            <div class="flex flex-wrap items-center gap-1 text-[10px] text-slate-500">
+                                                <span>(</span>
+                                                @foreach($inv->children()->take(3) as $child)
+                                                    <a href="{{ route('my.invoices.edit', ['invoice' => $child->id]) }}" class="text-orange-600 hover:text-orange-700 hover:underline">
+                                                        #{{ $child->invoice_number }}
+                                                    </a>
+                                                    @if(!$loop->last),@endif
+                                                @endforeach
+                                                @if($inv->children()->count() > 3)
+                                                    <span>+{{ $inv->children()->count() - 3 }} more</span>
+                                                @endif
+                                                <span>)</span>
+                                            </div>
+                                        @endif
+                                    </div>
+                                @endforeach
                             @endif
                         </div>
                     </div>

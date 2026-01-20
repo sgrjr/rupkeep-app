@@ -110,7 +110,10 @@
             <header class="flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <h2 class="text-lg font-semibold text-slate-900">{{ __('Jobs & Invoicing') }}</h2>
-                    <p class="text-xs text-slate-500">{{ __('Select one or more jobs to generate a new invoice. Multiple jobs will create a summary invoice automatically.') }}</p>
+                    <p class="text-xs text-slate-500">{{ __('Select jobs to create new invoices or group existing invoices into a summary. Multiple selections will create a summary automatically.') }}</p>
+                </div>
+                <div>
+                    @livewire('create-invoice-summary', ['customerId' => $customer->id])
                 </div>
             </header>
 
@@ -133,17 +136,40 @@
                         <tbody class="divide-y divide-slate-100 bg-white">
                             @forelse($jobs as $job)
                                 @php
+                                    // Get primary invoice from loaded collection (now includes both pivot and direct relationships)
                                     $primaryInvoice = $job->invoices->whereNull('parent_invoice_id')->sortByDesc('created_at')->first();
+                                    
+                                    // Allow selection if:
+                                    // 1. No invoice exists (regardless of invoice_paid flag - allows fixing data inconsistencies)
+                                    // 2. Has invoice that is not a summary and invoice is not paid
+                                    // Block if: invoice exists AND is paid, OR invoice is a summary
+                                    if (!$primaryInvoice) {
+                                        // No invoice - allow selection (even if invoice_paid flag is set - data inconsistency)
+                                        $canSelect = true;
+                                    } else {
+                                        // Has invoice - allow if not a summary and not paid
+                                        $canSelect = !$primaryInvoice->isSummary() && !$primaryInvoice->paid_in_full;
+                                    }
                                 @endphp
                                 <tr>
                                     <td class="px-4 py-3">
-                                        @if(!$primaryInvoice && !$job->invoice_paid)
+                                        @if($canSelect)
                                             <label class="inline-flex items-center gap-2 text-xs font-semibold text-slate-600">
                                                 <input name="invoice_this[]" value="{{ $job->id }}" type="checkbox" class="rounded border-slate-300 text-orange-500 focus:ring-orange-400"/>
-                                                {{ __('Select') }}
+                                                {{ $primaryInvoice ? __('Group') : __('Select') }}
                                             </label>
                                         @else
-                                            <span class="text-xs text-slate-400">—</span>
+                                            @php
+                                                $reason = '';
+                                                if ($primaryInvoice && $primaryInvoice->isSummary()) {
+                                                    $reason = __('Already in summary');
+                                                } elseif ($primaryInvoice && $primaryInvoice->paid_in_full) {
+                                                    $reason = __('Invoice paid');
+                                                } else {
+                                                    $reason = __('Cannot select');
+                                                }
+                                            @endphp
+                                            <span class="text-xs text-slate-400" title="{{ $reason }}">—</span>
                                         @endif
                                     </td>
                                     <td class="px-4 py-3 font-semibold text-slate-800">
@@ -157,9 +183,18 @@
                                             <span class="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">{{ __('Invoice Paid') }}</span>
                                         @elseif($primaryInvoice)
                                             <div class="flex flex-wrap items-center gap-2">
-                                                <span class="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-600">
-                                                    {{ $primaryInvoice->isSummary() ? __('Summary Invoice #:number', ['number' => $primaryInvoice->invoice_number]) : __('Invoice #:number', ['number' => $primaryInvoice->invoice_number]) }}
-                                                </span>
+                                                @if($primaryInvoice->isSummary())
+                                                    <span class="inline-flex items-center gap-2 rounded-full border border-purple-200 bg-purple-50 px-3 py-1 text-xs font-semibold text-purple-600">
+                                                        {{ __('Summary Invoice #:number', ['number' => $primaryInvoice->invoice_number]) }}
+                                                    </span>
+                                                @else
+                                                    <span class="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-600">
+                                                        {{ __('Invoice #:number', ['number' => $primaryInvoice->invoice_number]) }}
+                                                        @if($canSelect)
+                                                            <span class="ml-1 rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700">{{ __('Can Group') }}</span>
+                                                        @endif
+                                                    </span>
+                                                @endif
                                                 <a href="{{ route('my.invoices.edit', ['invoice' => $primaryInvoice->id]) }}" class="inline-flex items-center text-xs font-semibold text-orange-600 underline hover:text-orange-700">
                                                     {{ __('View invoice') }}
                                                 </a>

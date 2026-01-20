@@ -20,8 +20,8 @@ class PilotCarJobObserver
         $invoicePaidValue = $job->invoice_paid;
         $isPaid = !empty($invoicePaidValue) && (float) $invoicePaidValue >= 1;
 
-        // Sync to all related invoices via pivot table
-        $relatedInvoices = $job->invoices()->get();
+        // Sync to all related invoices (both single and summary)
+        $relatedInvoices = $job->getAllInvoices();
         foreach ($relatedInvoices as $invoice) {
             // Only update if status actually changed
             if ($invoice->paid_in_full !== $isPaid) {
@@ -83,9 +83,9 @@ class PilotCarJobObserver
     {
         // Recalculate from all paid invoices (not just summary children)
         // This ensures accuracy if job has multiple invoices
-        $allPaidInvoices = $job->invoices()
-            ->where('paid_in_full', true)
-            ->get();
+        // Use getAllInvoices() to get both single and summary invoices
+        $allPaidInvoices = $job->getAllInvoices()
+            ->where('paid_in_full', true);
         
         if ($allPaidInvoices->isEmpty()) {
             $job->invoice_paid = '0';

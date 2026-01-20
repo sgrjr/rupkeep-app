@@ -63,4 +63,29 @@ class UserLogPolicy
         return $user->is_super;
     }
 
+    /**
+     * Determine whether the user can confirm the log.
+     */
+    public function confirm(User $user, UserLog $model): bool
+    {
+        // Managers can confirm any log in their organization
+        return ($user->organization_id === $model->organization_id && ($user->isAdmin() || $user->isManager())) || $user->is_super;
+    }
+
+    /**
+     * Determine whether the user can deny the log.
+     */
+    public function deny(User $user, UserLog $model): bool
+    {
+        // Managers can deny any log, assigned driver can deny their own log
+        $canDeny = ($user->organization_id === $model->organization_id && ($user->isAdmin() || $user->isManager())) || $user->is_super;
+        
+        // Also allow the assigned driver to deny
+        if (!$canDeny && $model->car_driver_id === $user->id) {
+            return true;
+        }
+        
+        return $canDeny;
+    }
+
 }

@@ -285,65 +285,165 @@
             </div>
         </div>
 
+        @php
+            $now = now();
+            $upcomingMaintenance = $vehicle->maintenanceRecords()
+                ->where(function($q) use ($now) {
+                    $q->where('next_due_at', '>=', $now)
+                      ->orWhereNull('next_due_at');
+                })
+                ->whereNotNull('performed_at')
+                ->orderBy('next_due_at', 'asc')
+                ->get();
+            
+            $pastMaintenance = $vehicle->maintenanceRecords()
+                ->where('performed_at', '<', $now)
+                ->orderBy('performed_at', 'desc')
+                ->get();
+            
+            $overdueMaintenance = $vehicle->maintenanceRecords()
+                ->where('next_due_at', '<', $now)
+                ->whereNotNull('next_due_at')
+                ->orderBy('next_due_at', 'asc')
+                ->get();
+        @endphp
+
         <section class="rounded-3xl border border-slate-100 bg-white/90 shadow-sm">
             <header class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-6 py-4">
                 <div>
-                    <h2 class="text-lg font-semibold text-slate-900">{{ __('Maintenance History') }}</h2>
-                    <p class="text-xs text-slate-500">{{ __('Most recent records are shown first.') }}</p>
+                    <h2 class="text-lg font-semibold text-slate-900">{{ __('Maintenance History & Schedule') }}</h2>
+                    <p class="text-xs text-slate-500">{{ __('View past maintenance and upcoming scheduled work.') }}</p>
                 </div>
-                <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{{ $vehicle->maintenanceRecords->count() }} {{ __('records') }}</span>
+                <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{{ $vehicle->maintenanceRecords->count() }} {{ __('total records') }}</span>
             </header>
 
-            <div class="max-h-96 overflow-x-auto overflow-y-auto">
-                <table class="min-w-full divide-y divide-slate-200 text-sm">
-                    <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                        <tr>
-                            <th class="px-6 py-3 text-left">{{ __('Type') }}</th>
-                            <th class="px-6 py-3 text-left">{{ __('Performed') }}</th>
-                            <th class="px-6 py-3 text-left">{{ __('Next Due') }}</th>
-                            <th class="px-6 py-3 text-left">{{ __('Mileage') }}</th>
-                            <th class="px-6 py-3 text-left">{{ __('Notes & Cost') }}</th>
-                            <th class="px-6 py-3 text-left">{{ __('Recorded By') }}</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100 bg-white">
-                        @forelse($vehicle->maintenanceRecords as $record)
-                            <tr class="hover:bg-slate-50/60">
-                                <td class="px-6 py-4 font-medium text-slate-900">
-                                    {{ $maintenanceTypes[$record->type] ?? Str::headline($record->type) }}
-                                    @if($record->title)
-                                        <div class="text-xs font-medium text-slate-500">{{ $record->title }}</div>
-                                    @endif
-                                </td>
-                                <td class="px-6 py-4 text-slate-600">
-                                    {{ optional($record->performed_at)->toFormattedDateString() ?? '—' }}
-                                </td>
-                                <td class="px-6 py-4 text-slate-600">
-                                    {{ optional($record->next_due_at)->toFormattedDateString() ?? '—' }}
-                                </td>
-                                <td class="px-6 py-4 text-slate-600">
-                                    {{ $record->mileage ? number_format($record->mileage) : '—' }}
-                                </td>
-                                <td class="px-6 py-4 text-slate-600">
-                                    <div>{{ $record->notes ?? '—' }}</div>
-                                    @if($record->cost)
-                                        <div class="text-xs text-slate-500">{{ __('Cost: $:amount', ['amount' => number_format($record->cost, 2)]) }}</div>
-                                    @endif
-                                </td>
-                                <td class="px-6 py-4 text-slate-600">
-                                    {{ $record->creator?->name ?? '—' }}
-                                    <div class="text-xs text-slate-400">{{ optional($record->created_at)->diffForHumans() }}</div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="6" class="px-6 py-6 text-center text-slate-500">
-                                    {{ __('No maintenance records yet. Log the first service above.') }}
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+            <div class="space-y-6 p-6">
+                @if($overdueMaintenance->count() > 0)
+                    <div>
+                        <h3 class="mb-3 flex items-center gap-2 text-sm font-semibold text-red-700">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+                            </svg>
+                            {{ __('Overdue Maintenance') }} ({{ $overdueMaintenance->count() }})
+                        </h3>
+                        <div class="space-y-2">
+                            @foreach($overdueMaintenance as $record)
+                                <div class="rounded-xl border-2 border-red-200 bg-red-50 p-3 text-xs">
+                                    <div class="flex items-start justify-between">
+                                        <div>
+                                            <p class="font-semibold text-red-900">{{ $maintenanceTypes[$record->type] ?? Str::headline($record->type) }}</p>
+                                            @if($record->title)
+                                                <p class="mt-0.5 text-red-700">{{ $record->title }}</p>
+                                            @endif
+                                            <p class="mt-1 text-red-600">
+                                                {{ __('Was due on :date', ['date' => $record->next_due_at->format('M j, Y')]) }}
+                                                <span class="text-red-500">({{ $record->next_due_at->diffForHumans() }})</span>
+                                            </p>
+                                        </div>
+                                        @if($record->performed_at)
+                                            <span class="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                                                {{ __('Completed') }}
+                                            </span>
+                                        @endif
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+
+                @if($upcomingMaintenance->count() > 0)
+                    <div>
+                        <h3 class="mb-3 flex items-center gap-2 text-sm font-semibold text-blue-700">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
+                            </svg>
+                            {{ __('Upcoming Scheduled Maintenance') }} ({{ $upcomingMaintenance->count() }})
+                        </h3>
+                        <div class="space-y-2">
+                            @foreach($upcomingMaintenance as $record)
+                                <div class="rounded-xl border border-blue-200 bg-blue-50 p-3 text-xs">
+                                    <div class="flex items-start justify-between">
+                                        <div>
+                                            <p class="font-semibold text-blue-900">{{ $maintenanceTypes[$record->type] ?? Str::headline($record->type) }}</p>
+                                            @if($record->title)
+                                                <p class="mt-0.5 text-blue-700">{{ $record->title }}</p>
+                                            @endif
+                                            <p class="mt-1 text-blue-600">
+                                                {{ __('Due on :date', ['date' => $record->next_due_at ? $record->next_due_at->format('M j, Y') : '—']) }}
+                                                @if($record->next_due_at)
+                                                    <span class="text-blue-500">({{ $record->next_due_at->diffForHumans() }})</span>
+                                                @endif
+                                            </p>
+                                            @if($record->performed_at)
+                                                <p class="mt-1 text-xs text-blue-500">
+                                                    {{ __('Last performed on :date', ['date' => $record->performed_at->format('M j, Y')]) }}
+                                                </p>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+
+                @if($pastMaintenance->count() > 0)
+                    <div>
+                        <h3 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            {{ __('Past Maintenance History') }} ({{ $pastMaintenance->count() }})
+                        </h3>
+                        <div class="max-h-96 overflow-x-auto overflow-y-auto rounded-xl border border-slate-200">
+                            <table class="min-w-full divide-y divide-slate-200 text-sm">
+                                <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500 sticky top-0">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left">{{ __('Type') }}</th>
+                                        <th class="px-4 py-3 text-left">{{ __('Performed On') }}</th>
+                                        <th class="px-4 py-3 text-left">{{ __('Mileage') }}</th>
+                                        <th class="px-4 py-3 text-left">{{ __('Notes & Cost') }}</th>
+                                        <th class="px-4 py-3 text-left">{{ __('Recorded By') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 bg-white">
+                                    @foreach($pastMaintenance as $record)
+                                        <tr class="hover:bg-slate-50/60">
+                                            <td class="px-4 py-3 font-medium text-slate-900">
+                                                {{ $maintenanceTypes[$record->type] ?? Str::headline($record->type) }}
+                                                @if($record->title)
+                                                    <div class="text-xs font-medium text-slate-500">{{ $record->title }}</div>
+                                                @endif
+                                            </td>
+                                            <td class="px-4 py-3 text-slate-600">
+                                                {{ $record->performed_at ? $record->performed_at->format('M j, Y') : '—' }}
+                                                <div class="text-xs text-slate-400">{{ $record->performed_at ? $record->performed_at->diffForHumans() : '' }}</div>
+                                            </td>
+                                            <td class="px-4 py-3 text-slate-600">
+                                                {{ $record->mileage ? number_format($record->mileage) : '—' }}
+                                            </td>
+                                            <td class="px-4 py-3 text-slate-600">
+                                                <div>{{ $record->notes ?? '—' }}</div>
+                                                @if($record->cost)
+                                                    <div class="text-xs text-slate-500">{{ __('Cost: $:amount', ['amount' => number_format($record->cost, 2)]) }}</div>
+                                                @endif
+                                            </td>
+                                            <td class="px-4 py-3 text-slate-600">
+                                                {{ $record->creator?->name ?? '—' }}
+                                                <div class="text-xs text-slate-400">{{ optional($record->created_at)->diffForHumans() }}</div>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                @elseif($vehicle->maintenanceRecords->count() === 0)
+                    <div class="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
+                        {{ __('No maintenance records yet. Log the first service above.') }}
+                    </div>
+                @endif
             </div>
         </section>
     </div>

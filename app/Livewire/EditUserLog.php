@@ -109,11 +109,71 @@ class EditUserLog extends Component
         'saved' => '$refresh',
     ];
 
+    public function openAllSections()
+    {
+        $this->isDriverVehicleOpen = true;
+        $this->isTripTimingOpen = true;
+        $this->isMileageDetailsOpen = true;
+        $this->isExpenseDetailsOpen = true;
+        $this->isLoadInformationOpen = true;
+        $this->isAttachmentsOpen = true;
+    }
+
+    public function closeAllSections()
+    {
+        $this->isDriverVehicleOpen = false;
+        $this->isTripTimingOpen = false;
+        $this->isMileageDetailsOpen = false;
+        $this->isExpenseDetailsOpen = false;
+        $this->isLoadInformationOpen = false;
+        $this->isAttachmentsOpen = false;
+    }
+
+    public function confirmLog()
+    {
+        $this->authorize('confirm', $this->log);
+        
+        $this->log->update([
+            'approval_status' => 'confirmed',
+            'approved_at' => now(),
+            'approved_by_id' => Auth::id(),
+        ]);
+        
+        $this->log->refresh();
+        session()->flash('success', __('Log confirmed successfully.'));
+        $this->dispatch('updated');
+    }
+
+    public function denyLog()
+    {
+        $this->authorize('deny', $this->log);
+        
+        $this->log->update([
+            'approval_status' => 'denied',
+            'approved_at' => now(),
+            'approved_by_id' => Auth::id(),
+        ]);
+        
+        $this->log->refresh();
+        session()->flash('success', __('Log denied.'));
+        $this->dispatch('updated');
+    }
+
     public function mount(UserLog $log)
     {
-        $this->log = $log->load('organization', 'job', 'job.customer', 'attachments');
+        $this->log = $log->load('organization', 'job', 'job.customer', 'attachments', 'approvedBy');
 
-        $this->authorize('update', $this->log);
+        // Check if log requires approval before editing
+        if ($this->log->approval_status === 'pending' && $this->log->car_driver_id && auth()->user()->id === $this->log->car_driver_id) {
+            // Assigned driver must confirm/deny before editing - don't authorize update yet
+            // They'll see the approval UI instead
+        } elseif ($this->log->approval_status === 'denied') {
+            // Denied logs cannot be edited
+            // Still allow view access
+        } else {
+            // Normal authorization for confirmed logs or managers/admins
+            $this->authorize('update', $this->log);
+        }
 
         $this->car_drivers = [['name' => '(none selected)', 'value' => null]];
         User::where('organization_id', $this->log->organization_id)->get()->each(function ($user) {
@@ -174,6 +234,18 @@ class EditUserLog extends Component
 
     public function saveLog()
     {
+        // Prevent saving if log is pending approval and user is the assigned driver
+        if ($this->log->approval_status === 'pending' && $this->log->car_driver_id && auth()->user()->id === $this->log->car_driver_id) {
+            session()->flash('error', __('Please confirm or deny this log assignment before editing.'));
+            return;
+        }
+        
+        // Prevent saving if log is denied
+        if ($this->log->approval_status === 'denied') {
+            session()->flash('error', __('This log has been denied and cannot be edited.'));
+            return;
+        }
+        
         try {
             $this->form->validate();
 

@@ -66,7 +66,8 @@ class ShowPilotCarJob extends Component
             'customer.contacts',
             'defaultDriver',
             'defaultTruckDriver',
-            'invoices' => fn ($query) => $query->with('children')->latest(),
+            'singleInvoices' => fn ($query) => $query->with('children')->latest(),
+            'summaryInvoices' => fn ($query) => $query->with('children')->latest(),
         ]);
 
         $this->job->append('invoices_count');
@@ -182,6 +183,7 @@ class ShowPilotCarJob extends Component
                 'organization_id' => $this->job->organization_id,
                 'vehicle_position' => $this->assignment->vehicle_position,
                 'truck_driver_id' => $this->job->default_truck_driver_id ?: null,
+                'approval_status' => 'pending', // New logs require approval before editing
             ];
 
             $message = "New job assignment [{$values['vehicle_position']} car] for {$this->job->customer->name}. Job NO. {$this->job->job_no} | Load NO. {$this->job->load_no}. Pickup: {$this->job->pickup_address} @{$this->job->scheduled_pickup_at} {$this->job->memo}. For updates https://rupkeep.com/my/jobs/{$this->job->id}";
@@ -235,15 +237,8 @@ class ShowPilotCarJob extends Component
     }
 
     public function generateInvoice(){
-        $invoiceValues = $this->job->invoiceValues();
-
-        /** @var \App\Models\Invoice $invoice */
-        $invoice = $this->job->invoices()->create($invoiceValues);
-
-        JobInvoice::firstOrCreate([
-            'invoice_id' => $invoice->id,
-            'pilot_car_job_id' => $this->job->id,
-        ]);
+        // Create single invoice for this job (no pivot entry needed)
+        $invoice = $this->job->createInvoice();
 
         $invoice->refresh();
 

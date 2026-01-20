@@ -61,6 +61,19 @@
 
                     <div class="mt-5 space-y-3 text-sm">
                     @if($card->title === 'Jobs')
+                            @if(isset($card->missingJobNo) && $card->missingJobNo > 0)
+                                <a href="{{ route('my.jobs.index', ['search_field' => 'missing_job_no', 'search_value' => '']) }}" class="block rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-3 transition hover:border-amber-300 hover:bg-amber-100">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <p class="text-xs font-semibold uppercase tracking-wider text-amber-700">{{ __('Jobs Missing Job #') }}</p>
+                                            <p class="mt-1 text-lg font-bold text-amber-900">{{ $card->missingJobNo }}</p>
+                                        </div>
+                                        <svg class="h-5 w-5 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                                        </svg>
+                                    </div>
+                                </a>
+                            @endif
                             <div class="rounded-2xl bg-slate-50/80 px-4 py-3">
                                 <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">{{ __('Import from Spreadsheet') }}</p>
                                 <div class="mt-3 space-y-3">
@@ -87,7 +100,7 @@
                                             </svg>
                                             <div>
                                                 <p class="text-sm font-semibold text-blue-900">{{ __('Importing...') }}</p>
-                                                <p class="text-xs text-blue-700">{{ __('Please wait while we process your file. This may take a few moments.') }}</p>
+                                                <p class="text-xs text-blue-700">{{ __('Please wait while your file is processed. This may take a few moments.') }}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -154,7 +167,14 @@
                                                         class="inline-flex items-center justify-center gap-1 rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50">
                                                     {{ __('Cancel') }}
                                                 </button>
-                                                <form wire:submit.prevent="confirmImport">
+                                                <form wire:submit.prevent="confirmImport" class="space-y-3">
+                                                    <div class="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                                                        <input type="checkbox" id="autoCreateInvoices" wire:model="autoCreateInvoices" class="h-4 w-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500">
+                                                        <label for="autoCreateInvoices" class="flex-1 cursor-pointer text-xs text-slate-700">
+                                                            <span class="font-semibold">{{ __('Create invoices for imported jobs') }}</span>
+                                                            <p class="mt-0.5 text-[10px] text-slate-500">{{ __('Automatically generate invoices for all imported jobs (useful for historical data)') }}</p>
+                                                        </label>
+                                                    </div>
                                                     <button type="submit" 
                                                             class="inline-flex items-center justify-center gap-1 rounded-full bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-600">
                                                         <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
@@ -408,42 +428,53 @@
                 </a>
             </header>
 
-            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                <a href="{{ route('my.jobs.index') }}" class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-orange-200 hover:shadow-md">
                     <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">{{ __('Total Jobs') }}</p>
                     <p class="mt-2 text-3xl font-bold text-slate-900">{{ number_format($managerStats->total_jobs) }}</p>
-                </div>
-                <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
+                </a>
+                <a href="{{ route('my.jobs.index', ['filter' => 'is_active']) }}" class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm transition hover:border-emerald-300 hover:shadow-md">
                     <p class="text-xs font-semibold uppercase tracking-wider text-emerald-600">{{ __('Active Jobs') }}</p>
                     <p class="mt-2 text-3xl font-bold text-emerald-700">{{ number_format($managerStats->active_jobs) }}</p>
-                </div>
-                <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm">
+                </a>
+                <a href="{{ route('my.jobs.index', ['filter' => 'is_completed']) }}" class="rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm transition hover:border-amber-300 hover:shadow-md">
                     <p class="text-xs font-semibold uppercase tracking-wider text-amber-600">{{ __('Completed') }}</p>
                     <p class="mt-2 text-3xl font-bold text-amber-700">{{ number_format($managerStats->completed_jobs) }}</p>
-                </div>
-                <div class="rounded-2xl border border-red-200 bg-red-50 p-4 shadow-sm">
+                </a>
+                <a href="{{ route('my.jobs.index', ['filter' => 'is_canceled']) }}" class="rounded-2xl border border-red-200 bg-red-50 p-4 shadow-sm transition hover:border-red-300 hover:shadow-md">
                     <p class="text-xs font-semibold uppercase tracking-wider text-red-600">{{ __('Cancelled') }}</p>
                     <p class="mt-2 text-3xl font-bold text-red-700">{{ number_format($managerStats->cancelled_jobs) }}</p>
+                </a>
+                @if($managerStats->missing_job_no > 0)
+                <a href="{{ route('my.jobs.index', ['search_field' => 'missing_job_no', 'search_value' => '']) }}" class="rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm transition hover:border-amber-300 hover:shadow-md">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-amber-600">{{ __('Missing Job #') }}</p>
+                    <p class="mt-2 text-3xl font-bold text-amber-700">{{ number_format($managerStats->missing_job_no) }}</p>
+                </a>
+                @else
+                <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">{{ __('Missing Job #') }}</p>
+                    <p class="mt-2 text-3xl font-bold text-slate-900">0</p>
                 </div>
+                @endif
             </div>
 
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-                <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <a href="{{ route('my.jobs.index') }}" class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-orange-200 hover:shadow-md">
                     <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">{{ __('Total Invoices') }}</p>
                     <p class="mt-2 text-3xl font-bold text-slate-900">{{ number_format($managerStats->total_invoices) }}</p>
-                </div>
-                <div class="rounded-2xl border border-orange-200 bg-orange-50 p-4 shadow-sm">
+                </a>
+                <a href="{{ route('my.jobs.index', ['filter' => 'is_not_paid']) }}" class="rounded-2xl border border-orange-200 bg-orange-50 p-4 shadow-sm transition hover:border-orange-300 hover:shadow-md">
                     <p class="text-xs font-semibold uppercase tracking-wider text-orange-600">{{ __('Unpaid Invoices') }}</p>
                     <p class="mt-2 text-3xl font-bold text-orange-700">{{ number_format($managerStats->unpaid_invoices) }}</p>
-                </div>
+                </a>
                 <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
                     <p class="text-xs font-semibold uppercase tracking-wider text-emerald-600">{{ __('Total Revenue') }}</p>
                     <p class="mt-2 text-2xl font-bold text-emerald-700">${{ number_format($managerStats->total_revenue, 2) }}</p>
                 </div>
-                <div class="rounded-2xl border border-red-200 bg-red-50 p-4 shadow-sm">
+                <a href="{{ route('my.jobs.index', ['filter' => 'is_not_paid']) }}" class="rounded-2xl border border-red-200 bg-red-50 p-4 shadow-sm transition hover:border-red-300 hover:shadow-md">
                     <p class="text-xs font-semibold uppercase tracking-wider text-red-600">{{ __('Outstanding') }}</p>
                     <p class="mt-2 text-2xl font-bold text-red-700">${{ number_format($managerStats->unpaid_amount, 2) }}</p>
-                </div>
+                </a>
                 <a href="{{ route('my.customers.index', ['has_account_credit' => 1]) }}" class="rounded-2xl border border-blue-200 bg-blue-50 p-4 shadow-sm transition hover:border-blue-300 hover:shadow-md">
                     <p class="text-xs font-semibold uppercase tracking-wider text-blue-600">{{ __('Sum of Account Credits') }}</p>
                     <p class="mt-2 text-2xl font-bold text-blue-700">${{ number_format($managerStats->total_account_credits, 2) }}</p>
@@ -452,7 +483,24 @@
 
             @if($recentJobs && $recentJobs->count() > 0)
             <div class="mt-6 space-y-3">
-                <h3 class="text-lg font-semibold text-slate-900">{{ __('Recent Jobs') }}</h3>
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-slate-900">
+                        @php
+                            // Check if we're showing incomplete jobs or recent jobs
+                            $hasIncomplete = $recentJobs->filter(function($job) {
+                                $status = $job->status;
+                                return $status !== 'COMPLETED' && 
+                                       $status !== 'CANCELLED' && 
+                                       $status !== 'CANCELLED_NO_GO';
+                            })->count() > 0;
+                        @endphp
+                        {{ $hasIncomplete ? __('Incomplete Jobs') : __('Recent Jobs') }}
+                    </h3>
+                    <a href="{{ route('my.jobs.index', ['filter' => 'recent']) }}" class="inline-flex items-center gap-1.5 rounded-full border border-orange-200 bg-orange-50 px-3 py-1.5 text-xs font-semibold text-orange-600 transition hover:bg-orange-100 hover:text-orange-700">
+                        {{ __('View All Recent') }}
+                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                    </a>
+                </div>
                 <div class="space-y-2">
                     @foreach($recentJobs as $job)
                         @php
@@ -462,25 +510,63 @@
                                 'CANCELLED', 'CANCELLED_NO_GO' => 'bg-red-100 text-red-700',
                                 default => 'bg-slate-100 text-slate-700',
                             };
+                            $isPaid = $job->invoice_paid >= 1;
+                            $paymentStatusColor = $isPaid ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700';
+                            $paymentStatusText = $isPaid ? __('Paid') : __('Unpaid');
                         @endphp
-                        <a href="{{ route('my.jobs.show', ['job' => $job->id]) }}" class="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-orange-200 hover:shadow-md">
-                            <div class="flex-1">
-                                <div class="flex items-center gap-2">
-                                    <span class="text-sm font-semibold text-slate-900">{{ $job->job_no ?? __('Job') }} #{{ $job->id }}</span>
-                                    <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide {{ $statusColor }}">
-                                        {{ $job->status_label }}
-                                    </span>
+                        <a href="{{ route('my.jobs.show', ['job' => $job->id]) }}" class="block rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-orange-200 hover:shadow-md">
+                            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                <div class="flex-1 space-y-2">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <span class="text-sm font-semibold text-slate-900">{{ $job->job_no ?? __('Job') }} #{{ $job->id }}</span>
+                                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide {{ $statusColor }}">
+                                            {{ $job->status_label }}
+                                        </span>
+                                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide {{ $paymentStatusColor }}">
+                                            {{ $paymentStatusText }}
+                                        </span>
+                                    </div>
+                                    <div class="space-y-1">
+                                        <p class="text-sm font-medium text-slate-900">{{ $job->customer?->name ?? __('Unassigned Customer') }}</p>
+                                        @if($job->scheduled_pickup_at)
+                                            <p class="text-sm text-slate-600">
+                                                <span class="font-semibold">{{ __('Scheduled') }}:</span> 
+                                                {{ optional($job->scheduled_pickup_at)->format('M j, Y g:i A') ?? $job->scheduled_pickup_at }}
+                                            </p>
+                                        @endif
+                                        @if($job->load_no)
+                                            <p class="text-xs text-slate-500">
+                                                <span class="font-semibold">{{ __('Load') }}:</span> {{ $job->load_no }}
+                                            </p>
+                                        @endif
+                                        @if($job->pickup_address)
+                                            <p class="text-xs text-slate-500">
+                                                <span class="font-semibold">{{ __('Pickup') }}:</span> {{ Str::limit($job->pickup_address, 50) }}
+                                            </p>
+                                        @endif
+                                        @if($job->delivery_address)
+                                            <p class="text-xs text-slate-500">
+                                                <span class="font-semibold">{{ __('Delivery') }}:</span> {{ Str::limit($job->delivery_address, 50) }}
+                                            </p>
+                                        @endif
+                                    </div>
                                 </div>
-                                <p class="mt-1 text-sm text-slate-600">{{ $job->customer?->name ?? __('Unassigned Customer') }}</p>
-                                @if($job->load_no)
-                                    <p class="mt-1 text-xs text-slate-400">{{ __('Load') }}: {{ $job->load_no }}</p>
-                                @endif
-                            </div>
-                            <div class="text-right">
-                                <p class="text-xs text-slate-500">{{ optional($job->created_at)->diffForHumans() }}</p>
-                                @if($job->invoices->count() > 0)
-                                    <p class="mt-1 text-xs font-semibold text-orange-600">{{ $job->invoices->count() }} {{ trans_choice('invoice|invoices', $job->invoices->count()) }}</p>
-                                @endif
+                                <div class="flex flex-col items-end gap-2 text-right sm:min-w-[120px]">
+                                    @if($job->scheduled_pickup_at)
+                                        <p class="text-xs font-semibold text-slate-700">
+                                            {{ optional($job->scheduled_pickup_at)->format('M j') }}
+                                        </p>
+                                        <p class="text-xs text-slate-500">
+                                            {{ optional($job->scheduled_pickup_at)->format('g:i A') }}
+                                        </p>
+                                    @else
+                                        <p class="text-xs text-slate-400">{{ __('No date set') }}</p>
+                                    @endif
+                                    @if($job->invoices->count() > 0)
+                                        <p class="mt-1 text-xs font-semibold text-orange-600">{{ $job->invoices->count() }} {{ trans_choice('invoice|invoices', $job->invoices->count()) }}</p>
+                                    @endif
+                                    <p class="text-xs text-slate-400">{{ optional($job->created_at)->diffForHumans() }}</p>
+                                </div>
                             </div>
                         </a>
                     @endforeach

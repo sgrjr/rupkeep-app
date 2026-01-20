@@ -14,6 +14,7 @@ class UpdatePasswordForm extends Component
      * @var array
      */
     public $state = [
+        'current_password' => '',
         'password' => '',
         'password_confirmation' => '',
     ];
@@ -48,6 +49,7 @@ class UpdatePasswordForm extends Component
         }
 
         $this->state = [
+            'current_password' => '',
             'password' => '',
             'password_confirmation' => '',
         ];

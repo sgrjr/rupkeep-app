@@ -579,7 +579,7 @@
                                   class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200">{{ old('values.delivery_address', data_get($values, 'delivery_address')) }}</textarea>
                     </div>
                 </div>
-                <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     <div>
                         <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Load Number') }}</label>
                         <input type="text" name="values[load_no]" value="{{ old('values.load_no', data_get($values, 'load_no')) }}"
@@ -700,38 +700,79 @@
                         <p class="text-xs text-slate-500">{{ __('This summary groups multiple job invoices. Edit individual job invoices through the links below.') }}</p>
                     </header>
 
-                    <div class="overflow-hidden rounded-2xl border border-slate-200">
-                        <table class="min-w-full divide-y divide-slate-200 text-xs text-slate-600">
-                            <thead class="bg-slate-50 text-slate-500">
-                                <tr>
-                                    <th class="px-4 py-2 text-left font-semibold uppercase tracking-wide">{{ __('Invoice #') }}</th>
-                                    <th class="px-4 py-2 text-left font-semibold uppercase tracking-wide">{{ __('Job') }}</th>
-                                    <th class="px-4 py-2 text-left font-semibold uppercase tracking-wide">{{ __('Total') }}</th>
-                                    <th class="px-4 py-2 text-left font-semibold uppercase tracking-wide">{{ __('Miles') }}</th>
-                                    <th class="px-4 py-2 text-left font-semibold uppercase tracking-wide"></th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100 bg-white">
-                                @foreach(data_get($invoice->values, 'summary_items', []) as $item)
-                                    <tr>
-                                        <td class="px-4 py-2 font-semibold text-slate-800">{{ $item['invoice_number'] ?? '—' }}</td>
-                                        <td class="px-4 py-2">{{ $item['job_no'] ?? __('Job') }}</td>
-                                        <td class="px-4 py-2">{{ isset($item['total']) ? number_format($item['total'], 2) : '—' }}</td>
-                                        <td class="px-4 py-2">{{ $item['billable_miles'] ?? '—' }}</td>
-                                        <td class="px-4 py-2 text-right">
+                    @php
+                        $summaryItems = data_get($invoice->values, 'summary_items', []);
+                    @endphp
+                    @if(empty($summaryItems))
+                        <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-700">
+                            <p class="font-semibold">{{ __('Warning: Summary items are missing') }}</p>
+                            <p class="mt-1">{{ __('This summary invoice does not have child invoice data. You may need to regenerate it.') }}</p>
+                        </div>
+                    @else
+                        <div class="space-y-3 md:hidden">
+                            @foreach($summaryItems as $item)
+                                <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                                    <div class="space-y-2">
+                                        <div class="flex items-center justify-between">
+                                            <span class="font-semibold text-slate-900">{{ __('Invoice #:number', ['number' => $item['invoice_number'] ?? '—']) }}</span>
                                             @isset($item['invoice_id'])
                                                 <a href="{{ route('my.invoices.edit', ['invoice' => $item['invoice_id']]) }}"
                                                    class="inline-flex items-center gap-1 rounded-full border border-orange-200 bg-white px-3 py-1 text-[11px] font-semibold text-orange-600 transition hover:bg-orange-500 hover:text-white">
-                                                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-4.536a2.5 2.5 0 11-3.536 3.536L4.5 16.5V19.5H7.5l8.5-8.5"/></svg>
                                                     {{ __('Edit') }}
                                                 </a>
                                             @endisset
-                                        </td>
+                                        </div>
+                                        <div class="grid grid-cols-2 gap-2 text-xs text-slate-600">
+                                            <div>
+                                                <span class="font-semibold text-slate-500">{{ __('Job') }}:</span>
+                                                <span class="ml-1">{{ $item['job_no'] ?? '—' }}</span>
+                                            </div>
+                                            <div>
+                                                <span class="font-semibold text-slate-500">{{ __('Total') }}:</span>
+                                                <span class="ml-1">{{ isset($item['total']) && $item['total'] > 0 ? '$' . number_format($item['total'], 2) : '—' }}</span>
+                                            </div>
+                                            <div>
+                                                <span class="font-semibold text-slate-500">{{ __('Miles') }}:</span>
+                                                <span class="ml-1">{{ isset($item['billable_miles']) && $item['billable_miles'] > 0 ? number_format($item['billable_miles'], 1) : '—' }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                        <div class="hidden md:block overflow-hidden rounded-2xl border border-slate-200">
+                            <table class="min-w-full divide-y divide-slate-200 text-xs text-slate-600">
+                                <thead class="bg-slate-50 text-slate-500">
+                                    <tr>
+                                        <th class="px-4 py-2 text-left font-semibold uppercase tracking-wide">{{ __('Invoice #') }}</th>
+                                        <th class="px-4 py-2 text-left font-semibold uppercase tracking-wide">{{ __('Job') }}</th>
+                                        <th class="px-4 py-2 text-left font-semibold uppercase tracking-wide">{{ __('Total') }}</th>
+                                        <th class="px-4 py-2 text-left font-semibold uppercase tracking-wide">{{ __('Miles') }}</th>
+                                        <th class="px-4 py-2 text-left font-semibold uppercase tracking-wide"></th>
                                     </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 bg-white">
+                                    @foreach($summaryItems as $item)
+                                        <tr>
+                                            <td class="px-4 py-2 font-semibold text-slate-800">{{ $item['invoice_number'] ?? '—' }}</td>
+                                            <td class="px-4 py-2">{{ $item['job_no'] ?? __('Job') }}</td>
+                                            <td class="px-4 py-2">{{ isset($item['total']) && $item['total'] > 0 ? '$' . number_format($item['total'], 2) : '—' }}</td>
+                                            <td class="px-4 py-2">{{ isset($item['billable_miles']) && $item['billable_miles'] > 0 ? number_format($item['billable_miles'], 1) : '—' }}</td>
+                                            <td class="px-4 py-2 text-right">
+                                                @isset($item['invoice_id'])
+                                                    <a href="{{ route('my.invoices.edit', ['invoice' => $item['invoice_id']]) }}"
+                                                       class="inline-flex items-center gap-1 rounded-full border border-orange-200 bg-white px-3 py-1 text-[11px] font-semibold text-orange-600 transition hover:bg-orange-500 hover:text-white">
+                                                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-4.536a2.5 2.5 0 11-3.536 3.536L4.5 16.5V19.5H7.5l8.5-8.5"/></svg>
+                                                        {{ __('Edit') }}
+                                                    </a>
+                                                @endisset
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
                 </section>
             @endif
 

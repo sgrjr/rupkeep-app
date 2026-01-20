@@ -78,12 +78,126 @@ class PilotCarJob extends Model
         return $this->belongsTo(CustomerContact::class, 'default_truck_driver_id');
     }
 
-    public function invoices(){
-        return $this->belongsToMany(Invoice::class,  'jobs_invoices');
+    /**
+     * Get single invoices linked to this job via pilot_car_job_id.
+     * These are regular invoices that belong to one job.
+     */
+    public function singleInvoices()
+    {
+        return $this->hasMany(Invoice::class, 'pilot_car_job_id')
+            ->where('invoice_type', '!=', 'summary')
+            ->whereNull('parent_invoice_id');
+    }
+
+    /**
+     * Get summary invoices linked to this job via pivot table.
+     * Summary invoices can link to multiple jobs.
+     */
+    public function summaryInvoices()
+    {
+        return $this->belongsToMany(Invoice::class, 'summary_invoice_jobs')
+            ->where('invoice_type', 'summary');
+    }
+
+    /**
+     * Get all invoices for this job (both single and summary).
+     * This is a relationship method that can be eager loaded.
+     * When accessed as a property, it merges singleInvoices and summaryInvoices.
+     */
+    public function invoices()
+    {
+        // Return a relationship that merges both single and summary invoices
+        // We'll use a custom approach: return singleInvoices as the base relationship
+        // and handle merging in the accessor
+        return $this->singleInvoices();
+    }
+
+    /**
+     * Accessor for invoices property.
+     * Merges singleInvoices and summaryInvoices when accessed as $job->invoices.
+     */
+    public function getInvoicesAttribute()
+    {
+        // If both relationships are eager loaded, merge them
+        if ($this->relationLoaded('singleInvoices') && $this->relationLoaded('summaryInvoices')) {
+            return $this->getRelation('singleInvoices')
+                ->merge($this->getRelation('summaryInvoices'))
+                ->unique('id');
+        }
+        
+        // If 'invoices' was eager loaded (which loads as singleInvoices), get it and merge with summaryInvoices
+        if ($this->relationLoaded('invoices')) {
+            $singleInvoices = $this->getRelation('invoices');
+            $summaryInvoices = $this->relationLoaded('summaryInvoices')
+                ? $this->getRelation('summaryInvoices')
+                : $this->summaryInvoices()->get();
+            return $singleInvoices->merge($summaryInvoices)->unique('id');
+        }
+        
+        // If only singleInvoices is loaded, load summaryInvoices and merge
+        if ($this->relationLoaded('singleInvoices')) {
+            $singleInvoices = $this->getRelation('singleInvoices');
+            $summaryInvoices = $this->summaryInvoices()->get();
+            return $singleInvoices->merge($summaryInvoices)->unique('id');
+        }
+        
+        // Fallback: load both and merge
+        return $this->getAllInvoices();
+    }
+
+    /**
+     * Get all invoices for this job from both single and summary relationships.
+     * This ensures we catch invoices linked either way.
+     * Uses eager-loaded relationships if available.
+     * 
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getAllInvoices()
+    {
+        // Use eager-loaded relationships if available, otherwise query
+        $singleInvoices = $this->relationLoaded('singleInvoices') 
+            ? $this->getRelation('singleInvoices')
+            : Invoice::where('pilot_car_job_id', $this->id)
+                ->where('invoice_type', '!=', 'summary')
+                ->whereNull('parent_invoice_id')
+                ->get();
+        
+        $summaryInvoices = $this->relationLoaded('summaryInvoices')
+            ? $this->getRelation('summaryInvoices')
+            : $this->summaryInvoices()->get();
+        
+        // Merge and deduplicate by ID
+        return $singleInvoices->merge($summaryInvoices)->unique('id');
+    }
+
+    /**
+     * Create a single invoice for this job.
+     * 
+     * Single invoices use pilot_car_job_id directly (no pivot table entry).
+     * This method should NOT be used for summary invoices - they are created differently.
+     * 
+     * @param array $invoiceValues Invoice data (will be merged with job/customer data)
+     * @return \App\Models\Invoice
+     */
+    public function createInvoice(array $invoiceValues = [])
+    {
+        // Ensure invoice values include required fields
+        if (empty($invoiceValues)) {
+            $invoiceValues = $this->invoiceValues();
+        }
+        
+        // Ensure pilot_car_job_id is set and invoice_type is single
+        $invoiceValues['pilot_car_job_id'] = $this->id;
+        $invoiceValues['invoice_type'] = $invoiceValues['invoice_type'] ?? 'single';
+        
+        // Create invoice directly (no pivot table entry for single invoices)
+        $invoice = Invoice::create($invoiceValues);
+        
+        return $invoice;
     }
 
     public function getInvoicesCountAttribute(){
-        return $this->invoices()->count();
+        return $this->getAllInvoices()->count();
     }
 
     public function logSchema(){
@@ -93,7 +207,7 @@ class PilotCarJob extends Model
 
         return $log->schema()->remove(['id'])->hide(['maintenance_memo']);
     }
-    public static function import($files, $organization_id){
+    public static function import($files, $organization_id, $autoCreateInvoices = false){
         // Increase execution time limit for bulk import operations
         set_time_limit(600); // 10 minutes should be sufficient for large imports
         
@@ -103,6 +217,26 @@ class PilotCarJob extends Model
         $header = [];
         $l = [];
         $errors = [];
+        $skippedRows = [];
+        $processedJobs = [];
+        $paymentData = []; // Store payment data: job_id => [total_cost, check_no, invoice_no, etc.]
+        $csvInvoiceTotals = []; // Store CSV total_cost per job: job_id => total_cost from CSV
+
+        // Check if database is empty - if so, skip deduplication logic entirely
+        $existingJobCount = static::where('organization_id', $organization_id)->count();
+        $skipDeduplication = $existingJobCount === 0;
+        
+        if ($skipDeduplication) {
+            Log::info('Import: Database is empty - skipping deduplication logic for all CSV entries', [
+                'organization_id' => $organization_id,
+                'existing_job_count' => $existingJobCount
+            ]);
+        } else {
+            Log::info('Import: Database has existing jobs - deduplication will be performed', [
+                'organization_id' => $organization_id,
+                'existing_job_count' => $existingJobCount
+            ]);
+        }
 
         try {
             if (!isset($files[0]['full_path']) || !file_exists($files[0]['full_path'])) {
@@ -194,16 +328,331 @@ class PilotCarJob extends Model
             try {
                 foreach($l as $lineIndex => $line){
                     try {
-                        static::processLog($line, $organization_id);
+                        $result = static::processLog($line, $organization_id, $processedJobs, $skipDeduplication);
+                        if ($result === 'skipped') {
+                            $skippedRows[] = [
+                                'row' => $lineIndex + 2, // +2 because line 1 is header, line 2 is first data row
+                                'reason' => 'Skipped for other reason',
+                                'job_no' => $line['job_no'] ?? 'MISSING'
+                            ];
+                        } elseif ($result && isset($result['job_id'])) {
+                            // Log if job_no was missing (but still imported)
+                            if (empty(trim($line['job_no'] ?? ''))) {
+                                $skippedRows[] = [
+                                    'row' => $lineIndex + 2,
+                                    'reason' => 'Missing job_no (imported with job_no=null)',
+                                    'job_no' => 'MISSING',
+                                    'job_id' => $result['job_id']
+                                ];
+                            }
+                            $processedJobs[] = $result['job_id'];
+                            // Log if job or log was created vs found existing
+                            if (isset($result['job_created']) && $result['job_created']) {
+                                Log::debug('Import: New job created', ['job_id' => $result['job_id'], 'row' => $lineIndex + 2]);
+                            }
+                            if (isset($result['log_created']) && !$result['log_created'] && isset($result['log_id'])) {
+                                Log::debug('Import: Using existing log', ['log_id' => $result['log_id'], 'job_id' => $result['job_id'], 'row' => $lineIndex + 2]);
+                            }
+                            
+                            // Store CSV total_cost for ALL jobs (not just paid ones)
+                            // If multiple rows exist for same job, use LAST row's value (most recent)
+                            // Each CSV line should be a unique job, so multiple rows per job_id indicates a matching issue
+                            
+                            // Diagnostic: Log available keys in line to debug mapping issues
+                            if ($lineIndex < 5) { // Only log first 5 rows to avoid spam
+                                Log::debug('Import: Sample CSV row keys', [
+                                    'row' => $lineIndex + 2,
+                                    'available_keys' => array_keys($line),
+                                    'has_total_cost' => isset($line['total_cost']),
+                                    'total_cost_value' => $line['total_cost'] ?? 'NOT_SET'
+                                ]);
+                            }
+                            
+                            if (isset($line['total_cost'])) {
+                                $csvTotal = static::normalizeNumericValue($line['total_cost']);
+                                if ($csvTotal > 0) {
+                                    if (isset($csvInvoiceTotals[$result['job_id']])) {
+                                        // Multiple rows for same job - use the last (most recent) value
+                                        $existingTotal = $csvInvoiceTotals[$result['job_id']];
+                                        if (abs($existingTotal - $csvTotal) > 0.01) {
+                                            Log::warning('Import: Multiple total_cost values for same job - using last row value', [
+                                                'job_id' => $result['job_id'],
+                                                'previous_total' => $existingTotal,
+                                                'new_total' => $csvTotal,
+                                                'difference' => abs($existingTotal - $csvTotal),
+                                                'row' => $lineIndex + 2,
+                                                'note' => 'Each CSV line should be unique job - multiple rows per job_id may indicate matching issue'
+                                            ]);
+                                        }
+                                    }
+                                    // Always update to use the last row's value (most recent data)
+                                    $csvInvoiceTotals[$result['job_id']] = $csvTotal;
+                                    Log::debug('Import: Stored CSV total_cost for job', [
+                                        'job_id' => $result['job_id'],
+                                        'csv_total_cost' => $csvTotal,
+                                        'row' => $lineIndex + 2,
+                                        'raw_value' => $line['total_cost'],
+                                        'is_update' => isset($csvInvoiceTotals[$result['job_id']])
+                                    ]);
+                                } else {
+                                    Log::debug('Import: CSV total_cost is zero or invalid', [
+                                        'job_id' => $result['job_id'],
+                                        'raw_value' => $line['total_cost'] ?? 'MISSING',
+                                        'normalized' => $csvTotal,
+                                        'row' => $lineIndex + 2
+                                    ]);
+                                }
+                            } else {
+                                Log::debug('Import: CSV row missing total_cost', [
+                                    'job_id' => $result['job_id'],
+                                    'row' => $lineIndex + 2
+                                ]);
+                            }
+                            
+                            // Store payment data if invoice is marked as paid
+                            $isPaid = isset($line['invoice_paid']) && strtolower(trim($line['invoice_paid'])) == 'paid';
+                            if ($isPaid && isset($line['total_cost'])) {
+                                $totalCost = static::normalizeNumericValue($line['total_cost']);
+                                if ($totalCost > 0) {
+                                    $paymentData[$result['job_id']] = [
+                                        'total_cost' => $totalCost,
+                                        'check_no' => $line['check_no'] ?? null,
+                                        'invoice_no' => $line['invoice_no'] ?? null,
+                                        'timestamp' => $line['timestamp'] ?? null,
+                                    ];
+                                    Log::debug('Import: Stored payment data for job', [
+                                        'job_id' => $result['job_id'],
+                                        'total_cost' => $paymentData[$result['job_id']]['total_cost'],
+                                        'check_no' => $paymentData[$result['job_id']]['check_no'],
+                                        'invoice_no' => $paymentData[$result['job_id']]['invoice_no']
+                                    ]);
+                                } else {
+                                    Log::warning('Import: Invoice marked as paid but total_cost is zero or invalid', [
+                                        'job_id' => $result['job_id'],
+                                        'total_cost' => $line['total_cost'] ?? 'MISSING'
+                                    ]);
+                                }
+                            }
+                        } else {
+                            // Unexpected result - log it
+                            Log::warning('Import: Unexpected processLog result', ['result' => $result, 'row' => $lineIndex + 2, 'line' => $line]);
+                            $skippedRows[] = [
+                                'row' => $lineIndex + 2,
+                                'reason' => 'Unexpected result from processLog',
+                                'job_no' => $line['job_no'] ?? 'MISSING'
+                            ];
+                        }
                     } catch (\Exception $e) {
-                        Log::error('Import: Failed to process log', ['line_index' => $lineIndex, 'line' => $line, 'error' => $e->getMessage()]);
+                        Log::error('Import: Failed to process log', ['line_index' => $lineIndex, 'line' => $line, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
                         $errors[] = "Processing error for row " . ($lineIndex + 2) . ": " . $e->getMessage();
+                    }
+                }
+                
+                // Auto-create invoices if requested
+                if ($autoCreateInvoices && !empty($processedJobs)) {
+                    Log::info('Import: Auto-creating invoices', ['job_count' => count($processedJobs)]);
+                    $uniqueJobIds = array_unique($processedJobs);
+                    foreach ($uniqueJobIds as $jobId) {
+                        try {
+                            $job = static::find($jobId);
+                            if ($job && $job->logs()->count() > 0) {
+                                // Check if single invoice already exists for this job
+                                // Single invoices use pilot_car_job_id directly (no pivot)
+                                // Summary invoices use pivot table, but we're only creating single invoices here
+                                $existingInvoice = \App\Models\Invoice::where('pilot_car_job_id', $jobId)
+                                    ->where('invoice_type', '!=', 'summary')
+                                    ->whereNull('parent_invoice_id')
+                                    ->first();
+                                
+                                if (!$existingInvoice) {
+                                    // Generate invoice for this job
+                                    $invoiceValues = $job->invoiceValues();
+                                    
+                                    // Use CSV total_cost if available, otherwise use calculated total
+                                    // CSV total_cost is the source of truth from the spreadsheet
+                                    // Note: invoiceValues() returns ['values' => [...], 'paid_in_full' => ..., etc.]
+                                    // So we need to modify $invoiceValues['values']['total'], not $invoiceValues['total']
+                                    $values = $invoiceValues['values'] ?? [];
+                                    $calculatedTotal = (float)($values['total'] ?? 0);
+                                    $finalTotal = $calculatedTotal;
+                                    $importSource = 'calculated';
+                                    
+                                    if (isset($csvInvoiceTotals[$jobId]) && $csvInvoiceTotals[$jobId] > 0) {
+                                        $csvTotal = (float)$csvInvoiceTotals[$jobId]; // Ensure it's a float
+                                        
+                                        // Use CSV total (source of truth) - ensure it's stored as a number, not string
+                                        $values['total'] = $csvTotal;
+                                        $finalTotal = $csvTotal;
+                                        $importSource = 'csv';
+                                        
+                                        // Log discrepancy if calculated total differs significantly (> $1 difference)
+                                        $difference = abs($calculatedTotal - $csvTotal);
+                                        if ($difference > 1.00) {
+                                            Log::warning('Import: Invoice total discrepancy between CSV and calculated', [
+                                                'job_id' => $jobId,
+                                                'job_no' => $job->job_no,
+                                                'csv_total' => $csvTotal,
+                                                'calculated_total' => $calculatedTotal,
+                                                'difference' => $difference,
+                                                'difference_percent' => $calculatedTotal > 0 ? round(($difference / $calculatedTotal) * 100, 2) : 0
+                                            ]);
+                                        } else {
+                                            Log::debug('Import: Using CSV total_cost for invoice', [
+                                                'job_id' => $jobId,
+                                                'csv_total' => $csvTotal,
+                                                'calculated_total' => $calculatedTotal
+                                            ]);
+                                        }
+                                    } else {
+                                        Log::warning('Import: No CSV total_cost found, using calculated total (may be inaccurate)', [
+                                            'job_id' => $jobId,
+                                            'job_no' => $job->job_no,
+                                            'calculated_total' => $calculatedTotal
+                                        ]);
+                                    }
+                                    
+                                    // Store import source flag for diagnostics (inside values array)
+                                    $values['import_source'] = $importSource;
+                                    $values['import_calculated_total'] = $calculatedTotal;
+                                    if ($importSource === 'csv') {
+                                        $values['import_csv_total'] = $finalTotal;
+                                    }
+                                    
+                                    // Update the values array in invoiceValues
+                                    $invoiceValues['values'] = $values;
+                                    
+                                    // Set paid_in_full based on job's invoice_paid status from CSV
+                                    $invoiceValues['paid_in_full'] = (bool)($job->invoice_paid ?? false);
+                                    
+                                    // Create single invoice using createInvoice() - this does NOT create pivot entries
+                                    // Single invoices only use pilot_car_job_id, pivot table is only for summary invoices
+                                    $invoice = $job->createInvoice($invoiceValues);
+                                    
+                                    Log::info('Import: Created single invoice for job', [
+                                        'job_id' => $jobId,
+                                        'job_no' => $job->job_no,
+                                        'invoice_id' => $invoice->id,
+                                        'final_total' => $finalTotal,
+                                        'import_source' => $importSource,
+                                        'paid_in_full' => $invoiceValues['paid_in_full'],
+                                        'pilot_car_job_id' => $invoice->pilot_car_job_id
+                                    ]);
+                                    
+                                    // Verify no pivot entry was created (single invoices shouldn't have them)
+                                    $pivotEntry = \App\Models\JobInvoice::where('invoice_id', $invoice->id)
+                                        ->where('pilot_car_job_id', $jobId)
+                                        ->first();
+                                    if ($pivotEntry) {
+                                        Log::warning('Import: Unexpected pivot entry created for single invoice', [
+                                            'invoice_id' => $invoice->id,
+                                            'job_id' => $jobId,
+                                            'pivot_id' => $pivotEntry->id
+                                        ]);
+                                        // Remove the unexpected pivot entry
+                                        $pivotEntry->delete();
+                                        Log::info('Import: Removed unexpected pivot entry for single invoice', [
+                                            'invoice_id' => $invoice->id,
+                                            'job_id' => $jobId
+                                        ]);
+                                    }
+                                    
+                                    // Process payment if this job has payment data from CSV
+                                    if (isset($paymentData[$jobId])) {
+                                        static::processPaymentFromImport($invoice, $paymentData[$jobId], $job);
+                                    }
+                                } else {
+                                    // Update existing invoice's paid status if job indicates it's paid
+                                    if ($job->invoice_paid && !$existingInvoice->paid_in_full) {
+                                        $existingInvoice->update(['paid_in_full' => true]);
+                                        Log::info('Import: Updated existing invoice paid status', [
+                                            'job_id' => $jobId, 
+                                            'invoice_id' => $existingInvoice->id
+                                        ]);
+                                    }
+                                    
+                                    // Process payment if this job has payment data from CSV
+                                    if (isset($paymentData[$jobId])) {
+                                        static::processPaymentFromImport($existingInvoice, $paymentData[$jobId], $job);
+                                    }
+                                    
+                                    Log::debug('Import: Single invoice already exists for job', [
+                                        'job_id' => $jobId, 
+                                        'invoice_id' => $existingInvoice->id,
+                                        'pilot_car_job_id' => $existingInvoice->pilot_car_job_id
+                                    ]);
+                                }
+                            }
+                        } catch (\Exception $e) {
+                            Log::warning('Import: Failed to create invoice for job', ['job_id' => $jobId, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+                            // Don't fail entire import if invoice creation fails
+                        }
                     }
                 }
             } finally {
                 // Always re-enable events, even if there was an error
                 UserLog::setEventDispatcher($originalDispatcher);
             }
+            
+            // Log summary with detailed breakdown
+            $uniqueJobIds = array_unique($processedJobs);
+            $skippedRowNumbers = array_column($skippedRows, 'row');
+            $skippedReasons = array_count_values(array_column($skippedRows, 'reason'));
+            
+            // Calculate revenue statistics
+            $totalCsvRevenue = array_sum($csvInvoiceTotals);
+            $csvTotalsCount = count($csvInvoiceTotals);
+            $jobsWithoutCsvTotal = count($uniqueJobIds) - $csvTotalsCount;
+            
+            // If invoices were created, get statistics about them
+            $invoiceStats = [
+                'total_invoices_created' => 0,
+                'csv_source_count' => 0,
+                'calculated_source_count' => 0,
+                'total_revenue_csv' => 0,
+                'total_revenue_calculated' => 0
+            ];
+            
+            if ($autoCreateInvoices && !empty($uniqueJobIds)) {
+                $createdInvoices = \App\Models\Invoice::whereIn('pilot_car_job_id', $uniqueJobIds)
+                    ->where('invoice_type', '!=', 'summary')
+                    ->whereNull('parent_invoice_id')
+                    ->get();
+                
+                $invoiceStats['total_invoices_created'] = $createdInvoices->count();
+                
+                foreach ($createdInvoices as $invoice) {
+                    $values = $invoice->values ?? [];
+                    $source = $values['import_source'] ?? 'unknown';
+                    $total = (float)($values['total'] ?? 0);
+                    
+                    if ($source === 'csv') {
+                        $invoiceStats['csv_source_count']++;
+                        $invoiceStats['total_revenue_csv'] += $total;
+                    } elseif ($source === 'calculated') {
+                        $invoiceStats['calculated_source_count']++;
+                        $invoiceStats['total_revenue_calculated'] += $total;
+                    }
+                }
+            }
+            
+            Log::info('Import: Completed', [
+                'total_csv_rows' => count($l),
+                'total_rows_in_file' => $number - 1, // Subtract header row
+                'unique_jobs_created_or_found' => count($uniqueJobIds),
+                'skipped_rows_count' => count($skippedRows),
+                'skipped_row_numbers' => $skippedRowNumbers,
+                'skipped_reasons_breakdown' => $skippedReasons,
+                'errors' => count($errors),
+                'expected_jobs' => count($l) - count($skippedRows),
+                'actual_jobs' => count($uniqueJobIds),
+                'discrepancy' => (count($l) - count($skippedRows)) - count($uniqueJobIds),
+                'revenue_statistics' => [
+                    'csv_totals_collected' => $csvTotalsCount,
+                    'jobs_without_csv_total' => $jobsWithoutCsvTotal,
+                    'total_csv_revenue_collected' => $totalCsvRevenue,
+                    'invoice_statistics' => $invoiceStats
+                ]
+            ]);
 
             // STRICT MODE: Fail if any processing errors occurred
             if (!empty($errors)) {
@@ -223,7 +672,142 @@ class PilotCarJob extends Model
     }
 
     /**
-     * Normalize numeric values from CSV (remove commas, handle empty strings)
+     * Process payment from CSV import data
+     * Creates a payment transaction in the invoice's values array
+     */
+    public static function processPaymentFromImport($invoice, $paymentData, $job)
+    {
+        try {
+            $totalCost = $paymentData['total_cost'] ?? 0;
+            if ($totalCost <= 0) {
+                Log::warning('Import: Payment amount is zero or invalid', [
+                    'invoice_id' => $invoice->id,
+                    'job_id' => $job->id,
+                    'total_cost' => $totalCost
+                ]);
+                return;
+            }
+
+            $values = $invoice->values ?? [];
+            $payments = $values['payments'] ?? [];
+
+            // Check if payment already exists (avoid duplicates)
+            $paymentExists = false;
+            foreach ($payments as $existingPayment) {
+                if (isset($existingPayment['import_source']) && 
+                    isset($existingPayment['check_number']) && 
+                    $existingPayment['check_number'] == ($paymentData['check_no'] ?? null) &&
+                    abs((float)$existingPayment['amount'] - (float)$totalCost) < 0.01) {
+                    $paymentExists = true;
+                    break;
+                }
+            }
+
+            if ($paymentExists) {
+                Log::debug('Import: Payment already exists for invoice', [
+                    'invoice_id' => $invoice->id,
+                    'job_id' => $job->id,
+                    'check_no' => $paymentData['check_no'] ?? null
+                ]);
+                return;
+            }
+
+            // Parse payment date from timestamp if available
+            $paymentDate = now()->format('Y-m-d');
+            if (!empty($paymentData['timestamp'])) {
+                try {
+                    $parsedDate = \Carbon\Carbon::parse($paymentData['timestamp']);
+                    $paymentDate = $parsedDate->format('Y-m-d');
+                } catch (\Exception $e) {
+                    Log::warning('Import: Could not parse payment date', [
+                        'invoice_id' => $invoice->id,
+                        'timestamp' => $paymentData['timestamp'],
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+
+            // Create payment record
+            $payment = [
+                'amount' => (float)$totalCost,
+                'cash_amount' => (float)$totalCost,
+                'credit_amount' => 0,
+                'used_credit' => false,
+                'payment_method' => 'Check',
+                'check_number' => $paymentData['check_no'] ?? null,
+                'payment_date' => $paymentDate,
+                'notes' => 'Imported from CSV',
+                'recorded_by' => null, // System import
+                'recorded_at' => now()->toDateTimeString(),
+                'import_source' => true, // Flag to identify imported payments
+            ];
+
+            $payments[] = $payment;
+            $values['payments'] = $payments;
+
+            // Update total paid
+            $newTotalPaid = array_sum(array_column($payments, 'amount'));
+            $values['total_paid'] = $newTotalPaid;
+
+            // Calculate total due (with late fees if applicable)
+            $lateFees = $invoice->calculateLateFees();
+            $totalDue = $lateFees['total_with_late_fees'] ?? ($values['total'] ?? 0);
+
+            // Update paid_in_full status
+            if ($newTotalPaid >= $totalDue) {
+                $invoice->paid_in_full = true;
+            } else {
+                $invoice->paid_in_full = false;
+            }
+
+            // Save invoice with payment data
+            $invoice->values = $values;
+            $invoice->save();
+
+            Log::info('Import: Processed payment for invoice', [
+                'invoice_id' => $invoice->id,
+                'job_id' => $job->id,
+                'payment_amount' => $totalCost,
+                'total_paid' => $newTotalPaid,
+                'total_due' => $totalDue,
+                'paid_in_full' => $invoice->paid_in_full,
+                'check_no' => $paymentData['check_no'] ?? null
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Import: Failed to process payment', [
+                'invoice_id' => $invoice->id,
+                'job_id' => $job->id ?? null,
+                'payment_data' => $paymentData,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            // Don't throw - payment processing failure shouldn't break the import
+        }
+    }
+
+    /**
+     * Normalize vehicle name: "Car 06", "Car 006", "Car 6" all become "Car 6"
+     */
+    public static function normalizeVehicleName($name)
+    {
+        if (empty($name)) {
+            return '';
+        }
+
+        // Pattern: Extract prefix (e.g., "Car") and number (e.g., "06", "006", "6")
+        if (preg_match('/^(.+?)\s*(\d+)$/i', trim($name), $matches)) {
+            $prefix = trim($matches[1]);
+            $number = (int)$matches[2]; // Convert "06" to 6, "006" to 6
+            // Normalize to always 3 digits with leading zeros (e.g., 6 -> 006, 10 -> 010)
+            return $prefix . ' ' . str_pad($number, 3, '0', STR_PAD_LEFT);
+        }
+
+        // If no number found, return as-is
+        return trim($name);
+    }
+
+    /**
+     * Normalize numeric values from CSV (remove commas, dollar signs, handle empty strings)
      */
     public static function normalizeNumericValue($value)
     {
@@ -231,8 +815,8 @@ class PilotCarJob extends Model
             return null;
         }
         
-        // Remove commas and whitespace, then convert to numeric
-        $cleaned = str_replace([',', ' '], '', trim($value));
+        // Remove dollar signs, commas, and whitespace, then convert to numeric
+        $cleaned = str_replace(['$', ',', ' '], '', trim($value));
         
         if ($cleaned === '' || $cleaned === null) {
             return null;
@@ -395,24 +979,157 @@ class PilotCarJob extends Model
         return $values; 
     }
 
-    public static function processLog($values, $organization_id){
+    public static function processLog($values, $organization_id, &$processedJobs = [], $skipDeduplication = false){
+        // Log all processing attempts for debugging
+        Log::debug('Import: Processing log row', [
+            'organization_id' => $organization_id,
+            'has_job_no' => array_key_exists('job_no', $values),
+            'job_no' => $values['job_no'] ?? 'MISSING',
+            'has_invoice_no' => array_key_exists('invoice_no', $values),
+            'invoice_no' => $values['invoice_no'] ?? 'MISSING',
+            'skip_deduplication' => $skipDeduplication
+        ]);
 
-        if(!array_key_exists('job_no', $values)){
-            return true;
+        // Allow import even if job_no is missing - set to null and log it
+        $hasJobNo = array_key_exists('job_no', $values) && !empty(trim($values['job_no'] ?? ''));
+        if (!$hasJobNo) {
+            Log::warning('Import: Row missing job_no - importing anyway with job_no=null', [
+                'row_data' => array_filter($values, fn($k) => !in_array($k, ['job_no']), ARRAY_FILTER_USE_KEY)
+            ]);
+            $values['job_no'] = null; // Set to null instead of skipping
+        }
+        
+        if(!array_key_exists('invoice_no', $values) || empty($values['invoice_no'])){
+            Log::warning('Import: Row missing invoice_no', ['job_no' => $values['job_no'] ?? 'MISSING']);
+            // Continue processing but log the issue
         }
 
         if(!array_key_exists('end_time', $values)){
            $values['end_time'] = null;
         }
         
-            $job = static::where('organization_id',$organization_id)
-                    ->where('job_no', $values['job_no'] )
-                    ->where('invoice_no', $values['invoice_no'] )
-                    ->first();
-
-            $customer = Customer::where('organization_id',$organization_id)->where('name', $values['customer_name'])->first();
-            $job_started =  Carbon::make($values['start_date'] . ' ' . $values['start_time']);
-            $job_ended =  Carbon::make($values['start_date'] . ' ' . $values['end_time']);
+            // Find existing job by invoice_no (most unique identifier)
+            // job_no is NOT unique - it's more like a "Job Name" that customers reuse
+            // Each CSV row is unique, but we need to deduplicate from existing database entries
+            $job = null;
+            $matchMethod = null;
+            $customer = null;
+            $job_started = null;
+            $job_ended = null;
+            
+            // Skip all deduplication logic if database is empty
+            if (!$skipDeduplication) {
+                if (!empty($values['invoice_no'])) {
+                    // Primary: Match by invoice_no (most unique)
+                    $job = static::where('organization_id', $organization_id)
+                        ->where('invoice_no', $values['invoice_no'])
+                        ->first();
+                    
+                    if ($job) {
+                        $matchMethod = 'invoice_no';
+                        Log::debug('Import: Found existing job by invoice_no', [
+                            'job_id' => $job->id,
+                            'invoice_no' => $values['invoice_no'],
+                            'existing_job_no' => $job->job_no,
+                            'csv_job_no' => $values['job_no'] ?? 'MISSING'
+                        ]);
+                    }
+                }
+                
+                // Fallback: If no invoice_no or no match found, check if ALL values match an existing entry
+                if (!$job && empty($values['invoice_no'])) {
+                    // Prepare values for comparison
+                    $job_started = Carbon::make($values['start_date'] . ' ' . $values['start_time']);
+                    $job_ended = Carbon::make($values['start_date'] . ' ' . $values['end_time']);
+                    
+                    // Get customer first (needed for comparison)
+                    $customer = Customer::where('organization_id', $organization_id)->where('name', $values['customer_name'])->first();
+                    
+                    if ($customer) {
+                        // Build query to match all key fields exactly
+                        $query = static::where('organization_id', $organization_id)
+                            ->where('customer_id', $customer->id)
+                            ->whereNull('invoice_no'); // Only match jobs that also have no invoice_no
+                        
+                        // Match scheduled dates
+                        if ($job_started) {
+                            $query->where('scheduled_pickup_at', $job_started->toDateTimeString());
+                        } else {
+                            $query->whereNull('scheduled_pickup_at');
+                        }
+                        
+                        if ($job_ended) {
+                            $query->where('scheduled_delivery_at', $job_ended->toDateTimeString());
+                        } else {
+                            $query->whereNull('scheduled_delivery_at');
+                        }
+                        
+                        // Match other key fields
+                        if (!empty($values['load_no'])) {
+                            $query->where('load_no', $values['load_no']);
+                        } else {
+                            $query->whereNull('load_no');
+                        }
+                        
+                        if (!empty($values['pickup_address'])) {
+                            $query->where('pickup_address', $values['pickup_address']);
+                        } else {
+                            $query->whereNull('pickup_address');
+                        }
+                        
+                        if (!empty($values['delivery_address'])) {
+                            $query->where('delivery_address', $values['delivery_address']);
+                        } else {
+                            $query->whereNull('delivery_address');
+                        }
+                        
+                        // Note: check_no is NOT included in matching as it can be updated (e.g., was empty, now has value)
+                        
+                        $job = $query->first();
+                        
+                        if ($job) {
+                            $matchMethod = 'exact_match_fallback';
+                            Log::info('Import: Found existing job by exact field match (no invoice_no)', [
+                                'job_id' => $job->id,
+                                'customer' => $values['customer_name'],
+                                'scheduled_pickup_at' => $job_started?->toDateTimeString(),
+                                'load_no' => $values['load_no'] ?? 'NULL',
+                                'match_method' => 'exact_match_fallback'
+                            ]);
+                        } else {
+                            Log::debug('Import: No exact match found, will create new job (no invoice_no)', [
+                                'customer' => $values['customer_name'],
+                                'scheduled_pickup_at' => $job_started?->toDateTimeString(),
+                                'load_no' => $values['load_no'] ?? 'NULL'
+                            ]);
+                        }
+                    } else {
+                        // Customer doesn't exist yet, definitely a new job
+                        Log::debug('Import: Customer does not exist, will create new job', [
+                            'customer_name' => $values['customer_name']
+                        ]);
+                    }
+                }
+            } else {
+                // Database is empty - skip deduplication, treat all entries as new
+                Log::debug('Import: Skipping deduplication (database is empty) - treating as new job', [
+                    'invoice_no' => $values['invoice_no'] ?? 'MISSING',
+                    'job_no' => $values['job_no'] ?? 'MISSING'
+                ]);
+            }
+            
+            // Get customer if not already retrieved (for job creation)
+            if (!$customer) {
+                $customer = Customer::where('organization_id',$organization_id)->where('name', $values['customer_name'])->first();
+            }
+            
+            // Prepare job dates if not already done (for job creation)
+            if (!$job_started) {
+                $job_started = Carbon::make($values['start_date'] . ' ' . $values['start_time']);
+            }
+            if (!$job_ended) {
+                $job_ended = Carbon::make($values['start_date'] . ' ' . $values['end_time']);
+            }
 
             if(!$customer){
                $customer = Customer::create([
@@ -459,24 +1176,37 @@ class PilotCarJob extends Model
                 ]);
             }
 
-            $car = Vehicle::where('organization_id',$organization_id)->where('name', $values['pilot_car_name'])->first();
+            // Normalize vehicle name: "Car 06", "Car 006", "Car 6" all become "Car 6"
+            $vehicleName = static::normalizeVehicleName($values['pilot_car_name'] ?? '');
+            
+            // Try to find vehicle by normalized name first
+            $car = Vehicle::where('organization_id', $organization_id)
+                ->get()
+                ->first(function($v) use ($vehicleName) {
+                    return static::normalizeVehicleName($v->name) === $vehicleName;
+                });
 
             if(!$car){
+                // Create with normalized name
                 $car = Vehicle::create([
-                    'name'=> $values['pilot_car_name'],
+                    'name'=> $vehicleName ?: $values['pilot_car_name'] ?? 'Unknown',
                     'odometer'=> static::normalizeNumericValue($values['end_mileage'] ?? null),
                     'odometer_updated_at'=> $job_ended?->toDateTimeString(),
                     'organization_id' => $organization_id
                 ]);
+                Log::info('Import: Created new vehicle', ['name' => $car->name, 'original' => $values['pilot_car_name'] ?? '']);
             }else{
+                // Update existing vehicle (may have different name format)
                 $car->update([
                     'odometer'=> static::normalizeNumericValue($values['end_mileage'] ?? null),
                     'odometer_updated_at'=> $job_ended?->toDateTimeString()
                 ]);
+                Log::debug('Import: Updated existing vehicle', ['id' => $car->id, 'name' => $car->name]);
             }
 
+            $jobCreated = false;
             if(!$job){
-                if(!empty($value['timestamp'])){
+                if(!empty($values['timestamp'])){
                     $values['timestamp'] = Carbon::make($values['timestamp'])->toDateTimeString();
                 }else{
                     $values['timestamp'] = null;
@@ -500,10 +1230,51 @@ class PilotCarJob extends Model
                     'memo'=> $values['job_memo'],
                     'organization_id' => $organization_id
                 ]);
+                $jobCreated = true;
+                Log::info('Import: Created new job', ['job_id' => $job->id, 'job_no' => $job->job_no, 'invoice_no' => $job->invoice_no]);
+            } else {
+                // Update existing job found by invoice_no
+                // Update job_no if it's different (since job_no can change but invoice_no is unique)
+                $updates = [];
+                if (!empty($values['job_no']) && $job->job_no !== $values['job_no']) {
+                    $updates['job_no'] = $values['job_no'];
+                    Log::debug('Import: Updating job_no for existing job', [
+                        'job_id' => $job->id,
+                        'invoice_no' => $values['invoice_no'],
+                        'old_job_no' => $job->job_no,
+                        'new_job_no' => $values['job_no']
+                    ]);
+                }
+                
+                // Update invoice_paid status if CSV indicates it's paid
+                $isPaid = $values['invoice_paid'] && strtolower($values['invoice_paid']) == 'paid';
+                if ($isPaid && !$job->invoice_paid) {
+                    $updates['invoice_paid'] = true;
+                }
+                
+                if (!empty($updates)) {
+                    $job->update($updates);
+                    Log::info('Import: Updated existing job', [
+                        'job_id' => $job->id,
+                        'invoice_no' => $values['invoice_no'],
+                        'updates' => $updates
+                    ]);
+                } else {
+                    Log::debug('Import: Existing job found, no updates needed', [
+                        'job_id' => $job->id,
+                        'invoice_no' => $values['invoice_no']
+                    ]);
+                }
             }
 
-            $log = UserLog::where('organization_id',$organization_id)->where('job_id', $job->id)->where('vehicle_id', $car->id)->where('started_at', $job_started?->toDateTimeString())->first();
+            // Try to find existing log - use more flexible matching
+            $log = UserLog::where('organization_id',$organization_id)
+                ->where('job_id', $job->id)
+                ->where('vehicle_id', $car->id)
+                ->where('started_at', $job_started?->toDateTimeString())
+                ->first();
 
+            $logCreated = false;
             if(!$log){
                 $hotel = null;
 
@@ -513,34 +1284,61 @@ class PilotCarJob extends Model
                     $hotel = (Float)(trim(str_replace('$','', $values['hotel'])));
                 }
 
-                $l = UserLog::create([
-                    'job_id'=> $job->id,
-                    'car_driver_id'=> $car_driver->id,
-                    'truck_driver_id'=> $truck_driver->id,
-                    'vehicle_id'=> $car->id,
-                    'pretrip_check'=> strtolower($values['pretrip_check_answer']) === 'yes',
-                    'truck_no'=>$values['truck_no'],
-                    'trailer_no'=>$values['trailer_no'],
-                    'start_mileage'=> static::normalizeNumericValue($values['start_mileage'] ?? null),
-                    'end_mileage'=> static::normalizeNumericValue($values['end_mileage'] ?? null),
-                    'start_job_mileage'=> static::normalizeNumericValue($values['start_job_mileage'] ?? null),
-                    'end_job_mileage'=> static::normalizeNumericValue($values['end_job_mileage'] ?? null),
-                    'load_canceled'=>$values['if_load_canceled'] && strtolower($values['if_load_canceled']) === 'canceled',
-                    'is_deadhead'=>$values['is_deadhead'] && strtolower($values['is_deadhead']) === 'yes',
-                    'extra_load_stops_count'=> static::normalizeNumericValue($values['extra_load_stops_count'] ?? null) ?? 0,
-                    'wait_time_hours'=> static::normalizeNumericValue($values['wait_time_hours'] ?? null) ?? 0.00,
-                    'tolls'=> static::normalizeNumericValue($values['tolls'] ?? null) ?? 0.00,
-                    'gas'=> static::normalizeNumericValue($values['gas'] ?? null) ?? 0.00,
-                    'extra_charge'=> static::normalizeNumericValue($values['extra_charge'] ?? null) ?? 0.00,
-                    'hotel'=> $hotel,
-                    'memo'=>$values['wait_time_reason'],
-                    'maintenance_memo'=>$values['maintenance_memo'],
-                    'started_at'=> $job_started?->toDateTimeString(),
-                    'ended_at'=> $job_ended?->toDateTimeString(),
-                    'organization_id' => $organization_id
-                ]);
+                try {
+                    $log = UserLog::create([
+                        'job_id'=> $job->id,
+                        'car_driver_id'=> $car_driver->id,
+                        'truck_driver_id'=> $truck_driver->id,
+                        'vehicle_id'=> $car->id,
+                        'pretrip_check'=> strtolower($values['pretrip_check_answer']) === 'yes',
+                        'truck_no'=>$values['truck_no'],
+                        'trailer_no'=>$values['trailer_no'],
+                        'start_mileage'=> static::normalizeNumericValue($values['start_mileage'] ?? null),
+                        'end_mileage'=> static::normalizeNumericValue($values['end_mileage'] ?? null),
+                        'start_job_mileage'=> static::normalizeNumericValue($values['start_job_mileage'] ?? null),
+                        'end_job_mileage'=> static::normalizeNumericValue($values['end_job_mileage'] ?? null),
+                        'load_canceled'=>$values['if_load_canceled'] && strtolower($values['if_load_canceled']) === 'canceled',
+                        'is_deadhead'=>$values['is_deadhead'] && strtolower($values['is_deadhead']) === 'yes',
+                        'extra_load_stops_count'=> static::normalizeNumericValue($values['extra_load_stops_count'] ?? null) ?? 0,
+                        'wait_time_hours'=> static::normalizeNumericValue($values['wait_time_hours'] ?? null) ?? 0.00,
+                        'tolls'=> static::normalizeNumericValue($values['tolls'] ?? null) ?? 0.00,
+                        'gas'=> static::normalizeNumericValue($values['gas'] ?? null) ?? 0.00,
+                        'extra_charge'=> static::normalizeNumericValue($values['extra_charge'] ?? null) ?? 0.00,
+                        'hotel'=> $hotel,
+                        'memo'=>$values['wait_time_reason'],
+                        'maintenance_memo'=>$values['maintenance_memo'],
+                        'started_at'=> $job_started?->toDateTimeString(),
+                        'ended_at'=> $job_ended?->toDateTimeString(),
+                        'organization_id' => $organization_id
+                    ]);
+                    $logCreated = true;
+                    Log::info('Import: Created new log', ['log_id' => $log->id, 'job_id' => $job->id, 'job_no' => $values['job_no']]);
+                } catch (\Exception $e) {
+                    Log::error('Import: Failed to create log', [
+                        'job_id' => $job->id,
+                        'job_no' => $values['job_no'],
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                    // Still return job_id even if log creation failed
+                }
+            } else {
+                Log::debug('Import: Using existing log', ['log_id' => $log->id, 'job_id' => $job->id, 'job_no' => $values['job_no']]);
             }
             
+            // Always return job_id, even if log creation failed or was skipped
+            // This ensures the job is counted in processedJobs
+            return [
+                'job_id' => $job->id, 
+                'log_id' => $log->id ?? null,
+                'job_created' => $jobCreated,
+                'log_created' => $logCreated,
+                'invoice_paid' => $values['invoice_paid'] ?? false,
+                'total_cost' => $values['total_cost'] ?? null,
+                'check_no' => $values['check_no'] ?? null,
+                'invoice_no' => $values['invoice_no'] ?? null,
+                'timestamp' => $values['timestamp'] ?? null,
+            ];
     }
 
     /**
@@ -714,8 +1512,11 @@ class PilotCarJob extends Model
         $values['effective_rate_value'] = $values['total']['effective_rate_value'];
         $values['total'] = $values['total']['total'];
 
+        // Check if job is marked as paid (from CSV import or manual update)
+        $paidInFull = (bool)($this->invoice_paid ?? false);
+        
         return [
-            'paid_in_full' => false,
+            'paid_in_full' => $paidInFull,
             'values' => $values,
             'organization_id' => $values['organization_id'],
             'customer_id' => $values['customer_id'],
@@ -1122,8 +1923,14 @@ class PilotCarJob extends Model
             $values['total'] = ($values['miles_charge'] ?? 0) + $expenses;
         }
         
-        // Format total as number (not string)
-        $values['total'] = (float) str_replace(',', '', (string) $values['total']);
+        // Ensure total is always a float (handle both string and numeric inputs)
+        if (is_string($values['total'])) {
+            // Remove commas and convert to float
+            $values['total'] = (float) str_replace([',', ' '], '', $values['total']);
+        } else {
+            // Already numeric, ensure it's a float
+            $values['total'] = (float) $values['total'];
+        }
 
         return $values;
     }
@@ -1197,7 +2004,14 @@ class PilotCarJob extends Model
         }
 
         // Check if job has invoices (completed)
-        if ($this->invoices()->exists()) {
+        // Check both single invoices (via pilot_car_job_id) and summary invoices (via pivot)
+        $hasSingleInvoice = Invoice::where('pilot_car_job_id', $this->id)
+            ->where('invoice_type', '!=', 'summary')
+            ->whereNull('parent_invoice_id')
+            ->exists();
+        $hasSummaryInvoice = $this->summaryInvoices()->exists();
+        
+        if ($hasSingleInvoice || $hasSummaryInvoice) {
             return 'COMPLETED';
         }
 
