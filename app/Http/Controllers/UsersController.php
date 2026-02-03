@@ -34,4 +34,29 @@ class UsersController extends Controller
         return back();
         
     }
+
+
+public function subscribeToNotifications(Request $request)
+{
+    /*
+    test: 
+    $user = User::find(1);
+    $user->notify(new \App\Notifications\JobUpdate());
+
+    */
+    $this->validate($request, [
+        'endpoint' => 'required',
+        'keys.auth' => 'required',
+        'keys.p256dh' => 'required'
+    ]);
+
+    $endpoint = $request->endpoint;
+    $key = $request->keys['p256dh'];
+    $token = $request->keys['auth'];
+
+    // The trait 'HasPushSubscriptions' provides the updatePushSubscription method
+    $request->user()->updatePushSubscription($endpoint, $key, $token);
+
+    return response()->json(['success' => true]);
+}
 }

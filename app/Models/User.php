@@ -13,6 +13,7 @@ use Laravel\Sanctum\HasApiTokens;
 use App\Models\Organization;
 use App\Models\LoginCode;
 use App\Models\Customer;
+use NotificationChannels\WebPush\HasPushSubscriptions;
 
 class User extends Authenticatable
 {
@@ -24,6 +25,7 @@ class User extends Authenticatable
     use Notifiable;
     use TwoFactorAuthenticatable;
     use SoftDeletes;
+    use HasPushSubscriptions;
 
     public const ROLE_GUEST = 'guest';
     public const ROLE_EMPLOYEE_STANDARD = 'employee_standard';

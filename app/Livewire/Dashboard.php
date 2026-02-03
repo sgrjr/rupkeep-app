@@ -11,6 +11,7 @@ use Livewire\WithFileUploads;
 use Livewire\Attributes\Validate;
 use App\Models\PilotCarJob;
 use App\Models\UserLog;
+use Illuminate\Support\Facades\Auth as AuthFacade;
 
 class Dashboard extends Component
 {
@@ -462,16 +463,50 @@ class Dashboard extends Component
     public function deleteJobs(){
         // Delete all entries from the pivot table (summary invoices only)
         \App\Models\JobInvoice::where('id', '!=', 0)->delete();
-        
+
         // Delete all invoices (single invoices don't have pivot entries)
         \App\Models\Invoice::where('id', '!=', 0)->forceDelete();
-        
+
         // Delete logs
         UserLog::where('id','!=', 0)->forceDelete();
-        
+
         // Delete jobs (this should cascade, but being explicit)
         PilotCarJob::where('id','!=', 0)->forceDelete();
-        
+
         return back();
+    }
+
+    /**
+     * Confirm a log assignment from the dashboard.
+     */
+    public function confirmLog(int $logId): void
+    {
+        $log = UserLog::findOrFail($logId);
+        $this->authorize('confirm', $log);
+
+        $log->update([
+            'approval_status' => 'confirmed',
+            'approved_at' => now(),
+            'approved_by_id' => AuthFacade::id(),
+        ]);
+
+        session()->flash('success', __('Log confirmed successfully.'));
+    }
+
+    /**
+     * Deny a log assignment from the dashboard.
+     */
+    public function denyLog(int $logId): void
+    {
+        $log = UserLog::findOrFail($logId);
+        $this->authorize('deny', $log);
+
+        $log->update([
+            'approval_status' => 'denied',
+            'approved_at' => now(),
+            'approved_by_id' => AuthFacade::id(),
+        ]);
+
+        session()->flash('success', __('Log denied.'));
     }
 }

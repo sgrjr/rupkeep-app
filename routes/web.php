@@ -43,7 +43,9 @@ Route::middleware([
     Route::get('/dashboard/{component?}', Dashboard::class)->name('dashboard');
     Route::post('/admin/git-update', GitUpdateController::class)->name('admin.git-update');
     Route::post('/admin/tools/update-from-git', [AdminToolsController::class, 'updateFromGit'])->name('admin.tools.update_from_git');
-    
+
+    Route::post('/notifications/subscribe', [SubscriptionController::class, 'store']);
+
     // Server Management (super admin only)
     Route::get('/admin/server-management', \App\Livewire\ServerManagement::class)
         ->name('admin.server-management')
