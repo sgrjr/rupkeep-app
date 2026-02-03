@@ -595,6 +595,11 @@
 
             <div class="space-y-4">
                         @foreach($jobs as $job)
+                    @php
+                        $pendingCount = $job->logs->where('approval_status', 'pending')->count();
+                        $confirmedCount = $job->logs->where('approval_status', 'confirmed')->count();
+                        $deniedCount = $job->logs->where('approval_status', 'denied')->count();
+                    @endphp
                     <div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition hover:border-orange-100 hover:shadow-md">
                         <div class="flex flex-wrap items-start justify-between gap-3">
                             <div>
@@ -603,24 +608,90 @@
                                     {{ $job->customer?->name ?? __('Unassigned Customer') }}
                                 </a>
                             </div>
-                            <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-                                {{ trans_choice('{0} No logs yet|{1} :count log|[2,*] :count logs', $job->logs->count(), ['count' => $job->logs->count()]) }}
-                            </span>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                                    {{ trans_choice('{0} No logs yet|{1} :count log|[2,*] :count logs', $job->logs->count(), ['count' => $job->logs->count()]) }}
+                                </span>
+                                @if($pendingCount > 0 || $confirmedCount > 0 || $deniedCount > 0)
+                                    <div class="flex items-center gap-1 text-[10px]">
+                                        @if($pendingCount > 0)
+                                            <span class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 font-semibold text-amber-700">
+                                                <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                                {{ $pendingCount }} {{ __('pending') }}
+                                            </span>
+                                        @endif
+                                        @if($confirmedCount > 0)
+                                            <span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 font-semibold text-emerald-700">
+                                                <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+                                                {{ $confirmedCount }} {{ __('confirmed') }}
+                                            </span>
+                                        @endif
+                                        @if($deniedCount > 0)
+                                            <span class="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 font-semibold text-red-700">
+                                                <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                {{ $deniedCount }} {{ __('denied') }}
+                                            </span>
+                                        @endif
+                                    </div>
+                                @endif
+                            </div>
                         </div>
                         @if($job->logs->count())
                             <div class="mt-4 grid gap-3 md:grid-cols-2">
                                     @foreach($job->logs as $log)
-                                    <div class="flex items-start gap-3 rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3">
-                                        <div class="mt-1 h-2 w-2 rounded-full bg-orange-400"></div>
-                                        <div class="space-y-2 text-sm">
+                                    @php
+                                        $statusBorder = match($log->approval_status) {
+                                            'pending' => 'border-amber-200 bg-amber-50/80',
+                                            'confirmed' => 'border-emerald-200 bg-emerald-50/80',
+                                            'denied' => 'border-red-200 bg-red-50/80',
+                                            default => 'border-slate-100 bg-slate-50/80',
+                                        };
+                                        $statusDot = match($log->approval_status) {
+                                            'pending' => 'bg-amber-400',
+                                            'confirmed' => 'bg-emerald-400',
+                                            'denied' => 'bg-red-400',
+                                            default => 'bg-orange-400',
+                                        };
+                                    @endphp
+                                    <div class="flex items-start gap-3 rounded-xl border {{ $statusBorder }} px-4 py-3">
+                                        <div class="mt-1 h-2 w-2 rounded-full {{ $statusDot }}"></div>
+                                        <div class="flex-1 space-y-2 text-sm">
                                             <div class="flex flex-wrap items-center gap-2">
                                                 <a class="inline-flex items-center gap-1 text-sm font-semibold text-orange-600 hover:text-orange-700" href="{{ route('logs.edit', ['log'=> $log->id]) }}">
                                                     {{ __('Edit Log') }}
                                                     <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4L12 20M12 4L8 8M12 4L16 8"/></svg>
                                                 </a>
                                                 <span class="text-xs text-slate-500">{{ optional($log->created_at)->diffForHumans() }}</span>
+                                                @if($log->approval_status === 'pending')
+                                                    <span class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                                                        <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                                        {{ __('Pending') }}
+                                                    </span>
+                                                @elseif($log->approval_status === 'confirmed')
+                                                    <span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                                                        <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+                                                        {{ __('Confirmed') }}
+                                                    </span>
+                                                @elseif($log->approval_status === 'denied')
+                                                    <span class="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">
+                                                        <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                        {{ __('Denied') }}
+                                                    </span>
+                                                @endif
                                             </div>
                                             <p class="text-xs text-slate-600">{{ $log->memo ?: __('No memo recorded yet.') }}</p>
+                                            @if($log->approval_status === 'pending' && ($log->car_driver_id === auth()->id() || auth()->user()->isAdmin() || auth()->user()->isManager()))
+                                                <div class="flex flex-wrap items-center gap-2 pt-1">
+                                                    <button wire:click="confirmLog({{ $log->id }})" class="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-3 py-1 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-600">
+                                                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+                                                        {{ __('Accept') }}
+                                                    </button>
+                                                    <button wire:click="denyLog({{ $log->id }})" class="inline-flex items-center gap-1 rounded-full bg-red-500 px-3 py-1 text-xs font-semibold text-white shadow-sm transition hover:bg-red-600">
+                                                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                        {{ __('Deny') }}
+                                                    </button>
+                                                </div>
+                                            @endif
                                         </div>
                                     </div>
                                     @endforeach
