@@ -97,13 +97,14 @@
             </div>
         </section>
 
+        @can('viewSensitive', $customer)
         <section class="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm">
             <header class="mb-4">
                 <h2 class="text-lg font-semibold text-slate-900">{{ __('Transaction Register') }}</h2>
                 <p class="text-xs text-slate-500">{{ __('Complete transaction history showing invoices (credits) and payments (debits) with running balance.') }}</p>
             </header>
-            <x-transaction-register 
-                :transactions="$transactions" 
+            <x-transaction-register
+                :transactions="$transactions"
                 :show-balance="true"
                 :account-credit="$accountCredit" />
         </section>
@@ -243,5 +244,29 @@
                 </div>
             </form>
         </section>
+        @else
+        <section class="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm">
+            <header>
+                <h2 class="text-lg font-semibold text-slate-900">{{ __('My Assigned Jobs') }}</h2>
+                <p class="text-xs text-slate-500">{{ __('Jobs assigned to you for this customer.') }}</p>
+            </header>
+            <div class="mt-4 space-y-2">
+                @php
+                    $myJobs = $jobs->filter(fn($job) => $job->logs->where('car_driver_id', auth()->id())->count() > 0);
+                @endphp
+                @forelse($myJobs as $job)
+                    <a href="{{ route('my.jobs.show', ['job' => $job->id]) }}" class="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm transition hover:border-orange-200 hover:bg-orange-50">
+                        <div>
+                            <p class="font-semibold text-slate-800">{{ $job->job_no ?? __('No #') }}</p>
+                            <p class="text-xs text-slate-500">{{ optional($job->scheduled_pickup_at)->format('M j, Y') ?? '—' }}</p>
+                        </div>
+                        <svg class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                    </a>
+                @empty
+                    <p class="text-sm text-slate-400">{{ __('No jobs assigned to you for this customer.') }}</p>
+                @endforelse
+            </div>
+        </section>
+        @endcan
     </div>
 </x-app-layout>

@@ -49,12 +49,16 @@
             </div>
         </section>
 
-        @if($log->approval_status === 'pending' && $log->car_driver_id && auth()->user()->id === $log->car_driver_id)
+        @if($log->approval_status === 'pending' && ($log->car_driver_id === auth()->id() || auth()->user()->isAdmin() || auth()->user()->isManager()))
             <section class="rounded-3xl border-2 border-amber-200 bg-amber-50 p-5 shadow-sm sm:p-6">
                 <div class="flex flex-wrap items-center justify-between gap-4">
                     <div>
                         <h2 class="text-lg font-semibold text-amber-900">{{ __('Log Assignment Pending Approval') }}</h2>
-                        <p class="text-sm text-amber-700">{{ __('This log has been assigned to you. Please confirm or deny this assignment before editing.') }}</p>
+                        @if($log->car_driver_id === auth()->id())
+                            <p class="text-sm text-amber-700">{{ __('This log has been assigned to you. Please confirm or deny this assignment before editing.') }}</p>
+                        @else
+                            <p class="text-sm text-amber-700">{{ __('This log is pending approval from the assigned driver. As an admin/manager, you can approve or deny on their behalf.') }}</p>
+                        @endif
                     </div>
                     <div class="flex flex-wrap items-center gap-2">
                         @can('confirm', $log)
@@ -144,7 +148,11 @@
             </div>
         </section>
 
-        <form id="user_log_form" wire:submit="saveLog" class="space-y-6" @if($log->approval_status === 'pending' && $log->car_driver_id && auth()->user()->id === $log->car_driver_id) onsubmit="event.preventDefault(); alert('{{ __('Please confirm or deny this log assignment before editing.') }}'); return false;" @endif>
+        @php
+            // Block editing only if: log is pending AND current user IS the assigned driver (not admin/manager acting on behalf)
+            $blockEditing = $log->approval_status === 'pending' && $log->car_driver_id === auth()->id() && !auth()->user()->isAdmin() && !auth()->user()->isManager();
+        @endphp
+        <form id="user_log_form" wire:submit="saveLog" class="space-y-6" @if($blockEditing) onsubmit="event.preventDefault(); alert('{{ __('Please confirm or deny this log assignment before editing.') }}'); return false;" @endif>
             @csrf
 
             <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
@@ -520,12 +528,12 @@
     </div>
 
     <!-- Fixed Save Button for Mobile -->
-    <button 
+    <button
         type="button"
         wire:loading.attr="disabled"
         wire:target="saveLog"
         class="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-orange-600 text-white shadow-lg transition hover:bg-orange-700 active:scale-95 sm:hidden"
-        @if($log->approval_status === 'pending' && $log->car_driver_id && auth()->user()->id === $log->car_driver_id) 
+        @if($blockEditing)
             onclick="event.preventDefault(); alert('{{ __('Please confirm or deny this log assignment before editing.') }}'); return false;"
         @else
             onclick="document.getElementById('user_log_form').requestSubmit();"
