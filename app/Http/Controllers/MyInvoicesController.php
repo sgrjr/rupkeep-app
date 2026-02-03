@@ -164,6 +164,14 @@ class MyInvoicesController extends Controller
             Arr::set($values, $key, $value);
         }
 
+        // Explicitly handle top-level numeric keys that may not work with Arr::dot/set
+        foreach (['tolls', 'hotel', 'extra_charge', 'wait_time_hours', 'billable_miles', 'total'] as $topKey) {
+            if (isset($incomingValues[$topKey])) {
+                $val = trim((string) $incomingValues[$topKey]);
+                $values[$topKey] = $val === '' ? null : (float) $val;
+            }
+        }
+
         $invoice->values = $values;
 
         if ($request->filled('paid_in_full')) {

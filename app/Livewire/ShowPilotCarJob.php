@@ -17,6 +17,7 @@ use App\Events\InvoiceReady;
 use App\Events\JobWasUncanceled;
 use App\Models\Invoice;
 use App\Models\JobInvoice;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use App\Models\CustomerContact;
 use Illuminate\Support\Facades\Schema;
 use Livewire\Attributes\Layout;
@@ -36,8 +37,7 @@ class JobAssignmentForm extends Form
 #[Layout('layouts.app')]
 class ShowPilotCarJob extends Component
 {
-
-    use WithFileUploads;
+    use WithFileUploads, AuthorizesRequests;
 
     public JobAssignmentForm $assignment;
     public $job;
@@ -292,6 +292,28 @@ class ShowPilotCarJob extends Component
         SendCustomerContactNotification::to($contact, $message, $subject);
         
         session()->flash('success', __('Notification sent to ') . $contact->name);
+    }
+
+    /**
+     * Delete an invoice from the job show page.
+     */
+    public function deleteInvoice(int $invoiceId): void
+    {
+        $invoice = Invoice::findOrFail($invoiceId);
+        $this->authorize('delete', $invoice);
+
+        // If this is a summary invoice, release children first
+        if ($invoice->isSummary()) {
+            foreach ($invoice->children as $child) {
+                $child->update(['parent_invoice_id' => null]);
+            }
+            JobInvoice::where('invoice_id', $invoice->id)->delete();
+        }
+
+        $invoice->forceDelete();
+        $this->loadJobRelations();
+
+        session()->flash('success', __('Invoice deleted.'));
     }
 
     /**

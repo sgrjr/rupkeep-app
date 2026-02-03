@@ -5,7 +5,8 @@ namespace App\Notifications;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Notification;use NotificationChannels\WebPush\WebPushMessage;
+use Illuminate\Notifications\Notification;
+use NotificationChannels\WebPush\WebPushMessage;
 use NotificationChannels\WebPush\WebPushChannel;
 
 class JobUpdate extends Notification
@@ -27,17 +28,7 @@ class JobUpdate extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ['mail',WebPushChannel::class];
-    }
-
-    /**
-     * Get the mail representation of the notification.
-     */
-    public function toMail(object $notifiable): MailMessage
-    {
-        return (new MailMessage)
-                    ->line('Job was assigned.')
-                    ->action('Action', url('/dashboard'));
+        return [WebPushChannel::class];
     }
 
     /**
