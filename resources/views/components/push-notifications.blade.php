@@ -4,35 +4,41 @@
 console.log('started');
 const VAPID_PUBLIC_KEY = "BMPgW_eNDtZPVH-RYHfAPEkzR6Fvmw7A247WEuFrYH82OLXV7nK6zTRIT_F1zd-0vUfg51P-pGwVmeQugeHjsiA";
 
-// 1. Register the Service Worker
-async function registerServiceWorker() {
-    return navigator.serviceWorker.register('/sw.js');
-}
+    async function subscribeUser() {
+        // 1. Wait for the service worker to be fully active
+        const registration = await navigator.serviceWorker.ready;
+        
+        console.log('Service Worker is ready and active.');
 
-// 2. Ask for Permission & Subscribe
-async function subscribeUser() {
-    const registration = await registerServiceWorker();
-    
-    // Check if user already has a subscription
-    const existingSubscription = await registration.pushManager.getSubscription();
-    if (existingSubscription) return existingSubscription;
-
-    // Request permission and create new subscription
-    const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-    });
-
-    // 3. Send subscription to Laravel
-    await fetch('/notifications/subscribe', {
-        method: 'POST',
-        body: JSON.stringify(subscription),
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        // 2. Check for existing subscription
+        const existingSubscription = await registration.pushManager.getSubscription();
+        if (existingSubscription) {
+            console.log('User already subscribed.');
+            return existingSubscription;
         }
-    });
-}
+
+        // 3. Request permission and subscribe
+        try {
+            const subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+            });
+
+            // 4. Send to Laravel
+            await fetch('/notifications/subscribe', {
+                method: 'POST',
+                body: JSON.stringify(subscription),
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                }
+            });
+            
+            console.log('Successfully sent subscription to server!');
+        } catch (error) {
+            console.error('Push subscription failed:', error);
+        }
+    }
 
     // Helper to convert VAPID key format
     function urlBase64ToUint8Array(base64String) {

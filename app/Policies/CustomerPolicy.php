@@ -68,5 +68,14 @@ class CustomerPolicy
     {
         return ($user->organization_id === $customer->organization_id && $user->isAdmin()) || $user->organization->is_super;
     }
-    
+
+    /**
+     * Determine whether the user can view sensitive sections (Transaction Register, Jobs & Invoicing).
+     */
+    public function viewSensitive(User $user, Customer $customer): bool
+    {
+        return ($user->organization_id === $customer->organization_id
+                && ($user->isAdmin() || $user->isManager()))
+               || $user->is_super;
+    }
 }

@@ -11,11 +11,13 @@
                 <p class="text-xs">{{ $customer->city }}, {{ $customer->state }} {{ $customer->zip }}</p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-                <a href="{{ route('customers.edit', ['customer' => $customer->id]) }}"
-                   class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-orange-300 hover:text-orange-600">
-                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-4.536a2.5 2.5 0 11-3.536 3.536L4.5 16.5V19.5H7.5l8.5-8.5"/></svg>
-                    {{ __('Edit customer') }}
-                </a>
+                @can('update', $customer)
+                    <a href="{{ route('customers.edit', ['customer' => $customer->id]) }}"
+                       class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-orange-300 hover:text-orange-600">
+                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-4.536a2.5 2.5 0 11-3.536 3.536L4.5 16.5V19.5H7.5l8.5-8.5"/></svg>
+                        {{ __('Edit customer') }}
+                    </a>
+                @endcan
             </div>
         </div>
     </x-slot>
