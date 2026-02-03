@@ -33,6 +33,7 @@ use App\Http\Controllers\UserEventController;
 use App\Http\Controllers\MyReportsController;
 use App\Http\Controllers\PricingController;
 use App\Livewire\ManagePricing;
+use App\Http\Controllers\SubscriptionController;
 
 Route::middleware([
     'auth:sanctum',
