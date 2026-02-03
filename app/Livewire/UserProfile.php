@@ -12,6 +12,9 @@ use Carbon\Carbon;
 use Laravel\Jetstream\Http\Controllers\Inertia\Concerns\ConfirmsTwoFactorAuthentication;
 use Laravel\Jetstream\Agent;
 use App\Actions\SendUserNotification;
+use App\Models\Invoice;
+use App\Models\JobInvoice;
+use App\Models\PilotCarJob;
 
 class UserProfile extends Component
 {
@@ -117,12 +120,35 @@ class UserProfile extends Component
                 \App\Models\UserLog::where('car_driver_id', $this->profile->id)->update(['car_driver_id'=>$user->id]);
                 \App\Models\Vehicle::where('user_id', $this->profile->id)->update(['user_id'=>$user->id]);
                 $this->profile->delete();
-    
+
                 return redirect()->route('user.profile', ['user'=> $user->id]);
             }else{
-                echo 'ERROR. I could not find that user(s)!'; 
+                echo 'ERROR. I could not find that user(s)!';
             }
         }
-       
+
+    }
+
+    /**
+     * Clear all invoices for the organization (super users only).
+     */
+    public function clearInvoices()
+    {
+        if (!auth()->user()->is_super) {
+            session()->flash('error', __('Only super users can clear all invoices.'));
+            return;
+        }
+
+        $organizationId = $this->profile->organization_id;
+        $count = Invoice::where('organization_id', $organizationId)->count();
+
+        // Delete pivot entries first
+        $jobIds = PilotCarJob::where('organization_id', $organizationId)->pluck('id');
+        JobInvoice::whereIn('pilot_car_job_id', $jobIds)->delete();
+
+        // Then delete all invoices
+        Invoice::where('organization_id', $organizationId)->forceDelete();
+
+        session()->flash('success', __(':count invoices deleted.', ['count' => $count]));
     }
 }

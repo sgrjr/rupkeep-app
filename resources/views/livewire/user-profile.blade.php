@@ -69,18 +69,50 @@
 
         @can('createUser', $profile->organization)
         <x-section-border />
-        
+
         <div class="mt-10 sm:mt-0">
             <div class="bg-white rounded-md shadow p-6">
-                <form wire:submit="mergeToUser" method="post" class="flex">
-                @csrf
-                <input name="user_id" type="number" required  wire:model="merged_user"
-                wire:keydown.enter="mergeToUser"/>
-                <button>Merge this User with Other User</button>
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900">{{ __('Merge User') }}</h3>
+                    <p class="text-sm text-gray-600">
+                        {{ __('Transfer all jobs, logs, and vehicles from this user to another user. This user will be deleted after merge.') }}
+                    </p>
+                </div>
+                <form wire:submit="mergeToUser" method="post" class="flex flex-wrap items-center gap-3">
+                    @csrf
+                    <input name="user_id" type="number" required wire:model="merged_user"
+                        wire:keydown.enter="mergeToUser"
+                        placeholder="{{ __('Target User ID') }}"
+                        class="rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500"/>
+                    <button type="submit" class="bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 transition">
+                        {{ __('Merge Users') }}
+                    </button>
                 </form>
             </div>
         </div>
         @endcan
+
+        @if(auth()->user()->is_super)
+        <x-section-border />
+
+        <div class="mt-10 sm:mt-0">
+            <div class="bg-white rounded-md shadow p-6">
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold text-red-900">{{ __('Clear All Invoices') }}</h3>
+                    <p class="text-sm text-gray-600">
+                        {{ __('Delete all invoices for this organization. This action cannot be undone.') }}
+                    </p>
+                </div>
+                <button
+                    type="button"
+                    wire:click="clearInvoices"
+                    wire:confirm="{{ __('Are you sure you want to delete ALL invoices for this organization? This action cannot be undone.') }}"
+                    class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition">
+                    {{ __('Clear All Invoices') }}
+                </button>
+            </div>
+        </div>
+        @endif
 
         <x-section-border />
 

@@ -252,14 +252,24 @@
                         <span>{{ __('Trip Timing') }} @if($tripTimingSummary) <span class="text-sm font-normal text-slate-500">— {{ $tripTimingSummary }}</span> @endif</span>
                         <svg class="h-4 w-4 transition group-open:rotate-180" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>
                     </summary>
-                    <div class="grid gap-4 sm:grid-cols-2">
+                    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                         <div>
-                            <label for="started_at" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Started At') }}</label>
+                            <label for="clock_in" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Clock In') }}</label>
+                            <input type="datetime-local" id="clock_in" wire:model.blur="form.clock_in" class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                            @error('form.clock_in') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
+                        </div>
+                        <div>
+                            <label for="clock_out" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Clock Out') }}</label>
+                            <input type="datetime-local" id="clock_out" wire:model.blur="form.clock_out" class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                            @error('form.clock_out') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
+                        </div>
+                        <div>
+                            <label for="started_at" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Job Start Time') }}</label>
                             <input type="datetime-local" id="started_at" wire:model.blur="form.started_at" class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
                             @error('form.started_at') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                         </div>
                         <div>
-                            <label for="ended_at" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Ended At') }}</label>
+                            <label for="ended_at" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Job End Time') }}</label>
                             <input type="datetime-local" id="ended_at" wire:model.blur="form.ended_at" class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
                             @error('form.ended_at') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                         </div>

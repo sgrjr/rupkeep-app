@@ -49,8 +49,13 @@ const VAPID_PUBLIC_KEY = "BMPgW_eNDtZPVH-RYHfAPEkzR6Fvmw7A247WEuFrYH82OLXV7nK6zT
     }
 
     // Trigger the registration and subscription process immediately on load
-    subscribeUser()
-        .then(sub => console.log('Successfully subscribed:', sub))
-        .catch(err => console.error('Subscription failed:', err));
+        navigator.serviceWorker.register('/sw.js')
+            .then(reg => {
+                console.log('Registration initiated...');
+                // 2. Now call your subscription logic
+                return subscribeUser();
+            })
+            .then(sub => console.log('Successfully subscribed:', sub))
+            .catch(err => console.error('Full stack failure:', err));
 
 </script>

@@ -19,11 +19,13 @@ class UserLog extends Model
     use HasFactory, SoftDeletes;
     public $timestamps = true;
     public $fillable = [
-        'job_id','car_driver_id','truck_driver_id','vehicle_id','vehicle_position','pretrip_check', 'truck_no','trailer_no','start_mileage','end_mileage','start_job_mileage','end_job_mileage','load_canceled','extra_charge','is_deadhead','extra_load_stops_count','wait_time_hours','tolls','gas','hotel','memo','maintenance_memo', 'started_at','ended_at','organization_id','billable_miles','approval_status','approved_at','approved_by_id'
+        'job_id','car_driver_id','truck_driver_id','vehicle_id','vehicle_position','pretrip_check', 'truck_no','trailer_no','start_mileage','end_mileage','start_job_mileage','end_job_mileage','load_canceled','extra_charge','is_deadhead','extra_load_stops_count','wait_time_hours','tolls','gas','hotel','memo','maintenance_memo', 'started_at','ended_at','organization_id','billable_miles','approval_status','approved_at','approved_by_id','clock_in','clock_out'
     ];
 
     protected $casts = [
         'approved_at' => 'datetime',
+        'clock_in' => 'datetime',
+        'clock_out' => 'datetime',
     ];
 
     protected static function booted(): void

@@ -76,6 +76,10 @@ class EditLogForm extends Form
     public $started_at = null;
 
     public $ended_at = null;
+
+    public $clock_in = null;
+
+    public $clock_out = null;
 }
 
 class EditUserLog extends Component
@@ -218,6 +222,8 @@ class EditUserLog extends Component
             'maintenance_memo' => $this->log->maintenance_memo,
             'started_at' => $this->log->started_at,
             'ended_at' => $this->log->ended_at,
+            'clock_in' => $this->log->clock_in,
+            'clock_out' => $this->log->clock_out,
             'new_truck_driver_name' => null,
             'new_truck_driver_phone' => null,
             'new_truck_driver_memo' => null,
