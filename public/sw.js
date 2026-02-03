@@ -1,3 +1,5 @@
+console.log("Service Worker is actually loading!");
+
 self.addEventListener('push', function (event) {
     if (!(self.Notification && self.Notification.permission === 'granted')) {
         return;
