@@ -6,6 +6,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
         <title>{{ $title }}</title>
+        <meta name="csrf-token" content="{{ csrf_token() }}">
 
         <!-- Styles / Scripts -->
         @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
@@ -78,5 +79,6 @@
         </div>
     </div>
 
+    @include('components.push-notifications')
     </body>
 </html>

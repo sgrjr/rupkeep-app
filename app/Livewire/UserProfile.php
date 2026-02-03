@@ -79,6 +79,9 @@ class UserProfile extends Component
         $this->notificationTestMessage = '';
         
         try {
+
+            $this->profile->notify(new \App\Notifications\JobUpdate());
+
             // Check if user has a valid recipient address
             $recipient = $this->profile->getSmsGatewayAddress() ?? $this->profile->email;
             
