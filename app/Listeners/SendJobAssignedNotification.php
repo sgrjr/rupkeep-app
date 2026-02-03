@@ -4,6 +4,7 @@ namespace App\Listeners;
 
 use App\Events\JobAssigned;
 use App\Mail\UserNotification;
+use App\Notifications\JobUpdate;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Carbon;
@@ -70,6 +71,24 @@ class SendJobAssignedNotification implements ShouldQueue
                 'driver' => $driver,
             ])
         );
+
+        // Send push notification if driver has push subscriptions
+        try {
+            $pushTitle = sprintf('Job Assigned: %s', $job->job_no ?? ('Job #'.$job->id));
+            $pushBody = sprintf(
+                'Pickup: %s | Scheduled: %s',
+                $job->pickup_address ?: 'TBD',
+                $scheduledAt ?: 'Not scheduled'
+            );
+
+            $driver->notify(new JobUpdate($job, $pushTitle, $pushBody));
+        } catch (\Exception $e) {
+            Log::warning('SendJobAssignedNotification: Push notification failed', [
+                'job_id' => $job->id,
+                'driver_id' => $driver->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     private function resolveAddress(?string $preferred, ?string $fallback): ?string

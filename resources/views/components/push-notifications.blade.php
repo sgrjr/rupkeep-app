@@ -1,4 +1,4 @@
-
+@auth
 <script>
 
 console.log('started');
@@ -59,3 +59,4 @@ const VAPID_PUBLIC_KEY = "BMPgW_eNDtZPVH-RYHfAPEkzR6Fvmw7A247WEuFrYH82OLXV7nK6zT
             .catch(err => console.error('Full stack failure:', err));
 
 </script>
+@endauth
