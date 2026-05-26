@@ -99,9 +99,10 @@ trait CreatesMultiTenantFixtures
                 'pilot_car_job_id' => $job?->id,
             ], $overrides));
 
-        if ($job) {
-            $job->invoices()->syncWithoutDetaching([$invoice->id]);
-        }
+        // The job<->invoice link is established via the pilot_car_job_id FK above.
+        // (Summary invoices use the summary_invoice_jobs pivot table; callers
+        // needing a summary-style link should use $job->summaryInvoices()->attach()
+        // explicitly.)
 
         return $invoice;
     }
