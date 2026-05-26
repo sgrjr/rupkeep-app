@@ -58,23 +58,39 @@ class QuickBooksExportTest extends TestCase
         $this->assertSame([
             'Invoice Number',
             'Invoice Date',
-            'Customer',
+            'Customer Name',
+            'Customer Address',
             'Job Number',
+            'Load Number',
             'Billable Miles',
-            'Amount',
-            'Paid',
+            'Rate Code',
+            'Rate Value',
+            'Subtotal',
+            'Expenses (Hotel)',
+            'Expenses (Tolls)',
+            'Expenses (Gas)',
+            'Expenses (Wait Time)',
+            'Expenses (Extra Charges)',
+            'Deadhead Count',
+            'Deadhead Amount',
+            'Mini Charge',
+            'Total Amount',
+            'Paid Status',
+            'Payment Date',
+            'Check Number',
             'Memo',
         ], $header);
 
         $data = str_getcsv($lines[1]);
         $this->assertSame($invoice->invoice_number, $data[0]);
-        $this->assertSame(optional($invoice->created_at)->toDateString(), $data[1]);
+        $this->assertSame(optional($invoice->created_at)->format('m/d/Y'), $data[1]);
         $this->assertSame($customer->name, $data[2]);
-        $this->assertSame('JOB-001', $data[3]);
-        $this->assertSame('200', $data[4]);
-        $this->assertSame('450.25', $data[5]);
-        $this->assertSame('No', $data[6]);
-        $this->assertSame('Test memo', $data[7]);
+        $this->assertSame('JOB-001', $data[4]);
+        $this->assertSame('LOAD-100', $data[5]);
+        $this->assertSame('200.0', $data[6]);
+        $this->assertSame('450.25', $data[18]);
+        $this->assertSame('Unpaid', $data[19]);
+        $this->assertSame('Test memo', $data[22]);
     }
 
     public function test_filters_by_date_and_paid_status(): void
@@ -129,7 +145,9 @@ class QuickBooksExportTest extends TestCase
         $this->assertGreaterThan(1, count($rows));
 
         $dataRow = $rows[1];
-        $this->assertSame('Yes', $dataRow[6]);
+        // Column 19 is Paid Status (Paid/Unpaid). Filter `paid=yes` should
+        // only include the paid invoice.
+        $this->assertSame('Paid', $dataRow[19]);
         $this->assertNotSame((string) $discarded->invoice_number, $dataRow[0]);
     }
 
