@@ -156,23 +156,29 @@ class Dashboard extends Component
            $cards[] = (Object)['title'=>'Experience Tracker', 'count'=> $errorCount, 'links'=> [
                ['url'=> route('user-events.index'), 'title'=>'View Events'],
            ]];
-           
-           // Dispatch triage queue (feedback submissions land here as tasks)
-           $recentFeedback = \App\Models\Task::with('submitter')
-               ->where('status', 'triage')
-               ->orderBy('created_at', 'desc')
-               ->take(5)
-               ->get();
-           $totalFeedback = \App\Models\Task::where('status', 'triage')->count();
-
-           $cards[] = (Object)['title'=>'Feedback + Requests', 'count'=> $totalFeedback, 'links'=> [
-               ['url'=> route('tasks.index', ['statusFilter' => 'triage']), 'title'=>'View Triage'],
-               ['url'=> route('tasks.index', ['statusFilter' => 'triage', 'labelFilter' => 'source:feedback']), 'title'=>'From Feedback'],
-           ]];
-       } else {
-           $recentFeedback = collect();
-           $totalFeedback = 0;
        }
+
+       // Feedback + Requests — every signed-in user sees the same triage count.
+       // Link destination flips by role so customers don't hit the admin policy gate.
+       // (Future: scope the count + recent list to the viewer when they're a customer.)
+       $viewer = Auth::user();
+       $recentFeedback = \App\Models\Task::with('submitter')
+           ->where('status', 'triage')
+           ->orderBy('created_at', 'desc')
+           ->take(5)
+           ->get();
+       $totalFeedback = \App\Models\Task::where('status', 'triage')->count();
+
+       $cards[] = (Object)[
+           'title' => 'Feedback + Requests',
+           'count' => $totalFeedback,
+           'links' => $viewer->isCustomer()
+               ? [['url'=> route('portal.tasks.index'), 'title'=>'View Requests']]
+               : [
+                   ['url'=> route('tasks.index', ['statusFilter' => 'triage']), 'title'=>'View Triage'],
+                   ['url'=> route('tasks.index', ['statusFilter' => 'triage', 'labelFilter' => 'source:feedback']), 'title'=>'From Feedback'],
+               ],
+       ];
 
        if(auth()->user()->can('createJob', $organization)){
            $jobsCount = $organization->jobs()->count();
