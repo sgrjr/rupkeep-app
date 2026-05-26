@@ -221,7 +221,7 @@
                             </div>
                     @endif
 
-                    @if($card->title === 'Triage Queue' && $recentFeedback && $recentFeedback->count() > 0)
+                    @if($card->title === 'Feedback + Requests' && $recentFeedback && $recentFeedback->count() > 0)
                         <div class="space-y-3">
                             <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">{{ __('Recent Submissions') }}</p>
                             <div class="space-y-2 max-h-48 overflow-y-auto pr-1">

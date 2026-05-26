@@ -165,7 +165,7 @@ class Dashboard extends Component
                ->get();
            $totalFeedback = \App\Models\Task::where('status', 'triage')->count();
 
-           $cards[] = (Object)['title'=>'Triage Queue', 'count'=> $totalFeedback, 'links'=> [
+           $cards[] = (Object)['title'=>'Feedback + Requests', 'count'=> $totalFeedback, 'links'=> [
                ['url'=> route('tasks.index', ['statusFilter' => 'triage']), 'title'=>'View Triage'],
                ['url'=> route('tasks.index', ['statusFilter' => 'triage', 'labelFilter' => 'source:feedback']), 'title'=>'From Feedback'],
            ]];
