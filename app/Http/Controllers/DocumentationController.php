@@ -35,17 +35,19 @@ class DocumentationController extends Controller
         $user = auth()->user();
         $orgId = $user?->organization_id;
 
+        $orgScope = fn ($q) => $q->where('is_public', true)
+            ->when($orgId, fn ($w) => $w->where(function ($scope) use ($orgId) {
+                $scope->whereNull('organization_id')->orWhere('organization_id', $orgId);
+            }));
+
         $tasks = Task::query()
             ->with('labels')
-            ->where('is_public', true)
-            ->when($orgId, fn ($q) => $q->where(function ($w) use ($orgId) {
-                $w->whereNull('organization_id')->orWhere('organization_id', $orgId);
-            }))
+            ->tap($orgScope)
             ->orderByRaw("CASE status
-                WHEN 'in_progress' THEN 1
-                WHEN 'verifying' THEN 2
+                WHEN 'triage' THEN 1
+                WHEN 'in_progress' THEN 2
                 WHEN 'open' THEN 3
-                WHEN 'triage' THEN 4
+                WHEN 'verifying' THEN 4
                 WHEN 'done' THEN 5
                 WHEN 'declined' THEN 6
                 ELSE 99 END")
@@ -59,9 +61,13 @@ class DocumentationController extends Controller
             ->get()
             ->groupBy('status');
 
+        $lastUpdatedAt = Task::query()->tap($orgScope)->max('updated_at');
+
         return view('documentation.roadmap', [
             'document' => 'roadmap',
             'tasksByStatus' => $tasks,
+            'lastUpdatedAt' => $lastUpdatedAt ? \Carbon\Carbon::parse($lastUpdatedAt) : null,
+            'totalPublic' => $tasks->sum->count(),
         ]);
     }
 }

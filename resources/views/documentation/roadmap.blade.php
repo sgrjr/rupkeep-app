@@ -43,6 +43,38 @@
     <div class="py-6">
         <div class="mx-auto max-w-5xl space-y-6 px-4 sm:px-6 lg:px-8">
 
+            {{-- Overview banner --}}
+            @if (!$tasksByStatus->isEmpty())
+                <section class="rounded-3xl border border-orange-200 bg-gradient-to-br from-orange-50 via-white to-orange-50/40 p-5 shadow-sm sm:p-6">
+                    <div class="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-wider text-orange-600">{{ __('Overview') }}</p>
+                            <p class="mt-1 text-2xl font-bold text-slate-900">{{ $totalPublic }} <span class="text-base font-medium text-slate-500">{{ __('open items on the roadmap') }}</span></p>
+                        </div>
+                        @if ($lastUpdatedAt)
+                            <div class="text-right">
+                                <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">{{ __('Last updated') }}</p>
+                                <p class="mt-0.5 text-sm font-semibold text-slate-800">{{ $lastUpdatedAt->format('g:i:s A') }} <span class="text-slate-500">{{ $lastUpdatedAt->format('n/j/Y') }}</span></p>
+                                <p class="text-[11px] text-slate-400">{{ $lastUpdatedAt->diffForHumans() }}</p>
+                            </div>
+                        @endif
+                    </div>
+                    <div class="mt-4 grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
+                        @foreach ($statusOrder as $status)
+                            @php $count = $tasksByStatus->get($status)?->count() ?? 0; @endphp
+                            <a href="#section-{{ $status }}" @class([
+                                'block rounded-2xl border px-3 py-2 text-center transition hover:shadow-sm',
+                                $statusStyles[$status] ?? 'border-slate-200 bg-white',
+                                'opacity-50' => $count === 0,
+                            ])>
+                                <p class="text-2xl font-bold text-slate-900">{{ $count }}</p>
+                                <p class="mt-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-600">{{ $statusLabels[$status] ?? $status }}</p>
+                            </a>
+                        @endforeach
+                    </div>
+                </section>
+            @endif
+
             @if ($tasksByStatus->isEmpty())
                 <div class="rounded-3xl border border-dashed border-slate-300 bg-white/60 p-12 text-center text-sm text-slate-500">
                     {{ __('No public roadmap items yet. Check back soon!') }}
@@ -51,8 +83,8 @@
                 @foreach ($statusOrder as $status)
                     @php $bucket = $tasksByStatus->get($status); @endphp
                     @if ($bucket && $bucket->isNotEmpty())
-                        <section @class([
-                            'rounded-3xl border p-5 shadow-sm sm:p-6',
+                        <section id="section-{{ $status }}" @class([
+                            'rounded-3xl border p-5 shadow-sm sm:p-6 scroll-mt-6',
                             $statusStyles[$status] ?? 'border-slate-200 bg-white',
                         ])>
                             <header class="mb-4">
@@ -77,7 +109,13 @@
                                                     @endforeach
                                                 </div>
                                             </div>
-                                            <span class="text-[11px] text-slate-400">{{ $task->updated_at?->diffForHumans() }}</span>
+                                            @if ($task->updated_at)
+                                                <span class="whitespace-nowrap text-right text-[11px] text-slate-400" title="{{ $task->updated_at->toDateTimeString() }}">
+                                                    {{ $task->updated_at->diffForHumans() }}
+                                                    <span class="hidden sm:inline">·</span>
+                                                    <span class="block sm:inline text-slate-500">{{ $task->updated_at->format('g:i:s A') }} {{ $task->updated_at->format('n/j/Y') }}</span>
+                                                </span>
+                                            @endif
                                         </div>
                                     </li>
                                 @endforeach
