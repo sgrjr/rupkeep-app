@@ -108,13 +108,24 @@
                             'rounded-3xl border p-5 shadow-sm sm:p-6 scroll-mt-6',
                             $statusStyles[$status] ?? 'border-slate-200 bg-white',
                         ])>
-                            <header class="mb-4">
-                                <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-600">{{ $statusLabels[$status] ?? $status }} <span class="text-slate-400">· {{ $bucket->count() }}</span></h3>
-                                @if (!empty($statusDescriptions[$status]))
-                                    <p class="mt-1 text-xs text-slate-500">{{ $statusDescriptions[$status] }}</p>
+                            <header class="mb-4 flex flex-wrap items-start justify-between gap-3">
+                                <div class="min-w-0 flex-1">
+                                    <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-600">{{ $statusLabels[$status] ?? $status }} <span class="text-slate-400">· {{ $bucket->count() }}</span></h3>
+                                    @if (!empty($statusDescriptions[$status]))
+                                        <p class="mt-1 text-xs text-slate-500">{{ $statusDescriptions[$status] }}</p>
+                                    @endif
+                                </div>
+                                @if ($bucket->count() > 6)
+                                    <span class="inline-flex items-center gap-1 rounded-full bg-white/70 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500" title="{{ __('Scroll the list within this section') }}">
+                                        <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+                                        {{ __('scroll') }}
+                                    </span>
                                 @endif
                             </header>
-                            <ul class="space-y-3">
+                            <ul @class([
+                                'space-y-3',
+                                'max-h-[28rem] overflow-y-auto pr-1' => $bucket->count() > 6,
+                            ])>
                                 @foreach ($bucket as $task)
                                     <li class="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 shadow-sm">
                                         <div class="flex flex-wrap items-start justify-between gap-2">
