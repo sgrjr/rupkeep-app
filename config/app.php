@@ -69,6 +69,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Display Timezone
+    |--------------------------------------------------------------------------
+    |
+    | Views convert timestamps to this timezone before rendering. Storage stays
+    | in UTC (the `timezone` config above) so DB values are consistent across
+    | clients and servers. Casco Bay Pilot Car operates on US Eastern time, so
+    | the default is "America/New_York" (handles EST/EDT transitions
+    | automatically).
+    |
+    */
+
+    'display_timezone' => env('APP_DISPLAY_TIMEZONE', 'America/New_York'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Locale Configuration
     |--------------------------------------------------------------------------
     |

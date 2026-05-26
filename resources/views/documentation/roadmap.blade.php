@@ -38,6 +38,7 @@
             'done' => 'border-emerald-200 bg-emerald-50',
             'declined' => 'border-slate-200 bg-slate-50',
         ];
+        $displayTz = config('app.display_timezone', 'America/New_York');
     @endphp
 
     <div class="py-6">
@@ -52,9 +53,10 @@
                             <p class="mt-1 text-2xl font-bold text-slate-900">{{ $totalPublic }} <span class="text-base font-medium text-slate-500">{{ __('open items on the roadmap') }}</span></p>
                         </div>
                         @if ($lastUpdatedAt)
+                            @php $lastLocal = $lastUpdatedAt->copy()->setTimezone($displayTz); @endphp
                             <div class="text-right">
                                 <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">{{ __('Last updated') }}</p>
-                                <p class="mt-0.5 text-sm font-semibold text-slate-800">{{ $lastUpdatedAt->format('g:i:s A') }} <span class="text-slate-500">{{ $lastUpdatedAt->format('n/j/Y') }}</span></p>
+                                <p class="mt-0.5 text-sm font-semibold text-slate-800">{{ $lastLocal->format('g:i:s A') }} <span class="text-slate-500">{{ $lastLocal->format('T n/j/Y') }}</span></p>
                                 <p class="text-[11px] text-slate-400">{{ $lastUpdatedAt->diffForHumans() }}</p>
                             </div>
                         @endif
@@ -110,10 +112,11 @@
                                                 </div>
                                             </div>
                                             @if ($task->updated_at)
-                                                <span class="whitespace-nowrap text-right text-[11px] text-slate-400" title="{{ $task->updated_at->toDateTimeString() }}">
+                                                @php $taskLocal = $task->updated_at->copy()->setTimezone($displayTz); @endphp
+                                                <span class="whitespace-nowrap text-right text-[11px] text-slate-400" title="{{ $taskLocal->toDateTimeString() }} {{ $taskLocal->format('T') }} ({{ $task->updated_at->toIso8601String() }})">
                                                     {{ $task->updated_at->diffForHumans() }}
                                                     <span class="hidden sm:inline">·</span>
-                                                    <span class="block sm:inline text-slate-500">{{ $task->updated_at->format('g:i:s A') }} {{ $task->updated_at->format('n/j/Y') }}</span>
+                                                    <span class="block sm:inline text-slate-500">{{ $taskLocal->format('g:i:s A') }} {{ $taskLocal->format('T n/j/Y') }}</span>
                                                 </span>
                                             @endif
                                         </div>
