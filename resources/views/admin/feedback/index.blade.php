@@ -70,17 +70,35 @@
                             </div>
                         </div>
                         
-                        <div class="flex flex-wrap items-center gap-4 text-xs text-slate-500 border-t border-slate-100 pt-3">
-                            @if($item->user?->organization)
-                                <span>{{ __('Organization') }}: {{ $item->user->organization->name }}</span>
-                            @endif
-                            @if($item->url)
-                                <span class="truncate max-w-xs">{{ __('URL') }}: <a href="{{ $item->url }}" target="_blank" class="text-orange-600 hover:underline">{{ Str::limit($item->url, 50) }}</a></span>
-                            @endif
-                            @if($item->ip)
-                                <span>{{ __('IP') }}: {{ $item->ip }}</span>
-                            @endif
-                            <span>{{ __('Submitted') }}: {{ $item->created_at->format('M j, Y g:ia') }}</span>
+                        <div class="flex flex-wrap items-center justify-between gap-4 border-t border-slate-100 pt-3">
+                            <div class="flex flex-wrap items-center gap-4 text-xs text-slate-500">
+                                @if($item->user?->organization)
+                                    <span>{{ __('Organization') }}: {{ $item->user->organization->name }}</span>
+                                @endif
+                                @if($item->url)
+                                    <span class="truncate max-w-xs">{{ __('URL') }}: <a href="{{ $item->url }}" target="_blank" class="text-orange-600 hover:underline">{{ Str::limit($item->url, 50) }}</a></span>
+                                @endif
+                                @if($item->ip)
+                                    <span>{{ __('IP') }}: {{ $item->ip }}</span>
+                                @endif
+                                <span>{{ __('Submitted') }}: {{ $item->created_at->format('M j, Y g:ia') }}</span>
+                            </div>
+                            <div>
+                                @if($item->promotedTask)
+                                    <a href="{{ route('tasks.show', $item->promotedTask) }}" class="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100">
+                                        <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                        {{ __('Tracked as :code', ['code' => $item->promotedTask->code]) }}
+                                    </a>
+                                @else
+                                    <form method="POST" action="{{ route('tasks.promote', $item) }}" class="inline-flex">
+                                        @csrf
+                                        <button type="submit" class="inline-flex items-center gap-1.5 rounded-full border border-orange-300 bg-orange-50 px-3 py-1.5 text-xs font-semibold text-orange-700 transition hover:bg-orange-100">
+                                            <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                                            {{ __('Promote to Task') }}
+                                        </button>
+                                    </form>
+                                @endif
+                            </div>
                         </div>
                     </div>
                 </div>

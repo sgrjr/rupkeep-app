@@ -75,17 +75,25 @@ class Task extends Model
 
     /**
      * Generate the next TASK-### code for new rows.
+     *
+     * Portable across MySQL and SQLite: fetches all TASK-### codes and
+     * finds the highest in PHP (rows are few; this isn't a hot path).
      */
     public static function nextCode(): string
     {
-        $latest = static::query()
+        $codes = static::withTrashed()
             ->where('code', 'like', 'TASK-%')
-            ->orderByRaw('CAST(SUBSTR(code, 6) AS INTEGER) DESC')
-            ->value('code');
+            ->pluck('code');
 
-        $n = $latest ? ((int) substr($latest, 5)) + 1 : 1;
+        $max = 0;
+        foreach ($codes as $code) {
+            $n = (int) substr($code, 5);
+            if ($n > $max) {
+                $max = $n;
+            }
+        }
 
-        return 'TASK-' . str_pad((string) $n, 3, '0', STR_PAD_LEFT);
+        return 'TASK-' . str_pad((string) ($max + 1), 3, '0', STR_PAD_LEFT);
     }
 
     /**

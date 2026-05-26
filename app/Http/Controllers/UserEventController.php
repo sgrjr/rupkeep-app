@@ -85,7 +85,7 @@ class UserEventController extends Controller
             abort(403);
         }
 
-        $feedback = UserEvent::with('user')
+        $feedback = UserEvent::with(['user', 'promotedTask'])
             ->where('type', UserEvent::TYPE_FEEDBACK)
             ->orderBy('created_at', 'desc')
             ->paginate(20);

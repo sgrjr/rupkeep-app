@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class UserEvent extends Model
 {
@@ -33,6 +34,11 @@ class UserEvent extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function promotedTask(): HasOne
+    {
+        return $this->hasOne(Task::class, 'promoted_from_user_event_id');
     }
 
     public function scopeErrors($query)

@@ -34,6 +34,7 @@ use App\Http\Controllers\MyReportsController;
 use App\Http\Controllers\PricingController;
 use App\Livewire\ManagePricing;
 use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\TaskController;
 
 Route::middleware([
     'auth:sanctum',
@@ -70,6 +71,12 @@ Route::middleware([
     
     // Feedback submissions (super users only)
     Route::get('/admin/feedback', [UserEventController::class, 'feedback'])->name('admin.feedback.index');
+
+    // Tasks (DB-backed orchestration tracker — replaces TASKS.md)
+    Route::get ('/admin/tasks',                       [TaskController::class, 'index'])->name('tasks.index');
+    Route::get ('/admin/tasks/board',                 [TaskController::class, 'board'])->name('tasks.board');
+    Route::get ('/admin/tasks/{task:code}',           [TaskController::class, 'show'])->name('tasks.show');
+    Route::post('/admin/tasks/promote/{userEvent}',   [TaskController::class, 'promoteFromFeedback'])->name('tasks.promote');
 
     Route::get('/organizations', OrganizationsIndex::class)->name('organizations.index');
     Route::get('/organizations/create', OrganizationCreate::class)->name('organizations.create');
@@ -183,6 +190,10 @@ Route::middleware([
     Route::prefix('portal')->group(function () {
         Route::get('invoices', [\App\Http\Controllers\CustomerPortal\InvoiceController::class, 'index'])->name('customer.invoices.index');
         Route::get('invoices/{invoice}', [\App\Http\Controllers\CustomerPortal\InvoiceController::class, 'show'])->name('customer.invoices.show');
+
+        // Customer-facing task tracker
+        Route::get('tasks',                 [TaskController::class, 'portalIndex'])->name('portal.tasks.index');
+        Route::get('tasks/{task:code}',     [TaskController::class, 'portalShow'])->name('portal.tasks.show');
     });
 
     Route::prefix('setup')->group(function () {
