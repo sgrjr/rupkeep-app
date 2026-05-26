@@ -220,10 +220,16 @@ class EditUserLog extends Component
             'memo' => $this->log->memo,
             'pretrip_check' => (bool)$this->log->pretrip_check,
             'maintenance_memo' => $this->log->maintenance_memo,
-            'started_at' => $this->log->started_at,
-            'ended_at' => $this->log->ended_at,
-            'clock_in' => $this->log->clock_in,
-            'clock_out' => $this->log->clock_out,
+            // <input type="datetime-local"> requires "Y-m-d\TH:i". Carbon's default
+            // toString format ("Y-m-d H:i:s") is rejected by the browser as an
+            // invalid value, leaving the field visually empty even when the DB
+            // has data. clock_in/clock_out are cast to datetime on the model so
+            // they arrive as Carbon; started_at/ended_at are NOT cast so they
+            // arrive as strings — Carbon::parse handles both.
+            'started_at' => $this->log->started_at ? \Carbon\Carbon::parse($this->log->started_at)->format('Y-m-d\TH:i') : null,
+            'ended_at' => $this->log->ended_at ? \Carbon\Carbon::parse($this->log->ended_at)->format('Y-m-d\TH:i') : null,
+            'clock_in' => $this->log->clock_in ? \Carbon\Carbon::parse($this->log->clock_in)->format('Y-m-d\TH:i') : null,
+            'clock_out' => $this->log->clock_out ? \Carbon\Carbon::parse($this->log->clock_out)->format('Y-m-d\TH:i') : null,
             'new_truck_driver_name' => null,
             'new_truck_driver_phone' => null,
             'new_truck_driver_memo' => null,
