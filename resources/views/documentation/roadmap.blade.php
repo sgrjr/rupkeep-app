@@ -13,7 +13,7 @@
     </x-slot>
 
     @php
-        $statusOrder = ['triage', 'in_progress', 'open', 'verifying', 'done', 'declined'];
+        $statusOrder = ['in_progress', 'triage', 'open', 'verifying', 'done', 'declined'];
         $statusLabels = [
             'triage' => __('Up Next'),
             'in_progress' => __('In Progress'),

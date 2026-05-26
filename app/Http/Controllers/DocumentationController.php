@@ -44,8 +44,8 @@ class DocumentationController extends Controller
             ->with('labels')
             ->tap($orgScope)
             ->orderByRaw("CASE status
-                WHEN 'triage' THEN 1
-                WHEN 'in_progress' THEN 2
+                WHEN 'in_progress' THEN 1
+                WHEN 'triage' THEN 2
                 WHEN 'open' THEN 3
                 WHEN 'verifying' THEN 4
                 WHEN 'done' THEN 5
