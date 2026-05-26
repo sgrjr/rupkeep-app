@@ -38,6 +38,7 @@
 | TASK-004 | Missing "Show" link on some jobs index views | 🟢 low | jobs index | only Edit button shown in some contexts |
 | TASK-005 | Main contact tag missing on customer contacts | 🟡 medium | customers show | DEV_NOTES: need pattern to distinguish "Main Customer Contact" |
 | TASK-006 | Push notification listener: VAPID key generation can fail (`Unable to create the key`) | 🟡 medium | notifications | likely tied to TASK-002. Check `app/Listeners/SendJobAssignedNotification.php` push branch and VAPID env vars. |
+| TASK-007 | [PROD] WebPush triggers GMP/BCMath PHP warning that converts to a fatal error on landing-page hit | 🔴 blocker | production landing | Same root cause as TASK-002 / TASK-006, observed in prod 2026-02-03 via `/user-events`. Stack ends at `minishlink/web-push/src/Utils.php:86`. Fix: install `php-gmp` (or `php-bcmath`) on production server. See [BUGS.md#task-007](docs/BUGS.md#task-007). |
 
 ---
 
@@ -277,4 +278,4 @@ For older completed items see [`docs/archive/IMPLEMENTATION_SUMMARY.md`](docs/ar
 ---
 
 <a id="next-id"></a>
-**Next available ID:** `TASK-315`
+**Next available ID:** `TASK-316`

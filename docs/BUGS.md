@@ -59,7 +59,7 @@ Stale `bootstrap/cache/*` or a Livewire component reference resolving `User` to 
 - If the landing page mounts a Livewire component that touches push subscriptions, gate it behind `auth()->check()`
 - Generate keys: `php artisan webpush:vapid` (if `laravel-notification-channels/webpush` is installed) or via minishlink helper
 
-**Related:** TASK-006 (push notification VAPID handling)
+**Related:** TASK-006 (push notification VAPID handling), [TASK-007](#task-007) (production-side root cause — GMP/BCMath missing, surfaces as the same exception)
 
 **Status:** open
 
@@ -120,6 +120,60 @@ Stale `bootstrap/cache/*` or a Livewire component reference resolving `User` to 
 
 ---
 
+## TASK-007
+**Title:** [PROD] WebPush triggers GMP/BCMath PHP warning that converts to a fatal error on landing-page hit
+
+**Where seen:** Captured in production `/user-events` error log on **2026-02-03 9:51 AM**. Guest user, URL `http://localhost` (NOTE: the URL is recorded as `http://localhost` because the error is captured before host headers resolve — this is the public landing page in production). Server path: `/var/www/rupkeep-app/`.
+
+**Symptom**
+```
+"It is highly recommended to install the GMP or BCMath extension to speed up calculations. The fastest available calculator implementation will be automatically selected at runtime."
+file: vendor/minishlink/web-push/src/Utils.php:86
+```
+Laravel's `HandleExceptions::handleError()` converts that PHP warning into a thrown exception → 500 response.
+
+**Stack (truncated)**
+```
+#0 HandleExceptions.php:290 → handleError()
+#2 web-push/src/Utils.php:86 → trigger_error()
+#3 web-push/src/Utils.php:67 → checkRequirementExtension()
+#4 web-push/src/WebPush.php:66 → Utils::checkRequirement()
+#5 laravel-notification-channels/webpush/src/WebPushServiceProvider.php:30 → new WebPush()
+#6 Container::build → resolves WebPush singleton at service-provider boot
+```
+
+**Root cause**
+`minishlink/web-push` calls `trigger_error()` (a *warning*, not a hard error) if neither `gmp` nor `bcmath` PHP extensions are installed. Laravel's error handler promotes the warning to an exception. The provider that constructs `WebPush` (`WebPushServiceProvider::register`) runs eagerly when the container resolves the binding — which happens any time the framework boots, including unauthenticated landing-page hits.
+
+**This is the production-side root cause of [TASK-002](#task-002) and [TASK-006](#task-006)** — the `Unable to create the key` message users see in dev is downstream of the same library being unable to use its preferred math backend.
+
+**Fix (production server)**
+
+For PHP 8.2 on Ubuntu/Debian:
+```bash
+sudo apt-get install -y php8.2-gmp     # preferred
+# OR
+sudo apt-get install -y php8.2-bcmath  # acceptable
+sudo systemctl restart php8.2-fpm
+sudo systemctl reload nginx            # or apache2
+```
+
+Verify:
+```bash
+php -m | grep -E 'gmp|bcmath'
+```
+
+Both extensions are also worth installing in local dev — see also [`docs/FIX_PHP_WARNINGS.md`](FIX_PHP_WARNINGS.md) for related PHP module hygiene on the remote server.
+
+**Defensive code change (recommended in parallel with server fix)**
+Wrap the WebPush service-provider boot so a missing extension *warns into the log* but doesn't kill the request — the library still functions, it just falls back to the slower native PHP calculator. Options:
+- Suppress the `E_USER_WARNING` from `minishlink\web-push\Utils::checkRequirementExtension` in `app/Exceptions/Handler.php` (`reportable`/`stopIgnoring`)
+- Or defer-register the WebPush channel only when actually dispatching a push (override the service provider)
+
+**Status:** open — blocker for production stability of the landing page
+
+---
+
 ## TASK-006
 **Title:** Push notification VAPID key generation can fail
 
@@ -133,6 +187,6 @@ Stale `bootstrap/cache/*` or a Livewire component reference resolving `User` to 
 - Wrap push send in try/catch and log without aborting the listener
 - Ensure VAPID env vars are validated at config-cache time (fail loudly in production startup, not at first push)
 
-**Related:** TASK-002
+**Related:** [TASK-002](#task-002), [TASK-007](#task-007) (production-side root cause)
 
 **Status:** open
