@@ -43,11 +43,16 @@ class DispatchPush extends Command
         $endpoint = $url . '/api/dispatch/apply';
         $this->line("Pushing to {$endpoint} …");
 
-        $response = Http::withToken($token)
+        $client = Http::withToken($token)
             ->acceptJson()
             ->asJson()
-            ->timeout((int) config('dispatch.remote.timeout', 30))
-            ->post($endpoint, $payload);
+            ->timeout((int) config('dispatch.remote.timeout', 30));
+
+        if (! config('dispatch.remote.verify_ssl', true)) {
+            $client = $client->withoutVerifying();
+        }
+
+        $response = $client->post($endpoint, $payload);
 
         if (!$response->successful()) {
             $this->error("HTTP {$response->status()}: " . substr($response->body(), 0, 500));

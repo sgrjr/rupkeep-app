@@ -26,10 +26,15 @@ class DispatchPull extends Command
         $endpoint = $url . '/api/dispatch/snapshot';
         $this->line("Fetching {$endpoint} …");
 
-        $response = Http::withToken($token)
+        $client = Http::withToken($token)
             ->acceptJson()
-            ->timeout((int) config('dispatch.remote.timeout', 30))
-            ->get($endpoint);
+            ->timeout((int) config('dispatch.remote.timeout', 30));
+
+        if (! config('dispatch.remote.verify_ssl', true)) {
+            $client = $client->withoutVerifying();
+        }
+
+        $response = $client->get($endpoint);
 
         if (!$response->successful()) {
             $this->error("HTTP {$response->status()}: " . substr($response->body(), 0, 500));
