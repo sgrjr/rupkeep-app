@@ -185,14 +185,18 @@ class PilotCarJob extends Model
         if (empty($invoiceValues)) {
             $invoiceValues = $this->invoiceValues();
         }
-        
-        // Ensure pilot_car_job_id is set and invoice_type is single
+
+        // Always default these from the parent job so callers don't have to
+        // duplicate tenancy fields and the invoices NOT NULL constraints are
+        // satisfied even when only a partial values array is passed.
         $invoiceValues['pilot_car_job_id'] = $this->id;
-        $invoiceValues['invoice_type'] = $invoiceValues['invoice_type'] ?? 'single';
-        
+        $invoiceValues['organization_id'] = $invoiceValues['organization_id'] ?? $this->organization_id;
+        $invoiceValues['customer_id']     = $invoiceValues['customer_id']     ?? $this->customer_id;
+        $invoiceValues['invoice_type']    = $invoiceValues['invoice_type']    ?? 'single';
+
         // Create invoice directly (no pivot table entry for single invoices)
         $invoice = Invoice::create($invoiceValues);
-        
+
         return $invoice;
     }
 

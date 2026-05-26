@@ -112,12 +112,11 @@ class MyInvoicesController extends Controller
                 }
             }
 
-            // For single invoices, no pivot entries to delete (they use pilot_car_job_id only)
-            // For summary invoices, delete pivot entries
-            if ($invoice->isSummary()) {
-                JobInvoice::where('invoice_id', $invoice->id)->delete();
-            }
-            
+            // Defensive cleanup: remove any pivot rows for this invoice regardless
+            // of single/summary type. Single invoices normally have none, but a
+            // stale row would orphan otherwise.
+            JobInvoice::where('invoice_id', $invoice->id)->delete();
+
             $invoice->forceDelete();
 
             session()->flash('success', __('Invoice deleted.'));

@@ -128,7 +128,7 @@ class InvoiceUpdateTest extends TestCase
             'id' => $invoice->id,
         ]);
 
-        $this->assertDatabaseMissing('jobs_invoices', [
+        $this->assertDatabaseMissing('summary_invoice_jobs', [
             'invoice_id' => $invoice->id,
             'pilot_car_job_id' => $job->id,
         ]);
@@ -183,7 +183,7 @@ class InvoiceUpdateTest extends TestCase
         $this->assertEquals($expectedTotal, (float) data_get($summary->values, 'total'));
 
         foreach ([$jobA, $jobB] as $job) {
-            $this->assertDatabaseHas('jobs_invoices', [
+            $this->assertDatabaseHas('summary_invoice_jobs', [
                 'invoice_id' => $summary->id,
                 'pilot_car_job_id' => $job->id,
             ]);
@@ -234,12 +234,16 @@ class InvoiceUpdateTest extends TestCase
         $this->assertDatabaseMissing('invoices', ['id' => $summary->id]);
 
         foreach ($children as $child) {
+            $fresh = $child->fresh();
             $this->assertDatabaseHas('invoices', ['id' => $child->id]);
-            $this->assertNull($child->fresh()->parent_invoice_id);
-            $this->assertDatabaseHas('jobs_invoices', [
-                'invoice_id' => $child->id,
-            ]);
+            $this->assertNull($fresh->parent_invoice_id, 'Released child should no longer be parented by the summary.');
+            $this->assertNotNull($fresh->pilot_car_job_id, 'Released child should still be associated with its job via pilot_car_job_id (single invoices use the FK, not the summary_invoice_jobs pivot).');
         }
+
+        // The summary's pivot rows should have been cleared as part of the delete.
+        $this->assertDatabaseMissing('summary_invoice_jobs', [
+            'invoice_id' => $summary->id,
+        ]);
     }
 }
 
