@@ -125,6 +125,10 @@ Issue the token by signing into the production app as a super user, going to Jet
 - **Bug repros + investigation notes**: [`docs/BUGS.md`](docs/BUGS.md).
 - **Feature-flag reference**: [`docs/FEATURE_FLAGS.md`](docs/FEATURE_FLAGS.md).
 
+## Auto-capture skill
+
+There is a project skill at [`.claude/skills/dispatch-track/SKILL.md`](.claude/skills/dispatch-track/SKILL.md) that tells Claude Code to **automatically** create a Dispatch task whenever the user describes a bug, feature request, follow-up, or any actionable item — without prompting. If you notice something worth tracking during a conversation, just run `dispatch:add` and report what you captured at the end of your response.
+
 ## The shortest loop, summarized
 
 ```bash
