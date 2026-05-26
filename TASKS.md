@@ -151,6 +151,30 @@ Several reorg items from `DEV_NOTES.md` have unclear shipping status — see [Ve
 |----|-------|----------|
 | TASK-110 | Build out Step 5 "Preferences" (currently a placeholder per `OnboardingWizard.php:70`) | 🟢 low |
 
+### Epic: Pricing & Billing
+The `ManagePricing` Livewire component and `PricingSetting::getValueForOrganization()` already cover most rate / charge / cancellation config. These extend the pricing model.
+
+| ID | Title | Priority |
+|----|-------|----------|
+| TASK-307 | Allow "mini" charge to stack onto flat-rate jobs (currently treated as alternatives) | 🟡 medium |
+| TASK-308 | On job show page: compare flat-rate vs. mini billing and surface whichever is greater | 🟡 medium |
+| TASK-314 | Verify cancellation flat-rates (`cancellation_24hr`, `show_no_go`, `cancel_without_billing` per `PilotCarJob::determineCancellationType()`) actually flow into invoice generation | 🟠 high |
+
+### Epic: Job Status & Lifecycle
+The `PilotCarJob::getStatusAttribute()` accessor (`ACTIVE`/`CANCELLED`/`CANCELLED_NO_GO`/`COMPLETED` — see `PilotCarJob.php:1996`) is in place. UI surfacing + status-change notifications are not.
+
+| ID | Title | Priority |
+|----|-------|----------|
+| TASK-310 | Surface job status badge prominently on jobs index + job show | 🟠 high |
+| TASK-311 | Fire events on status transitions (active→completed, →cancelled, →no-go) and notify assigned drivers | 🟡 medium |
+| TASK-312 | SMS text notification to drivers on status change (rides on TASK-053 real SMS, or existing gateway) | 🟢 low |
+
+### Epic: Job Show Page Polish
+| ID | Title | Priority |
+|----|-------|----------|
+| TASK-309 | Display job miles (calculated + billable) more prominently on job show | 🟡 medium |
+| TASK-313 | `tel:` call-driver links on driver / customer-contact / truck-driver phone numbers (job show + log edit) | 🟡 medium |
+
 ---
 
 ## 🔍 Verification Backlog
@@ -171,6 +195,7 @@ Items marked complete in archived docs that should be smoke-tested against curre
 | TASK-210 | Customer `/my/customers/{id}` access control hides Transaction Register for non-admin staff | DEV_NOTES Impl Summary #10 | log in as standard employee |
 | TASK-211 | `Clear all invoices` super-user action on profile page | DEV_NOTES Impl Summary #12 | run as super user, confirm |
 | TASK-212 | Vehicle maintenance: overdue / upcoming / history sections render correctly | CUSTOMER_INTERVIEW 7.1 | seed mixed-date maintenance records |
+| TASK-213 | `ManagePricing` UI exposes the full pricing matrix (rates, charges, cancellations, payment terms) | `app/Livewire/ManagePricing.php` exists with `updateRate/Charge/Cancellation/PaymentTerms` | open as super-user, compare to `config/pricing.php` |
 
 ---
 
@@ -202,6 +227,10 @@ Most recent first. After ~20 entries, prune oldest to `docs/archive/COMPLETED.md
 | Date | Title |
 |------|-------|
 | 2026-05-26 | Documentation consolidation: TASKS.md + docs/ structure; old planning docs archived |
+| 2026-01-01 | Job status accessor: ACTIVE / CANCELLED / CANCELLED_NO_GO / COMPLETED (`PilotCarJob::getStatusAttribute`) |
+| 2026-01-01 | Cancellation type logic + rate codes (`cancellation_24hr`, `show_no_go`, `cancel_without_billing`) via `determineCancellationType()` |
+| 2026-01-01 | `ManagePricing` Livewire UI for rates / charges / cancellations / payment terms |
+| 2026-01-01 | `public_memo` field added to `pilot_car_jobs` (external memo) |
 | 2026-02-03 | Push notifications infrastructure (service worker, VAPID, subscription controller, push on JobAssigned) |
 | 2026-02-03 | `clock_in` / `clock_out` datetime fields added to user_logs |
 | 2026-01-21 | `jobs_invoices` table renamed → `summary_invoice_jobs` |
@@ -248,4 +277,4 @@ For older completed items see [`docs/archive/IMPLEMENTATION_SUMMARY.md`](docs/ar
 ---
 
 <a id="next-id"></a>
-**Next available ID:** `TASK-307`
+**Next available ID:** `TASK-315`
