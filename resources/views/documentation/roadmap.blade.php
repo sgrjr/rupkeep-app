@@ -13,20 +13,28 @@
     </x-slot>
 
     @php
-        $statusOrder = ['in_progress', 'verifying', 'open', 'triage', 'done', 'declined'];
+        $statusOrder = ['triage', 'in_progress', 'open', 'verifying', 'done', 'declined'];
         $statusLabels = [
-            'in_progress' => __('In Progress'),
-            'verifying' => __('In Review'),
-            'open' => __('Planned'),
             'triage' => __('Up Next'),
+            'in_progress' => __('In Progress'),
+            'open' => __('Planned'),
+            'verifying' => __('In Review'),
             'done' => __('Recently Shipped'),
             'declined' => __('Not Doing'),
         ];
+        $statusDescriptions = [
+            'triage' => __('Recently submitted — being evaluated and prioritized.'),
+            'in_progress' => __('Currently being worked on.'),
+            'open' => __('Planned and queued for an upcoming work cycle.'),
+            'verifying' => __('Implementation is complete and live — we are confirming it solved the underlying issue before marking it shipped.'),
+            'done' => __('Shipped and confirmed working in production.'),
+            'declined' => __('Reviewed and intentionally not being pursued.'),
+        ];
         $statusStyles = [
-            'in_progress' => 'border-blue-200 bg-blue-50',
-            'verifying' => 'border-violet-200 bg-violet-50',
-            'open' => 'border-slate-200 bg-white',
             'triage' => 'border-amber-200 bg-amber-50',
+            'in_progress' => 'border-blue-200 bg-blue-50',
+            'open' => 'border-slate-200 bg-white',
+            'verifying' => 'border-violet-200 bg-violet-50',
             'done' => 'border-emerald-200 bg-emerald-50',
             'declined' => 'border-slate-200 bg-slate-50',
         ];
@@ -47,8 +55,13 @@
                             'rounded-3xl border p-5 shadow-sm sm:p-6',
                             $statusStyles[$status] ?? 'border-slate-200 bg-white',
                         ])>
-                            <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-600">{{ $statusLabels[$status] ?? $status }} <span class="text-slate-400">· {{ $bucket->count() }}</span></h3>
-                            <ul class="mt-4 space-y-3">
+                            <header class="mb-4">
+                                <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-600">{{ $statusLabels[$status] ?? $status }} <span class="text-slate-400">· {{ $bucket->count() }}</span></h3>
+                                @if (!empty($statusDescriptions[$status]))
+                                    <p class="mt-1 text-xs text-slate-500">{{ $statusDescriptions[$status] }}</p>
+                                @endif
+                            </header>
+                            <ul class="space-y-3">
                                 @foreach ($bucket as $task)
                                     <li class="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 shadow-sm">
                                         <div class="flex flex-wrap items-start justify-between gap-2">

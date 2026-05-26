@@ -16,7 +16,7 @@
             </header>
 
             <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                <a href="{{ route('documentation.show', 'onboarding') }}" 
+                <a href="{{ route('documentation.show', 'onboarding') }}"
                    class="group relative overflow-hidden rounded-2xl border border-orange-200 bg-gradient-to-br from-orange-50 to-orange-100/50 p-6 shadow-sm transition hover:border-orange-300 hover:shadow-lg">
                     <div class="absolute right-0 top-0 h-24 w-24 -translate-y-12 translate-x-6 rounded-full bg-orange-200/40 opacity-60 blur-3xl transition group-hover:opacity-80"></div>
                     <div class="relative">
@@ -29,6 +29,26 @@
                         <p class="mt-2 text-sm text-slate-600">{{ __('Complete onboarding guide covering customer concerns, data import/export, features, and job lifecycle.') }}</p>
                         <div class="mt-4 flex items-center gap-2 text-sm font-semibold text-orange-600">
                             <span>{{ __('Read Guide') }}</span>
+                            <svg class="h-4 w-4 transition group-hover:translate-x-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </div>
+                    </div>
+                </a>
+
+                <a href="{{ route('documentation.roadmap') }}"
+                   class="group relative overflow-hidden rounded-2xl border border-orange-200 bg-gradient-to-br from-orange-50 to-orange-100/50 p-6 shadow-sm transition hover:border-orange-300 hover:shadow-lg">
+                    <div class="absolute right-0 top-0 h-24 w-24 -translate-y-12 translate-x-6 rounded-full bg-orange-200/40 opacity-60 blur-3xl transition group-hover:opacity-80"></div>
+                    <div class="relative">
+                        <div class="mb-4 inline-flex rounded-xl bg-orange-500 p-3 text-white">
+                            <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-semibold text-slate-900">{{ __('Public Roadmap') }}</h3>
+                        <p class="mt-2 text-sm text-slate-600">{{ __('See what we are working on, what is up next, and what we have recently shipped.') }}</p>
+                        <div class="mt-4 flex items-center gap-2 text-sm font-semibold text-orange-600">
+                            <span>{{ __('View Roadmap') }}</span>
                             <svg class="h-4 w-4 transition group-hover:translate-x-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
                             </svg>
