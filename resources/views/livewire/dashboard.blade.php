@@ -682,16 +682,20 @@
                                                 @endif
                                             </div>
                                             <p class="text-xs text-slate-600">{{ $log->memo ?: __('No memo recorded yet.') }}</p>
-                                            @if($log->approval_status === 'pending' && ($log->car_driver_id === auth()->id() || auth()->user()->isAdmin() || auth()->user()->isManager()))
+                                            @if($log->approval_status === 'pending')
                                                 <div class="flex flex-wrap items-center gap-2 pt-1">
-                                                    <button wire:click="confirmLog({{ $log->id }})" class="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-3 py-1 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-600">
-                                                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
-                                                        {{ __('Accept') }}
-                                                    </button>
-                                                    <button wire:click="denyLog({{ $log->id }})" class="inline-flex items-center gap-1 rounded-full bg-red-500 px-3 py-1 text-xs font-semibold text-white shadow-sm transition hover:bg-red-600">
-                                                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                                                        {{ __('Deny') }}
-                                                    </button>
+                                                    @can('confirm', $log)
+                                                        <button wire:click="confirmLog({{ $log->id }})" class="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-3 py-1 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-600">
+                                                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+                                                            {{ __('Accept') }}
+                                                        </button>
+                                                    @endcan
+                                                    @can('deny', $log)
+                                                        <button wire:click="denyLog({{ $log->id }})" class="inline-flex items-center gap-1 rounded-full bg-red-500 px-3 py-1 text-xs font-semibold text-white shadow-sm transition hover:bg-red-600">
+                                                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                            {{ __('Deny') }}
+                                                        </button>
+                                                    @endcan
                                                 </div>
                                             @endif
                                         </div>

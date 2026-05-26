@@ -65,11 +65,24 @@ class UserLogPolicy
 
     /**
      * Determine whether the user can confirm the log.
+     *
+     * - Managers / admins in the same organization can confirm any log (e.g.
+     *   when accepting on behalf of a driver who hasn't responded).
+     * - The assigned driver themselves can confirm their own log so they can
+     *   start editing without waiting for management to approve them.
+     *
+     * Symmetric with deny() — both sides of the accept/deny decision have
+     * the same set of authorized actors.
      */
     public function confirm(User $user, UserLog $model): bool
     {
-        // Managers can confirm any log in their organization
-        return ($user->organization_id === $model->organization_id && ($user->isAdmin() || $user->isManager())) || $user->is_super;
+        $canManage = ($user->organization_id === $model->organization_id && ($user->isAdmin() || $user->isManager())) || $user->is_super;
+
+        if (!$canManage && $model->car_driver_id === $user->id) {
+            return true;
+        }
+
+        return $canManage;
     }
 
     /**
