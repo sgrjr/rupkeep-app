@@ -62,6 +62,8 @@ For DB schema changes:
 php artisan migrate --force
 ```
 
+> **Don't skip `npm run build` after pulling code that adds or changes Tailwind classes.** Tailwind v3 uses JIT mode — it only compiles classes it finds in the `content` paths at build time. If a blade introduces a new class (e.g. `max-h-80`, `bg-amber-50`, or an arbitrary value like `max-h-[20rem]`) and the CSS bundle isn't rebuilt, the class silently doesn't exist and the styles disappear with no error. Symptom: layout looks right in dev (where Vite auto-rebuilds) but on prod the new utility just… isn't there. Fix is always the same: pull → `npm run build` → `php artisan view:clear`.
+
 ---
 
 ## Queue worker
