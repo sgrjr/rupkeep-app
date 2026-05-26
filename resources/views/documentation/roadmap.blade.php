@@ -81,6 +81,19 @@
                         @endforeach
                     </div>
                 </section>
+
+                {{-- Prominent feedback CTA --}}
+                @auth
+                    <section class="rounded-3xl border-2 border-dashed border-orange-300 bg-gradient-to-br from-orange-50 via-amber-50/50 to-white p-5 shadow-sm sm:p-6">
+                        <div class="flex flex-wrap items-center justify-between gap-4">
+                            <div class="min-w-0 flex-1">
+                                <p class="text-base font-bold text-slate-900">{{ __("Don't see what you need?") }}</p>
+                                <p class="mt-1 text-sm text-slate-600">{{ __('Submit feedback or a feature request — we will add it to this roadmap and you can track it from My Requests.') }}</p>
+                            </div>
+                            <livewire:feedback-form :key="'feedback-top'" />
+                        </div>
+                    </section>
+                @endauth
             @endif
 
             @if ($tasksByStatus->isEmpty())
@@ -134,11 +147,12 @@
                 @endforeach
             @endif
 
-            <p class="text-center text-xs text-slate-400">
-                {{ __('See something missing? ') }}
-                <a href="{{ route('documentation.index') }}" class="font-semibold text-orange-600 hover:text-orange-700">{{ __('Send feedback') }}</a>
-                {{ __('and we will track it here.') }}
-            </p>
+            @auth
+                <div class="flex flex-wrap items-center justify-center gap-3 pt-2 text-xs text-slate-500">
+                    <span>{{ __('See something missing? Send feedback and we will track it on this roadmap.') }}</span>
+                    <livewire:feedback-form :key="'feedback-bottom'" />
+                </div>
+            @endauth
         </div>
     </div>
 </x-app-layout>
