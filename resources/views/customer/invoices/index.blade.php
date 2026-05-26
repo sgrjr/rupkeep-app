@@ -1,7 +1,7 @@
 @extends('layouts.guest')
 
 @php
-    use Illuminate\Support\Number;
+    use App\Support\Money;
 
     $invoiceCount = $invoices->total();
     $totalDue = $invoices->sum(fn ($invoice) => (float) ($invoice->values['total'] ?? 0));
@@ -41,7 +41,7 @@
                 </div>
                 <div class="rounded-3xl border border-slate-200 bg-white/90 p-4 shadow-sm">
                     <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Total due') }}</p>
-                    <p class="mt-2 text-3xl font-semibold text-slate-900">{{ Number::currency($totalDue, 'USD') }}</p>
+                    <p class="mt-2 text-3xl font-semibold text-slate-900">{{ Money::currency($totalDue, 'USD') }}</p>
                 </div>
             </section>
 
@@ -103,7 +103,7 @@
                                             <td class="px-4 py-3 text-xs text-slate-500">{{ $invoice->created_at->format('M d, Y g:ia') }}</td>
                                             <td class="px-4 py-3">
                                                 <span class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold text-slate-600">
-                                                    {{ Number::currency($invoice->values['total'] ?? 0, 'USD') }}
+                                                    {{ Money::currency($invoice->values['total'] ?? 0, 'USD') }}
                                                 </span>
                                             </td>
                                             <td class="px-4 py-3">

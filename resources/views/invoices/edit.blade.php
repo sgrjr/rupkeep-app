@@ -1,5 +1,5 @@
 @php
-    use Illuminate\Support\Number;
+    use App\Support\Money;
     use Illuminate\Support\Str;
 
     $values = $invoice->values ?? [];
@@ -91,14 +91,14 @@
                         <div>
                             <dt class="font-semibold uppercase tracking-wide text-slate-500">{{ __('Subtotal') }}</dt>
                             <dd class="mt-1 text-base font-semibold text-slate-900">
-                                {{ Number::currency(data_get($values, 'total', 0), 'USD') }}
+                                {{ Money::currency(data_get($values, 'total', 0), 'USD') }}
                             </dd>
                         </div>
                         @if($lateFees['is_past_due'] && $lateFees['late_fee_amount'] > 0)
                             <div>
                                 <dt class="font-semibold uppercase tracking-wide text-red-600">{{ __('Late Fee') }} ({{ $lateFees['late_fee_periods'] }} {{ trans_choice('period|periods', $lateFees['late_fee_periods']) }})</dt>
                                 <dd class="mt-1 text-base font-semibold text-red-600">
-                                    {{ Number::currency($lateFees['late_fee_amount'], 'USD') }}
+                                    {{ Money::currency($lateFees['late_fee_amount'], 'USD') }}
                                     @php
                                         $lateFeesApplied = data_get($values, 'late_fees.applied_at');
                                         $lateFeesInTotal = abs((float)data_get($values, 'total', 0) - (float)data_get($values, 'late_fees.original_total', data_get($values, 'total', 0))) > 0.01;
@@ -126,7 +126,7 @@
                         <div>
                             <dt class="font-semibold uppercase tracking-wide text-slate-500">{{ __('Total Due') }}</dt>
                             <dd class="mt-1 text-base font-semibold text-slate-900">
-                                {{ Number::currency($lateFees['total_with_late_fees'], 'USD') }}
+                                {{ Money::currency($lateFees['total_with_late_fees'], 'USD') }}
                             </dd>
                         </div>
                         @php
@@ -137,7 +137,7 @@
                             <div>
                                 <dt class="font-semibold uppercase tracking-wide text-emerald-600">{{ __('Total Paid') }}</dt>
                                 <dd class="mt-1 text-base font-semibold text-emerald-700">
-                                    {{ Number::currency($totalPaid, 'USD') }}
+                                    {{ Money::currency($totalPaid, 'USD') }}
                                 </dd>
                             </div>
                             <div>
@@ -145,7 +145,7 @@
                                     {{ __('Remaining Balance') }}
                                 </dt>
                                 <dd class="mt-1 text-base font-semibold {{ $remainingBalance > 0 ? 'text-amber-700' : 'text-emerald-700' }}">
-                                    {{ Number::currency($remainingBalance, 'USD') }}
+                                    {{ Money::currency($remainingBalance, 'USD') }}
                                 </dd>
                             </div>
                         @endif
@@ -204,7 +204,7 @@
                             <div>
                                 <dt class="font-semibold uppercase tracking-wide text-slate-500">{{ __('Account Credit') }}</dt>
                                 <dd class="mt-1 text-sm font-semibold text-emerald-700">
-                                    {{ Number::currency($invoice->customer->account_credit, 'USD') }}
+                                    {{ Money::currency($invoice->customer->account_credit, 'USD') }}
                                 </dd>
                             </div>
                         @endif
