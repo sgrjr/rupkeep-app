@@ -13,29 +13,29 @@
     </x-slot>
 
     @php
-        $statusOrder = ['in_progress', 'triage', 'done', 'open', 'verifying', 'declined'];
+        $statusOrder = ['in_progress', 'open', 'done', 'triage', 'verifying', 'declined'];
         $statusLabels = [
-            'triage' => __('Up Next'),
             'in_progress' => __('In Progress'),
-            'open' => __('Planned'),
-            'verifying' => __('In Review'),
+            'open' => __('Up Next'),
             'done' => __('Recently Shipped'),
+            'triage' => __('Inbox'),
+            'verifying' => __('In Review'),
             'declined' => __('Not Doing'),
         ];
         $statusDescriptions = [
-            'triage' => __('Recently submitted — being evaluated and prioritized.'),
             'in_progress' => __('Currently being worked on.'),
-            'open' => __('Planned and queued for an upcoming work cycle.'),
-            'verifying' => __('Implementation is complete and live — we are confirming it solved the underlying issue before marking it shipped.'),
+            'open' => __('Queued and ready to pick up next — this is what the team is set to work on after current items wrap.'),
             'done' => __('Shipped and confirmed working in production.'),
+            'triage' => __('Just submitted — not yet evaluated or prioritized. These will move into Up Next once we have decided when to tackle them.'),
+            'verifying' => __('Implementation is complete and live — we are confirming it solved the underlying issue before marking it shipped.'),
             'declined' => __('Reviewed and intentionally not being pursued.'),
         ];
         $statusStyles = [
-            'triage' => 'border-amber-200 bg-amber-50',
             'in_progress' => 'border-blue-200 bg-blue-50',
-            'open' => 'border-slate-200 bg-white',
-            'verifying' => 'border-violet-200 bg-violet-50',
+            'open' => 'border-amber-200 bg-amber-50',
             'done' => 'border-emerald-200 bg-emerald-50',
+            'triage' => 'border-slate-200 bg-slate-50',
+            'verifying' => 'border-violet-200 bg-violet-50',
             'declined' => 'border-slate-200 bg-slate-50',
         ];
         $displayTz = config('app.display_timezone', 'America/New_York');
