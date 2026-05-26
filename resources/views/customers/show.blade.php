@@ -113,10 +113,7 @@
             <header class="flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <h2 class="text-lg font-semibold text-slate-900">{{ __('Jobs & Invoicing') }}</h2>
-                    <p class="text-xs text-slate-500">{{ __('Select jobs to create new invoices or group existing invoices into a summary. Multiple selections will create a summary automatically.') }}</p>
-                </div>
-                <div>
-                    @livewire('create-invoice-summary', ['customerId' => $customer->id])
+                    <p class="text-xs text-slate-500">{{ __('Select jobs to create invoices. Picking multiple rows will automatically group them into a single summary invoice on submit.') }}</p>
                 </div>
             </header>
 
