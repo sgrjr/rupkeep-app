@@ -159,8 +159,9 @@ class Dashboard extends Component
        }
 
        // Feedback + Requests — every signed-in user sees the same triage count.
-       // Link destination flips by role so customers don't hit the admin policy gate.
-       // (Future: scope the count + recent list to the viewer when they're a customer.)
+       // Card link goes to the Public Roadmap for everyone; super users
+       // additionally get a direct path into the staff triage queue.
+       // (Future: scope the count + recent list to the viewer when they're a customer — TASK-324.)
        $viewer = Auth::user();
        $recentFeedback = \App\Models\Task::with('submitter')
            ->where('status', 'triage')
@@ -169,15 +170,17 @@ class Dashboard extends Component
            ->get();
        $totalFeedback = \App\Models\Task::where('status', 'triage')->count();
 
+       $links = [
+           ['url'=> route('documentation.roadmap'), 'title'=>'Public Roadmap'],
+       ];
+       if ($viewer->is_super) {
+           array_unshift($links, ['url'=> route('tasks.index', ['statusFilter' => 'triage']), 'title'=>'View Triage']);
+       }
+
        $cards[] = (Object)[
            'title' => 'Feedback + Requests',
            'count' => $totalFeedback,
-           'links' => $viewer->isCustomer()
-               ? [['url'=> route('portal.tasks.index'), 'title'=>'View Requests']]
-               : [
-                   ['url'=> route('tasks.index', ['statusFilter' => 'triage']), 'title'=>'View Triage'],
-                   ['url'=> route('tasks.index', ['statusFilter' => 'triage', 'labelFilter' => 'source:feedback']), 'title'=>'From Feedback'],
-               ],
+           'links' => $links,
        ];
 
        if(auth()->user()->can('createJob', $organization)){
