@@ -210,6 +210,7 @@ Items marked complete in archived docs that should be smoke-tested against curre
 | TASK-304 | Add DB index on `pilot_car_jobs.scheduled_pickup_at` (sort performance) | 🟡 medium |
 | TASK-305 | Unit tests: `tests/Unit/InvoiceCalculationTest.php` (mini charge, deadhead, rate codes) | 🟡 medium |
 | TASK-306 | Feature tests: multi-tenant isolation, permission boundaries | 🟡 medium |
+| TASK-315 | Rewrite `README.md` — currently the generic Laravel boilerplate. Should describe Rupkeep specifically: what it does (pilot-car job tracking + invoicing), stack, local dev setup, link to TASKS.md / docs/ROADMAP.md | 🟡 medium |
 
 ---
 
@@ -278,4 +279,4 @@ For older completed items see [`docs/archive/IMPLEMENTATION_SUMMARY.md`](docs/ar
 ---
 
 <a id="next-id"></a>
-**Next available ID:** `TASK-316`
+**Next available ID:** `TASK-317`
