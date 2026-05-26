@@ -34,7 +34,8 @@ class TaskTest extends TestCase
 
     public function test_status_change_records_system_comment(): void
     {
-        $admin = User::factory()->admin()->create();
+        $adminOrg = Organization::factory()->create();
+        $admin = User::factory()->admin()->forOrganization($adminOrg)->create();
         $task = Task::create([
             'code' => Task::nextCode(),
             'title' => 'Demo task',
@@ -63,7 +64,8 @@ class TaskTest extends TestCase
 
     public function test_customer_cannot_see_internal_comments(): void
     {
-        $admin = User::factory()->admin()->create();
+        $adminOrg = Organization::factory()->create();
+        $admin = User::factory()->admin()->forOrganization($adminOrg)->create();
         $customer = Customer::factory()->create(['organization_id' => $admin->organization_id]);
         $customerUser = User::factory()->asCustomer($customer)->create();
 
@@ -80,19 +82,18 @@ class TaskTest extends TestCase
         $task->comments()->create(['user_id' => $admin->id, 'body' => 'Public reply',   'is_internal' => false, 'event_type' => TaskComment::EVENT_COMMENT]);
         $task->comments()->create(['user_id' => $admin->id, 'body' => 'Internal note',  'is_internal' => true,  'event_type' => TaskComment::EVENT_COMMENT]);
 
-        $component = Livewire::actingAs($customerUser)
-            ->test(\App\Livewire\TaskThread::class, ['task' => $task, 'portal' => true]);
-
-        $rendered = $component->payload['effects']['html'] ?? '';
-        $this->assertStringContainsString('Public reply', $rendered);
-        $this->assertStringNotContainsString('Internal note', $rendered);
+        Livewire::actingAs($customerUser)
+            ->test(\App\Livewire\TaskThread::class, ['task' => $task, 'portal' => true])
+            ->assertSee('Public reply')
+            ->assertDontSee('Internal note');
     }
 
     /* -------------------- Customer can comment, cannot mutate status -------------------- */
 
     public function test_customer_cannot_change_status(): void
     {
-        $admin = User::factory()->admin()->create();
+        $adminOrg = Organization::factory()->create();
+        $admin = User::factory()->admin()->forOrganization($adminOrg)->create();
         $customer = Customer::factory()->create(['organization_id' => $admin->organization_id]);
         $customerUser = User::factory()->asCustomer($customer)->create();
 
@@ -106,19 +107,21 @@ class TaskTest extends TestCase
             'submitter_user_id' => $customerUser->id,
         ]);
 
-        $this->expectException(\Illuminate\Auth\Access\AuthorizationException::class);
-
         Livewire::actingAs($customerUser)
             ->test(\App\Livewire\TaskShow::class, ['task' => $task, 'portal' => true])
             ->set('status', 'in_progress')
-            ->call('saveMeta');
+            ->call('saveMeta')
+            ->assertStatus(403);
+
+        $this->assertSame('open', $task->fresh()->status, 'Customer must not be able to change status');
     }
 
     /* -------------------- Promote from feedback -------------------- */
 
     public function test_promote_from_feedback_creates_task_with_provenance(): void
     {
-        $superOrg = Organization::factory()->create(['is_super' => true]);
+        // is_super is an accessor that returns true when name == 'Reynolds Upkeep'
+        $superOrg = Organization::factory()->create(['name' => 'Reynolds Upkeep']);
         $super = User::factory()->admin()->create(['organization_id' => $superOrg->id]);
         $submitter = User::factory()->create();
 
@@ -150,7 +153,8 @@ class TaskTest extends TestCase
     {
         Notification::fake();
 
-        $admin = User::factory()->admin()->create();
+        $adminOrg = Organization::factory()->create();
+        $admin = User::factory()->admin()->forOrganization($adminOrg)->create();
         $customer = Customer::factory()->create(['organization_id' => $admin->organization_id]);
         $submitter = User::factory()->asCustomer($customer)->create();
 
@@ -183,7 +187,8 @@ class TaskTest extends TestCase
 
     public function test_roadmap_only_shows_public_tasks(): void
     {
-        $admin = User::factory()->admin()->create();
+        $adminOrg = Organization::factory()->create();
+        $admin = User::factory()->admin()->forOrganization($adminOrg)->create();
 
         $pub = Task::create([
             'code' => 'TASK-901', 'title' => 'Public roadmap item', 'type' => 'feature', 'priority' => 'medium', 'status' => 'open', 'is_public' => true, 'organization_id' => $admin->organization_id,
@@ -203,7 +208,8 @@ class TaskTest extends TestCase
 
     public function test_board_move_updates_status_and_position(): void
     {
-        $admin = User::factory()->admin()->create();
+        $adminOrg = Organization::factory()->create();
+        $admin = User::factory()->admin()->forOrganization($adminOrg)->create();
 
         $a = Task::create(['code' => 'TASK-501', 'title' => 'A', 'type' => 'feature', 'priority' => 'medium', 'status' => 'open', 'organization_id' => $admin->organization_id]);
         $b = Task::create(['code' => 'TASK-502', 'title' => 'B', 'type' => 'feature', 'priority' => 'medium', 'status' => 'in_progress', 'organization_id' => $admin->organization_id]);
