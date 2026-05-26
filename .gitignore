@@ -21,3 +21,9 @@ yarn-error.log
 /.vscode
 /.zed
 *.lock
+
+# Dispatch bridge file. Derived from the canonical tasks DB; written on every
+# `dispatch:pull` / `dispatch:push`. The DB on production is the source of truth.
+# Force-commit with `git add -f docs/tasks.jsonld` if you ever want a frozen
+# snapshot in history.
+/docs/tasks.jsonld
