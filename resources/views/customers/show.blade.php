@@ -121,8 +121,9 @@
                 @csrf
 
                 <div class="overflow-hidden rounded-2xl border border-slate-200">
-                    <table class="min-w-full divide-y divide-slate-200 text-sm text-slate-600">
-                        <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                    <div class="max-h-[28rem] overflow-y-auto">
+                        <table class="min-w-full divide-y divide-slate-200 text-sm text-slate-600">
+                            <thead class="sticky top-0 z-10 bg-slate-50 text-xs uppercase tracking-wide text-slate-500 shadow-sm">
                             <tr>
                                 <th class="px-4 py-3 text-left">{{ __('Select') }}</th>
                                 <th class="px-4 py-3 text-left">{{ __('Job #') }}</th>
@@ -229,7 +230,8 @@
                                 </tr>
                             @endforelse
                         </tbody>
-                    </table>
+                        </table>
+                    </div>
                 </div>
 
                 <div class="flex flex-wrap items-center justify-between gap-3">
