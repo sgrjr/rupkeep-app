@@ -51,6 +51,12 @@
                         <div>
                             <p class="text-xs font-semibold uppercase tracking-wider text-orange-600">{{ __('Overview') }}</p>
                             <p class="mt-1 text-2xl font-bold text-slate-900">{{ $totalPublic }} <span class="text-base font-medium text-slate-500">{{ __('open items on the roadmap') }}</span></p>
+                            @if (($totalShipped ?? 0) > 0)
+                                <p class="mt-1.5 inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
+                                    <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                    {{ trans_choice(':count item shipped to date|:count items shipped to date', $totalShipped, ['count' => $totalShipped]) }}
+                                </p>
+                            @endif
                         </div>
                         @if ($lastUpdatedAt)
                             @php $lastLocal = $lastUpdatedAt->copy()->setTimezone($displayTz); @endphp

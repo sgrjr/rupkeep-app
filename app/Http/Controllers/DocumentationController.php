@@ -63,11 +63,22 @@ class DocumentationController extends Controller
 
         $lastUpdatedAt = Task::query()->tap($orgScope)->max('updated_at');
 
+        // Cumulative-progress counter: every "done" task ever, regardless of
+        // is_public, scoped to the viewer's org. Gives a sense of "we've
+        // shipped N things" without exposing the individual items.
+        $totalShipped = Task::query()
+            ->where('status', 'done')
+            ->when($orgId, fn ($q) => $q->where(function ($scope) use ($orgId) {
+                $scope->whereNull('organization_id')->orWhere('organization_id', $orgId);
+            }))
+            ->count();
+
         return view('documentation.roadmap', [
             'document' => 'roadmap',
             'tasksByStatus' => $tasks,
             'lastUpdatedAt' => $lastUpdatedAt ? \Carbon\Carbon::parse($lastUpdatedAt) : null,
             'totalPublic' => $tasks->sum->count(),
+            'totalShipped' => $totalShipped,
         ]);
     }
 }
