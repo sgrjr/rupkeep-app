@@ -2,7 +2,7 @@
     <x-slot name="header">
         <div>
             <h2 class="text-xl font-bold tracking-tight text-slate-900">{{ __('My Requests') }}</h2>
-            <p class="text-xs text-slate-500">{{ __('Your submitted feedback and tasks the team is tracking publicly.') }}</p>
+            <p class="text-xs text-slate-500">{{ __('Track what you have asked us to do — and what we are publicly working on.') }}</p>
         </div>
     </x-slot>
 

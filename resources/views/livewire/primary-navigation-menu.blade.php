@@ -134,6 +134,28 @@
                             </x-nav-link>
                         @endif
 
+                        @can('viewAny', \App\Models\Task::class)
+                            <x-dropdown :active="request()->routeIs('tasks.*') || request()->routeIs('documentation.roadmap')" dropdownClasses="bg-white/95 text-slate-700 ring-1 ring-slate-900/10 shadow-xl max-h-96 overflow-y-auto" contentClasses="py-2 space-y-1">
+                                <x-slot name="trigger">
+                                    @php $dispatchActive = request()->routeIs('tasks.*') || request()->routeIs('documentation.roadmap'); @endphp
+                                    <button type="button" class="inline-flex items-center gap-1 rounded-full px-3 py-2 text-sm font-medium transition {{ $dispatchActive ? 'bg-white text-orange-600 shadow-sm ring-1 ring-white/60' : 'text-white/85 hover:bg-white/15 hover:text-white' }}">
+                                        <span>{{ __('Dispatch') }}</span>
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/></svg>
+                                    </button>
+                                </x-slot>
+                                <x-slot name="content">
+                                    <x-dropdown-link href="{{ route('tasks.index') }}">{{ __('Tasks (list)') }}</x-dropdown-link>
+                                    <x-dropdown-link href="{{ route('tasks.board') }}">{{ __('Board (kanban)') }}</x-dropdown-link>
+                                    <div class="border-t border-slate-100"></div>
+                                    <x-dropdown-link href="{{ route('documentation.roadmap') }}">{{ __('Public Roadmap') }}</x-dropdown-link>
+                                    @if(auth()->user()->is_super)
+                                        <div class="border-t border-slate-100"></div>
+                                        <x-dropdown-link href="{{ route('admin.feedback.index') }}">{{ __('Feedback Inbox') }}</x-dropdown-link>
+                                    @endif
+                                </x-slot>
+                            </x-dropdown>
+                        @endcan
+
                 @can('viewAny', new \App\Models\Organization)
                             <x-dropdown :active="request()->routeIs('organizations.*')" dropdownClasses="bg-white/95 text-slate-700 ring-1 ring-slate-900/10 shadow-xl max-h-96 overflow-y-auto" contentClasses="py-2 space-y-1">
                                 <x-slot name="trigger">

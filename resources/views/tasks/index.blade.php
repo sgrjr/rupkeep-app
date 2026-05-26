@@ -2,8 +2,8 @@
     <x-slot name="header">
         <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
-                <h2 class="text-xl font-bold tracking-tight text-slate-900">{{ __('Tasks') }}</h2>
-                <p class="text-xs text-slate-500">{{ __('Feature requests, bugs, tech debt — all tracked here.') }}</p>
+                <h2 class="text-xl font-bold tracking-tight text-slate-900">{{ __('Dispatch') }}</h2>
+                <p class="text-xs text-slate-500">{{ __('Feature requests, bugs, tech debt — every piece of work flows through here.') }}</p>
             </div>
             <div class="flex items-center gap-2">
                 <livewire:task-create />
