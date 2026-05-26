@@ -1,0 +1,2130 @@
+{
+    "@context": {
+        "@vocab": "https://rupkeep.app/schema/tasks/v1#",
+        "code": "@id",
+        "labels": {
+            "@container": "@set"
+        },
+        "comments": {
+            "@container": "@list"
+        },
+        "createdAt": {
+            "@type": "http://www.w3.org/2001/XMLSchema#dateTime"
+        },
+        "updatedAt": {
+            "@type": "http://www.w3.org/2001/XMLSchema#dateTime"
+        }
+    },
+    "@type": "TaskCollection",
+    "schemaVersion": "1.0",
+    "exportedAt": "2026-05-26T13:31:34+00:00",
+    "exportedBy": "tasks:export",
+    "tasks": [
+        {
+            "@type": "Task",
+            "code": "SHIP-001",
+            "title": "Documentation consolidation: TASKS.md + docs/ structure; old planning docs archived",
+            "description": "Shipped on 2026-05-26.",
+            "type": "feature",
+            "priority": "medium",
+            "status": "done",
+            "isPublic": false,
+            "labels": [
+                "historical"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T00:00:00+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "SHIP-002",
+            "title": "Job status accessor: ACTIVE / CANCELLED / CANCELLED_NO_GO / COMPLETED (`PilotCarJob::getStatusAttribute`)",
+            "description": "Shipped on 2026-01-01.",
+            "type": "feature",
+            "priority": "medium",
+            "status": "done",
+            "isPublic": false,
+            "labels": [
+                "historical"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-01-01T00:00:00+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "SHIP-003",
+            "title": "Cancellation type logic + rate codes (`cancellation_24hr`, `show_no_go`, `cancel_without_billing`) via `determineCancellationType()`",
+            "description": "Shipped on 2026-01-01.",
+            "type": "feature",
+            "priority": "medium",
+            "status": "done",
+            "isPublic": false,
+            "labels": [
+                "historical"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-01-01T00:00:00+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "SHIP-004",
+            "title": "`ManagePricing` Livewire UI for rates / charges / cancellations / payment terms",
+            "description": "Shipped on 2026-01-01.",
+            "type": "feature",
+            "priority": "medium",
+            "status": "done",
+            "isPublic": false,
+            "labels": [
+                "historical"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-01-01T00:00:00+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "SHIP-005",
+            "title": "`public_memo` field added to `pilot_car_jobs` (external memo)",
+            "description": "Shipped on 2026-01-01.",
+            "type": "feature",
+            "priority": "medium",
+            "status": "done",
+            "isPublic": false,
+            "labels": [
+                "historical"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-01-01T00:00:00+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "SHIP-006",
+            "title": "Push notifications infrastructure (service worker, VAPID, subscription controller, push on JobAssigned)",
+            "description": "Shipped on 2026-02-03.",
+            "type": "feature",
+            "priority": "medium",
+            "status": "done",
+            "isPublic": false,
+            "labels": [
+                "historical"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-02-03T00:00:00+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "SHIP-007",
+            "title": "`clock_in` / `clock_out` datetime fields added to user_logs",
+            "description": "Shipped on 2026-02-03.",
+            "type": "feature",
+            "priority": "medium",
+            "status": "done",
+            "isPublic": false,
+            "labels": [
+                "historical"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-02-03T00:00:00+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "SHIP-008",
+            "title": "`jobs_invoices` table renamed → `summary_invoice_jobs`",
+            "description": "Shipped on 2026-01-21.",
+            "type": "feature",
+            "priority": "medium",
+            "status": "done",
+            "isPublic": false,
+            "labels": [
+                "historical"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-01-21T00:00:00+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "SHIP-009",
+            "title": "Job log confirmation/denial workflow (approval_status + policies + UI)",
+            "description": "Shipped on 2026-01-20.",
+            "type": "feature",
+            "priority": "medium",
+            "status": "done",
+            "isPublic": false,
+            "labels": [
+                "historical"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-01-20T00:00:00+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "SHIP-010",
+            "title": "Form persistence fixes: `wait_time_hours`, `trailer_no`, `truck_no`, `extra_load_stops_count`, `is_deadhead`",
+            "description": "Shipped on 2026-01-20.",
+            "type": "feature",
+            "priority": "medium",
+            "status": "done",
+            "isPublic": false,
+            "labels": [
+                "historical"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-01-20T00:00:00+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "SHIP-011",
+            "title": "Billable miles in log edit header (calculated vs override distinction)",
+            "description": "Shipped on 2026-01-20.",
+            "type": "feature",
+            "priority": "medium",
+            "status": "done",
+            "isPublic": false,
+            "labels": [
+                "historical"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-01-20T00:00:00+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "SHIP-012",
+            "title": "Job details overview section on log edit page",
+            "description": "Shipped on 2026-01-20.",
+            "type": "feature",
+            "priority": "medium",
+            "status": "done",
+            "isPublic": false,
+            "labels": [
+                "historical"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-01-20T00:00:00+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "SHIP-013",
+            "title": "Open All / Close All section toggles on log edit",
+            "description": "Shipped on 2026-01-20.",
+            "type": "feature",
+            "priority": "medium",
+            "status": "done",
+            "isPublic": false,
+            "labels": [
+                "historical"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-01-20T00:00:00+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "SHIP-014",
+            "title": "Truck driver / new truck driver moved to Load Information section",
+            "description": "Shipped on 2026-01-20.",
+            "type": "feature",
+            "priority": "medium",
+            "status": "done",
+            "isPublic": false,
+            "labels": [
+                "historical"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-01-20T00:00:00+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "SHIP-015",
+            "title": "Jobs table sort: unpaid first, then `scheduled_pickup_at` asc; mobile column priority",
+            "description": "Shipped on 2026-01-20.",
+            "type": "feature",
+            "priority": "medium",
+            "status": "done",
+            "isPublic": false,
+            "labels": [
+                "historical"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-01-20T00:00:00+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "SHIP-016",
+            "title": "Sticky save button on jobs edit (mobile)",
+            "description": "Shipped on 2026-01-20.",
+            "type": "feature",
+            "priority": "medium",
+            "status": "done",
+            "isPublic": false,
+            "labels": [
+                "historical"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-01-20T00:00:00+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "SHIP-017",
+            "title": "Invoice check-number layout fix + responsive grid",
+            "description": "Shipped on 2026-01-20.",
+            "type": "feature",
+            "priority": "medium",
+            "status": "done",
+            "isPublic": false,
+            "labels": [
+                "historical"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-01-20T00:00:00+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "SHIP-018",
+            "title": "Order summary `buildSummaryValues()` fallback values + empty-state messaging",
+            "description": "Shipped on 2026-01-20.",
+            "type": "feature",
+            "priority": "medium",
+            "status": "done",
+            "isPublic": false,
+            "labels": [
+                "historical"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-01-20T00:00:00+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "SHIP-019",
+            "title": "Job show page: links to summary + individual child invoices",
+            "description": "Shipped on 2026-01-20.",
+            "type": "feature",
+            "priority": "medium",
+            "status": "done",
+            "isPublic": false,
+            "labels": [
+                "historical"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-01-20T00:00:00+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "SHIP-020",
+            "title": "Import logging + skipped-row tracking",
+            "description": "Shipped on 2026-01-20.",
+            "type": "feature",
+            "priority": "medium",
+            "status": "done",
+            "isPublic": false,
+            "labels": [
+                "historical"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-01-20T00:00:00+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "SHIP-021",
+            "title": "Auto-create invoices on import (dashboard checkbox)",
+            "description": "Shipped on 2026-01-20.",
+            "type": "feature",
+            "priority": "medium",
+            "status": "done",
+            "isPublic": false,
+            "labels": [
+                "historical"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-01-20T00:00:00+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "SHIP-022",
+            "title": "Vehicle name normalization (`Car 06` / `Car 006` / `Car 6` → `Car 006`)",
+            "description": "Shipped on 2026-01-20.",
+            "type": "feature",
+            "priority": "medium",
+            "status": "done",
+            "isPublic": false,
+            "labels": [
+                "historical"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-01-20T00:00:00+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "SHIP-023",
+            "title": "Vehicle maintenance UI: overdue / upcoming / history sections",
+            "description": "Shipped on 2026-01-20.",
+            "type": "feature",
+            "priority": "medium",
+            "status": "done",
+            "isPublic": false,
+            "labels": [
+                "historical"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-01-20T00:00:00+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "SHIP-024",
+            "title": "Soft deletes on `user_logs`",
+            "description": "Shipped on 2026-01-16.",
+            "type": "feature",
+            "priority": "medium",
+            "status": "done",
+            "isPublic": false,
+            "labels": [
+                "historical"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-01-16T00:00:00+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "SHIP-025",
+            "title": "`marked_for_attention` flag on invoices",
+            "description": "Shipped on 2026-01-15.",
+            "type": "feature",
+            "priority": "medium",
+            "status": "done",
+            "isPublic": false,
+            "labels": [
+                "historical"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-01-15T00:00:00+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-001",
+            "title": "`Class \"App\\Livewire\\User\" not found` when loading `/dashboard`",
+            "description": "dashboard\n\n[BUGS.md#task-001](docs/BUGS.md#task-001)\n\n---\n\nTASK-001\n**Title:** `Class \"App\\Livewire\\User\" not found` when loading `/dashboard`\n\n**Where seen:** Captured in the in-app user-events error log (`/user-events`, ~3 months old as of 2026-05-26). Affected user: stephengreynoldsjr@gmail.com. URL: `http://localhost:8000/dashboard`.\n\n**Symptoms**\n- 500 error rendering the dashboard\n- Stack mentions `App\\Livewire\\User` (which doesn't exist — the model is `App\\Models\\User`)\n\n**Suspected cause**\nStale `bootstrap/cache/*` or a Livewire component reference resolving `User` to the wrong namespace. Possible culprits:\n- A `<livewire:user .../>` tag in a blade that should reference a different component\n- A `Livewire::component('user', ...)` registration colliding with the `User` model import\n- A cached compiled view in `storage/framework/views/` referencing the old class\n\n**Repro steps**\n1. Visit `/dashboard` while authenticated\n2. If the error doesn't reproduce, scrub for stale `<livewire:user` tags: `Grep \"<livewire:user|@livewire\\(.user.\" in resources/views/`\n\n**Suggested investigation**\n- `php artisan view:clear && php artisan cache:clear && php artisan optimize:clear`\n- `Grep` for `Livewire\\\\User` and `'user'\\s*=>` in `app/Providers/`\n- Inspect `app/Livewire/Dashboard.php` for component registrations\n- If reproducible, capture the full stack from `storage/logs/laravel.log`\n\n**Status:** open\n\n---",
+            "type": "bug",
+            "priority": "high",
+            "status": "open",
+            "isPublic": false,
+            "labels": [],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-002",
+            "title": "`Unable to create the key` on guest hit to `/`",
+            "description": "landing\n\n[BUGS.md#task-002](docs/BUGS.md#task-002)\n\n---\n\nTASK-002\n**Title:** `Unable to create the key` on guest hit to `/`\n\n**Where seen:** In-app user-events log (~3 months old). Guest user, URL `http://localhost`.\n\n**Symptoms**\n- 500 error on the landing page for unauthenticated users\n- Error text: \"Unable to create the key\"\n\n**Suspected cause**\n- Most likely VAPID web-push key generation (`minishlink/web-push`) being invoked in the landing-page render path or in a Livewire component that mounts unconditionally. The push-subscriptions table was added 2026-02-03; if VAPID env vars aren't set in development the key generator throws this exact message.\n- Alternate: `APP_KEY` not set, but that would usually phrase as \"No application encryption key has been specified\" — less likely here.\n\n**Repro steps**\n1. Open an incognito/private window\n2. Visit `http://localhost` (or wherever local dev runs)\n3. Observe error\n\n**Suggested investigation**\n- `Grep \"VAPID|WebPush|PushSubscription\"` in `app/Http/Controllers/` and `app/Livewire/`\n- Confirm `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` are present in `.env` (and in `.env.example` for new devs)\n- If the landing page mounts a Livewire component that touches push subscriptions, gate it behind `auth()->check()`\n- Generate keys: `php artisan webpush:vapid` (if `laravel-notification-channels/webpush` is installed) or via minishlink helper\n\n**Related:** TASK-006 (push notification VAPID handling), [TASK-007](#task-007) (production-side root cause — GMP/BCMath missing, surfaces as the same exception)\n\n**Status:** open\n\n---",
+            "type": "bug",
+            "priority": "high",
+            "status": "open",
+            "isPublic": false,
+            "labels": [],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-003",
+            "title": "Rate values not saving on `PilotCarJob` edit form",
+            "description": "jobs edit\n\nrepro: edit a job, set per_mile_rate, save, reload — value reverts. Suspected: form validation drops the field. See `app/Livewire/EditPilotCarJob.php`.\n\n---\n\nTASK-003\n**Title:** Rate values not saving on `PilotCarJob` edit form\n\n**Where:** `app/Livewire/EditPilotCarJob.php`, `app/Models/PilotCarJob.php`\n\n**Symptoms**\n- User edits a job, sets `per_mile_rate` (or other rate field), saves\n- On reload the value is gone or reverted to the customer default\n\n**Suspected cause**\n- Form property name mismatch (similar pattern to the `wait_time_hours` / `trailer_no` fixes from CUSTOMER_INTERVIEW 1.5)\n- Validation rule silently rejecting the field\n- Rate computed via `PilotCarJob::invoiceValues()` accessor masking the stored value\n\n**Repro steps**\n1. Open an existing job\n2. Set `per_mile_rate` to a non-default value (e.g. 5.25)\n3. Save\n4. Reload — value is back to default\n\n**Status:** open\n\n---",
+            "type": "bug",
+            "priority": "high",
+            "status": "open",
+            "isPublic": false,
+            "labels": [],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-004",
+            "title": "Missing \"Show\" link on some jobs index views",
+            "description": "jobs index\n\nonly Edit button shown in some contexts\n\n---\n\nTASK-004\n**Title:** Missing \"Show\" link on some jobs index views\n\n**Where:** Job index variants (per `.cursorrules` known issues and `DEV_NOTES` raw notes)\n\n**Symptoms**\n- Some job rows show only an Edit button — no link through to the read-only Show page\n- Customer-scoped views may also be affected\n\n**Status:** open\n\n---",
+            "type": "bug",
+            "priority": "low",
+            "status": "open",
+            "isPublic": false,
+            "labels": [],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-005",
+            "title": "Main contact tag missing on customer contacts",
+            "description": "customers show\n\nDEV_NOTES: need pattern to distinguish \"Main Customer Contact\"\n\n---\n\nTASK-005\n**Title:** Main contact tag missing on customer contacts\n\n**Where:** `app/Models/CustomerContact.php` (or similar), customer show view\n\n**Symptoms**\n- No way to designate which `CustomerContact` is the primary/main contact\n- Drivers/managers can't easily identify who to reach first\n\n**Suggested approach**\n- Add `is_main_contact` boolean (or `main_contact_id` on `Customer`)\n- UI: star/badge in contact list, single click to promote\n- Ensure only one main contact per customer (enforce in model boot)\n\n**Status:** open\n\n---",
+            "type": "bug",
+            "priority": "medium",
+            "status": "open",
+            "isPublic": false,
+            "labels": [],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-006",
+            "title": "Push notification listener: VAPID key generation can fail (`Unable to create the key`)",
+            "description": "notifications\n\nlikely tied to TASK-002. Check `app/Listeners/SendJobAssignedNotification.php` push branch and VAPID env vars.\n\n---\n\nTASK-006\n**Title:** Push notification VAPID key generation can fail\n\n**Where:** `app/Listeners/SendJobAssignedNotification.php` push branch, `app/Notifications/JobUpdate.php`\n\n**Symptoms**\n- Same \"Unable to create the key\" string as TASK-002 — likely the same root cause surfaced from a different code path\n- May leave job-assigned emails ungent if exception isn't caught\n\n**Suggested fix**\n- Wrap push send in try/catch and log without aborting the listener\n- Ensure VAPID env vars are validated at config-cache time (fail loudly in production startup, not at first push)\n\n**Related:** [TASK-002](#task-002), [TASK-007](#task-007) (production-side root cause)\n\n**Status:** open",
+            "type": "bug",
+            "priority": "medium",
+            "status": "open",
+            "isPublic": false,
+            "labels": [],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-007",
+            "title": "[PROD] WebPush triggers GMP/BCMath PHP warning that converts to a fatal error on landing-page hit",
+            "description": "production landing\n\nSame root cause as TASK-002 / TASK-006, observed in prod 2026-02-03 via `/user-events`. Stack ends at `minishlink/web-push/src/Utils.php:86`. Fix: install `php-gmp` (or `php-bcmath`) on production server. See [BUGS.md#task-007](docs/BUGS.md#task-007).\n\n---\n\nTASK-007\n**Title:** [PROD] WebPush triggers GMP/BCMath PHP warning that converts to a fatal error on landing-page hit\n\n**Where seen:** Captured in production `/user-events` error log on **2026-02-03 9:51 AM**. Guest user, URL `http://localhost` (NOTE: the URL is recorded as `http://localhost` because the error is captured before host headers resolve — this is the public landing page in production). Server path: `/var/www/rupkeep-app/`.\n\n**Symptom**\n```\n\"It is highly recommended to install the GMP or BCMath extension to speed up calculations. The fastest available calculator implementation will be automatically selected at runtime.\"\nfile: vendor/minishlink/web-push/src/Utils.php:86\n```\nLaravel's `HandleExceptions::handleError()` converts that PHP warning into a thrown exception → 500 response.\n\n**Stack (truncated)**\n```\n#0 HandleExceptions.php:290 → handleError()\n#2 web-push/src/Utils.php:86 → trigger_error()\n#3 web-push/src/Utils.php:67 → checkRequirementExtension()\n#4 web-push/src/WebPush.php:66 → Utils::checkRequirement()\n#5 laravel-notification-channels/webpush/src/WebPushServiceProvider.php:30 → new WebPush()\n#6 Container::build → resolves WebPush singleton at service-provider boot\n```\n\n**Root cause**\n`minishlink/web-push` calls `trigger_error()` (a *warning*, not a hard error) if neither `gmp` nor `bcmath` PHP extensions are installed. Laravel's error handler promotes the warning to an exception. The provider that constructs `WebPush` (`WebPushServiceProvider::register`) runs eagerly when the container resolves the binding — which happens any time the framework boots, including unauthenticated landing-page hits.\n\n**This is the production-side root cause of [TASK-002](#task-002) and [TASK-006](#task-006)** — the `Unable to create the key` message users see in dev is downstream of the same library being unable to use its preferred math backend.\n\n**Fix (production server)**\n\nFor PHP 8.2 on Ubuntu/Debian:\n```bash\nsudo apt-get install -y php8.2-gmp     # preferred\n# OR\nsudo apt-get install -y php8.2-bcmath  # acceptable\nsudo systemctl restart php8.2-fpm\nsudo systemctl reload nginx            # or apache2\n```\n\nVerify:\n```bash\nphp -m | grep -E 'gmp|bcmath'\n```\n\nBoth extensions are also worth installing in local dev — see also [`docs/FIX_PHP_WARNINGS.md`](FIX_PHP_WARNINGS.md) for related PHP module hygiene on the remote server.\n\n**Defensive code change (recommended in parallel with server fix)**\nWrap the WebPush service-provider boot so a missing extension *warns into the log* but doesn't kill the request — the library still functions, it just falls back to the slower native PHP calculator. Options:\n- Suppress the `E_USER_WARNING` from `minishlink\\web-push\\Utils::checkRequirementExtension` in `app/Exceptions/Handler.php` (`reportable`/`stopIgnoring`)\n- Or defer-register the WebPush channel only when actually dispatching a push (override the service provider)\n\n**Status:** open — blocker for production stability of the landing page\n\n---",
+            "type": "bug",
+            "priority": "blocker",
+            "status": "open",
+            "isPublic": false,
+            "labels": [],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-010",
+            "title": "`LoginCode` model + migration (code, user_id, expires_at, used_at)",
+            "description": "",
+            "type": "feature",
+            "priority": "high",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:customer-portal-one-time-login-codes"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-011",
+            "title": "`LoginCodeController`: generate, validate, consume",
+            "description": "",
+            "type": "feature",
+            "priority": "high",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:customer-portal-one-time-login-codes"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-012",
+            "title": "Config key for code expiry (default 24h)",
+            "description": "",
+            "type": "feature",
+            "priority": "medium",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:customer-portal-one-time-login-codes"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-013",
+            "title": "Customer-facing login code entry form",
+            "description": "",
+            "type": "feature",
+            "priority": "high",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:customer-portal-one-time-login-codes"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-014",
+            "title": "Customer dashboard (invoice list scoped to customer)",
+            "description": "",
+            "type": "feature",
+            "priority": "high",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:customer-portal-one-time-login-codes"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-015",
+            "title": "Customer invoice detail (read-only)",
+            "description": "",
+            "type": "feature",
+            "priority": "high",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:customer-portal-one-time-login-codes"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-016",
+            "title": "Invoice commenting (Livewire component, persists per-invoice)",
+            "description": "",
+            "type": "feature",
+            "priority": "medium",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:customer-portal-one-time-login-codes"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-017",
+            "title": "\"Flag for Attention\" button + manager notification",
+            "description": "",
+            "type": "feature",
+            "priority": "medium",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:customer-portal-one-time-login-codes"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-018",
+            "title": "Email invitation flow for new customer accounts",
+            "description": "",
+            "type": "feature",
+            "priority": "medium",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:customer-portal-one-time-login-codes"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-019",
+            "title": "Proof-materials visibility toggle (staff-only vs public) on attachments",
+            "description": "",
+            "type": "feature",
+            "priority": "medium",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:customer-portal-one-time-login-codes"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-020",
+            "title": "Decide on PDF library (dompdf vs browsershot)",
+            "description": "",
+            "type": "feature",
+            "priority": "low",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:pdf-invoice-downloads-feature-flagged-currently-off"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-021",
+            "title": "Install library, generate from existing print template",
+            "description": "",
+            "type": "feature",
+            "priority": "low",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:pdf-invoice-downloads-feature-flagged-currently-off"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-022",
+            "title": "Queue PDF generation (async, store URL)",
+            "description": "",
+            "type": "feature",
+            "priority": "low",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:pdf-invoice-downloads-feature-flagged-currently-off"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-023",
+            "title": "Flip `FEATURE_INVOICE_PDF_DOWNLOADS=true` in production after acceptance test",
+            "description": "",
+            "type": "feature",
+            "priority": "low",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:pdf-invoice-downloads-feature-flagged-currently-off"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-030",
+            "title": "Status badges on dashboard job cards (pending/in-progress/completed/invoiced/paid)",
+            "description": "",
+            "type": "feature",
+            "priority": "medium",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:manager-dashboard"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-031",
+            "title": "Summary stats cards (total jobs, revenue, unpaid invoices)",
+            "description": "",
+            "type": "feature",
+            "priority": "medium",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:manager-dashboard"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-032",
+            "title": "Quick filters (unpaid, pending, flagged)",
+            "description": "",
+            "type": "feature",
+            "priority": "medium",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:manager-dashboard"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-033",
+            "title": "Recent activity feed",
+            "description": "",
+            "type": "feature",
+            "priority": "low",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:manager-dashboard"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-034",
+            "title": "Default manager landing → Jobs view (not generic dashboard)",
+            "description": "",
+            "type": "feature",
+            "priority": "low",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:manager-dashboard"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-040",
+            "title": "Remove \"future feature\" copy from onboarding docs page (line 359)",
+            "description": "",
+            "type": "feature",
+            "priority": "low",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:vehicle-maintenance-ui"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-041",
+            "title": "Add maintenance-due notifications/reminders",
+            "description": "",
+            "type": "feature",
+            "priority": "medium",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:vehicle-maintenance-ui"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-042",
+            "title": "Calendar view for upcoming maintenance",
+            "description": "",
+            "type": "feature",
+            "priority": "low",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:vehicle-maintenance-ui"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-043",
+            "title": "Vehicle \"in garage\" boolean + UI surface",
+            "description": "",
+            "type": "feature",
+            "priority": "medium",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:vehicle-maintenance-ui"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-050",
+            "title": "InvoiceReadyNotification — wire to invoice creation",
+            "description": "",
+            "type": "feature",
+            "priority": "high",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:notifications"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-051",
+            "title": "InvoiceFlaggedNotification — wire to customer flag action",
+            "description": "",
+            "type": "feature",
+            "priority": "medium",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:notifications"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-052",
+            "title": "WelcomeNotification — wire to user account creation",
+            "description": "",
+            "type": "feature",
+            "priority": "medium",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:notifications"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-053",
+            "title": "Real Brevo SMS API (replace gateway-address-via-email workaround)",
+            "description": "",
+            "type": "feature",
+            "priority": "low",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:notifications"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-054",
+            "title": "User preference: email / SMS / push / all",
+            "description": "",
+            "type": "feature",
+            "priority": "medium",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:notifications"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-060",
+            "title": "Audit `#f9b104` orange usage; consolidate to CSS variables",
+            "description": "",
+            "type": "feature",
+            "priority": "medium",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:uiux-redesign-mobile"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-061",
+            "title": "Reusable button component library (`.btn-primary`, `.btn-secondary`, `.btn-danger`)",
+            "description": "",
+            "type": "feature",
+            "priority": "medium",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:uiux-redesign-mobile"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-062",
+            "title": "Mobile pass: test all views at 320 / 375 / 768 px",
+            "description": "",
+            "type": "feature",
+            "priority": "medium",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:uiux-redesign-mobile"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-063",
+            "title": "Sticky save buttons on mobile forms",
+            "description": "",
+            "type": "feature",
+            "priority": "medium",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:uiux-redesign-mobile"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-064",
+            "title": "Toast notification system (Alpine.js or library)",
+            "description": "",
+            "type": "feature",
+            "priority": "medium",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:uiux-redesign-mobile"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-065",
+            "title": "Improved 404/403 pages w/ branding",
+            "description": "",
+            "type": "feature",
+            "priority": "low",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:uiux-redesign-mobile"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-066",
+            "title": "PWA manifest (installable app)",
+            "description": "",
+            "type": "feature",
+            "priority": "low",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:uiux-redesign-mobile"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-070",
+            "title": "`QuickBooksExportController` + route",
+            "description": "",
+            "type": "feature",
+            "priority": "medium",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:quickbooks-csv-export"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-071",
+            "title": "Map invoice fields → QuickBooks CSV columns",
+            "description": "",
+            "type": "feature",
+            "priority": "medium",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:quickbooks-csv-export"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-072",
+            "title": "\"Export to CSV\" button on invoices index",
+            "description": "",
+            "type": "feature",
+            "priority": "medium",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:quickbooks-csv-export"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-073",
+            "title": "Date/currency formatting for QB import",
+            "description": "",
+            "type": "feature",
+            "priority": "medium",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:quickbooks-csv-export"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-080",
+            "title": "\"Restore\" buttons on all soft-deleted records",
+            "description": "",
+            "type": "feature",
+            "priority": "medium",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:safe-delete-restore"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-081",
+            "title": "\"Show Deleted\" filter on index views",
+            "description": "",
+            "type": "feature",
+            "priority": "medium",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:safe-delete-restore"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-082",
+            "title": "Confirm-before-delete modal for every destructive action",
+            "description": "",
+            "type": "feature",
+            "priority": "medium",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:safe-delete-restore"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-083",
+            "title": "\"Permanently Delete\" (admin-only) action",
+            "description": "",
+            "type": "feature",
+            "priority": "low",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:safe-delete-restore"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-090",
+            "title": "Move `LOG MEMO (INTERNAL)` field up into \"Driver and Vehicle\" section",
+            "description": "",
+            "type": "feature",
+            "priority": "medium",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:form-log-reorganization-dev-notes-carry-overs"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-091",
+            "title": "Surface & edit `JOB MEMO (EXTERNAL)` from log edit page (placed in Load Information section)",
+            "description": "",
+            "type": "feature",
+            "priority": "medium",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:form-log-reorganization-dev-notes-carry-overs"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-092",
+            "title": "Rename \"Mileage Stops\" → \"Job Details\" and add `JOB START TIME` / `JOB END TIME`",
+            "description": "",
+            "type": "feature",
+            "priority": "medium",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:form-log-reorganization-dev-notes-carry-overs"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-093",
+            "title": "Move `START DAY`/`END DAY` + `START MILEAGE`/`END MILEAGE` out of \"Mileage Stops\"",
+            "description": "",
+            "type": "feature",
+            "priority": "medium",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:form-log-reorganization-dev-notes-carry-overs"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-100",
+            "title": "Production MySQL setup + `.env.production`",
+            "description": "",
+            "type": "feature",
+            "priority": "blocker",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:production-deployment"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-101",
+            "title": "Queue worker setup (Windows Task Scheduler or supervisor)",
+            "description": "",
+            "type": "feature",
+            "priority": "blocker",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:production-deployment"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-102",
+            "title": "SSL certificate + domain",
+            "description": "",
+            "type": "feature",
+            "priority": "blocker",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:production-deployment"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-103",
+            "title": "Backup strategy + restore drill",
+            "description": "",
+            "type": "feature",
+            "priority": "high",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:production-deployment"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-104",
+            "title": "Data migration from Google Sheets (final export → import)",
+            "description": "",
+            "type": "feature",
+            "priority": "high",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:production-deployment"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-105",
+            "title": "User docs / training walkthrough",
+            "description": "",
+            "type": "feature",
+            "priority": "medium",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:production-deployment"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-110",
+            "title": "Build out Step 5 \"Preferences\" (currently a placeholder per `OnboardingWizard.php:70`)",
+            "description": "",
+            "type": "feature",
+            "priority": "low",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:onboarding-wizard"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-200",
+            "title": "`clock_in` / `clock_out` fields display & save on log edit",
+            "description": "DEV_NOTES Impl Summary #7-8\n\nedit a log, set both, reload",
+            "type": "verify",
+            "priority": "medium",
+            "status": "verifying",
+            "isPublic": false,
+            "labels": [],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-201",
+            "title": "Job log approval workflow (pending/confirmed/denied)",
+            "description": "CUSTOMER_INTERVIEW 1.1\n\nassign log, confirm as manager, deny as driver",
+            "type": "verify",
+            "priority": "medium",
+            "status": "verifying",
+            "isPublic": false,
+            "labels": [],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-202",
+            "title": "Wait time / trailer # / truck # / extra stops / `is_deadhead` all persist",
+            "description": "CUSTOMER_INTERVIEW 1.5–1.6\n\nedit a log, save, reload, inspect DB",
+            "type": "verify",
+            "priority": "medium",
+            "status": "verifying",
+            "isPublic": false,
+            "labels": [],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-203",
+            "title": "Jobs table sort: unpaid first, then `scheduled_pickup_at` asc",
+            "description": "CUSTOMER_INTERVIEW 3.1\n\nseed mixed-status jobs, view index",
+            "type": "verify",
+            "priority": "medium",
+            "status": "verifying",
+            "isPublic": false,
+            "labels": [],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-204",
+            "title": "Mobile layout on jobs index (`job_no`, `scheduled_pickup_at`, `load_no`, pickup_address)",
+            "description": "CUSTOMER_INTERVIEW 3.2\n\nview at 375px",
+            "type": "verify",
+            "priority": "medium",
+            "status": "verifying",
+            "isPublic": false,
+            "labels": [],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-205",
+            "title": "Order summary `summary_items` populated on multi-job invoices",
+            "description": "CUSTOMER_INTERVIEW 4.2\n\ncreate summary invoice w/ 2+ children",
+            "type": "verify",
+            "priority": "medium",
+            "status": "verifying",
+            "isPublic": false,
+            "labels": [],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-206",
+            "title": "Vehicle name normalization on import (Car 06 / Car 006 / Car 6 → same vehicle)",
+            "description": "CUSTOMER_INTERVIEW 5.3\n\nimport CSV with all 3 variants",
+            "type": "verify",
+            "priority": "medium",
+            "status": "verifying",
+            "isPublic": false,
+            "labels": [],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-207",
+            "title": "Auto-create invoices on import (checkbox in dashboard)",
+            "description": "CUSTOMER_INTERVIEW 5.2\n\nimport w/ checkbox on",
+            "type": "verify",
+            "priority": "medium",
+            "status": "verifying",
+            "isPublic": false,
+            "labels": [],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-208",
+            "title": "Pricing config overrides actually win over defaults",
+            "description": "DEV_NOTES Impl Summary #14\n\ncreate org-specific pricing setting, generate invoice",
+            "type": "verify",
+            "priority": "medium",
+            "status": "verifying",
+            "isPublic": false,
+            "labels": [],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-209",
+            "title": "Push notifications deliver end-to-end",
+            "description": "DEV_NOTES Impl Summary #9\n\nassign job to subscribed user, observe push",
+            "type": "verify",
+            "priority": "medium",
+            "status": "verifying",
+            "isPublic": false,
+            "labels": [],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-210",
+            "title": "Customer `/my/customers/{id}` access control hides Transaction Register for non-admin staff",
+            "description": "DEV_NOTES Impl Summary #10\n\nlog in as standard employee",
+            "type": "verify",
+            "priority": "medium",
+            "status": "verifying",
+            "isPublic": false,
+            "labels": [],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-211",
+            "title": "`Clear all invoices` super-user action on profile page",
+            "description": "DEV_NOTES Impl Summary #12\n\nrun as super user, confirm",
+            "type": "verify",
+            "priority": "medium",
+            "status": "verifying",
+            "isPublic": false,
+            "labels": [],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-212",
+            "title": "Vehicle maintenance: overdue / upcoming / history sections render correctly",
+            "description": "CUSTOMER_INTERVIEW 7.1\n\nseed mixed-date maintenance records",
+            "type": "verify",
+            "priority": "medium",
+            "status": "verifying",
+            "isPublic": false,
+            "labels": [],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-213",
+            "title": "`ManagePricing` UI exposes the full pricing matrix (rates, charges, cancellations, payment terms)",
+            "description": "`app/Livewire/ManagePricing.php` exists with `updateRate/Charge/Cancellation/PaymentTerms`\n\nopen as super-user, compare to `config/pricing.php`",
+            "type": "verify",
+            "priority": "medium",
+            "status": "verifying",
+            "isPublic": false,
+            "labels": [],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-301",
+            "title": "Remove or finish onboarding wizard \"Preferences coming soon\" copy (`resources/views/livewire/onboarding-wizard.blade.php:288`)",
+            "description": "",
+            "type": "debt",
+            "priority": "low",
+            "status": "open",
+            "isPublic": false,
+            "labels": [],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-302",
+            "title": "Clean up Brevo OAuth example code in email controller (per `.cursorrules` line 116)",
+            "description": "",
+            "type": "debt",
+            "priority": "low",
+            "status": "open",
+            "isPublic": false,
+            "labels": [],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-303",
+            "title": "Add eager loading where N+1 queries exist on jobs index",
+            "description": "",
+            "type": "debt",
+            "priority": "medium",
+            "status": "open",
+            "isPublic": false,
+            "labels": [],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-304",
+            "title": "Add DB index on `pilot_car_jobs.scheduled_pickup_at` (sort performance)",
+            "description": "",
+            "type": "debt",
+            "priority": "medium",
+            "status": "open",
+            "isPublic": false,
+            "labels": [],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-305",
+            "title": "Unit tests: `tests/Unit/InvoiceCalculationTest.php` (mini charge, deadhead, rate codes)",
+            "description": "",
+            "type": "debt",
+            "priority": "medium",
+            "status": "open",
+            "isPublic": false,
+            "labels": [],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-306",
+            "title": "Feature tests: multi-tenant isolation, permission boundaries",
+            "description": "",
+            "type": "debt",
+            "priority": "medium",
+            "status": "open",
+            "isPublic": false,
+            "labels": [],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-307",
+            "title": "Allow \"mini\" charge to stack onto flat-rate jobs (currently treated as alternatives)",
+            "description": "",
+            "type": "feature",
+            "priority": "medium",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:pricing-billing"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-308",
+            "title": "On job show page: compare flat-rate vs. mini billing and surface whichever is greater",
+            "description": "",
+            "type": "feature",
+            "priority": "medium",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:pricing-billing"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-309",
+            "title": "Display job miles (calculated + billable) more prominently on job show",
+            "description": "",
+            "type": "feature",
+            "priority": "medium",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:job-show-page-polish"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-310",
+            "title": "Surface job status badge prominently on jobs index + job show",
+            "description": "",
+            "type": "feature",
+            "priority": "high",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:job-status-lifecycle"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-311",
+            "title": "Fire events on status transitions (active→completed, →cancelled, →no-go) and notify assigned drivers",
+            "description": "",
+            "type": "feature",
+            "priority": "medium",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:job-status-lifecycle"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-312",
+            "title": "SMS text notification to drivers on status change (rides on TASK-053 real SMS, or existing gateway)",
+            "description": "",
+            "type": "feature",
+            "priority": "low",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:job-status-lifecycle"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-313",
+            "title": "`tel:` call-driver links on driver / customer-contact / truck-driver phone numbers (job show + log edit)",
+            "description": "",
+            "type": "feature",
+            "priority": "medium",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:job-show-page-polish"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-314",
+            "title": "Verify cancellation flat-rates (`cancellation_24hr`, `show_no_go`, `cancel_without_billing` per `PilotCarJob::determineCancellationType()`) actually flow into invoice generation",
+            "description": "",
+            "type": "feature",
+            "priority": "high",
+            "status": "open",
+            "isPublic": false,
+            "labels": [
+                "epic:pricing-billing"
+            ],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        },
+        {
+            "@type": "Task",
+            "code": "TASK-315",
+            "title": "Rewrite `README.md` — currently the generic Laravel boilerplate. Should describe Rupkeep specifically: what it does (pilot-car job tracking + invoicing), stack, local dev setup, link to TASKS.md / docs/ROADMAP.md",
+            "description": "",
+            "type": "debt",
+            "priority": "medium",
+            "status": "open",
+            "isPublic": false,
+            "labels": [],
+            "submitter": null,
+            "assignee": null,
+            "createdAt": "2026-05-26T13:29:06+00:00",
+            "updatedAt": "2026-05-26T13:29:06+00:00",
+            "comments": []
+        }
+    ],
+    "labels": [
+        {
+            "@type": "Label",
+            "name": "epic:customer-portal-one-time-login-codes",
+            "color": "#fb923c",
+            "description": null
+        },
+        {
+            "@type": "Label",
+            "name": "epic:form-log-reorganization-dev-notes-carry-overs",
+            "color": "#fb923c",
+            "description": null
+        },
+        {
+            "@type": "Label",
+            "name": "epic:job-show-page-polish",
+            "color": "#fb923c",
+            "description": null
+        },
+        {
+            "@type": "Label",
+            "name": "epic:job-status-lifecycle",
+            "color": "#fb923c",
+            "description": null
+        },
+        {
+            "@type": "Label",
+            "name": "epic:manager-dashboard",
+            "color": "#fb923c",
+            "description": null
+        },
+        {
+            "@type": "Label",
+            "name": "epic:notifications",
+            "color": "#fb923c",
+            "description": null
+        },
+        {
+            "@type": "Label",
+            "name": "epic:onboarding-wizard",
+            "color": "#fb923c",
+            "description": null
+        },
+        {
+            "@type": "Label",
+            "name": "epic:pdf-invoice-downloads-feature-flagged-currently-off",
+            "color": "#fb923c",
+            "description": null
+        },
+        {
+            "@type": "Label",
+            "name": "epic:pricing-billing",
+            "color": "#fb923c",
+            "description": null
+        },
+        {
+            "@type": "Label",
+            "name": "epic:production-deployment",
+            "color": "#fb923c",
+            "description": null
+        },
+        {
+            "@type": "Label",
+            "name": "epic:quickbooks-csv-export",
+            "color": "#fb923c",
+            "description": null
+        },
+        {
+            "@type": "Label",
+            "name": "epic:safe-delete-restore",
+            "color": "#fb923c",
+            "description": null
+        },
+        {
+            "@type": "Label",
+            "name": "epic:uiux-redesign-mobile",
+            "color": "#fb923c",
+            "description": null
+        },
+        {
+            "@type": "Label",
+            "name": "epic:vehicle-maintenance-ui",
+            "color": "#fb923c",
+            "description": null
+        },
+        {
+            "@type": "Label",
+            "name": "historical",
+            "color": "#94a3b8",
+            "description": null
+        }
+    ]
+}
