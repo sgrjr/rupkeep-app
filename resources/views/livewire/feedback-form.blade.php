@@ -37,9 +37,18 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
                                 </svg>
                             </div>
-                            <p class="text-sm font-semibold text-slate-900">{{ __('Thank you for your feedback!') }}</p>
-                            <p class="mt-1 text-xs text-slate-600">{{ __('We appreciate your input and will review it soon.') }}</p>
-                            <button type="button" wire:click="closeModal" 
+                            <p class="text-sm font-semibold text-slate-900">{{ __('Thanks — your request is tracked.') }}</p>
+                            @if($createdCode)
+                                <p class="mt-1 text-xs text-slate-600">{{ __('We are tracking this as') }}
+                                    <a href="{{ route('portal.tasks.show', $createdCode) }}" class="font-semibold text-orange-600 hover:text-orange-700">{{ $createdCode }}</a>.
+                                </p>
+                                <p class="mt-1 text-xs text-slate-500">{{ __('You can follow progress in') }}
+                                    <a href="{{ route('portal.tasks.index') }}" class="font-semibold text-orange-600 hover:text-orange-700">{{ __('My Requests') }}</a>.
+                                </p>
+                            @else
+                                <p class="mt-1 text-xs text-slate-600">{{ __('We appreciate your input and will review it soon.') }}</p>
+                            @endif
+                            <button type="button" wire:click="closeModal"
                                     @click="$dispatch('feedback-submitted')"
                                     class="mt-4 inline-flex items-center gap-2 rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-600">
                                 {{ __('Close') }}
@@ -94,8 +103,17 @@
                         <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
                     </svg>
                 </div>
-                <p class="text-sm font-semibold text-slate-900">{{ __('Thank you for your feedback!') }}</p>
-                <p class="mt-1 text-xs text-slate-600">{{ __('We appreciate your input and will review it soon.') }}</p>
+                <p class="text-sm font-semibold text-slate-900">{{ __('Thanks — your request is tracked.') }}</p>
+                @if($createdCode)
+                    <p class="mt-1 text-xs text-slate-600">{{ __('We are tracking this as') }}
+                        <a href="{{ route('portal.tasks.show', $createdCode) }}" class="font-semibold text-orange-600 hover:text-orange-700">{{ $createdCode }}</a>.
+                    </p>
+                    <p class="mt-1 text-xs text-slate-500">{{ __('You can follow progress in') }}
+                        <a href="{{ route('portal.tasks.index') }}" class="font-semibold text-orange-600 hover:text-orange-700">{{ __('My Requests') }}</a>.
+                    </p>
+                @else
+                    <p class="mt-1 text-xs text-slate-600">{{ __('We appreciate your input and will review it soon.') }}</p>
+                @endif
             </div>
         @else
             <form wire:submit="submit" class="space-y-4">
@@ -140,8 +158,17 @@
             <h3 class="mb-4 text-lg font-semibold text-slate-900">{{ __('Send Feedback') }}</h3>
             
             @if($submitted)
-                <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
-                    {{ __('Thank you for your feedback! We appreciate your input.') }}
+                <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                    @if($createdCode)
+                        <p class="font-semibold">{{ __('Thanks — your request is tracked as') }}
+                            <a href="{{ route('portal.tasks.show', $createdCode) }}" class="underline hover:no-underline">{{ $createdCode }}</a>.
+                        </p>
+                        <p class="mt-1 text-xs">{{ __('Follow progress in') }}
+                            <a href="{{ route('portal.tasks.index') }}" class="font-semibold underline hover:no-underline">{{ __('My Requests') }}</a>.
+                        </p>
+                    @else
+                        <p class="font-semibold">{{ __('Thank you for your feedback! We appreciate your input.') }}</p>
+                    @endif
                 </div>
             @else
                 <form wire:submit="submit" class="space-y-4">

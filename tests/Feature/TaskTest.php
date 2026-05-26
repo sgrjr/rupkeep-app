@@ -116,35 +116,85 @@ class TaskTest extends TestCase
         $this->assertSame('open', $task->fresh()->status, 'Customer must not be able to change status');
     }
 
-    /* -------------------- Promote from feedback -------------------- */
+    /* -------------------- Feedback IS a task (no promote step) -------------------- */
 
-    public function test_promote_from_feedback_creates_task_with_provenance(): void
+    public function test_feedback_form_creates_task_directly(): void
     {
-        // is_super is an accessor that returns true when name == 'Reynolds Upkeep'
-        $superOrg = Organization::factory()->create(['name' => 'Reynolds Upkeep']);
-        $super = User::factory()->admin()->create(['organization_id' => $superOrg->id]);
-        $submitter = User::factory()->create();
+        $org = Organization::factory()->create();
+        $submitter = User::factory()->admin()->forOrganization($org)->create();
+
+        Livewire::actingAs($submitter)
+            ->test(\App\Livewire\FeedbackForm::class, ['hideTrigger' => true])
+            ->set('feedback', 'Please add bulk export to QuickBooks')
+            ->set('severity', 'info')
+            ->call('submit')
+            ->assertHasNoErrors()
+            ->assertSet('submitted', true);
+
+        $task = \App\Models\Task::where('description', 'Please add bulk export to QuickBooks')->first();
+        $this->assertNotNull($task, 'A task should be created from the feedback submission.');
+        $this->assertSame('triage', $task->status);
+        $this->assertSame('feature', $task->type);
+        $this->assertSame($submitter->id, $task->submitter_user_id);
+        $this->assertSame($org->id, $task->organization_id);
+        $this->assertFalse((bool) $task->is_public);
+        $this->assertTrue($task->labels->contains('name', 'source:feedback'),
+            'Feedback-sourced tasks should carry the source:feedback label.');
+    }
+
+    public function test_feedback_with_error_severity_creates_bug_typed_task(): void
+    {
+        $org = Organization::factory()->create();
+        $submitter = User::factory()->admin()->forOrganization($org)->create();
+
+        Livewire::actingAs($submitter)
+            ->test(\App\Livewire\FeedbackForm::class, ['hideTrigger' => true])
+            ->set('feedback', 'Invoice 1023 print is broken')
+            ->set('severity', 'error')
+            ->call('submit');
+
+        $task = \App\Models\Task::where('description', 'Invoice 1023 print is broken')->first();
+        $this->assertNotNull($task);
+        $this->assertSame('bug', $task->type);
+    }
+
+    public function test_admin_feedback_url_redirects_to_triage_filter(): void
+    {
+        $org = Organization::factory()->create(['name' => 'Reynolds Upkeep']);
+        $super = User::factory()->admin()->create(['organization_id' => $org->id]);
+
+        $this->actingAs($super)
+            ->get(route('admin.feedback.index'))
+            ->assertRedirect(route('tasks.index', [
+                'statusFilter' => 'triage',
+                'labelFilter' => 'source:feedback',
+            ]));
+    }
+
+    public function test_backfill_command_converts_legacy_feedback_events_to_tasks(): void
+    {
+        $org = Organization::factory()->create();
+        $submitter = User::factory()->forOrganization($org)->create();
 
         $event = UserEvent::create([
             'user_id' => $submitter->id,
             'url' => '/somewhere',
             'type' => UserEvent::TYPE_FEEDBACK,
             'severity' => 'info',
-            'context' => ['feedback' => 'Please add bulk export to QuickBooks'],
+            'context' => ['feedback' => 'Legacy submission'],
             'ip' => '127.0.0.1',
         ]);
 
-        $this->actingAs($super)
-            ->post(route('tasks.promote', $event))
-            ->assertRedirect();
+        $this->artisan('dispatch:backfill-feedback')->assertSuccessful();
 
-        $task = $event->refresh()->promotedTask;
+        $task = \App\Models\Task::where('promoted_from_user_event_id', $event->id)->first();
         $this->assertNotNull($task);
-        $this->assertSame($event->id, $task->promoted_from_user_event_id);
         $this->assertSame('triage', $task->status);
-        $this->assertSame($submitter->id, $task->submitter_user_id);
+        $this->assertTrue($task->labels->contains('name', 'source:feedback'));
 
-        $this->assertTrue($task->comments()->where('event_type', TaskComment::EVENT_PROMOTED)->exists());
+        // Idempotent: second run skips it.
+        $this->artisan('dispatch:backfill-feedback')->assertSuccessful();
+        $this->assertSame(1, \App\Models\Task::where('promoted_from_user_event_id', $event->id)->count());
     }
 
     /* -------------------- Send Customer Update -------------------- */

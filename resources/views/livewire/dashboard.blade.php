@@ -221,21 +221,23 @@
                             </div>
                     @endif
 
-                    @if($card->title === 'Feedback' && $recentFeedback && $recentFeedback->count() > 0)
+                    @if($card->title === 'Triage Queue' && $recentFeedback && $recentFeedback->count() > 0)
                         <div class="space-y-3">
                             <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">{{ __('Recent Submissions') }}</p>
                             <div class="space-y-2 max-h-48 overflow-y-auto pr-1">
-                                @foreach($recentFeedback as $feedback)
-                                    <div class="rounded-xl border border-slate-100 bg-white px-3 py-2 shadow-sm">
+                                @foreach($recentFeedback as $task)
+                                    <a href="{{ route('tasks.show', $task) }}" class="block rounded-xl border border-slate-100 bg-white px-3 py-2 shadow-sm transition hover:border-orange-300 hover:bg-orange-50/40">
                                         <div class="flex items-center justify-between gap-2 mb-1">
-                                            <span class="text-xs font-semibold text-slate-800 truncate">{{ $feedback->user?->name ?? __('Anonymous') }}</span>
-                                            <span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide shrink-0 {{ $feedback->severity === 'error' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700' }}">
-                                                {{ ucfirst($feedback->severity) }}
+                                            <span class="text-xs font-semibold text-orange-600">{{ $task->code }}</span>
+                                            <span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide shrink-0 {{ $task->type === 'bug' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700' }}">
+                                                {{ $task->type }}
                                             </span>
                                         </div>
-                                        <p class="text-xs text-slate-600 line-clamp-2 mt-1">{{ $feedback->context['feedback'] ?? __('No feedback text') }}</p>
-                                        <span class="text-[10px] text-slate-400 mt-1 block">{{ $feedback->created_at->diffForHumans() }}</span>
-                                    </div>
+                                        <p class="text-xs text-slate-700 line-clamp-2 mt-1">{{ $task->title }}</p>
+                                        <span class="text-[10px] text-slate-400 mt-1 block">
+                                            {{ $task->submitter?->name ?? __('Anonymous') }} · {{ $task->created_at->diffForHumans() }}
+                                        </span>
+                                    </a>
                                 @endforeach
                             </div>
                         </div>

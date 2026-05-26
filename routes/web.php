@@ -69,14 +69,19 @@ Route::middleware([
     Route::post('/user-events/prune', [UserEventController::class, 'prune'])->name('user-events.prune');
     Route::post('/user-events/clear-all', [UserEventController::class, 'clearAll'])->name('user-events.clear-all');
     
-    // Feedback submissions (super users only)
-    Route::get('/admin/feedback', [UserEventController::class, 'feedback'])->name('admin.feedback.index');
+    // Legacy /admin/feedback URL — feedback submissions are now tasks in triage status.
+    // Keep the redirect so old bookmarks land in the right place.
+    Route::get('/admin/feedback', function () {
+        return redirect()->route('tasks.index', [
+            'statusFilter' => 'triage',
+            'labelFilter' => 'source:feedback',
+        ]);
+    })->name('admin.feedback.index');
 
-    // Tasks (DB-backed orchestration tracker — replaces TASKS.md)
-    Route::get ('/admin/tasks',                       [TaskController::class, 'index'])->name('tasks.index');
-    Route::get ('/admin/tasks/board',                 [TaskController::class, 'board'])->name('tasks.board');
-    Route::get ('/admin/tasks/{task:code}',           [TaskController::class, 'show'])->name('tasks.show');
-    Route::post('/admin/tasks/promote/{userEvent}',   [TaskController::class, 'promoteFromFeedback'])->name('tasks.promote');
+    // Dispatch — DB-backed orchestration tracker (replaces TASKS.md)
+    Route::get('/admin/tasks',                  [TaskController::class, 'index'])->name('tasks.index');
+    Route::get('/admin/tasks/board',            [TaskController::class, 'board'])->name('tasks.board');
+    Route::get('/admin/tasks/{task:code}',      [TaskController::class, 'show'])->name('tasks.show');
 
     Route::get('/organizations', OrganizationsIndex::class)->name('organizations.index');
     Route::get('/organizations/create', OrganizationCreate::class)->name('organizations.create');

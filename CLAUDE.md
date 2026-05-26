@@ -20,9 +20,10 @@ All open work (feature requests, bug reports, tech debt, verification, customer-
 | Dev list view | `/admin/tasks` |
 | Dev kanban board | `/admin/tasks/board` |
 | Individual task | `/admin/tasks/{TASK-###}` |
+| Triage queue (where new submissions land) | `/admin/tasks?statusFilter=triage` |
 | Customer-facing list | `/portal/tasks` |
 | Public roadmap | `/documentation/roadmap` (only `is_public=true` tasks) |
-| Feedback inbox | `/admin/feedback` (super-only; "Promote to Task" button per row) |
+| Customer feedback intake | The `<livewire:feedback-form>` modal (footer + dedicated `/feedback` page). Submissions create a **task** in `triage` status with label `source:feedback`. There is no separate feedback inbox anymore. |
 | File-side bridge | `docs/tasks.jsonld` — read/written by `dispatch:pull`/`push` and `tasks:export`/`import`. NOT the source of truth. |
 | Schema doc | [`docs/TASKS_SCHEMA.md`](docs/TASKS_SCHEMA.md) |
 
@@ -49,6 +50,7 @@ For more breadth:
 ```bash
 php artisan dispatch:queue --n=10
 php artisan dispatch:queue --priority=high --type=bug
+php artisan dispatch:queue --status=triage --label=source:feedback   # new customer submissions
 ```
 
 ### While you work
@@ -79,6 +81,20 @@ php artisan dispatch:push        # local DB → production
 ```
 
 This re-exports the local DB to `docs/tasks.jsonld` and POSTs it to the production `apply` endpoint. **Run this once you're done** — until you push, the customer sees the previous state.
+
+## Where customer feedback lands
+
+Submissions through `<livewire:feedback-form>` create a `Task` directly:
+
+- `status` = `triage`
+- `type` = `bug` (if severity=error) or `feature` (if severity=info)
+- `is_public` = false (dev decides what to expose)
+- `submitter_user_id` = the submitting user
+- `label` = `source:feedback` (auto-attached so you can filter the queue)
+
+The customer immediately sees their submission at `/portal/tasks/{code}` and the success message shows the task code. There is no longer a "promote" step.
+
+**Historical data**: legacy `user_events` rows with `type='feedback'` (from before this integration) are converted with `php artisan dispatch:backfill-feedback`. Idempotent — safe to re-run.
 
 ## Sync setup (one-time, for new dev environments)
 

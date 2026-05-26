@@ -157,17 +157,17 @@ class Dashboard extends Component
                ['url'=> route('user-events.index'), 'title'=>'View Events'],
            ]];
            
-           // Recent feedback for super users
-           $recentFeedback = \App\Models\UserEvent::where('type', \App\Models\UserEvent::TYPE_FEEDBACK)
-               ->with('user')
+           // Dispatch triage queue (feedback submissions land here as tasks)
+           $recentFeedback = \App\Models\Task::with('submitter')
+               ->where('status', 'triage')
                ->orderBy('created_at', 'desc')
                ->take(5)
                ->get();
-           $totalFeedback = \App\Models\UserEvent::where('type', \App\Models\UserEvent::TYPE_FEEDBACK)->count();
-           
-           // Add Feedback card for super users
-           $cards[] = (Object)['title'=>'Feedback', 'count'=> $totalFeedback, 'links'=> [
-               ['url'=> route('admin.feedback.index'), 'title'=>'View All'],
+           $totalFeedback = \App\Models\Task::where('status', 'triage')->count();
+
+           $cards[] = (Object)['title'=>'Triage Queue', 'count'=> $totalFeedback, 'links'=> [
+               ['url'=> route('tasks.index', ['statusFilter' => 'triage']), 'title'=>'View Triage'],
+               ['url'=> route('tasks.index', ['statusFilter' => 'triage', 'labelFilter' => 'source:feedback']), 'title'=>'From Feedback'],
            ]];
        } else {
            $recentFeedback = collect();

@@ -75,32 +75,10 @@ class UserEventController extends Controller
         return view('user-events.show', compact('userEvent'));
     }
 
-    /**
-     * Display a listing of feedback submissions.
-     */
-    public function feedback(Request $request)
-    {
-        // Only super users can view feedback
-        if (! Auth::user()->is_super) {
-            abort(403);
-        }
-
-        $feedback = UserEvent::with(['user', 'promotedTask'])
-            ->where('type', UserEvent::TYPE_FEEDBACK)
-            ->orderBy('created_at', 'desc')
-            ->paginate(20);
-
-        // Calculate stats
-        $totalFeedback = UserEvent::where('type', UserEvent::TYPE_FEEDBACK)->count();
-        $infoFeedback = UserEvent::where('type', UserEvent::TYPE_FEEDBACK)
-            ->where('severity', UserEvent::SEVERITY_INFO)
-            ->count();
-        $errorFeedback = UserEvent::where('type', UserEvent::TYPE_FEEDBACK)
-            ->where('severity', UserEvent::SEVERITY_ERROR)
-            ->count();
-
-        return view('admin.feedback.index', compact('feedback', 'totalFeedback', 'infoFeedback', 'errorFeedback'));
-    }
+    // feedback() was removed when feedback submissions became Dispatch tasks
+    // directly. /admin/feedback now redirects to /admin/tasks?statusFilter=triage
+    // &labelFilter=source:feedback (see routes/web.php). Historical user_events
+    // rows with type='feedback' are backfilled by `dispatch:backfill-feedback`.
 
     /**
      * Get daily event counts, cached for 24 hours.

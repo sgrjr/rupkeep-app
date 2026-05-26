@@ -29,6 +29,13 @@ class UserEvent extends Model
     public const TYPE_WARNING = 'warning';
     public const TYPE_INFO = 'info';
     public const TYPE_ACTION = 'action';
+
+    /**
+     * @deprecated Feedback submissions now create Dispatch tasks directly via
+     * App\Livewire\FeedbackForm — no new rows of this type are written. The
+     * constant is retained so historical rows (and the
+     * `dispatch:backfill-feedback` command) can still be queried.
+     */
     public const TYPE_FEEDBACK = 'feedback';
 
     public function user(): BelongsTo
