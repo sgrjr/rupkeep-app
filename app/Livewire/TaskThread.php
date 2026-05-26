@@ -67,8 +67,12 @@ class TaskThread extends Component
             return; // never email internal comments
         }
 
-        // TASK-WIRE-NOTIFY: this is where Phase 12 will dispatch the TaskUpdate notification.
-        // For now we just mark the comment as sent so the UI badge appears immediately.
+        // Email the submitter (if any) via the standard Laravel Notification pipeline.
+        $submitter = $this->task->submitter;
+        if ($submitter && $submitter->email) {
+            $submitter->notify(new \App\Notifications\TaskUpdate($this->task, $comment));
+        }
+
         $comment->update(['sent_to_customer' => true]);
 
         $this->dispatch('commentAdded');

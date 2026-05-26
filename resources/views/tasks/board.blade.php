@@ -1,21 +1,20 @@
 <x-app-layout>
     <x-slot name="header">
-        <div>
-            <h2 class="text-xl font-bold tracking-tight text-slate-900">{{ __('Task Board') }}</h2>
-            <p class="text-xs text-slate-500">{{ __('Kanban view — coming soon in Phase 10.') }}</p>
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+                <h2 class="text-xl font-bold tracking-tight text-slate-900">{{ __('Task Board') }}</h2>
+                <p class="text-xs text-slate-500">{{ __('Drag cards between columns to update status.') }}</p>
+            </div>
+            <a href="{{ route('tasks.index') }}" class="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50">
+                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M3 14h18M3 18h18M3 6h18"/></svg>
+                {{ __('List view') }}
+            </a>
         </div>
     </x-slot>
 
     <div class="py-6">
-        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div class="rounded-3xl border border-dashed border-slate-300 bg-white/60 p-12 text-center text-sm text-slate-500">
-                {{ __('Drag-and-drop kanban board will live here.') }}
-                <div class="mt-4">
-                    <a href="{{ route('tasks.index') }}" class="inline-flex items-center gap-1.5 rounded-full bg-orange-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-orange-600">
-                        {{ __('Back to list') }}
-                    </a>
-                </div>
-            </div>
+        <div class="mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8">
+            <livewire:task-board />
         </div>
     </div>
 </x-app-layout>

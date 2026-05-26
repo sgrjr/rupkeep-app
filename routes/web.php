@@ -147,6 +147,7 @@ Route::middleware([
     })->name('feedback.index');
     
     Route::get('/documentation', [\App\Http\Controllers\DocumentationController::class, 'index'])->name('documentation.index');
+    Route::get('/documentation/roadmap', [\App\Http\Controllers\DocumentationController::class, 'roadmap'])->name('documentation.roadmap');
     Route::get('/documentation/{document}', [\App\Http\Controllers\DocumentationController::class, 'show'])->name('documentation.show');
     Route::get('jobs/{job}', ShowPilotCarJob::class)->name('jobs.show');
     Route::get('jobs', [JobsController::class, 'index'])->name('jobs.index');
