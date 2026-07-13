@@ -26,36 +26,40 @@ return [
 
     'rates' => [
         // Per mile rates
+        // NOTE: keep dollar amounts OUT of description strings — the amounts
+        // render dynamically from rate_per_mile/flat_amount (which orgs can
+        // override via /my/pricing), so a price baked into a description goes
+        // stale as soon as the org changes the rate.
         'lead_chase_per_mile' => [
             'name' => 'Lead / Chase',
-            'description' => '$2.00 per mile',
+            'description' => '',
             'rate_per_mile' => 2.00,
             'type' => 'per_mile',
         ],
         'lead_chase_over_18_wide' => [
             'name' => 'Lead / Chase (Over 18\' Wide)',
-            'description' => '$2.10 per mile',
-            'rate_per_mile' => 2.10,
+            'description' => '',
+            'rate_per_mile' => 2.25,
             'type' => 'per_mile',
         ],
-        
+
         // Flat rates
         'mini_flat_rate' => [
             'name' => 'Mini-Run',
-            'description' => '$350.00 (125 miles or less)',
+            'description' => '',
             'flat_amount' => 350.00,
             'max_miles' => 125,
             'type' => 'flat',
         ],
         'show_no_go' => [
             'name' => 'Show But No-Go',
-            'description' => '$225.00 (Lead or Chase)',
+            'description' => 'Lead or Chase',
             'flat_amount' => 225.00,
             'type' => 'flat',
         ],
         'cancellation_24hr' => [
             'name' => 'Cancellation (Within 24hrs)',
-            'description' => '$150.00',
+            'description' => '',
             'flat_amount' => 150.00,
             'type' => 'flat',
         ],
@@ -82,8 +86,8 @@ return [
 
     'charges' => [
         'wait_time' => [
-            'name' => 'Wait Time',
-            'rate_per_hour' => 25.00,
+            'name' => 'Wait Time / Over 8 Hr.',
+            'rate_per_hour' => 30.00,
             'minimum_hours' => 1, // Charged after first hour
         ],
         'extra_stop' => [
@@ -92,14 +96,19 @@ return [
         ],
         'tolls' => [
             'name' => 'Tolls',
-            'description' => 'Full reimbursement of tolls while escorting the oversized load',
+            'description' => 'FULL TOLL REIMBURSEMENT',
             'type' => 'reimbursement', // Full amount, no markup
         ],
         'dead_head' => [
             'name' => 'Dead Head Miles',
-            'description' => '$1.00 per mile, first 100 miles free (to pickup location only)',
+            'description' => 'To the pickup location only',
             'rate_per_mile' => 1.00,
-            'free_miles' => 100,
+            'free_miles' => 75,
+        ],
+        'overnight_hotel' => [
+            'name' => 'Overnight / Hotel',
+            'description' => 'If an overnight stay is required, actual hotel expenses will be billed. Fixed lodging stipends or per diem rates are not accepted.',
+            'type' => 'reimbursement', // Actual expenses, no markup
         ],
     ],
 

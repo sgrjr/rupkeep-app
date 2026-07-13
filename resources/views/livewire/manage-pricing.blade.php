@@ -133,7 +133,7 @@
             <section class="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm">
                 <header class="mb-6">
                     <h2 class="text-lg font-semibold text-slate-900">{{ __('Additional Charges') }}</h2>
-                    <p class="text-xs text-slate-500">{{ __('Configure charges for wait time, extra stops, tolls, and deadhead miles.') }}</p>
+                    <p class="text-xs text-slate-500">{{ __('Configure charges for wait time, extra stops, tolls, deadhead miles, and overnight/hotel.') }}</p>
                 </header>
 
                 <div class="space-y-6">
