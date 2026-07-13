@@ -56,6 +56,12 @@
                     <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Contacts') }}</p>
                     <h2 class="mt-1 text-lg font-semibold text-slate-900">{{ trans_choice(':count contact|:count contacts', $customer->contacts->count()) }}</h2>
                 </header>
+                @if(session('status'))
+                    <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700">{{ session('status') }}</div>
+                @endif
+                @error('email')
+                    <div class="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700">{{ $message }}</div>
+                @enderror
                 <div class="space-y-3 max-h-[350px] overflow-y-auto">
                     @forelse($customer->contacts as $contact)
                         <div class="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
@@ -88,6 +94,19 @@
                             </p>
                             @if($contact->memo)
                                 <p class="text-xs text-slate-400">{{ $contact->memo }}</p>
+                            @endif
+                            @if($contact->email)
+                                @can('update', $customer)
+                                    <form action="{{ route('my.customers.invite', ['customer' => $customer->id]) }}" method="POST" class="mt-2">
+                                        @csrf
+                                        <input type="hidden" name="email" value="{{ $contact->email }}">
+                                        <input type="hidden" name="name" value="{{ $contact->name }}">
+                                        <button type="submit" class="inline-flex items-center gap-1 rounded-full border border-orange-200 bg-white px-3 py-1 text-[11px] font-semibold text-orange-600 transition hover:border-orange-300 hover:bg-orange-50">
+                                            <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                                            {{ __('Invite to portal') }}
+                                        </button>
+                                    </form>
+                                @endcan
                             @endif
                         </div>
                     @empty

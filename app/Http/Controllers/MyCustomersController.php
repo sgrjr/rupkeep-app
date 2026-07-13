@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Actions\InviteCustomerUser;
 use App\Models\Customer;
 use App\Models\CustomerContact;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -159,5 +160,23 @@ class MyCustomersController extends Controller
         }
 
         return back();
+    }
+
+    public function invite(Request $request, int $customer, InviteCustomerUser $inviter){
+        $customer = Customer::where('organization_id', auth()->user()->organization_id)
+            ->findOrFail($customer);
+
+        $this->authorize('update', $customer);
+
+        $data = $request->validate([
+            'email' => ['required', 'string', 'email', 'max:255'],
+            'name' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $result = $inviter->invite($customer, $data['email'], $data['name'] ?? null);
+
+        return back()->with('status', $result['created']
+            ? __('Invitation sent to :email — a portal account was created.', ['email' => $result['user']->email])
+            : __('Re-sent portal sign-in instructions to :email.', ['email' => $result['user']->email]));
     }
 }

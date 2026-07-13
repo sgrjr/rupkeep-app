@@ -112,6 +112,7 @@ Route::middleware([
     Route::get('/my/customers/create', [MyCustomersController::class, 'create'])->name('my.customers.create');
     Route::post('/my/customers', [MyCustomersController::class, 'store'])->name('my.customers.store');
     Route::get('/my/customers/{customer}', [MyCustomersController::class, 'show'])->name('my.customers.show');
+    Route::post('/my/customers/{customer}/invite', [MyCustomersController::class, 'invite'])->name('my.customers.invite');
     Route::get('/my/customers/{customer}/edit', [MyCustomersController::class, 'edit'])->name('my.customers.edit');
     Route::put('/my/customers/{customer}', [MyCustomersController::class, 'update'])->name('my.customers.update');
     Route::delete('/my/customers/{customer}', [MyCustomersController::class, 'destroy'])->name('my.customers.destroy');
