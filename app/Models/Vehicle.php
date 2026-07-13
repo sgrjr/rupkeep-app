@@ -33,6 +33,7 @@ class Vehicle extends Model
         'current_assignment_started_at',
         'current_assignment_notes',
         'is_in_service',
+        'is_in_garage',
         'deleted_at',
     ];
 
@@ -44,6 +45,7 @@ class Vehicle extends Model
         'next_inspection_due_at' => 'date',
         'current_assignment_started_at' => 'datetime',
         'is_in_service' => 'boolean',
+        'is_in_garage' => 'boolean',
     ];
 
     public function organization(): BelongsTo

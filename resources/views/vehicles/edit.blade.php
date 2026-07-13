@@ -13,6 +13,10 @@
                             <span class="h-2 w-2 rounded-full {{ $vehicle->is_in_service ? 'bg-lime-300 animate-pulse' : 'bg-white/40' }}"></span>
                             {{ $vehicle->is_in_service ? __('In Service') : __('Out of Service') }}
                         </span>
+                        <span class="inline-flex items-center gap-1 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold uppercase tracking-wide {{ $vehicle->is_in_garage ? 'text-white' : 'text-white/80' }}">
+                            <span class="h-2 w-2 rounded-full {{ $vehicle->is_in_garage ? 'bg-sky-300' : 'bg-white/40' }}"></span>
+                            {{ $vehicle->is_in_garage ? __('In Garage') : __('Out on Job') }}
+                        </span>
                         @if($vehicle->currentAssignment)
                             <span class="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">
                                 <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 19.5l15-15M9.75 9.75L7.5 12l2.25 2.25M14.25 9.75L16.5 12l-2.25 2.25"/></svg>
@@ -209,6 +213,11 @@
                         <div class="mt-6 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
                             <input id="is_in_service" name="is_in_service" type="checkbox" value="1" class="h-4 w-4 rounded border-slate-300 text-orange-500 focus:ring-orange-400" {{ old('is_in_service', $vehicle->is_in_service) ? 'checked' : '' }}>
                             <label for="is_in_service" class="text-sm font-semibold text-slate-700">{{ __('Vehicle is currently in service') }}</label>
+                        </div>
+
+                        <div class="mt-3 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                            <input id="is_in_garage" name="is_in_garage" type="checkbox" value="1" class="h-4 w-4 rounded border-slate-300 text-orange-500 focus:ring-orange-400" {{ old('is_in_garage', $vehicle->is_in_garage) ? 'checked' : '' }}>
+                            <label for="is_in_garage" class="text-sm font-semibold text-slate-700">{{ __('Vehicle is currently in the garage') }}</label>
                         </div>
                     </section>
 

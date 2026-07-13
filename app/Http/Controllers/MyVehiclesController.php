@@ -104,6 +104,7 @@ class MyVehiclesController extends Controller
             'current_assignment_started_at' => ['nullable', 'date'],
             'current_assignment_notes' => ['nullable', 'string', 'max:2000'],
             'is_in_service' => ['sometimes', 'boolean'],
+            'is_in_garage' => ['sometimes', 'boolean'],
         ]);
 
         if (! empty($data['current_user_id'])) {
@@ -123,6 +124,10 @@ class MyVehiclesController extends Controller
 
         if (! array_key_exists('is_in_service', $data)) {
             $data['is_in_service'] = $request->boolean('is_in_service');
+        }
+
+        if (! array_key_exists('is_in_garage', $data)) {
+            $data['is_in_garage'] = $request->boolean('is_in_garage');
         }
 
         $vehicle->update($data);

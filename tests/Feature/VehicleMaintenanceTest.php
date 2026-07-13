@@ -62,6 +62,47 @@ class VehicleMaintenanceTest extends TestCase
         $this->assertFalse($vehicle->is_in_service);
     }
 
+    public function test_new_vehicle_defaults_to_in_garage(): void
+    {
+        $organization = Organization::factory()->create();
+
+        $vehicle = Vehicle::factory()->create([
+            'organization_id' => $organization->id,
+        ]);
+
+        $this->assertTrue($vehicle->fresh()->is_in_garage,
+            'A newly created vehicle should default to being in the garage.');
+    }
+
+    public function test_manager_can_toggle_vehicle_in_garage_flag(): void
+    {
+        $organization = Organization::factory()->create();
+        $manager = User::factory()->manager()->create([
+            'organization_id' => $organization->id,
+        ]);
+        $vehicle = Vehicle::factory()->create([
+            'organization_id' => $organization->id,
+            'name' => 'Escort 202',
+            'is_in_garage' => true,
+        ]);
+
+        // Omitting the checkbox (as an unchecked HTML checkbox does) marks it out on a job.
+        $this->actingAs($manager)->put(route('my.vehicles.update', $vehicle), [
+            'name' => 'Escort 202',
+        ])->assertRedirect(route('my.vehicles.edit', $vehicle));
+
+        $this->assertFalse($vehicle->fresh()->is_in_garage,
+            'An unchecked in-garage checkbox should set the vehicle out on a job.');
+
+        // Checking it again brings it back to the garage.
+        $this->actingAs($manager)->put(route('my.vehicles.update', $vehicle), [
+            'name' => 'Escort 202',
+            'is_in_garage' => '1',
+        ])->assertRedirect(route('my.vehicles.edit', $vehicle));
+
+        $this->assertTrue($vehicle->fresh()->is_in_garage);
+    }
+
     public function test_manager_can_log_vehicle_maintenance_record(): void
     {
         $organization = Organization::factory()->create();

@@ -105,9 +105,14 @@
                                         @endif
                                     </p>
                                 </div>
-                                <span class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wide {{ $vehicle->is_in_service ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700' }}">
-                                    {{ $vehicle->is_in_service ? __('In service') : __('Out of service') }}
-                                </span>
+                                <div class="flex flex-col items-end gap-1">
+                                    <span class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wide {{ $vehicle->is_in_service ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700' }}">
+                                        {{ $vehicle->is_in_service ? __('In service') : __('Out of service') }}
+                                    </span>
+                                    <span class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wide {{ $vehicle->is_in_garage ? 'bg-sky-100 text-sky-700' : 'bg-amber-100 text-amber-700' }}">
+                                        {{ $vehicle->is_in_garage ? __('In garage') : __('Out on job') }}
+                                    </span>
+                                </div>
                             </div>
 
                             <div class="space-y-1 text-sm text-slate-600">
