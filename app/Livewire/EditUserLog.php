@@ -307,6 +307,11 @@ class EditUserLog extends Component
             $updateData['is_deadhead'] = $this->form->is_deadhead ? 1 : 0;
             $updateData['pretrip_check'] = $this->form->pretrip_check ? 1 : 0;
 
+            // extra_load_stops_count is a NOT NULL integer (default 0); an empty
+            // field arrives as null and would fail the constraint, silently
+            // aborting the whole save (TASK-318). A missing count means zero.
+            $updateData['extra_load_stops_count'] = (int) ($this->form->extra_load_stops_count ?? 0);
+
             if (array_key_exists('billable_miles', $updateData)) {
                 $updateData['billable_miles'] = $this->normalizeMiles($updateData['billable_miles']);
             }
@@ -319,6 +324,12 @@ class EditUserLog extends Component
             session()->flash('error', 'Please correct the validation errors below.');
             throw $e;
         } catch (\Exception $e) {
+            // Never swallow a save failure silently — that hid TASK-318 for a
+            // long time. Log it so the failure is diagnosable, then surface it.
+            \Log::error('EditUserLog: log save failed', [
+                'log_id' => $this->log->id ?? null,
+                'error' => $e->getMessage(),
+            ]);
             session()->flash('error', 'An unexpected error occurred while saving: ' . $e->getMessage());
         }
     }
