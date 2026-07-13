@@ -47,6 +47,14 @@
                 {{ __('Already have a code? Enter it here.') }}
             </a>
         </div>
+
+        @if(Route::has('password.request'))
+            <div class="mt-2 text-center text-sm">
+                <a class="underline text-gray-600 hover:text-gray-900" href="{{ route('password.request') }}">
+                    {{ __('Prefer a password? Set or reset one by email.') }}
+                </a>
+            </div>
+        @endif
     </x-authentication-card>
 </x-guest-layout>
 

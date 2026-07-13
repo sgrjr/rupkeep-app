@@ -26,6 +26,11 @@
                 <x-label for="current_password" value="{{ __('Current Password') }}" />
                 <x-input id="current_password" type="password" class="mt-1 block w-full" wire:model="state.current_password" autocomplete="current-password" required/>
                 <x-input-error for="current_password" class="mt-2" />
+                @if(Route::has('password.request'))
+                    <p class="mt-2 text-xs text-slate-500">
+                        {{ __("Don't know your current password? Sign out, then choose \"Forgot your password?\" on the sign-in screen to set a new one by email.") }}
+                    </p>
+                @endif
             </div>
         @endif
 
