@@ -28,13 +28,16 @@ class MyJobsController extends Controller
             $query->withTrashed();
         }
         
-        // Calculate statistics from base query (before pagination)
-        $statsQuery = (clone $query);
-        $totalJobs = $statsQuery->count();
-        $paidJobs = $statsQuery->where('invoice_paid', '>=', 1)->count();
+        // Calculate statistics from the base query (before pagination). Each
+        // count must start from a fresh clone — reusing one builder makes the
+        // where() clauses accumulate, so canceled/missing counts were computed
+        // on top of the previous filters and came out far too low, disagreeing
+        // with the dashboard's independent counts (TASK-325).
+        $totalJobs = (clone $query)->count();
+        $paidJobs = (clone $query)->where('invoice_paid', '>=', 1)->count();
         $unpaidJobs = $totalJobs - $paidJobs;
-        $canceledJobs = $statsQuery->whereNotNull('canceled_at')->count();
-        $missingJobNo = $statsQuery->whereNull('job_no')->count();
+        $canceledJobs = (clone $query)->whereNotNull('canceled_at')->count();
+        $missingJobNo = (clone $query)->whereNull('job_no')->count();
         
         if($request->has('filter') && $request->get('filter') === 'recent'){
             // Recent jobs: ordered by scheduled_pickup_at newest first (same as dashboard)
