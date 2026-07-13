@@ -1,6 +1,7 @@
 @php
     use Illuminate\Support\Number;
     use Illuminate\Support\Str;
+    use App\Support\LocalTime;
 
     $iconMap = [
         'Jobs' => '<svg class="h-10 w-10 text-orange-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="4" y1="3" x2="4" y2="21" stroke-linecap="round"/><path d="M4 3 L4 10 L14 6.5 L4 3 Z" fill="currentColor" stroke="none"/></svg>',
@@ -373,7 +374,7 @@
                                     <a href="{{ route('my.jobs.show', ['job' => $job->id]) }}" class="text-orange-600 hover:text-orange-700">{{ $job->job_no ?? __('No #') }}</a>
                                 </td>
                                 <td class="px-4 py-3">{{ $job->load_no ?? '—' }}</td>
-                                <td class="px-4 py-3 text-xs text-slate-500">{{ optional($job->scheduled_pickup_at)->format('M j, Y g:ia') ?? '—' }}</td>
+                                <td class="px-4 py-3 text-xs text-slate-500">{{ LocalTime::format($job->scheduled_pickup_at, 'M j, Y g:ia', '—') }}</td>
                                 <td class="px-4 py-3 text-xs text-slate-500">{{ $job->delivery_address ?? '—' }}</td>
                                 <td class="px-4 py-3">
                                     @if($job->invoice_paid)
@@ -537,7 +538,7 @@
                                         @if($job->scheduled_pickup_at)
                                             <p class="text-sm text-slate-600">
                                                 <span class="font-semibold">{{ __('Scheduled') }}:</span> 
-                                                {{ optional($job->scheduled_pickup_at)->format('M j, Y g:i A') ?? $job->scheduled_pickup_at }}
+                                                {{ LocalTime::format($job->scheduled_pickup_at, 'M j, Y g:i A', '—') }}
                                             </p>
                                         @endif
                                         @if($job->load_no)
@@ -560,10 +561,10 @@
                                 <div class="flex flex-col items-end gap-2 text-right sm:min-w-[120px]">
                                     @if($job->scheduled_pickup_at)
                                         <p class="text-xs font-semibold text-slate-700">
-                                            {{ optional($job->scheduled_pickup_at)->format('M j') }}
+                                            {{ LocalTime::format($job->scheduled_pickup_at, 'M j') }}
                                         </p>
                                         <p class="text-xs text-slate-500">
-                                            {{ optional($job->scheduled_pickup_at)->format('g:i A') }}
+                                            {{ LocalTime::format($job->scheduled_pickup_at, 'g:i A') }}
                                         </p>
                                     @else
                                         <p class="text-xs text-slate-400">{{ __('No date set') }}</p>

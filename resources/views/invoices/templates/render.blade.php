@@ -1,5 +1,6 @@
 @php
     use Illuminate\Support\Number;
+    use App\Support\LocalTime;
 
     $values = $values ?? (is_array($invoice->values) ? $invoice->values : []);
     $billFrom = $billFrom ?? ($values['bill_from'] ?? []);
@@ -116,7 +117,7 @@
                 @foreach($logMemos as $log)
                     <div style="margin-bottom: 0.75rem; padding: 1rem; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px;">
                         <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; font-size: 0.8rem; color: #6b7280;">
-                            <span style="font-weight: 600;">{{ $log->started_at ? \Carbon\Carbon::parse($log->started_at)->format('M j, Y') : '—' }}</span>
+                            <span style="font-weight: 600;">{{ LocalTime::format($log->started_at, 'M j, Y', '—') }}</span>
                             @if($log->user)
                                 <span>•</span>
                                 <span>{{ $log->user->name }}</span>
@@ -201,7 +202,7 @@
                 {{-- Single invoice: Title, invoice number, date, and Bill To --}}
                 <h1 class="invoice-title-right">{{ __('INVOICE') }}</h1>
                 <div class="invoice-number">{{ __('Invoice #:number', ['number' => $invoice->invoice_number]) }}</div>
-                <div class="invoice-date">{{ __('Date: :date', ['date' => optional($invoice->created_at)->format('m/d/Y')]) }}</div>
+                <div class="invoice-date">{{ __('Date: :date', ['date' => LocalTime::format($invoice->created_at, 'm/d/Y')]) }}</div>
                 <div class="bill-to-section">
                     <h2 class="bill-to-label">{{ __('Bill To:') }}</h2>
                     <div class="bill-to-info">
@@ -245,7 +246,7 @@
                 @if($isSummary)
                     @foreach($summaryItems as $item)
                         <tr>
-                            <td>{{ isset($item['date_of_service']) ? \Carbon\Carbon::parse($item['date_of_service'])->format('m/d/Y') : (isset($item['created_at']) ? \Carbon\Carbon::parse($item['created_at'])->format('m/d/Y') : '—') }}</td>
+                            <td>{{ LocalTime::format($item['date_of_service'] ?? $item['created_at'] ?? null, 'm/d/Y', '—') }}</td>
                             <td>{{ $item['invoice_number'] ?? '—' }}</td>
                             <td>{{ $item['description'] ?? \App\Models\Invoice::generateDescriptionOfWork($item['pickup_address'] ?? null, $item['delivery_address'] ?? null) }}</td>
                             <td>{{ $item['job_no'] ?? '—' }}</td>

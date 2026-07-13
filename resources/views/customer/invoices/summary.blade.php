@@ -37,7 +37,7 @@
                                     </span>
                                     <div>
                                         <p class="invoice-attachments__name">{{ $attachment->file_name }}</p>
-                                        <p class="invoice-attachments__meta">{{ __('Uploaded :date', ['date' => optional($attachment->created_at)->format('M j, Y')]) }}</p>
+                                        <p class="invoice-attachments__meta">{{ __('Uploaded :date', ['date' => \App\Support\LocalTime::date($attachment->created_at)]) }}</p>
                                     </div>
                                 </div>
                                 <a class="invoice-attachments__action" download href="{{ route('attachments.download', ['attachment' => $attachment->id]) }}">

@@ -1,4 +1,5 @@
 @props(['redirect_to_root'=>false])
+@php use App\Support\LocalTime; @endphp
 <x-app-layout>
     <div>
         <div class="mx-auto space-y-8">
@@ -218,7 +219,7 @@
                             @endcan
                             <p><span class="font-semibold text-slate-900">{{ __('Load #') }}:</span> {{ $job->load_no ?? '—' }}</p>
                             <p><span class="font-semibold text-slate-900">{{ __('Scheduled') }}:</span> 
-                                <span class="text-slate-900">{{ optional($job->scheduled_pickup_at)->format('M j, Y g:i A') ?? $job->scheduled_pickup_at ?? '—' }}</span>
+                                <span class="text-slate-900">{{ LocalTime::format($job->scheduled_pickup_at, 'M j, Y g:i A', '—') }}</span>
                             </p>
                             <p><span class="font-semibold text-slate-900">{{ __('Pickup') }}:</span> 
                                 <span class="text-slate-600">{{ \Illuminate\Support\Str::limit($job->pickup_address ?? '—', 40) }}</span>
@@ -226,7 +227,7 @@
                             <p class="hidden sm:block"><span class="font-semibold text-slate-900">{{ __('Delivery') }}:</span> 
                                 <span class="text-slate-600">{{ \Illuminate\Support\Str::limit($job->delivery_address ?? '—', 40) }}</span>
                             </p>
-                            <p class="hidden md:block"><span class="font-semibold text-slate-900">{{ __('Scheduled Delivery') }}:</span> {{ optional($job->scheduled_delivery_at)->format('M j, Y g:i A') ?? $job->scheduled_delivery_at ?? '—' }}</p>
+                            <p class="hidden md:block"><span class="font-semibold text-slate-900">{{ __('Scheduled Delivery') }}:</span> {{ LocalTime::format($job->scheduled_delivery_at, 'M j, Y g:i A', '—') }}</p>
                             <p class="hidden md:block"><span class="font-semibold text-slate-900">{{ __('Invoice #') }}:</span> {{ $job->invoice_no ?? '—' }}</p>
                             <p class="hidden md:block"><span class="font-semibold text-slate-900">{{ __('Check #') }}:</span> {{ $job->check_no ?? '—' }}</p>
                             <p class="hidden lg:block"><span class="font-semibold text-slate-900">{{ __('Rate Code') }}:</span> {{ $job->rate_code ?? '—' }}</p>

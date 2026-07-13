@@ -1,4 +1,5 @@
 @props(['log'=>(Object)[], 'car_drivers' => [], 'vehicles' => [], 'customer_contacts' => [], 'vehicle_positions' => []])
+@php use App\Support\LocalTime; @endphp
 
 <div class="bg-slate-100/80 pb-32">
     <div class="mx-auto max-w-6xl space-y-8 px-4 py-6 sm:px-6 lg:px-8">
@@ -23,13 +24,13 @@
                     <div>
                         {{ __('Pickup') }}
                         <p class="mt-1 text-sm font-medium normal-case text-white">
-                            {{ \Carbon\Carbon::parse($log->job->scheduled_pickup_at)->format('M j, Y g:i A') }}
+                            {{ LocalTime::format($log->job->scheduled_pickup_at, 'M j, Y g:i A') }}
                         </p>
                     </div>
                     <div>
                         {{ __('Delivery') }}
                         <p class="mt-1 text-sm font-medium normal-case text-white">
-                            {{ \Carbon\Carbon::parse($log->job->scheduled_delivery_at)->format('M j, Y g:i A') }}
+                            {{ LocalTime::format($log->job->scheduled_delivery_at, 'M j, Y g:i A') }}
                         </p>
                     </div>
                     <div>
@@ -88,7 +89,7 @@
                         <h2 class="text-lg font-semibold text-red-900">{{ __('Log Denied') }}</h2>
                         <p class="text-sm text-red-700">{{ __('This log has been denied and cannot be edited.') }}</p>
                         @if($log->approved_at)
-                            <p class="text-xs text-red-600 mt-1">{{ __('Denied on :date', ['date' => $log->approved_at->format('M j, Y g:i A')]) }}</p>
+                            <p class="text-xs text-red-600 mt-1">{{ __('Denied on :date', ['date' => LocalTime::format($log->approved_at, 'M j, Y g:i A')]) }}</p>
                         @endif
                     </div>
                 </div>
@@ -124,7 +125,7 @@
                     <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Rate Value') }}:</span> <span class="text-slate-900">{{ $log->job->rate_value !== null ? '$'.number_format((float) $log->job->rate_value, 2) : '—' }}</span></p>
                     @if($log->job->canceled_at)
                         <div class="rounded-xl border border-red-200 bg-red-50 p-3">
-                            <p><span class="text-xs font-semibold uppercase tracking-wide text-red-600">{{ __('Canceled At') }}:</span> <span class="text-red-700">{{ optional($log->job->canceled_at)->format('M j, Y g:i A') }}</span></p>
+                            <p><span class="text-xs font-semibold uppercase tracking-wide text-red-600">{{ __('Canceled At') }}:</span> <span class="text-red-700">{{ LocalTime::format($log->job->canceled_at, 'M j, Y g:i A') }}</span></p>
                             @if($log->job->canceled_reason)
                                 <p class="mt-2"><span class="text-xs font-semibold uppercase tracking-wide text-red-600">{{ __('Cancellation Reason') }}:</span> <span class="text-red-700">{{ $log->job->canceled_reason }}</span></p>
                             @endif
@@ -134,9 +135,9 @@
 
                 <article class="space-y-3 text-sm text-slate-600">
                     <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Pickup') }}:</span> <a class="text-orange-600 hover:text-orange-700" target="_blank" href="http://maps.google.com/?daddr={{$log->job->pickup_address}}">{{ $log->job->pickup_address ?? '—' }}</a></p>
-                    <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Pickup Time') }}:</span> <span class="text-slate-900">{{ optional($log->job->scheduled_pickup_at)->format('M j, Y g:i A') ?? $log->job->scheduled_pickup_at ?? '—' }}</span></p>
+                    <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Pickup Time') }}:</span> <span class="text-slate-900">{{ LocalTime::format($log->job->scheduled_pickup_at, 'M j, Y g:i A', '—') }}</span></p>
                     <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Delivery') }}:</span> <a class="text-orange-600 hover:text-orange-700" target="_blank" href="http://maps.google.com/?daddr={{$log->job->delivery_address}}">{{ $log->job->delivery_address ?? '—' }}</a></p>
-                    <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Delivery Time') }}:</span> <span class="text-slate-900">{{ optional($log->job->scheduled_delivery_at)->format('M j, Y g:i A') ?? $log->job->scheduled_delivery_at ?? '—' }}</span></p>
+                    <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Delivery Time') }}:</span> <span class="text-slate-900">{{ LocalTime::format($log->job->scheduled_delivery_at, 'M j, Y g:i A', '—') }}</span></p>
                     <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Memo') }}:</span>
                         @if(str_starts_with($log->job->memo ?? '', 'http'))
                             <a target="_blank" href="{!!$log->job->memo!!}" class="text-orange-600 hover:text-orange-700">{{ __('View Link') }}</a>
@@ -204,7 +205,7 @@
                         // ended were considered, so clock-only logs showed no summary
                         // (TASK-326). Parse defensively: started_at/ended_at are not
                         // cast to Carbon on the model.
-                        $fmtTs = fn ($v) => $v ? \Carbon\Carbon::parse($v)->format('M j g:ia') : '—';
+                        $fmtTs = fn ($v) => LocalTime::format($v, 'M j g:ia', '—');
                         $tripTimingParts = [];
                         if ($log->started_at || $log->ended_at) {
                             $tripTimingParts[] = __('Job') . ': ' . $fmtTs($log->started_at) . ' → ' . $fmtTs($log->ended_at);

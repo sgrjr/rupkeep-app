@@ -1,5 +1,6 @@
 @php
     use App\Support\Money;
+    use App\Support\LocalTime;
     use Illuminate\Support\Str;
 
     $values = $invoice->values ?? [];
@@ -16,7 +17,7 @@
                 </h1>
                 <p class="text-xs">
                     {{ __('Created :date • Last updated :updated', [
-                        'date' => optional($invoice->created_at)->format('M j, Y g:ia'),
+                        'date' => LocalTime::format($invoice->created_at, 'M j, Y g:ia'),
                         'updated' => optional($invoice->updated_at)->diffForHumans(),
                     ]) }}
                 </p>
@@ -334,7 +335,7 @@
                                     @foreach($payments as $payment)
                                         <tr>
                                             <td class="px-4 py-2 text-slate-600">
-                                                {{ isset($payment['payment_date']) ? \Carbon\Carbon::parse($payment['payment_date'])->format('M j, Y') : '—' }}
+                                                {{ LocalTime::format($payment['payment_date'] ?? null, 'M j, Y', '—') }}
                                             </td>
                                             <td class="px-4 py-2 font-semibold text-slate-900">
                                                 ${{ number_format($payment['amount'] ?? 0, 2) }}
@@ -399,7 +400,7 @@
                                     <div class="flex items-start justify-between gap-3">
                                         <div class="flex-1">
                                             <div class="flex items-center gap-2 text-xs text-slate-600">
-                                                <span class="font-semibold">{{ $log->started_at ? \Carbon\Carbon::parse($log->started_at)->format('M j, Y') : '—' }}</span>
+                                                <span class="font-semibold">{{ LocalTime::format($log->started_at, 'M j, Y', '—') }}</span>
                                                 @if($log->user)
                                                     <span class="text-slate-400">•</span>
                                                     <span>{{ $log->user->name }}</span>

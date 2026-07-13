@@ -2,6 +2,7 @@
 
 @php
     use App\Support\Money;
+    use App\Support\LocalTime;
 
     $invoiceCount = $invoices->total();
     $totalDue = $invoices->sum(fn ($invoice) => (float) ($invoice->values['total'] ?? 0));
@@ -100,7 +101,7 @@
                                     @foreach($invoices as $invoice)
                                         <tr>
                                             <td class="px-4 py-3 font-semibold text-slate-800">{{ $invoice->invoice_number }}</td>
-                                            <td class="px-4 py-3 text-xs text-slate-500">{{ $invoice->created_at->format('M d, Y g:ia') }}</td>
+                                            <td class="px-4 py-3 text-xs text-slate-500">{{ LocalTime::format($invoice->created_at, 'M d, Y g:ia') }}</td>
                                             <td class="px-4 py-3">
                                                 <span class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold text-slate-600">
                                                     {{ Money::currency($invoice->values['total'] ?? 0, 'USD') }}

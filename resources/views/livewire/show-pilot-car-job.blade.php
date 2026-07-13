@@ -1,4 +1,5 @@
 @props(['drivers'=>[], 'vehicles'=>[]])
+@php use App\Support\LocalTime; @endphp
 
 <div class="bg-slate-100/80 pb-32" x-data>
     <style>
@@ -18,7 +19,7 @@
                             </svg>
                             <h2 class="text-xl font-bold text-red-900">{{ __('This Job Has Been Deleted') }}</h2>
                         </div>
-                        <p class="text-sm text-red-700 mb-4">{{ __('This job was archived on :date. You can restore it to make it active again.', ['date' => $job->deleted_at->format('M j, Y g:i A')]) }}</p>
+                        <p class="text-sm text-red-700 mb-4">{{ __('This job was archived on :date. You can restore it to make it active again.', ['date' => LocalTime::format($job->deleted_at, 'M j, Y g:i A')]) }}</p>
                         @can('restore', $job)
                             <button wire:click="restoreJob" class="inline-flex items-center gap-2 rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700">
                                 <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -76,14 +77,14 @@
                         {{ __('Pickup') }}
                         <p class="mt-1 text-sm normal-case text-white">
                              {{ $job->pickup_address ?? '—' }}
-                            <span class="text-xs italic">{{ optional($job->scheduled_pickup_at)->format('M j, Y g:i A') ?? $job->scheduled_pickup_at ?? '—' }}</span>
+                            <span class="text-xs italic">{{ LocalTime::format($job->scheduled_pickup_at, 'M j, Y g:i A', '—') }}</span>
                         </p>
                     </div>
                     <div>
                         {{ __('Delivery') }}
                         <p class="mt-1 text-sm normal-case text-white">
                             {{ $job->delivery_address ?? '-'}}
-                            <span class="text-xs italic">{{ optional($job->scheduled_delivery_at)->format('M j, Y g:i A') ?? $job->scheduled_delivery_at ?? '—' }}</span>
+                            <span class="text-xs italic">{{ LocalTime::format($job->scheduled_delivery_at, 'M j, Y g:i A', '—') }}</span>
                         </p>
                     </div>
                     <div>
@@ -247,7 +248,7 @@
                             <div class="flex items-start justify-between gap-3">
                                 <div class="flex-1">
                                     <div class="flex items-center gap-2 text-xs text-slate-600">
-                                        <span class="font-semibold">{{ $log->started_at ? \Carbon\Carbon::parse($log->started_at)->format('M j, Y') : '—' }}</span>
+                                        <span class="font-semibold">{{ LocalTime::format($log->started_at, 'M j, Y', '—') }}</span>
                                         @if($log->user)
                                             <span class="text-slate-400">•</span>
                                             <span>{{ $log->user->name }}</span>
@@ -308,7 +309,7 @@
                                         @endif
                                     </div>
                                     <span class="text-[10px] uppercase tracking-wide text-slate-400">
-                                        {{ optional($invoice->created_at)->format('M j, Y g:ia') }}
+                                        {{ LocalTime::format($invoice->created_at, 'M j, Y g:ia') }}
                                     </span>
                                 </div>
                                 <div class="mt-3 flex flex-wrap items-center gap-2">
@@ -487,7 +488,7 @@
                     <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Rate Value') }}:</span> <span class="text-slate-900">{{ $job->rate_value !== null ? '$'.number_format((float) $job->rate_value, 2) : '—' }}</span></p>
                     @if($job->canceled_at)
                         <div class="rounded-xl border border-red-200 bg-red-50 p-3">
-                            <p><span class="text-xs font-semibold uppercase tracking-wide text-red-600">{{ __('Canceled At') }}:</span> <span class="text-red-700">{{ optional($job->canceled_at)->format('M j, Y g:i A') }}</span></p>
+                            <p><span class="text-xs font-semibold uppercase tracking-wide text-red-600">{{ __('Canceled At') }}:</span> <span class="text-red-700">{{ LocalTime::format($job->canceled_at, 'M j, Y g:i A') }}</span></p>
                             @if($job->canceled_reason)
                                 <p class="mt-2"><span class="text-xs font-semibold uppercase tracking-wide text-red-600">{{ __('Cancellation Reason') }}:</span> <span class="text-red-700">{{ $job->canceled_reason }}</span></p>
                             @endif
@@ -510,9 +511,9 @@
 
                 <article class="space-y-3 text-sm text-slate-600">
                     <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Pickup') }}:</span> <a class="text-orange-600 hover:text-orange-700" target="_blank" href="http://maps.google.com/?daddr={{$job->pickup_address}}">{{ $job->pickup_address ?? '—' }}</a></p>
-                    <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Pickup Time') }}:</span> <span class="text-slate-900">{{ $job->scheduled_pickup_at ?? '—' }}</span></p>
+                    <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Pickup Time') }}:</span> <span class="text-slate-900">{{ LocalTime::format($job->scheduled_pickup_at, 'M j, Y g:i A', '—') }}</span></p>
                     <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Delivery') }}:</span> <a class="text-orange-600 hover:text-orange-700" target="_blank" href="http://maps.google.com/?daddr={{$job->delivery_address}}">{{ $job->delivery_address ?? '—' }}</a></p>
-                    <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Delivery Time') }}:</span> <span class="text-slate-900">{{ $job->scheduled_delivery_at ?? '—' }}</span></p>
+                    <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Delivery Time') }}:</span> <span class="text-slate-900">{{ LocalTime::format($job->scheduled_delivery_at, 'M j, Y g:i A', '—') }}</span></p>
                     <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Memo') }}:</span>
                         @if(str_starts_with($job->memo ?? '', 'http'))
                             <a target="_blank" href="{!!$job->memo!!}" class="text-orange-600 hover:text-orange-700">{{ __('View Link') }}</a>
@@ -772,7 +773,7 @@
                                 <div class="flex flex-wrap items-start justify-between gap-3">
                                     <div>
                                         <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">{{ __('Log ID') }}: {{ $log->id }}</p>
-                                        <p class="text-sm font-semibold text-slate-900">{{ optional($log->created_at)->toFormattedDateString() }}</p>
+                                        <p class="text-sm font-semibold text-slate-900">{{ LocalTime::mediumDate($log->created_at) }}</p>
                                         <p class="text-xs text-slate-500">{{ __('Driver') }}: {{ $log->driver?->name ?? '—' }}</p>
                                     </div>
                                     <div class="flex flex-wrap items-center gap-2">
@@ -870,9 +871,9 @@
                             <div class="flex flex-wrap items-start justify-between gap-3">
                                 <div>
                                     <p class="text-xs font-semibold uppercase tracking-wider text-amber-600">{{ __('Deleted Log ID') }}: {{ $log->id }}</p>
-                                    <p class="text-sm font-semibold text-slate-900">{{ optional($log->created_at)->toFormattedDateString() }}</p>
+                                    <p class="text-sm font-semibold text-slate-900">{{ LocalTime::mediumDate($log->created_at) }}</p>
                                     <p class="text-xs text-slate-500">{{ __('Driver') }}: {{ $log->user?->name ?? '—' }}</p>
-                                    <p class="text-xs text-amber-600 mt-1">{{ __('Deleted on') }}: {{ optional($log->deleted_at)->format('M j, Y g:i A') }}</p>
+                                    <p class="text-xs text-amber-600 mt-1">{{ __('Deleted on') }}: {{ LocalTime::format($log->deleted_at, 'M j, Y g:i A') }}</p>
                                 </div>
                                 <div class="flex flex-wrap items-center gap-2">
                                     @can('restore', $log)
