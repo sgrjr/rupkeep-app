@@ -19,6 +19,30 @@ class CustomerContact extends Model
         'is_billing_contact' => 'boolean',
     ];
 
+    /**
+     * Enforce a single main (and single billing) contact per customer: whenever
+     * a contact is saved with one of these flags on, demote the customer's other
+     * contacts. Uses a mass update, which bypasses model events, so there is no
+     * recursion. See TASK-334.
+     */
+    protected static function booted(): void
+    {
+        static::saved(function (self $contact): void {
+            if (! $contact->customer_id) {
+                return;
+            }
+
+            foreach (['is_main_contact', 'is_billing_contact'] as $flag) {
+                if ($contact->{$flag}) {
+                    static::where('customer_id', $contact->customer_id)
+                        ->where('id', '!=', $contact->id)
+                        ->where($flag, true)
+                        ->update([$flag => false]);
+                }
+            }
+        });
+    }
+
     public function organization(){
         return $this->belongsTo(Organization::class);
     }
