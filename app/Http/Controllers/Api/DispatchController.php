@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Label;
 use App\Models\Task;
 use App\Models\TaskComment;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -64,7 +65,7 @@ class DispatchController extends Controller
             return response()->json(['error' => 'Invalid JSON-LD: missing tasks array.'], 422);
         }
 
-        $summary = ['labels_created' => 0, 'labels_updated' => 0, 'tasks_created' => 0, 'tasks_updated' => 0, 'comments_replaced' => 0];
+        $summary = ['labels_created' => 0, 'labels_updated' => 0, 'tasks_created' => 0, 'tasks_updated' => 0, 'comments_added' => 0];
 
         DB::transaction(function () use ($doc, &$summary) {
             foreach (($doc['labels'] ?? []) as $l) {
@@ -121,17 +122,42 @@ class DispatchController extends Controller
                 }
                 $task->labels()->sync($labelIds);
 
+                // Merge comments: add pushed comments we don't already have, keep
+                // production-only comments (e.g. customer portal replies made since
+                // the last pull). Replace-all used to destroy them and reset every
+                // author/timestamp — see TASK-332.
                 if (!empty($t['comments']) && is_array($t['comments'])) {
-                    $task->comments()->delete();
+                    $existing = $task->comments()
+                        ->get(['body', 'event_type'])
+                        ->map(fn ($c) => $c->event_type . '|' . $c->body)
+                        ->flip();
+
                     foreach ($t['comments'] as $c) {
-                        $task->comments()->create([
-                            'body' => $c['body'] ?? '',
+                        $body = $c['body'] ?? '';
+                        $eventType = $c['eventType'] ?? TaskComment::EVENT_COMMENT;
+
+                        if (isset($existing[$eventType . '|' . $body])) {
+                            continue;
+                        }
+
+                        $comment = $task->comments()->make([
+                            'body' => $body,
                             'is_internal' => (bool) ($c['isInternal'] ?? false),
                             'sent_to_customer' => (bool) ($c['sentToCustomer'] ?? false),
-                            'event_type' => $c['eventType'] ?? TaskComment::EVENT_COMMENT,
+                            'event_type' => $eventType,
                             'meta' => $c['meta'] ?? null,
                         ]);
-                        $summary['comments_replaced']++;
+
+                        if (!empty($c['author'])) {
+                            $comment->user_id = User::where('email', $c['author'])->value('id');
+                        }
+
+                        if (!empty($c['createdAt'])) {
+                            try { $comment->created_at = \Carbon\Carbon::parse($c['createdAt']); } catch (\Throwable) {}
+                        }
+
+                        $comment->save();
+                        $summary['comments_added']++;
                     }
                 }
             }
