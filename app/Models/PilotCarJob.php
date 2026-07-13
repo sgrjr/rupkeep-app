@@ -802,8 +802,10 @@ class PilotCarJob extends Model
         if (preg_match('/^(.+?)\s*(\d+)$/i', trim($name), $matches)) {
             $prefix = trim($matches[1]);
             $number = (int)$matches[2]; // Convert "06" to 6, "006" to 6
-            // Normalize to always 3 digits with leading zeros (e.g., 6 -> 006, 10 -> 010)
-            return $prefix . ' ' . str_pad($number, 3, '0', STR_PAD_LEFT);
+            // Normalize the prefix case too so 'Car 6', 'CAR 6' and 'car 06' all
+            // collapse to the same 'Car 006' and the import lookup treats them as
+            // one vehicle (TASK-328). Number is padded to 3 digits.
+            return ucfirst(strtolower($prefix)) . ' ' . str_pad($number, 3, '0', STR_PAD_LEFT);
         }
 
         // If no number found, return as-is
