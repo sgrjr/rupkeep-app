@@ -65,7 +65,7 @@ class MyJobsController extends Controller
                     ->orderByRaw('CASE WHEN canceled_at IS NOT NULL THEN 1 ELSE 0 END')
                     ->orderBy('scheduled_pickup_at', 'asc')
                     ->paginate(15);
-            }else if(in_array($filter, ['is_paid', 'is_not_paid', 'is_canceled', 'is_active', 'is_completed'])){
+            }else if(in_array($filter, ['is_paid', 'is_not_paid', 'is_canceled', 'is_active', 'is_completed', 'is_flagged'])){
                 $scope = Str::camel($filter);
                 $jobs = (clone $query)
                     ->$scope()

@@ -107,8 +107,10 @@
                         <select name="filter" onchange="document.getElementById('filterForm').submit();" class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
                             <option value="">{{ __('All Jobs') }}</option>
                             <option value="recent" @selected(request('filter') === 'recent')>{{ __('Recent (Newest First)') }}</option>
+                            <option value="is_active" @selected(request('filter') === 'is_active')>{{ __('Pending / Active Jobs') }}</option>
                             <option value="is_paid" @selected(request('filter') === 'is_paid')>{{ __('Paid Jobs') }}</option>
                             <option value="is_not_paid" @selected(request('filter') === 'is_not_paid')>{{ __('Unpaid Jobs') }}</option>
+                            <option value="is_flagged" @selected(request('filter') === 'is_flagged')>{{ __('Flagged for Attention') }}</option>
                             <option value="is_canceled" @selected(request('filter') === 'is_canceled')>{{ __('Canceled Jobs') }}</option>
                             <option value="missing_job_no" @selected(request('filter') === 'missing_job_no')>{{ __('Missing Job #') }}</option>
                         </select>

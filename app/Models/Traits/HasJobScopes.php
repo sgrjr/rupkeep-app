@@ -33,4 +33,12 @@ trait HasJobScopes {
               ->orWhereHas('summaryInvoices');
         });
     }
+    public function scopeIsFlagged($query){
+        // Flagged jobs are those with any invoice (single or summary) that a
+        // customer or staff member marked for attention.
+        return $query->where(function($q) {
+            $q->whereHas('singleInvoices', fn($i) => $i->where('marked_for_attention', true))
+              ->orWhereHas('summaryInvoices', fn($i) => $i->where('marked_for_attention', true));
+        });
+    }
 }
