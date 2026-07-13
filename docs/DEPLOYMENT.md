@@ -1,6 +1,6 @@
 # Deployment & Operational Notes
 
-Operational reference for running and updating Rupkeep. Task-tracked deployment work lives in [`TASKS.md`](../TASKS.md) (Epic: Production Deployment).
+Operational reference for running and updating Rupkeep. Task-tracked deployment work lives in **Dispatch** (`/admin/tasks`, label `epic:production-deployment`) — see [`TASKS_SCHEMA.md`](TASKS_SCHEMA.md).
 
 ---
 
@@ -8,27 +8,29 @@ Operational reference for running and updating Rupkeep. Task-tracked deployment 
 
 | Env | Location | Notes |
 |-----|----------|-------|
-| Local dev | `c:\Users\sreynoldsjr\Documents\GitHub\rupkeep-app` | SQLite, `php artisan serve` |
-| Production | `C:\inetpub\wwwroot\rupkeep-app` (Windows IIS) | MySQL, queue worker required |
-| Public URL | `https://pilotcar.io` | |
+| Local dev | `C:\Users\sreynoldsjr\Documents\GitHub\rupkeep-app` (Windows) | SQLite or local MySQL, `php artisan serve` |
+| Production | `/var/www/rupkeep-app` (Linux, PHP-FPM behind nginx/Apache) | MySQL, queue worker required, GMP extension installed |
+| Public URL | `https://pilotcar.io` (SSL) | |
 
 **Stack:** Laravel 11.9, PHP 8.2+, Livewire 3, Tailwind 3, Vite, SQLite (dev) / MySQL (prod).
 
+> Note: local dev runs on Windows PowerShell; production is Linux. Commands below are labelled where the platform matters.
+
 ---
 
-## In-app git update (Super User only)
+## In-app deploy (Super User only)
 
-Super users can pull latest code from the Dashboard via **"Pull Latest Code"**. This runs, in the project root:
+Super users deploy from **`/admin/server-management`**. The **"Deploy Update"** button runs, in the project root:
 
-```bash
-git fetch origin
-git reset --hard origin/master
-git clean -fd
+```
+git pull  →  php artisan assets:build  →  php artisan optimize:clear  →  php artisan optimize
 ```
 
-Output is displayed inline; any failure stops the sequence.
+After a deploy that includes a migration, also click **"Run database migrations"** (`php artisan migrate --force`) on the same page. Command output is displayed inline; each command is whitelisted in `app/Http/Controllers/AdminToolsController.php`.
 
-**Security:** Endpoint is protected by auth + `is_super` check on the server.
+Use **"Deploy Update"** (pull only), not **"Full Deploy"** — the latter also commits and pushes *from the server*, which can diverge from GitHub.
+
+**Security:** all server-management actions are gated by auth + `is_super`.
 
 ---
 
@@ -74,9 +76,22 @@ Email / push notifications dispatch via the queue. Worker must be running in pro
 php artisan queue:work
 ```
 
-For long-running, prefer:
-- **Windows:** Task Scheduler launching `php artisan queue:work --tries=3` at boot
-- **Linux:** supervisor (sample config in `docs/archive/SETUP_LINUX_SERVER.md` if present)
+In **production (Linux)**, keep the worker alive with supervisor or a systemd unit, e.g.:
+
+```ini
+# /etc/supervisor/conf.d/rupkeep-worker.conf
+[program:rupkeep-worker]
+command=php /var/www/rupkeep-app/artisan queue:work --tries=3 --sleep=3
+directory=/var/www/rupkeep-app
+autostart=true
+autorestart=true
+user=www-data
+numprocs=1
+redirect_stderr=true
+stdout_logfile=/var/www/rupkeep-app/storage/logs/worker.log
+```
+
+Reload after changes: `sudo supervisorctl reread && sudo supervisorctl update`. Restart the worker after each deploy so it picks up new code (`sudo supervisorctl restart rupkeep-worker`).
 
 For local testing without a worker, you can make listeners synchronous — see [`TESTING_NOTIFICATIONS.md`](TESTING_NOTIFICATIONS.md).
 
@@ -84,7 +99,15 @@ For local testing without a worker, you can make listeners synchronous — see [
 
 ## Utilities
 
-### Tail Laravel logs (Windows)
+### Tail Laravel logs
+
+**Production (Linux):**
+
+```bash
+tail -f /var/www/rupkeep-app/storage/logs/laravel.log
+```
+
+**Local dev (Windows):**
 
 ```powershell
 powershell -File .\scripts\tail-laravel-log.ps1 -Lines 200
@@ -92,12 +115,12 @@ powershell -File .\scripts\tail-laravel-log.ps1 -Lines 200
 
 Add `-Follow` to stream, `-Contains "text"` to filter lines. Stack traces are trimmed to first `LOG_STACKTRACE_LIMIT` frames (default 12) — adjust via env var if needed.
 
-### PowerShell chaining
+### PowerShell chaining (local dev)
 
-In PowerShell use `;` for command chaining (`&&` is not supported in the shipped Windows PowerShell version):
+In local-dev PowerShell use `;` for command chaining (`&&` is not supported in the shipped Windows PowerShell version):
 
 ```powershell
-cd C:\inetpub\wwwroot\rupkeep-app; php artisan test
+cd C:\Users\sreynoldsjr\Documents\GitHub\rupkeep-app; php artisan test
 ```
 
 ---
