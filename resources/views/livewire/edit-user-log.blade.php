@@ -199,10 +199,20 @@
                         $driverName = $log->user?->name ?? __('Unassigned');
                         $vehicleName = $log->vehicle?->name ?? __('No vehicle');
                         $driverVehicleSummary = __('Driver & Vehicle') . ': ' . $driverName . ' • ' . $vehicleName;
-                        $tripTimingSummary = implode(' → ', array_filter([
-                            optional($log->started_at)->format('M j g:ia'),
-                            optional($log->ended_at)->format('M j g:ia'),
-                        ]));
+                        // Summarize both the Job (started/ended) and Clock (in/out)
+                        // pairs, whichever are populated — previously only started/
+                        // ended were considered, so clock-only logs showed no summary
+                        // (TASK-326). Parse defensively: started_at/ended_at are not
+                        // cast to Carbon on the model.
+                        $fmtTs = fn ($v) => $v ? \Carbon\Carbon::parse($v)->format('M j g:ia') : '—';
+                        $tripTimingParts = [];
+                        if ($log->started_at || $log->ended_at) {
+                            $tripTimingParts[] = __('Job') . ': ' . $fmtTs($log->started_at) . ' → ' . $fmtTs($log->ended_at);
+                        }
+                        if ($log->clock_in || $log->clock_out) {
+                            $tripTimingParts[] = __('Clock') . ': ' . $fmtTs($log->clock_in) . ' → ' . $fmtTs($log->clock_out);
+                        }
+                        $tripTimingSummary = implode(' • ', $tripTimingParts);
                         $mileageSummary = __('Miles') . ': ' . ($log->total_miles ?? '—') . ' • ' . __('Billable') . ': ' . ($log->billable_miles ?? '—');
                         $expenseSummary = __('Tolls') . ': ' . ($log->tolls ?? 0) . ' • ' . __('Hotel') . ': ' . ($log->hotel ?? 0);
                         $loadSummary = __('Truck') . ': ' . ($log->truck_no ?? '—') . ' • ' . __('Trailer') . ': ' . ($log->trailer_no ?? '—');
