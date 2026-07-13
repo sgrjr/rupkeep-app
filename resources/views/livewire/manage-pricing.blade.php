@@ -64,9 +64,22 @@
                 <div class="space-y-6">
                     @foreach($rates as $code => $rate)
                         <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                            <div class="mb-4">
-                                <h3 class="text-base font-semibold text-slate-900">{{ $rate['name'] }}</h3>
-                                <p class="text-xs text-slate-500">{{ $rate['description'] }}</p>
+                            <div class="mb-4 space-y-2">
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Name') }}</label>
+                                    <input type="text"
+                                           value="{{ $rate['name'] }}"
+                                           wire:change="updateRate('{{ $code }}', 'name', $event.target.value)"
+                                           class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Description') }}</label>
+                                    <input type="text"
+                                           value="{{ $rate['description'] }}"
+                                           wire:change="updateRate('{{ $code }}', 'description', $event.target.value)"
+                                           class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600 shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                </div>
+                                <p class="text-[11px] text-slate-400">{{ __('Leave blank to use the default.') }}</p>
                             </div>
 
                             @if($rate['type'] === 'per_mile')
@@ -139,11 +152,22 @@
                 <div class="space-y-6">
                     @foreach($charges as $key => $charge)
                         <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                            <div class="mb-4">
-                                <h3 class="text-base font-semibold text-slate-900">{{ $charge['name'] }}</h3>
-                                @if($charge['description'])
-                                    <p class="text-xs text-slate-500">{{ $charge['description'] }}</p>
-                                @endif
+                            <div class="mb-4 space-y-2">
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Name') }}</label>
+                                    <input type="text"
+                                           value="{{ $charge['name'] }}"
+                                           wire:change="updateCharge('{{ $key }}', 'name', $event.target.value)"
+                                           class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Description') }}</label>
+                                    <input type="text"
+                                           value="{{ $charge['description'] }}"
+                                           wire:change="updateCharge('{{ $key }}', 'description', $event.target.value)"
+                                           class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600 shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                </div>
+                                <p class="text-[11px] text-slate-400">{{ __('Leave blank to use the default.') }}</p>
                             </div>
 
                             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

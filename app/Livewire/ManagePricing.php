@@ -44,8 +44,16 @@ class ManagePricing extends Component
         
         foreach ($configRates as $code => $config) {
             $this->rates[$code] = [
-                'name' => $config['name'],
-                'description' => $config['description'],
+                'name' => PricingSetting::getValueForOrganization(
+                    $this->organization->id,
+                    "rates.{$code}.name",
+                    $config['name']
+                ),
+                'description' => PricingSetting::getValueForOrganization(
+                    $this->organization->id,
+                    "rates.{$code}.description",
+                    $config['description']
+                ),
                 'type' => $config['type'],
                 'rate_per_mile' => PricingSetting::getValueForOrganization(
                     $this->organization->id,
@@ -76,8 +84,16 @@ class ManagePricing extends Component
         
         foreach ($configCharges as $key => $config) {
             $this->charges[$key] = [
-                'name' => $config['name'],
-                'description' => $config['description'] ?? null,
+                'name' => PricingSetting::getValueForOrganization(
+                    $this->organization->id,
+                    "charges.{$key}.name",
+                    $config['name']
+                ),
+                'description' => PricingSetting::getValueForOrganization(
+                    $this->organization->id,
+                    "charges.{$key}.description",
+                    $config['description'] ?? null
+                ),
                 'rate_per_hour' => PricingSetting::getValueForOrganization(
                     $this->organization->id,
                     "charges.{$key}.rate_per_hour",

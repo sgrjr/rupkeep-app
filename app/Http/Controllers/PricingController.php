@@ -61,8 +61,12 @@ class PricingController extends Controller
         
         foreach ($configRates as $code => $config) {
             $rates[$code] = [
-                'name' => $config['name'],
-                'description' => $config['description'] ?? '',
+                'name' => $organizationId
+                    ? PricingSetting::getValueForOrganization($organizationId, "rates.{$code}.name", $config['name'])
+                    : $config['name'],
+                'description' => $organizationId
+                    ? PricingSetting::getValueForOrganization($organizationId, "rates.{$code}.description", $config['description'] ?? '')
+                    : ($config['description'] ?? ''),
                 'type' => $config['type'],
                 'rate_per_mile' => $organizationId 
                     ? PricingSetting::getValueForOrganization($organizationId, "rates.{$code}.rate_per_mile", $config['rate_per_mile'] ?? null)
@@ -85,8 +89,12 @@ class PricingController extends Controller
         
         foreach ($configCharges as $key => $config) {
             $charges[$key] = [
-                'name' => $config['name'],
-                'description' => $config['description'] ?? null,
+                'name' => $organizationId
+                    ? PricingSetting::getValueForOrganization($organizationId, "charges.{$key}.name", $config['name'])
+                    : $config['name'],
+                'description' => $organizationId
+                    ? PricingSetting::getValueForOrganization($organizationId, "charges.{$key}.description", $config['description'] ?? null)
+                    : ($config['description'] ?? null),
                 'rate_per_hour' => $organizationId
                     ? PricingSetting::getValueForOrganization($organizationId, "charges.{$key}.rate_per_hour", $config['rate_per_hour'] ?? null)
                     : ($config['rate_per_hour'] ?? null),
