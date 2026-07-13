@@ -14,6 +14,7 @@ use App\Models\Vehicle;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Livewire\Livewire;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class PilotCarJobRateTest extends TestCase
@@ -145,6 +146,76 @@ class PilotCarJobRateTest extends TestCase
         // Billable miles should be override 180 + calculated (110-50)=60 = 240
         $this->assertEquals(240, $values['values']['billable_miles']);
         $this->assertEquals('2.00', $values['values']['rate_value']);
+    }
+
+    /* -------------------- Cancellation flat-rates flow into invoicing (TASK-314) -------------------- */
+
+    public static function cancellationRateProvider(): array
+    {
+        // rate_code => expected flat total (from config/pricing.php)
+        return [
+            'show but no-go'         => ['show_no_go', 225.00],
+            'within 24 hours'        => ['cancellation_24hr', 150.00],
+            'cancel without billing' => ['cancel_without_billing', 0.00],
+        ];
+    }
+
+    #[DataProvider('cancellationRateProvider')]
+    public function test_cancellation_flat_rate_flows_into_invoice_total(string $rateCode, float $expectedTotal): void
+    {
+        $organization = Organization::factory()->create();
+        $customer = Customer::factory()->create(['organization_id' => $organization->id]);
+
+        $flatAmount = (string) config("pricing.rates.{$rateCode}.flat_amount");
+
+        // Mirror what CancelJob::cancel() writes to the job on cancellation.
+        $job = PilotCarJob::create([
+            'job_no' => 'JOB-CANCEL',
+            'customer_id' => $customer->id,
+            'organization_id' => $organization->id,
+            'load_no' => 'LOAD-CANCEL',
+            'pickup_address' => 'Pickup',
+            'delivery_address' => 'Delivery',
+            'rate_code' => $rateCode,
+            'rate_value' => $flatAmount,
+            'canceled_at' => now(),
+            'canceled_reason' => 'Customer canceled',
+        ]);
+
+        $values = $job->invoiceValues()['values'];
+
+        $this->assertSame($rateCode, $values['effective_rate_code'],
+            'The cancellation rate code must be the one that drives the invoice total.');
+        $this->assertEqualsWithDelta($expectedTotal, (float) $values['total'], 0.001,
+            "Invoice total for {$rateCode} must equal the configured flat amount (no billable miles).");
+    }
+
+    public function test_determine_cancellation_type_matches_timing_and_logs(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-07-13 12:00:00'));
+
+        $organization = Organization::factory()->create();
+        $customer = Customer::factory()->create(['organization_id' => $organization->id]);
+
+        $base = [
+            'customer_id' => $customer->id,
+            'organization_id' => $organization->id,
+            'load_no' => 'L', 'pickup_address' => 'P', 'delivery_address' => 'D',
+        ];
+
+        // No pickup time at all -> no billing.
+        $noPickup = PilotCarJob::create($base + ['job_no' => 'C-NONE']);
+        $this->assertSame('cancel_without_billing', $noPickup->determineCancellationType());
+
+        // Pickup 12h out (inside the 24h window) -> 24hr charge.
+        $soon = PilotCarJob::create($base + ['job_no' => 'C-24', 'scheduled_pickup_at' => now()->addHours(12)]);
+        $this->assertSame('cancellation_24hr', $soon->determineCancellationType());
+
+        // Pickup well outside the window, no logs -> no billing.
+        $farNoLogs = PilotCarJob::create($base + ['job_no' => 'C-FAR', 'scheduled_pickup_at' => now()->addDays(5)]);
+        $this->assertSame('cancel_without_billing', $farNoLogs->determineCancellationType());
+
+        Carbon::setTestNow();
     }
 }
 
