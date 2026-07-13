@@ -277,4 +277,133 @@ class TaskTest extends TestCase
 
         $this->assertTrue($a->comments()->where('event_type', TaskComment::EVENT_STATUS_CHANGE)->exists());
     }
+
+    /* -------------------- tasks:import preserves unpushed local state (TASK-332) -------------------- */
+
+    public function test_import_preserves_local_status_when_transition_is_newer_than_snapshot(): void
+    {
+        $org = Organization::factory()->create();
+
+        // Local task was closed locally *after* the snapshot was taken.
+        $task = Task::create([
+            'code' => 'TASK-700', 'title' => 'Closed locally', 'type' => 'feature',
+            'priority' => 'high', 'status' => 'done', 'organization_id' => $org->id,
+        ]);
+        $transition = $task->comments()->create([
+            'body' => 'Status changed from `open` to `done`.',
+            'event_type' => TaskComment::EVENT_STATUS_CHANGE,
+            'meta' => ['from' => 'open', 'to' => 'done'],
+        ]);
+        $transition->created_at = now();
+        $transition->save();
+
+        // Snapshot still thinks it is open, and predates the local transition.
+        $path = $this->writeSnapshot([[
+            'code' => 'TASK-700', 'title' => 'Closed locally', 'type' => 'feature',
+            'priority' => 'high', 'status' => 'open',
+            'updatedAt' => now()->subDay()->toIso8601String(),
+        ]]);
+
+        $this->artisan('tasks:import', ['--path' => $path])->assertSuccessful();
+
+        $this->assertSame('done', $task->fresh()->status,
+            'Import must not revert a status the local side changed after the snapshot was taken.');
+    }
+
+    public function test_import_applies_snapshot_status_when_no_local_transition_is_newer(): void
+    {
+        $org = Organization::factory()->create();
+
+        $task = Task::create([
+            'code' => 'TASK-701', 'title' => 'Stale local', 'type' => 'feature',
+            'priority' => 'high', 'status' => 'open', 'organization_id' => $org->id,
+        ]);
+
+        // Snapshot advances the task; no competing local transition exists.
+        $path = $this->writeSnapshot([[
+            'code' => 'TASK-701', 'title' => 'Stale local', 'type' => 'feature',
+            'priority' => 'high', 'status' => 'done',
+            'updatedAt' => now()->toIso8601String(),
+        ]]);
+
+        $this->artisan('tasks:import', ['--path' => $path])->assertSuccessful();
+
+        $this->assertSame('done', $task->fresh()->status,
+            'Import should still apply production status when there is no newer local transition.');
+    }
+
+    public function test_import_merges_comments_without_destroying_local_or_metadata(): void
+    {
+        $org = Organization::factory()->create();
+        $author = User::factory()->admin()->forOrganization($org)->create(['email' => 'author@example.com']);
+
+        $task = Task::create([
+            'code' => 'TASK-702', 'title' => 'Threaded', 'type' => 'feature',
+            'priority' => 'medium', 'status' => 'open', 'organization_id' => $org->id,
+        ]);
+        $task->comments()->create([
+            'body' => 'Local-only note that was never pushed',
+            'event_type' => TaskComment::EVENT_COMMENT,
+            'is_internal' => true,
+        ]);
+
+        $createdAt = now()->subMonth();
+        $path = $this->writeSnapshot([[
+            'code' => 'TASK-702', 'title' => 'Threaded', 'type' => 'feature',
+            'priority' => 'medium', 'status' => 'open',
+            'updatedAt' => now()->toIso8601String(),
+            'comments' => [[
+                'body' => 'Comment from production',
+                'author' => 'author@example.com',
+                'isInternal' => false,
+                'sentToCustomer' => true,
+                'eventType' => TaskComment::EVENT_COMMENT,
+                'createdAt' => $createdAt->toIso8601String(),
+            ]],
+        ]]);
+
+        $this->artisan('tasks:import', ['--path' => $path])->assertSuccessful();
+
+        $task->refresh();
+        $this->assertSame(2, $task->comments()->count(),
+            'Local-only comment must survive; snapshot comment must be added.');
+
+        $this->assertTrue($task->comments()->where('body', 'Local-only note that was never pushed')->exists(),
+            'Replace-all import used to destroy unpushed local comments.');
+
+        $imported = $task->comments()->where('body', 'Comment from production')->firstOrFail();
+        $this->assertSame($author->id, $imported->user_id, 'Author must be preserved from the snapshot.');
+        $this->assertTrue($imported->sent_to_customer, 'sent_to_customer must be preserved.');
+        // ISO-8601 truncates sub-second precision on both sides, so compare there.
+        $this->assertSame($createdAt->toIso8601String(), $imported->created_at->toIso8601String(),
+            'Original timestamp must be preserved, not reset to now.');
+
+        // Idempotent: re-importing the same snapshot adds nothing.
+        $this->artisan('tasks:import', ['--path' => $path])->assertSuccessful();
+        $this->assertSame(2, $task->fresh()->comments()->count(),
+            'Re-import must not duplicate the snapshot comment.');
+    }
+
+    /**
+     * Write a minimal tasks.jsonld snapshot to a temp path under the project
+     * and return the base_path-relative path the import command expects.
+     */
+    private function writeSnapshot(array $tasks): string
+    {
+        $relative = 'storage/framework/testing/import-snapshot.jsonld';
+        $full = base_path($relative);
+
+        if (!is_dir(dirname($full))) {
+            mkdir(dirname($full), 0775, true);
+        }
+
+        file_put_contents($full, json_encode([
+            '@type' => 'TaskCollection',
+            'schemaVersion' => '1.0',
+            'tasks' => $tasks,
+            'labels' => [],
+        ]));
+
+        return $relative;
+    }
 }

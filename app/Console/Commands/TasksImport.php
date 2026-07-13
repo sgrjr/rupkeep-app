@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\Label;
 use App\Models\Task;
 use App\Models\TaskComment;
+use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -37,7 +38,7 @@ class TasksImport extends Command
 
         $this->line("Loaded " . count($tasksData) . " tasks, " . count($labelsData) . " labels from " . $this->option('path'));
 
-        $summary = ['labels_created' => 0, 'labels_updated' => 0, 'tasks_created' => 0, 'tasks_updated' => 0, 'tasks_skipped' => 0];
+        $summary = ['labels_created' => 0, 'labels_updated' => 0, 'tasks_created' => 0, 'tasks_updated' => 0, 'tasks_skipped' => 0, 'statuses_preserved' => 0, 'comments_added' => 0];
 
         $run = function () use ($tasksData, $labelsData, &$summary) {
             // Labels first
@@ -80,6 +81,15 @@ class TasksImport extends Command
                 $task = Task::where('code', $code)->first();
 
                 if ($task) {
+                    // A local status transition newer than the snapshot means unpushed
+                    // work (dispatch:done etc.) — keep the local status instead of
+                    // silently reverting it to what production last saw.
+                    if ($payload['status'] !== $task->status && $this->localStatusIsNewer($task, $t)) {
+                        $this->warn("  {$code}: keeping local status `{$task->status}` (unpushed transition is newer than snapshot; snapshot says `{$payload['status']}`)");
+                        $payload['status'] = $task->status;
+                        $summary['statuses_preserved']++;
+                    }
+
                     $task->fill($payload);
                     if (isset($t['updatedAt'])) {
                         try { $task->updated_at = \Carbon\Carbon::parse($t['updatedAt']); } catch (\Throwable) {}
@@ -106,16 +116,41 @@ class TasksImport extends Command
                 }
                 $task->labels()->sync($labelIds);
 
-                // Sync comments (replace-all for simplicity on import; non-destructive on subsequent runs that have no comments in jsonld)
+                // Merge comments: add snapshot comments we don't have yet, keep
+                // local-only ones (replace-all used to destroy unpushed notes and
+                // reset every author/timestamp — see TASK-332).
                 if (!empty($t['comments'])) {
-                    $task->comments()->delete();
+                    $existing = $task->comments()
+                        ->get(['body', 'event_type'])
+                        ->map(fn ($c) => $c->event_type . '|' . $c->body)
+                        ->flip();
+
                     foreach ($t['comments'] as $c) {
-                        $task->comments()->create([
-                            'body' => $c['body'] ?? '',
+                        $body = $c['body'] ?? '';
+                        $eventType = $c['eventType'] ?? TaskComment::EVENT_COMMENT;
+
+                        if (isset($existing[$eventType . '|' . $body])) {
+                            continue;
+                        }
+
+                        $comment = $task->comments()->make([
+                            'body' => $body,
                             'is_internal' => (bool) ($c['isInternal'] ?? false),
-                            'event_type' => $c['eventType'] ?? TaskComment::EVENT_COMMENT,
+                            'sent_to_customer' => (bool) ($c['sentToCustomer'] ?? false),
+                            'event_type' => $eventType,
                             'meta' => $c['meta'] ?? null,
                         ]);
+
+                        if (!empty($c['author'])) {
+                            $comment->user_id = User::where('email', $c['author'])->value('id');
+                        }
+
+                        if (!empty($c['createdAt'])) {
+                            try { $comment->created_at = \Carbon\Carbon::parse($c['createdAt']); } catch (\Throwable) {}
+                        }
+
+                        $comment->save();
+                        $summary['comments_added']++;
                     }
                 }
             }
@@ -139,5 +174,31 @@ class TasksImport extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    /**
+     * True when the local task carries a status transition the snapshot can't
+     * know about — i.e. its latest status_change comment postdates the
+     * snapshot's updatedAt. No updatedAt in the snapshot means we can't tell,
+     * so the snapshot wins (pre-fix behaviour).
+     */
+    private function localStatusIsNewer(Task $task, array $snapshotTask): bool
+    {
+        if (empty($snapshotTask['updatedAt'])) {
+            return false;
+        }
+
+        try {
+            $snapshotUpdatedAt = \Carbon\Carbon::parse($snapshotTask['updatedAt']);
+        } catch (\Throwable) {
+            return false;
+        }
+
+        $lastTransition = $task->comments()
+            ->where('event_type', TaskComment::EVENT_STATUS_CHANGE)
+            ->latest('created_at')
+            ->first();
+
+        return $lastTransition && $lastTransition->created_at->gt($snapshotUpdatedAt);
     }
 }
