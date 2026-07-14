@@ -784,12 +784,38 @@
                 @if(optional($job->logs)->isNotEmpty())
                     <div class="space-y-4">
                         @foreach($job->logs ?? [] as $log)
-                            <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                            @php
+                                $statusCard = match($log->approval_status) {
+                                    'pending' => 'border-amber-200 bg-amber-50/60',
+                                    'confirmed' => 'border-emerald-200 bg-emerald-50/60',
+                                    'denied' => 'border-red-200 bg-red-50/60',
+                                    default => 'border-slate-200 bg-white',
+                                };
+                            @endphp
+                            <div class="rounded-3xl border {{ $statusCard }} p-5 shadow-sm">
                                 <div class="flex flex-wrap items-start justify-between gap-3">
                                     <div>
-                                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">{{ __('Log ID') }}: {{ $log->id }}</p>
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">{{ __('Log ID') }}: {{ $log->id }}</p>
+                                            @if($log->approval_status === 'pending')
+                                                <span class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                                                    <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                                    {{ __('Pending — awaiting driver log') }}
+                                                </span>
+                                            @elseif($log->approval_status === 'confirmed')
+                                                <span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                                                    <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+                                                    {{ __('Confirmed') }}
+                                                </span>
+                                            @elseif($log->approval_status === 'denied')
+                                                <span class="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">
+                                                    <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                    {{ __('Denied') }}
+                                                </span>
+                                            @endif
+                                        </div>
                                         <p class="text-sm font-semibold text-slate-900">{{ LocalTime::mediumDate($log->created_at) }}</p>
-                                        <p class="text-xs text-slate-500">{{ __('Driver') }}: {{ $log->driver?->name ?? '—' }}</p>
+                                        <p class="text-xs text-slate-500">{{ __('Driver') }}: {{ $log->user?->name ?? '—' }}</p>
                                     </div>
                                     <div class="flex flex-wrap items-center gap-2">
                                         @if(auth()->user()->can('update', $log))
