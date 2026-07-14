@@ -54,13 +54,16 @@ class SendJobAssignedNotification implements ShouldQueue
             $scheduledAt = Carbon::parse($job->scheduled_pickup_at)->toDayDateTimeString();
         }
 
+        $logUrl = route('my.jobs.show', ['job' => $job->id]);
+
         $message = sprintf(
-            "Hello %s,\n\nYou have been assigned to job %s.\nPickup: %s\nDelivery: %s\nScheduled Pickup: %s\n\nSign in to Rupkeep to review the job details.",
+            "Hello %s,\n\nYou have been assigned to job %s.\nPickup: %s\nDelivery: %s\nScheduled Pickup: %s\n\nView log: %s",
             $driver->name,
             $job->job_no ?? ('#'.$job->id),
             $job->pickup_address ?: 'Not yet provided',
             $job->delivery_address ?: 'Not yet provided',
-            $scheduledAt ?: 'Not scheduled'
+            $scheduledAt ?: 'Not scheduled',
+            $logUrl
         );
 
         $subject = sprintf('Job Assigned: %s', $job->job_no ?? ('Job '.$job->id));
