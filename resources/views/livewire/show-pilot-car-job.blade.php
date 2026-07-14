@@ -93,6 +93,18 @@
                            {{ $job->effective_rate_code ?? $job->rate_code ?? '—' }}
                         </p>
                     </div>
+                    <div>
+                        {{ __('Billable Miles') }}
+                        <p class="mt-1 text-lg font-bold normal-case text-white">
+                           {{ number_format((float) (optional($job->miles)->billable ?? 0), 1) }}
+                        </p>
+                    </div>
+                    <div>
+                        {{ __('Total Miles') }}
+                        <p class="mt-1 text-lg font-bold normal-case text-white">
+                           {{ number_format((float) (optional($job->miles)->total ?? 0), 1) }}
+                        </p>
+                    </div>
                     @php
                         $rateComparison = $job->getRateComparison();
                     @endphp
