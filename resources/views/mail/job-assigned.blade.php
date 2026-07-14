@@ -67,16 +67,25 @@
                                 </table>
                             </div>
                             
+                            @php
+                                $needsConfirmation = isset($log) && $log && $log->approval_status === 'pending';
+                                $actionUrl = isset($log) && $log
+                                    ? route('logs.edit', ['log' => $log->id])
+                                    : route('my.jobs.show', ['job' => $job->id]);
+                            @endphp
+
                             <p style="margin: 20px 0 0 0; color: #374151; font-size: 16px; line-height: 1.6;">
-                                {{ __('Please review the complete job details and submit your log entry using the link below.') }}
+                                {{ $needsConfirmation
+                                    ? __('Open the assignment below to review it and tap Confirm to accept the job. The job is not accepted until you confirm it.')
+                                    : __('Please review the complete job details and submit your log entry using the link below.') }}
                             </p>
-                            
+
                             <!-- CTA Button -->
                             <table role="presentation" style="width: 100%; margin: 30px 0; border-collapse: collapse;">
                                 <tr>
                                     <td align="center" style="padding: 0;">
-                                        <a href="{{ route('my.jobs.show', ['job' => $job->id]) }}" style="display: inline-block; background-color: #f9b104; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 2px 4px rgba(249, 177, 4, 0.3);">
-                                            {{ __('View Job Details') }}
+                                        <a href="{{ $actionUrl }}" style="display: inline-block; background-color: #f9b104; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 2px 4px rgba(249, 177, 4, 0.3);">
+                                            {{ $needsConfirmation ? __('Review Assignment') : __('View Job Details') }}
                                         </a>
                                     </td>
                                 </tr>

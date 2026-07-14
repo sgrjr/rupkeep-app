@@ -54,16 +54,33 @@ class SendJobAssignedNotification implements ShouldQueue
             $scheduledAt = Carbon::parse($job->scheduled_pickup_at)->toDayDateTimeString();
         }
 
-        $logUrl = route('my.jobs.show', ['job' => $job->id]);
+        // Link straight to where the driver can act on the assignment: the log
+        // edit page carries the Confirm/Deny buttons. Fall back to the job page
+        // if we weren't handed the log (e.g. legacy callers / tests).
+        $actionUrl = $event->log
+            ? route('logs.edit', ['log' => $event->log->id])
+            : route('my.jobs.show', ['job' => $job->id]);
+
+        // The call to action depends on the log's real state. A freshly
+        // assigned log is 'pending' (the default) and needs the driver to
+        // accept it; but if the log was already confirmed before this fires,
+        // there is nothing to accept — the message is purely informational.
+        $needsConfirmation = ! $event->log || $event->log->approval_status === 'pending';
+
+        // Kept short and ASCII-only (GSM-7) so carriers send it as plain SMS
+        // rather than converting a long/Unicode body into an MMS attachment.
+        // "tap Confirm" makes clear acceptance is a deliberate action in the
+        // app — opening the link alone does not accept the job.
+        $callToAction = $needsConfirmation
+            ? sprintf('Open and tap Confirm to accept: %s', $actionUrl)
+            : sprintf('View job details: %s', $actionUrl);
 
         $message = sprintf(
-            "Hello %s,\n\nYou have been assigned to job %s.\nPickup: %s\nDelivery: %s\nScheduled Pickup: %s\n\nView log: %s",
-            $driver->name,
+            "Job %s assigned to you.\nPickup: %s\nScheduled: %s\n%s",
             $job->job_no ?? ('#'.$job->id),
             $job->pickup_address ?: 'Not yet provided',
-            $job->delivery_address ?: 'Not yet provided',
             $scheduledAt ?: 'Not scheduled',
-            $logUrl
+            $callToAction
         );
 
         $subject = sprintf('Job Assigned: %s', $job->job_no ?? ('Job '.$job->id));
@@ -72,7 +89,8 @@ class SendJobAssignedNotification implements ShouldQueue
         $this->mailSafely($recipient, new UserNotification($message, $subject, 'mail.job-assigned', [
             'job' => $job,
             'driver' => $driver,
-        ]));
+            'log' => $event->log,
+        ], $job->organization?->name));
 
         // Send push notification if driver has push subscriptions
         try {

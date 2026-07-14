@@ -34,7 +34,7 @@ class UserLog extends Model
             $log->loadMissing('job', 'user');
 
             if ($log->job && $log->user) {
-                event(new JobAssigned($log->job, $log->user));
+                event(new JobAssigned($log->job, $log->user, $log));
             }
         });
 
@@ -43,7 +43,7 @@ class UserLog extends Model
                 $log->loadMissing('job', 'user');
 
                 if ($log->job && $log->user) {
-                    event(new JobAssigned($log->job, $log->user));
+                    event(new JobAssigned($log->job, $log->user, $log));
                 }
             }
         });

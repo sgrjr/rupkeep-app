@@ -4,6 +4,7 @@ namespace App\Events;
 
 use App\Models\PilotCarJob;
 use App\Models\User;
+use App\Models\UserLog;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
@@ -14,7 +15,8 @@ class JobAssigned
 
     public function __construct(
         public PilotCarJob $job,
-        public User $driver
+        public User $driver,
+        public ?UserLog $log = null
     ) {
     }
 }

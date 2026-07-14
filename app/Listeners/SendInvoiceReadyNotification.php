@@ -29,17 +29,20 @@ class SendInvoiceReadyNotification implements ShouldQueue
 
         $subject = sprintf('Invoice Ready: %s', $invoice->invoice_number);
 
+        $orgName = $invoice->organization?->name ?: 'your organization';
+
         $message = sprintf(
-            "Invoice %s is ready for review.\nCustomer: %s\nTotal Due: %s\n\nSign in to Rupkeep to approve or send the invoice.",
+            "Invoice %s is ready for review.\nCustomer: %s\nTotal Due: %s\n\nSign in to %s to approve or send the invoice.",
             $invoice->invoice_number,
             optional($invoice->customer)->name ?: 'Unknown customer',
-            number_format($invoice->values['total'] ?? 0, 2)
+            number_format($invoice->values['total'] ?? 0, 2),
+            $orgName
         );
 
-        $recipients->each(function (string $address) use ($subject, $message, $invoice) {
+        $recipients->each(function (string $address) use ($subject, $message, $invoice, $orgName) {
             $this->mailSafely($address, new UserNotification($message, $subject, 'mail.invoice-ready', [
                 'invoice' => $invoice,
-            ]));
+            ], $orgName));
         });
     }
 

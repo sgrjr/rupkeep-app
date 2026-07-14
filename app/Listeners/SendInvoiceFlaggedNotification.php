@@ -33,17 +33,20 @@ class SendInvoiceFlaggedNotification implements ShouldQueue
             return;
         }
 
+        $orgName = $invoice->organization?->name ?: 'your organization';
+
         $message = sprintf(
-            "Invoice %s was flagged for attention.\nComment by %s: %s\n\nSign in to Rupkeep to review and respond.",
+            "Invoice %s was flagged for attention.\nComment by %s: %s\n\nSign in to %s to review and respond.",
             $invoice->invoice_number,
             optional($comment->user)->name ?: 'Unknown user',
-            Str::limit($comment->body, 240)
+            Str::limit($comment->body, 240),
+            $orgName
         );
 
         $subject = sprintf('Invoice Flagged: %s', $invoice->invoice_number);
 
-        $recipients->each(function (string $address) use ($message, $subject) {
-            $this->mailSafely($address, new UserNotification($message, $subject));
+        $recipients->each(function (string $address) use ($message, $subject, $orgName) {
+            $this->mailSafely($address, new UserNotification($message, $subject, 'mail.notification-text', [], $orgName));
         });
     }
 

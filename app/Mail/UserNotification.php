@@ -5,6 +5,7 @@ namespace App\Mail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
@@ -17,16 +18,23 @@ class UserNotification extends Mailable
     private $message;
     public $view;
     public $viewData;
+    public $fromName;
 
     /**
      * Create a new message instance.
+     *
+     * @param  string|null  $fromName  Display name for the From header. In this
+     *   multi-tenant app the sender should read as the tenant organization
+     *   (e.g. "Casco Bay Pilot Car"), not the parent platform. The From
+     *   address stays the verified sending identity; only the label changes.
      */
-    public function __construct($message, $subject = 'User Notification', $view = 'mail.notification-text', $viewData = [])
+    public function __construct($message, $subject = 'User Notification', $view = 'mail.notification-text', $viewData = [], $fromName = null)
     {
         $this->subject = $subject;
         $this->message = $message;
         $this->view = $view;
         $this->viewData = $viewData;
+        $this->fromName = $fromName;
     }
 
     /**
@@ -35,6 +43,7 @@ class UserNotification extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
+            from: new Address(config('mail.from.address'), $this->fromName ?: config('mail.from.name')),
             subject: $this->subject,
         );
     }

@@ -52,7 +52,7 @@
                             </div>
                             
                             <p style="margin: 20px 0 0 0; color: #374151; font-size: 16px; line-height: 1.6;">
-                                {{ __('Please sign in to Rupkeep to review, approve, or send this invoice to the customer.') }}
+                                {{ __('Please sign in to :org to review, approve, or send this invoice to the customer.', ['org' => $invoice->organization?->name ?? __('your organization')]) }}
                             </p>
                             
                             <!-- CTA Button -->
@@ -72,7 +72,7 @@
                     <tr>
                         <td style="padding: 20px 30px; background-color: #f9fafb; border-top: 1px solid #e5e7eb; border-radius: 0 0 12px 12px; text-align: center;">
                             <p style="margin: 0; color: #6b7280; font-size: 12px;">
-                                {{ __('This is an automated notification from Rupkeep Pilot Car Management System.') }}
+                                {{ __('This is an automated notification from :org.', ['org' => $invoice->organization?->name ?? __('your organization')]) }}
                             </p>
                         </td>
                     </tr>
