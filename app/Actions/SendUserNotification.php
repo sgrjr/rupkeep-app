@@ -25,7 +25,7 @@ class SendUserNotification
         $recipient = $user->getSmsGatewayAddress() ?? $user->email;
         $isSmsGateway = $user->getSmsGatewayAddress() !== null;
         
-        Log::warning('SendUserNotification: Preparing to send', [
+        Log::info('SendUserNotification: Preparing to send', [
             'user_id' => $user->id,
             'user_name' => $user->name,
             'recipient' => $recipient,
