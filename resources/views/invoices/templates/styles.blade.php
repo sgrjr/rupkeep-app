@@ -592,6 +592,63 @@
         display: block;
     }
 
+    /*
+     * PDF / print-document overrides (TASK-340).
+     *
+     * The dedicated print view (invoices/print.blade.php → body.invoice-doc--print)
+     * is rendered by dompdf, which uses the "screen" media type and therefore
+     * IGNORES the @media print block below, and does not support flexbox. Without
+     * these unconditional rules the generated PDF keeps the on-screen card chrome
+     * (rounded corners, outer margin, drop shadow) and the flex header collapses
+     * into two stacked full-width rows, wasting the top of the page. Scope is
+     * limited to --print so the browser portal view (--portal) is unaffected.
+     */
+    .invoice-doc--print {
+        background: #ffffff;
+        min-height: 0;
+    }
+
+    .invoice-doc--print .page {
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
+    }
+
+    /* dompdf ignores flexbox; lay the header out as a fixed table so the two
+       columns sit side by side instead of stacking. */
+    .invoice-doc--print header {
+        display: table;
+        width: 100%;
+        table-layout: fixed;
+        padding: 1rem 1.25rem;
+        gap: 0;
+    }
+
+    .invoice-doc--print header .header-left,
+    .invoice-doc--print header .header-right {
+        display: table-cell;
+        width: 50%;
+        vertical-align: top;
+    }
+
+    .invoice-doc--print header .header-right {
+        text-align: right;
+    }
+
+    /* header-left's own flex (logo beside company block) also collapses under
+       dompdf; float the logo so it sits beside the title when one is present. */
+    .invoice-doc--print header .invoice-logo {
+        float: left;
+        margin-right: 1rem;
+    }
+
+    .invoice-doc--print header .invoice-title {
+        overflow: hidden;
+    }
+
     @media print {
         .no-print {
             display: none !important;
