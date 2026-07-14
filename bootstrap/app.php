@@ -31,6 +31,13 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Services\ExperienceTrackerService::trackError($e);
         });
 
+        // Open a Dispatch bug task from uncaught exceptions (TASK-337). Gated by
+        // config so only production auto-captures; deduped by signature; never
+        // throws. See App\Services\ExceptionCaptureService.
+        $exceptions->report(function (\Throwable $e) {
+            \App\Services\ExceptionCaptureService::capture($e);
+        });
+
         $exceptions->render(function(ViewException $e, $request){
             // Handle Vite manifest errors (deprecated ViteManifestNotFoundException replaced with RuntimeException)
             if (str_contains($e->getMessage(), 'Vite manifest') || str_contains($e->getMessage(), 'manifest.json')) {

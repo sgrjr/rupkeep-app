@@ -30,6 +30,7 @@ class Task extends Model
         'submitter_user_id',
         'assignee_user_id',
         'promoted_from_user_event_id',
+        'exception_signature',
         'position',
     ];
 

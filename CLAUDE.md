@@ -96,6 +96,10 @@ The customer immediately sees their submission at `/portal/tasks/{code}` and the
 
 **Historical data**: legacy `user_events` rows with `type='feedback'` (from before this integration) are converted with `php artisan dispatch:backfill-feedback`. Idempotent — safe to re-run.
 
+## Where auto-captured exceptions land
+
+When `DISPATCH_AUTO_CAPTURE=true` (production only by default), an uncaught 500-level exception opens a `bug` task in `triage` labeled `source:exception` — filter the queue with `php artisan dispatch:queue --status=triage --label=source:exception`. Recurring identical exceptions are deduped onto the existing open task (an internal "occurrence #N" comment is appended). Expected 4xx client errors are ignored. See `App\Services\ExceptionCaptureService` and [`docs/FEATURE_FLAGS.md`](docs/FEATURE_FLAGS.md) for the full behavior and guardrails. Task-minting for both this path and `dispatch:add` lives in `App\Services\DispatchTaskService`.
+
 ## Sync setup (one-time, for new dev environments)
 
 Edit `.env` and add:

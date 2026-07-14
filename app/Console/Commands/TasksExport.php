@@ -74,6 +74,7 @@ class TasksExport extends Command
             'priority' => $t->priority,
             'status' => $t->status,
             'isPublic' => (bool) $t->is_public,
+            'exceptionSignature' => $t->exception_signature,
             'labels' => $t->labels->pluck('name')->all(),
             'submitter' => $t->submitter?->email,
             'assignee' => $t->assignee?->email,

@@ -76,6 +76,7 @@ class TasksImport extends Command
                     'priority' => in_array($t['priority'] ?? null, Task::PRIORITIES, true) ? $t['priority'] : 'medium',
                     'status' => in_array($t['status'] ?? null, Task::STATUSES, true) ? $t['status'] : 'triage',
                     'is_public' => (bool) ($t['isPublic'] ?? false),
+                    'exception_signature' => $t['exceptionSignature'] ?? null,
                 ];
 
                 $task = Task::where('code', $code)->first();

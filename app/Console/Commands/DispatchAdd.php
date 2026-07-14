@@ -2,11 +2,10 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Label;
 use App\Models\Task;
 use App\Models\User;
+use App\Services\DispatchTaskService;
 use Illuminate\Console\Command;
-use Illuminate\Support\Str;
 
 class DispatchAdd extends Command
 {
@@ -22,7 +21,7 @@ class DispatchAdd extends Command
 
     protected $description = 'Create a new task in the local Dispatch DB.';
 
-    public function handle(): int
+    public function handle(DispatchTaskService $tasks): int
     {
         $type = $this->option('type');
         $priority = $this->option('priority');
@@ -41,31 +40,16 @@ class DispatchAdd extends Command
             return self::FAILURE;
         }
 
-        $submitter = $this->resolveSubmitter();
+        $labelNames = array_values(array_filter(array_map('trim', (array) $this->option('label')), fn ($n) => $n !== ''));
 
-        $task = Task::create([
-            'code'              => Task::nextCode(),
-            'title'             => Str::limit(trim($this->argument('title')), 255, '…'),
-            'description'       => $this->option('description'),
-            'type'              => $type,
-            'priority'          => $priority,
-            'status'            => $status,
-            'is_public'         => (bool) $this->option('public'),
-            'organization_id'   => $submitter?->organization_id,
-            'submitter_user_id' => $submitter?->id,
-        ]);
-
-        $labelNames = (array) $this->option('label');
-        $labelIds = [];
-        foreach ($labelNames as $name) {
-            $name = trim($name);
-            if ($name === '') continue;
-            $label = Label::firstOrCreate(['name' => $name]);
-            $labelIds[] = $label->id;
-        }
-        if (!empty($labelIds)) {
-            $task->labels()->syncWithoutDetaching($labelIds);
-        }
+        $task = $tasks->create([
+            'title'       => $this->argument('title'),
+            'description' => $this->option('description'),
+            'type'        => $type,
+            'priority'    => $priority,
+            'status'      => $status,
+            'is_public'   => (bool) $this->option('public'),
+        ], $labelNames, $this->resolveSubmitter());
 
         $this->info("Created {$task->code}: {$task->title}");
         $this->line("  type: {$type}  ·  priority: {$priority}  ·  status: {$status}  ·  public: " . ($task->is_public ? 'yes' : 'no'));
@@ -82,7 +66,7 @@ class DispatchAdd extends Command
             return User::where('email', $email)->first();
         }
 
-        return User::whereHas('organization', fn ($q) => $q->where('name', 'Reynolds Upkeep'))->first()
-            ?? User::orderBy('id')->first();
+        // null → the service falls back to its default submitter.
+        return null;
     }
 }
