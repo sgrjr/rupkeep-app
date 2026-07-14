@@ -3,15 +3,16 @@
 namespace App\Listeners;
 
 use App\Events\InvoiceReady;
+use App\Listeners\Concerns\SendsNotificationMail;
 use App\Mail\UserNotification;
 use App\Models\User;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Support\Facades\Mail;
 
 class SendInvoiceReadyNotification implements ShouldQueue
 {
     use InteractsWithQueue;
+    use SendsNotificationMail;
 
     /**
      * Handle the event.
@@ -36,7 +37,7 @@ class SendInvoiceReadyNotification implements ShouldQueue
         );
 
         $recipients->each(function (string $address) use ($subject, $message, $invoice) {
-            Mail::to($address)->send(new UserNotification($message, $subject, 'mail.invoice-ready', [
+            $this->mailSafely($address, new UserNotification($message, $subject, 'mail.invoice-ready', [
                 'invoice' => $invoice,
             ]));
         });

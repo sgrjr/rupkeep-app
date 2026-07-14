@@ -3,17 +3,18 @@
 namespace App\Listeners;
 
 use App\Events\JobAssigned;
+use App\Listeners\Concerns\SendsNotificationMail;
 use App\Mail\UserNotification;
 use App\Notifications\JobUpdate;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 
 class SendJobAssignedNotification implements ShouldQueue
 {
     use InteractsWithQueue;
+    use SendsNotificationMail;
 
     /**
      * Handle the event.
@@ -64,13 +65,11 @@ class SendJobAssignedNotification implements ShouldQueue
 
         $subject = sprintf('Job Assigned: %s', $job->job_no ?? ('Job '.$job->id));
 
-        // Use standard Laravel Mail facade (respects mail configuration)
-        Mail::to($recipient)->send(
-            new UserNotification($message, $subject, 'mail.job-assigned', [
-                'job' => $job,
-                'driver' => $driver,
-            ])
-        );
+        // Best-effort send — a mail misconfig must not dead-letter the job.
+        $this->mailSafely($recipient, new UserNotification($message, $subject, 'mail.job-assigned', [
+            'job' => $job,
+            'driver' => $driver,
+        ]));
 
         // Send push notification if driver has push subscriptions
         try {

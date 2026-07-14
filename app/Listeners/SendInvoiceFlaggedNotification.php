@@ -3,16 +3,17 @@
 namespace App\Listeners;
 
 use App\Events\InvoiceFlagged;
+use App\Listeners\Concerns\SendsNotificationMail;
 use App\Mail\UserNotification;
 use App\Models\User;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class SendInvoiceFlaggedNotification implements ShouldQueue
 {
     use InteractsWithQueue;
+    use SendsNotificationMail;
 
     /**
      * Handle the event.
@@ -42,7 +43,7 @@ class SendInvoiceFlaggedNotification implements ShouldQueue
         $subject = sprintf('Invoice Flagged: %s', $invoice->invoice_number);
 
         $recipients->each(function (string $address) use ($message, $subject) {
-            Mail::to($address)->send(new UserNotification($message, $subject));
+            $this->mailSafely($address, new UserNotification($message, $subject));
         });
     }
 
