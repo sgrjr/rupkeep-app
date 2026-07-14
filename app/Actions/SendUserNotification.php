@@ -4,6 +4,7 @@ namespace App\Actions;
 
 use App\Models\User;
 use App\Mail\UserNotification;
+use App\Mail\UserNotificationSms;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Bus\Queueable;
@@ -155,8 +156,8 @@ class SendUserNotification
                 throw new \Exception('SMTP mailer is not properly configured. Missing MAIL_USERNAME or MAIL_PASSWORD.');
             }
             
-            Mail::to($recipient)->send(new UserNotification($message, $subject));
-            
+            static::sendSmtpOrSms(is_sms: $isSmsGateway, recipient: $recipient, message: $message, subject: $subject);
+
             Log::info('SendUserNotification: Sent successfully via Laravel Mail', [
                 'user_id' => $user->id,
                 'recipient' => $recipient,
@@ -226,5 +227,16 @@ class SendUserNotification
         $result = $gmail->users_messages->send('me', $gmailMessage);
         return $result;
         */
+    }
+
+    public static function sendSmtpOrSms($is_sms, $recipient, $message, $subject):void 
+    {
+        if($is_sms){
+            //not sending subject ON PURPOSE to prevent the carrier from misinterpreting message as anything but plain text.
+            Mail::to($recipient)->send(new UserNotificationSms($message));
+        }else{
+            Mail::to($recipient)->send(new UserNotification($message, $subject));
+        }    
+
     }
 }

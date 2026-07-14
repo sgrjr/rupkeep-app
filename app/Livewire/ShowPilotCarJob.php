@@ -186,12 +186,12 @@ class ShowPilotCarJob extends Component
                 'approval_status' => 'pending', // New logs require approval before editing
             ];
 
-            $message = "New job assignment [{$values['vehicle_position']} car] for {$this->job->customer->name}. Job NO. {$this->job->job_no} | Load NO. {$this->job->load_no}. Pickup: {$this->job->pickup_address} @{$this->job->scheduled_pickup_at} {$this->job->memo}. For updates https://rupkeep.com/my/jobs/{$this->job->id}";
+            $message = "New job assignment [{$values['vehicle_position']} car] for {$this->job->customer->name}. Job NO. {$this->job->job_no} | Load NO. {$this->job->load_no}. Pickup: {$this->job->pickup_address} @{$this->job->scheduled_pickup_at} {$this->job->memo}. For updates https://pilotcar.io/my/jobs/{$this->job->id}";
 
             $new_log = UserLog::create($values);
             
             if ($new_log->user) {
-                SendUserNotification::to($new_log->user, $message, subject: 'New Job');
+                SendUserNotification::to($new_log->user, $message, subject: "New Job {$this->job->load_no}");
             }
 
             // Reload job relations to show the new log
