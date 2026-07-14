@@ -67,7 +67,7 @@
         $deadQty = isset($values['dead_head']) ? (float) $values['dead_head'] : 0;
         $deadRate = $deadQty > 0 ? ($deadAmount / $deadQty) : 0;
         $lineItems[] = [
-            'description' => __('Dead'),
+            'description' => __('Dead Head Miles'),
             'quantity' => $deadQty,
             'rate' => $deadRate,
             'amount' => $deadAmount,
@@ -117,6 +117,22 @@
         __('Wait Time (hrs)') => $values['wait_time_hours'] ?? null,
         __('Mini Add-On') => (isset($values['mini_addon_amount']) && (float) $values['mini_addon_amount'] > 0) ? '$' . number_format((float) $values['mini_addon_amount'], 2) : null,
     ];
+
+    // Job-detail fields shown in the invoice body. Sourced from the invoice
+    // `values` (populated by PilotCarJob::invoiceValues()), with the job record
+    // as a fallback. The truck driver/number/trailer aggregates come back as an
+    // empty string (not '—') when a job has no logs, so coerce empties to null.
+    $job = $invoice->job;
+    $jobNo = $job?->job_no;
+    $jobDate = LocalTime::format($job?->scheduled_pickup_at ?? ($values['start_job_time'] ?? null), 'm/d/Y', '—');
+    $loadNo = ($values['load_no'] ?? null) ?: $job?->load_no;
+    $truckDriverName = trim((string) ($values['truck_driver_name'] ?? '')) ?: null;
+    $truckNumber = trim((string) ($values['truck_number'] ?? '')) ?: null;
+    $trailerNumber = trim((string) ($values['trailer_number'] ?? '')) ?: null;
+    $pickupAddress = ($values['pickup_address'] ?? null) ?: $job?->pickup_address;
+    $deliveryAddress = ($values['delivery_address'] ?? null) ?: $job?->delivery_address;
+    $canceledAt = $job?->canceled_at;
+    $canceledReason = trim((string) ($job?->canceled_reason ?? '')) ?: null;
 @endphp
 
 @if($invoice->job && auth()->check() && auth()->user()->organization_id)
@@ -236,6 +252,31 @@
         </div>
     </header>
 
+    @if(!$isSummary)
+    <div class="job-info">
+        <table class="job-info__grid">
+            <tr>
+                <td><span class="job-info__label">{{ __('Job Date') }}</span>{{ $jobDate }}</td>
+                <td><span class="job-info__label">{{ __('Job Number') }}</span>{{ $jobNo ?: '—' }}</td>
+                <td><span class="job-info__label">{{ __('Load Number') }}</span>{{ $loadNo ?: '—' }}</td>
+            </tr>
+            <tr>
+                <td><span class="job-info__label">{{ __('Truck Driver') }}</span>{{ $truckDriverName ?: '—' }}</td>
+                <td><span class="job-info__label">{{ __('Truck Number') }}</span>{{ $truckNumber ?: '—' }}</td>
+                <td><span class="job-info__label">{{ __('Trailer Number') }}</span>{{ $trailerNumber ?: '—' }}</td>
+            </tr>
+        </table>
+        <table class="job-info__grid job-info__locations">
+            <tr>
+                <td><span class="job-info__label">{{ __('Pickup Location') }}</span>{{ $pickupAddress ?: '—' }}</td>
+                <td><span class="job-info__label">{{ __('Delivery Location') }}</span>{{ $deliveryAddress ?: '—' }}</td>
+            </tr>
+        </table>
+        @if($canceledAt)
+            <div class="job-info__canceled">{{ __('CANCELED') }}@if($canceledReason) — {{ $canceledReason }}@endif</div>
+        @endif
+    </div>
+    @endif
 
     <div class="details">
         <table>

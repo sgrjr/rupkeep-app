@@ -589,6 +589,63 @@
         width: 1rem;
     }
 
+    /* Job-detail block on single invoices (TASK-344): job date, job/load
+       numbers, truck driver/number, trailer number, pickup/delivery. Table
+       layout so it renders under dompdf (no flex/grid). Explicit resets keep it
+       from inheriting the line-item table's borders and right-aligned last cell. */
+    .invoice-doc .job-info {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--invoice-border);
+    }
+
+    .invoice-doc .job-info table {
+        width: 100%;
+        border-collapse: collapse;
+        background: transparent;
+    }
+
+    .invoice-doc .job-info tr {
+        border: none;
+    }
+
+    .invoice-doc .job-info td {
+        width: 33%;
+        vertical-align: top;
+        text-align: left;
+        font-weight: 400;
+        padding: 0.3rem 0.75rem 0.3rem 0;
+        font-size: 0.9rem;
+        color: var(--invoice-text);
+    }
+
+    .invoice-doc .job-info td:last-child {
+        text-align: left;
+        font-weight: 400;
+    }
+
+    .invoice-doc .job-info__locations td {
+        width: 50%;
+    }
+
+    .invoice-doc .job-info__label {
+        display: block;
+        margin-bottom: 0.1rem;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 700;
+        color: var(--invoice-muted);
+    }
+
+    .invoice-doc .job-info__canceled {
+        margin-top: 0.5rem;
+        font-weight: 700;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #dc2626;
+    }
+
     .no-print {
         display: block;
     }
