@@ -67,6 +67,11 @@ class EditLogForm extends Form
 
     public $memo = null;
 
+    // The related PilotCarJob's customer-facing memo (job_public_memo, TASK-091).
+    // Not a UserLog column — saveLog() persists it onto $this->log->job separately.
+    #[Validate('nullable|string|max:1000')]
+    public $job_public_memo = null;
+
     // This is a boolean from the form, will convert to 0/1 for DB
     #[Validate('nullable|boolean')]
     public $pretrip_check = false;
@@ -102,7 +107,7 @@ class EditUserLog extends Component
     // Properties to manage the open/closed state of details sections
     public $isDriverVehicleOpen = false; // Default to open
     public $isTripTimingOpen = false;
-    public $isMileageDetailsOpen = false;
+    public $isJobDetailsOpen = false;
     public $isExpenseDetailsOpen = false;
     public $isLoadInformationOpen = false;
     public $isAttachmentsOpen = false;
@@ -117,7 +122,7 @@ class EditUserLog extends Component
     {
         $this->isDriverVehicleOpen = true;
         $this->isTripTimingOpen = true;
-        $this->isMileageDetailsOpen = true;
+        $this->isJobDetailsOpen = true;
         $this->isExpenseDetailsOpen = true;
         $this->isLoadInformationOpen = true;
         $this->isAttachmentsOpen = true;
@@ -127,7 +132,7 @@ class EditUserLog extends Component
     {
         $this->isDriverVehicleOpen = false;
         $this->isTripTimingOpen = false;
-        $this->isMileageDetailsOpen = false;
+        $this->isJobDetailsOpen = false;
         $this->isExpenseDetailsOpen = false;
         $this->isLoadInformationOpen = false;
         $this->isAttachmentsOpen = false;
@@ -218,6 +223,7 @@ class EditUserLog extends Component
             'gas' => $this->log->gas,
             'hotel' => $this->log->hotel,
             'memo' => $this->log->memo,
+            'job_public_memo' => $this->log->job?->public_memo,
             'pretrip_check' => (bool)$this->log->pretrip_check,
             'maintenance_memo' => $this->log->maintenance_memo,
             // <input type="datetime-local"> requires "Y-m-d\TH:i". Carbon's default
@@ -300,7 +306,8 @@ class EditUserLog extends Component
                 'job_id',
                 'new_truck_driver_name',
                 'new_truck_driver_phone',
-                'new_truck_driver_memo'
+                'new_truck_driver_memo',
+                'job_public_memo', // belongs to PilotCarJob, not UserLog — persisted separately below
             ]);
 
             $updateData['load_canceled'] = $this->form->load_canceled ? 1 : 0;
@@ -317,6 +324,13 @@ class EditUserLog extends Component
             }
 
             $this->log->update($updateData);
+
+            // TASK-091: the Job's customer-facing memo is edited here but lives
+            // on the related PilotCarJob, not the UserLog — guard for a log
+            // whose job was deleted/detached.
+            if ($this->log->job) {
+                $this->log->job->update(['public_memo' => $this->form->job_public_memo]);
+            }
 
             $this->dispatch('saved');
 

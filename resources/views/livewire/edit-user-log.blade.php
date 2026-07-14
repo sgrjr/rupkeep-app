@@ -254,6 +254,13 @@
                             </select>
                             @error('form.vehicle_position') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                         </div>
+                        <div class="sm:col-span-2">
+                            <label for="memo" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Log Memo (Internal)') }}</label>
+                            <textarea id="memo" wire:model.blur="form.memo" rows="4" class="mt-2 block w-full rounded-2xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"></textarea>
+                            <p class="mt-1 text-xs text-slate-400">{{ __('This memo is internal and private. It will NOT be displayed on invoices. Only organization users can view this. To add notes that appear on invoices, use the Job Memo (External) field in Load Information below.') }}</p>
+                            @error('form.memo') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
+                        </div>
+                    </div>
                 </details>
             </section>
 
@@ -275,6 +282,27 @@
                             @error('form.clock_out') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                         </div>
                         <div>
+                            <label for="start_mileage" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Start Mileage') }}</label>
+                            <input type="number" id="start_mileage" wire:model.blur="form.start_mileage" class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                            @error('form.start_mileage') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
+                        </div>
+                        <div>
+                            <label for="end_mileage" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('End Mileage') }}</label>
+                            <input type="number" id="end_mileage" wire:model.blur="form.end_mileage" class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                            @error('form.end_mileage') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
+                        </div>
+                    </div>
+                </details>
+            </section>
+
+            <section class="rounded-3xl border border-slate-200 bg-white/90 p-5 shadow-sm sm:p-6">
+                <details {{ $isJobDetailsOpen ? 'open' : '' }} class="group space-y-5">
+                    <summary wire:click="$toggle('isJobDetailsOpen')" class="flex cursor-pointer items-center justify-between gap-4 border-b border-slate-100 pb-3 text-lg font-semibold text-slate-900">
+                        <span>{{ __('Job Details') }} <span class="text-sm font-normal text-slate-500">— {{ $mileageSummary }}</span></span>
+                        <svg class="h-4 w-4 transition group-open:rotate-180" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>
+                    </summary>
+                    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                        <div>
                             <label for="started_at" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Job Start Time') }}</label>
                             <input type="datetime-local" id="started_at" wire:model="form.started_at" class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
                             @error('form.started_at') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
@@ -283,22 +311,6 @@
                             <label for="ended_at" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Job End Time') }}</label>
                             <input type="datetime-local" id="ended_at" wire:model="form.ended_at" class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
                             @error('form.ended_at') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
-                        </div>
-                    </div>
-                </details>
-            </section>
-
-            <section class="rounded-3xl border border-slate-200 bg-white/90 p-5 shadow-sm sm:p-6">
-                <details {{ $isMileageDetailsOpen ? 'open' : '' }} class="group space-y-5">
-                    <summary wire:click="$toggle('isMileageDetailsOpen')" class="flex cursor-pointer items-center justify-between gap-4 border-b border-slate-100 pb-3 text-lg font-semibold text-slate-900">
-                        <span>{{ __('Mileage & Stops') }} <span class="text-sm font-normal text-slate-500">— {{ $mileageSummary }}</span></span>
-                        <svg class="h-4 w-4 transition group-open:rotate-180" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>
-                    </summary>
-                    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                        <div>
-                            <label for="start_mileage" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Start Mileage') }}</label>
-                            <input type="number" id="start_mileage" wire:model.blur="form.start_mileage" class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
-                            @error('form.start_mileage') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                         </div>
                         <div>
                             <label for="start_job_mileage" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Start Job Mileage') }}</label>
@@ -309,11 +321,6 @@
                             <label for="end_job_mileage" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('End Job Mileage') }}</label>
                             <input type="number" id="end_job_mileage" wire:model.blur="form.end_job_mileage" class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
                             @error('form.end_job_mileage') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
-                        </div>
-                        <div>
-                            <label for="end_mileage" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('End Mileage') }}</label>
-                            <input type="number" id="end_mileage" wire:model.blur="form.end_mileage" class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
-                            @error('form.end_mileage') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                         </div>
                         <div>
                             <label for="billable_miles" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Billable Miles') }}</label>
@@ -462,10 +469,10 @@
                             </details>
                         </div>
                         <div class="md:col-span-2">
-                            <label for="memo" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Log Memo (Internal)') }}</label>
-                            <textarea id="memo" wire:model.blur="form.memo" rows="4" class="mt-2 block w-full rounded-2xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"></textarea>
-                            <p class="mt-1 text-xs text-slate-400">{{ __('This memo is internal and private. It will NOT be displayed on invoices. Only organization users can view this. To add notes that appear on invoices, use the job-level public memo field.') }}</p>
-                            @error('form.memo') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
+                            <label for="job_public_memo" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Job Memo (External)') }}</label>
+                            <textarea id="job_public_memo" wire:model.blur="form.job_public_memo" rows="4" class="mt-2 block w-full rounded-2xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"></textarea>
+                            <p class="mt-1 text-xs text-slate-400">{{ __('This memo is customer-facing and may appear on invoices for this job. It is saved on the job, not this log.') }}</p>
+                            @error('form.job_public_memo') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                         </div>
                     </div>
                 </details>
