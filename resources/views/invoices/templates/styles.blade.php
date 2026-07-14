@@ -638,15 +638,32 @@
         text-align: right;
     }
 
-    /* header-left's own flex (logo beside company block) also collapses under
-       dompdf; float the logo so it sits beside the title when one is present. */
+    /*
+     * The org logo is a remote asset (and often AVIF). dompdf renders PDFs
+     * with remote images disabled and cannot decode AVIF, so the <img> never
+     * loaded — it only ever emitted its alt text, a second copy of the company
+     * name directly above the heading. Hide it in the PDF and let the text
+     * letterhead stand alone. The browser portal view (--portal) keeps the logo.
+     */
     .invoice-doc--print header .invoice-logo {
-        float: left;
-        margin-right: 1rem;
+        display: none;
     }
 
-    .invoice-doc--print header .invoice-title {
-        overflow: hidden;
+    /* A tighter, single-line company name reads more like a letterhead than the
+       oversized heading that wrapped inside the half-width header column. */
+    .invoice-doc--print header .company-name-large {
+        font-size: 1.35rem;
+        line-height: 1.25;
+        margin-bottom: 0.15rem;
+    }
+
+    .invoice-doc--print header .organization-name {
+        font-size: 1.25rem;
+    }
+
+    .invoice-doc--print header .invoice-title-right,
+    .invoice-doc--print header .invoice-summary-title {
+        font-size: 1.6rem;
     }
 
     @media print {
