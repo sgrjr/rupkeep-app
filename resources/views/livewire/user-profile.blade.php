@@ -52,12 +52,31 @@
                 
                 <form wire:submit.prevent="testNotification" class="pretty-form">
                 @csrf
-                <button 
+                <div class="mb-4 max-w-sm">
+                    <label for="notificationTestType" class="block text-sm font-medium text-gray-700 mb-1">{{ __('Notification type') }}</label>
+                    <select
+                        id="notificationTestType"
+                        wire:model.live="notificationTestType"
+                        wire:loading.attr="disabled"
+                        wire:target="testNotification"
+                        class="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-sm disabled:opacity-50">
+                        <option value="default">{{ __('Standard test notification') }}</option>
+                        <option value="job_assigned">{{ __('FAKE "Job was Assigned" notification') }}</option>
+                    </select>
+                    <p class="mt-1 text-xs text-gray-500">
+                        {{ $notificationTestType === 'job_assigned'
+                            ? __('Sends a realistic but fake job-assignment message (nonexistent job) to test how the SMS text and link render on your device.')
+                            : __('Sends a simple message to confirm your notification settings are working.') }}
+                    </p>
+                </div>
+                <button
                     type="submit"
                     wire:loading.attr="disabled"
                     wire:target="testNotification"
                     class="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                    <span wire:loading.remove wire:target="testNotification">Send Test Notification</span>
+                    <span wire:loading.remove wire:target="testNotification">
+                        {{ $notificationTestType === 'job_assigned' ? __('Send FAKE "Job Assigned" Notification') : __('Send Test Notification') }}
+                    </span>
                     <span wire:loading wire:target="testNotification" class="inline-flex items-center gap-2">
                         <span class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-gray-600 border-t-transparent"></span>
                         Sending...

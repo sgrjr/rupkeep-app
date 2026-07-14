@@ -27,6 +27,10 @@ class UserProfile extends Component
     public $notificationTestMessage = '';
     public $notificationTesting = false;
 
+    // Which test notification to send. Falls back to the standard test for any
+    // unrecognized value (see buildTestNotification()).
+    public $notificationTestType = 'default';
+
     public function mount(Int $user){
         $this->profile = User::with('organization')->find($user);
 
@@ -80,31 +84,65 @@ class UserProfile extends Component
         $this->notificationTesting = true;
         $this->notificationTestStatus = null;
         $this->notificationTestMessage = '';
-        
+
         try {
 
             $this->profile->notify(new \App\Notifications\JobUpdate());
 
             // Check if user has a valid recipient address
             $recipient = $this->profile->getSmsGatewayAddress() ?? $this->profile->email;
-            
+
             if (empty($recipient)) {
                 $this->notificationTestStatus = 'error';
                 $this->notificationTestMessage = 'No valid recipient address found. Please set an email address or notification address in your profile.';
                 return;
             }
-            
-            SendUserNotification::to($this->profile, 'This is a test notification from ' . $this->profile->organization?->name . '.', subject: 'test');
-            
+
+            // Build the message + subject for the selected test type, falling
+            // back to the standard test notification for unknown values.
+            [$message, $subject, $label] = $this->buildTestNotification($this->notificationTestType);
+
+            SendUserNotification::to($this->profile, $message, subject: $subject);
+
             $this->notificationTestStatus = 'success';
             $notificationType = $this->profile->getSmsGatewayAddress() ? 'SMS' : 'email';
-            $this->notificationTestMessage = "Test notification sent successfully to {$recipient} via {$notificationType}!";
+            $this->notificationTestMessage = "{$label} sent successfully to {$recipient} via {$notificationType}!";
         } catch (\Exception $e) {
             $this->notificationTestStatus = 'error';
             $this->notificationTestMessage = 'Failed to send test notification: ' . $e->getMessage();
         } finally {
             $this->notificationTesting = false;
         }
+    }
+
+    /**
+     * Build the [message, subject, humanLabel] tuple for a given test-notification
+     * type. Unknown types fall back to the standard test notification.
+     */
+    protected function buildTestNotification(string $type): array
+    {
+        if ($type === 'job_assigned') {
+            // A realistic but entirely FAKE "job assigned" SMS, mirroring the
+            // format sent from ShowPilotCarJob::assign(). The job id is
+            // intentionally nonexistent — this only exercises the text output
+            // and how iOS renders/linkifies the URL, not a real job.
+            $fakeJobId = 999999;
+            $pickupAt = now()->addDay()->setTime(8, 0)->format('n/j/Y g:i A');
+            $url = rtrim(config('app.url'), '/') . '/my/jobs/' . $fakeJobId;
+
+            $message = "New job assignment [Lead car] for Acme Logistics (TEST). "
+                . "Job NO. TEST-1001 | Load NO. 7. "
+                . "Pickup: 100 Commercial St, Portland, ME @{$pickupAt} "
+                . "This is a FAKE test notification — no real job exists. "
+                . "For updates {$url}";
+
+            return [$message, 'New Job 7 (TEST)', 'FAKE "Job Assigned" test notification'];
+        }
+
+        // default: standard test notification
+        $message = 'This is a test notification from ' . $this->profile->organization?->name . '.';
+
+        return [$message, 'test', 'Test notification'];
     }
     
     public function clearNotificationTestStatus(){
