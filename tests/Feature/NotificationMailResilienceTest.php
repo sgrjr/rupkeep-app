@@ -73,9 +73,18 @@ class NotificationMailResilienceTest extends TestCase
     {
         Notification::fake();
 
-        // Reproduce the production misconfig: MAIL_MAILER=brevo, which has no
-        // valid transport → "Unsupported mail transport []" (TASK-338).
-        config(['mail.default' => 'brevo']);
+        // Reproduce the production misconfig (a mailer with no valid transport →
+        // "Unsupported mail transport", TASK-338) DETERMINISTICALLY. We must not
+        // point at the real `brevo` mailer: it inherits live MAIL_* credentials
+        // from .env, so once those are valid the send actually connects to
+        // smtp-relay.brevo.com and succeeds — the transport is no longer "broken",
+        // the warning never fires, and the suite fires a real email over the wire.
+        // An explicitly unsupported transport throws at resolution time, offline.
+        config([
+            'mail.default' => 'broken',
+            'mail.mailers.broken' => ['transport' => 'unsupported-transport'],
+        ]);
+        Mail::forgetMailers();
         Log::spy();
 
         [$job, $driver] = $this->futureJobWithDriver();
