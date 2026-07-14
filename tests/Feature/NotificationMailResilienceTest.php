@@ -69,6 +69,20 @@ class NotificationMailResilienceTest extends TestCase
         $this->assertArrayHasKey('sender', config('mail.mailers.brevo'));
     }
 
+    public function test_mail_credentials_are_neutralized_in_the_test_environment(): void
+    {
+        // Guards the phpunit.xml lockdown: the suite must never inherit real
+        // MAIL_* / BREVO_API_KEY values from .env, or a test that switches
+        // mailer could send live email (see TASK-343). If someone removes the
+        // neutralizing <env> entries from phpunit.xml, this fails.
+        $this->assertNull(config('mail.mailers.brevo.username'));
+        $this->assertNull(config('mail.mailers.brevo.password'));
+        $this->assertNull(config('mail.mailers.brevo.key'));
+        $this->assertNull(config('mail.mailers.smtp.username'));
+        $this->assertSame('127.0.0.1', config('mail.mailers.brevo.host'));
+        $this->assertSame('array', config('mail.default'));
+    }
+
     public function test_a_broken_mail_transport_does_not_dead_letter_the_job(): void
     {
         Notification::fake();

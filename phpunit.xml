@@ -21,10 +21,19 @@
         <env name="APP_ENV" value="testing"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
+        <env name="BREVO_API_KEY" value="null"/>
         <env name="CACHE_STORE" value="array"/>
         <env name="DB_CONNECTION" value="sqlite"/>
         <env name="DB_DATABASE" value=":memory:"/>
+        <!-- Neutralize outbound mail: array mailer captures messages, and the
+             credentials/host below are placeholders so that even a test which
+             switches mail.default to smtp/brevo cannot reach a real SMTP server
+             or the Brevo API using leaked .env values. -->
         <env name="MAIL_MAILER" value="array"/>
+        <env name="MAIL_HOST" value="127.0.0.1"/>
+        <env name="MAIL_USERNAME" value="null"/>
+        <env name="MAIL_PASSWORD" value="null"/>
+        <env name="MAIL_FROM_ADDRESS" value="test@example.com"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
