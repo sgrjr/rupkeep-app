@@ -20,8 +20,15 @@
                     <!-- Content -->
                     <tr>
                         <td style="padding: 30px;">
+                            @php
+                                $isOrgUser = $isOrgUser ?? true;
+                                $invoiceUrl = $invoiceUrl ?? route('my.invoices.edit', ['invoice' => $invoice->id]);
+                            @endphp
+
                             <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
-                                {{ __('A new invoice has been generated and is ready for review.') }}
+                                {{ $isOrgUser
+                                    ? __('A new invoice has been generated and is ready for review.')
+                                    : __('A new invoice is ready for you to view.') }}
                             </p>
                             
                             <div style="background-color: #f9fafb; border-left: 4px solid #f9b104; padding: 20px; margin: 20px 0; border-radius: 4px;">
@@ -52,14 +59,16 @@
                             </div>
                             
                             <p style="margin: 20px 0 0 0; color: #374151; font-size: 16px; line-height: 1.6;">
-                                {{ __('Please sign in to :org to review, approve, or send this invoice to the customer.', ['org' => $invoice->organization?->name ?? __('your organization')]) }}
+                                {{ $isOrgUser
+                                    ? __('Please sign in to :org to review, approve, or send this invoice to the customer.', ['org' => $invoice->organization?->name ?? __('your organization')])
+                                    : __('View or download your invoice using the link below.') }}
                             </p>
                             
                             <!-- CTA Button -->
                             <table role="presentation" style="width: 100%; margin: 30px 0; border-collapse: collapse;">
                                 <tr>
                                     <td align="center" style="padding: 0;">
-                                        <a href="{{ route('my.invoices.edit', ['invoice' => $invoice->id]) }}" style="display: inline-block; background-color: #f9b104; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 2px 4px rgba(249, 177, 4, 0.3);">
+                                        <a href="{{ $invoiceUrl }}" style="display: inline-block; background-color: #f9b104; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 2px 4px rgba(249, 177, 4, 0.3);">
                                             {{ __('View Invoice') }}
                                         </a>
                                     </td>

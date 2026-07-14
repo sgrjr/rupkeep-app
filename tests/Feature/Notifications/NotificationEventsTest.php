@@ -142,14 +142,20 @@ class NotificationEventsTest extends TestCase
 
         event(new InvoiceReady($invoice));
 
+        // Org staff are pointed at the internal edit view...
         Mail::assertSent(UserNotification::class, function (UserNotification $mail) {
             return $mail->hasTo('manager@example.com')
-                && str_contains($mail->subject, 'Invoice Ready');
+                && str_contains($mail->subject, 'Invoice Ready')
+                && $mail->viewData['isOrgUser'] === true
+                && str_contains($mail->viewData['invoiceUrl'], '/my/invoices/');
         });
 
+        // ...while the customer gets their own portal view, not an auth wall.
         Mail::assertSent(UserNotification::class, function (UserNotification $mail) {
             return $mail->hasTo('customer@example.com')
-                && str_contains($mail->subject, 'Invoice Ready');
+                && str_contains($mail->subject, 'Invoice Ready')
+                && $mail->viewData['isOrgUser'] === false
+                && str_contains($mail->viewData['invoiceUrl'], '/portal/invoices/');
         });
     }
 
