@@ -49,6 +49,26 @@ class NotificationMailResilienceTest extends TestCase
         Mail::assertSent(UserNotification::class, fn ($mail) => $mail->hasTo('driver@example.com'));
     }
 
+    public function test_brevo_mailer_resolves_to_a_valid_smtp_transport(): void
+    {
+        // Regression for the "Unsupported mail transport []" failure: the brevo
+        // mailer now has a real (smtp) transport, so MAIL_MAILER=brevo is valid.
+        config([
+            'mail.default' => 'brevo',
+            'mail.mailers.brevo.host' => 'smtp-relay.brevo.com',
+            'mail.mailers.brevo.username' => 'user',
+            'mail.mailers.brevo.password' => 'pass',
+        ]);
+        Mail::forgetMailers();
+
+        $transport = Mail::mailer('brevo')->getSymfonyTransport();
+
+        $this->assertStringContainsString('smtp', (string) $transport);
+        // The Brevo SDK path (SendUserNotification) still finds its API sub-keys.
+        $this->assertArrayHasKey('key', config('mail.mailers.brevo'));
+        $this->assertArrayHasKey('sender', config('mail.mailers.brevo'));
+    }
+
     public function test_a_broken_mail_transport_does_not_dead_letter_the_job(): void
     {
         Notification::fake();

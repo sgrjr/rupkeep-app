@@ -95,10 +95,26 @@ return [
             ],
         ],
 
+        // Brevo is used two ways:
+        //  1. The Mail facade (Mail::to()->send(...)) sends over Brevo's SMTP
+        //     relay via the `smtp` transport below — this is what makes
+        //     MAIL_MAILER=brevo a valid default mailer (TASK-338). Without a
+        //     `transport` key it resolved to "Unsupported mail transport []".
+        //  2. App\Actions\SendUserNotification hits the Brevo *API* directly for
+        //     SMS-gateway sends, reading `key` and `sender` below.
         'brevo' => [
+            'transport' => 'smtp',
+            'host' => env('MAIL_HOST', 'smtp-relay.brevo.com'),
+            'port' => env('MAIL_PORT', 587),
+            'encryption' => env('MAIL_ENCRYPTION', 'tls'),
+            'username' => env('MAIL_USERNAME'),
+            'password' => env('MAIL_PASSWORD'),
+            'timeout' => null,
+            'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url(env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
+            // Read by the Brevo SDK path (SendUserNotification), not the SMTP transport.
             'key' => env('BREVO_API_KEY'),
             'sender' => ['name' => 'Pilot Car CMS', 'email' => env('MAIL_FROM_ADDRESS')],
-        ]
+        ],
 
     ],
 
