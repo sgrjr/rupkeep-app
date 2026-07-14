@@ -320,7 +320,8 @@
         background: #f8fafc;
     }
 
-    .invoice-doc thead th:last-child {
+    .invoice-doc thead th:last-child,
+    .invoice-doc thead th.text-right {
         text-align: right;
     }
 

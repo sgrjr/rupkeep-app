@@ -250,9 +250,9 @@
                         <th>{{ __('Amount Due') }}</th>
                     @else
                         <th>{{ __('Description') }}</th>
-                        <th>{{ __('Quantity') }}</th>
-                        <th>{{ __('Rate') }}</th>
-                        <th>{{ __('Amount') }}</th>
+                        <th class="text-right">{{ __('Quantity') }}</th>
+                        <th class="text-right">{{ __('Rate') }}</th>
+                        <th class="text-right">{{ __('Amount') }}</th>
                     @endif
                 </tr>
             </thead>
