@@ -30,6 +30,11 @@ After a deploy that includes a migration, also click **"Run database migrations"
 
 Use **"Deploy Update"** (pull only), not **"Full Deploy"** — the latter also commits and pushes *from the server*, which can diverge from GitHub.
 
+> **The in-app deploy does not restart the queue worker.** After any deploy that
+> touches queued code (jobs, listeners, notifications, mailables), run
+> `php artisan queue:restart` on the host so the supervised worker reloads — see
+> [Queue worker](#queue-worker).
+
 **Security:** all server-management actions are gated by auth + `is_super`.
 
 ---
@@ -56,6 +61,7 @@ php artisan config:clear
 php artisan view:clear
 php artisan cache:clear
 php artisan optimize:clear
+php artisan queue:restart   # workers cache code in memory — signal them to reload (see Queue worker)
 ```
 
 For DB schema changes:
@@ -63,6 +69,14 @@ For DB schema changes:
 ```bash
 php artisan migrate --force
 ```
+
+> **Always run `php artisan queue:restart` after a deploy.** A long-running
+> `queue:work` process holds the *old* code in memory and will keep executing it
+> against new jobs until it restarts — so a fix to a job, listener, notification,
+> or mailable won't take effect until the worker is cycled. `queue:restart` tells
+> workers to exit gracefully after their current job; supervisor then respawns
+> them on the new code. (The `--max-time=3600` flag recycles them hourly as a
+> safety net, but don't rely on it — restart explicitly.)
 
 > **Don't skip `npm run build` after pulling code that adds or changes Tailwind classes.** Tailwind v3 uses JIT mode — it only compiles classes it finds in the `content` paths at build time. If a blade introduces a new class (e.g. `max-h-80`, `bg-amber-50`, or an arbitrary value like `max-h-[20rem]`) and the CSS bundle isn't rebuilt, the class silently doesn't exist and the styles disappear with no error. Symptom: layout looks right in dev (where Vite auto-rebuilds) but on prod the new utility just… isn't there. Fix is always the same: pull → `npm run build` → `php artisan view:clear`.
 
@@ -76,12 +90,17 @@ Email / push notifications dispatch via the queue. Worker must be running in pro
 php artisan queue:work
 ```
 
-In **production (Linux)**, keep the worker alive with supervisor or a systemd unit, e.g.:
+Production runs `QUEUE_CONNECTION=database`, so jobs are stored in the `jobs`
+table and drained by a supervised worker (verified live 2026-07-14 — TASK-101).
+Failures after `--tries` land in `failed_jobs`.
+
+In **production (Linux)**, the worker is kept alive by **supervisor** (installed,
+`enabled` for boot, `autorestart`), matching the verified running command:
 
 ```ini
 # /etc/supervisor/conf.d/rupkeep-worker.conf
 [program:rupkeep-worker]
-command=php /var/www/rupkeep-app/artisan queue:work --tries=3 --sleep=3
+command=php /var/www/rupkeep-app/artisan queue:work database --sleep=3 --tries=3 --max-time=3600
 directory=/var/www/rupkeep-app
 autostart=true
 autorestart=true
@@ -91,7 +110,24 @@ redirect_stderr=true
 stdout_logfile=/var/www/rupkeep-app/storage/logs/worker.log
 ```
 
-Reload after changes: `sudo supervisorctl reread && sudo supervisorctl update`. Restart the worker after each deploy so it picks up new code (`sudo supervisorctl restart rupkeep-worker`).
+Reload after editing the conf: `sudo supervisorctl reread && sudo supervisorctl update`.
+
+**Restarting after a deploy** — prefer the framework-native, graceful restart,
+which needs no sudo and works with supervisor:
+
+```bash
+php artisan queue:restart      # workers finish the current job, then exit; supervisor respawns them on new code
+```
+
+Use `sudo supervisorctl restart rupkeep-worker` only if you need to force-cycle
+the process itself (e.g. after changing the supervisor conf).
+
+Verify the worker is up:
+
+```bash
+ps aux | grep queue:work
+systemctl status supervisor
+```
 
 For local testing without a worker, you can make listeners synchronous — see [`TESTING_NOTIFICATIONS.md`](TESTING_NOTIFICATIONS.md).
 
