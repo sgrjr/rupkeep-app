@@ -28,8 +28,9 @@
         $deadAmount = isset($values['dead_head_charge']) ? (float) $values['dead_head_charge'] : 0;
         $tollsAmount = isset($values['tolls']) ? (float) $values['tolls'] : 0;
         $totalMileageAmount = isset($values['cost_for_mileage']) ? (float) $values['cost_for_mileage'] : 0;
-        
-        $otherChargesTotal = $waitTimeAmount + $extraStopsAmount + $deadAmount + $tollsAmount + $totalMileageAmount;
+        $miniAddonAmount = isset($values['mini_addon_amount']) ? (float) $values['mini_addon_amount'] : 0;
+
+        $otherChargesTotal = $waitTimeAmount + $extraStopsAmount + $deadAmount + $tollsAmount + $totalMileageAmount + $miniAddonAmount;
         $pilotCarServiceAmount = (float) ($values['total'] ?? 0) - $otherChargesTotal;
         
         // Pilot Car Service - main service charge (always show)
@@ -91,6 +92,18 @@
             'rate' => $totalMileageRate,
             'amount' => $totalMileageAmount,
         ];
+
+        // Mini Add-On (TASK-307): additive line item that stacks on top of
+        // the rate above (including flat-rate jobs). Only shown when set,
+        // since unlike the other charges it is opt-in per job.
+        if ($miniAddonAmount > 0) {
+            $lineItems[] = [
+                'description' => __('Mini Add-On'),
+                'quantity' => 1,
+                'rate' => $miniAddonAmount,
+                'amount' => $miniAddonAmount,
+            ];
+        }
     }
 
     $charges = $charges ?? [
@@ -102,6 +115,7 @@
         __('Extra Charges') => isset($values['extra_charge']) ? '$' . number_format((float) $values['extra_charge'], 2) : null,
         __('Extra Load Stops') => $values['extra_load_stops_count'] ?? null,
         __('Wait Time (hrs)') => $values['wait_time_hours'] ?? null,
+        __('Mini Add-On') => (isset($values['mini_addon_amount']) && (float) $values['mini_addon_amount'] > 0) ? '$' . number_format((float) $values['mini_addon_amount'], 2) : null,
     ];
 @endphp
 

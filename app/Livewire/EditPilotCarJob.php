@@ -51,6 +51,9 @@ class EditJobForm extends Form
     #[Validate('nullable|numeric')]
     public $rate_value = null;
 
+    #[Validate('nullable|numeric|min:0')]
+    public $mini_addon_amount = null;
+
     #[Validate('nullable|string|min:3')]
     public $memo = null;
 
@@ -110,6 +113,7 @@ class EditPilotCarJob extends Component
             $this->form->invoice_no = $jobModel->invoice_no;
             $this->form->rate_code = $jobModel->rate_code;
             $this->form->rate_value = $jobModel->rate_value ?? PilotCarJob::defaultRateValue($jobModel->rate_code, $user->organization_id);
+            $this->form->mini_addon_amount = $jobModel->mini_addon_amount;
             $this->form->memo = $jobModel->memo;
             $this->form->public_memo = $jobModel->public_memo;
             $this->form->default_driver_id = $jobModel->default_driver_id;
@@ -143,6 +147,9 @@ class EditPilotCarJob extends Component
         // Sanitize and set rate_value explicitly
         $form['rate_value'] = $this->sanitizeRateValue($this->form->rate_value, $form['rate_code']);
 
+        // Sanitize the additive mini add-on amount (nullable; blank clears it)
+        $form['mini_addon_amount'] = $this->sanitizeMiniAddonAmount($this->form->mini_addon_amount);
+
         $this->job->update($form);
         $this->dispatch('saved');
         return redirect()->route('jobs.show', ['job'=>$this->job->id]);
@@ -166,6 +173,21 @@ class EditPilotCarJob extends Component
         }
 
         return $value;
+    }
+
+    protected function sanitizeMiniAddonAmount($rawValue): ?string
+    {
+        if ($rawValue === null || $rawValue === '') {
+            return null;
+        }
+
+        $normalized = preg_replace('/[^0-9\.\-]/', '', (string) $rawValue);
+
+        if ($normalized === '' || ! is_numeric($normalized)) {
+            return null;
+        }
+
+        return number_format(max(0, (float) $normalized), 2, '.', '');
     }
 
     public function updatedFormRateCode($value): void

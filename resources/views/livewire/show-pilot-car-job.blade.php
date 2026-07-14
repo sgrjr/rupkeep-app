@@ -498,6 +498,9 @@
                     <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Invoice Paid') }}:</span> <span class="font-semibold {{ $job->invoice_paid < 1 ? 'text-red-500' : 'text-emerald-600' }}">{{ $job->invoice_paid < 1 ? __('No') : __('Yes') }}</span></p>
                     <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Invoice #') }}:</span> <span class="text-slate-900">{{ $job->invoice_no ?? '—' }}</span></p>
                     <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Rate Value') }}:</span> <span class="text-slate-900">{{ $job->rate_value !== null ? '$'.number_format((float) $job->rate_value, 2) : '—' }}</span></p>
+                    @if($job->mini_addon_amount !== null && (float) $job->mini_addon_amount > 0)
+                        <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Mini Add-On') }}:</span> <span class="font-semibold text-orange-600">+${{ number_format((float) $job->mini_addon_amount, 2) }}</span> <span class="text-xs text-slate-400">({{ __('stacked on top of rate') }})</span></p>
+                    @endif
                     @if($job->canceled_at)
                         <div class="rounded-xl border border-red-200 bg-red-50 p-3">
                             <p><span class="text-xs font-semibold uppercase tracking-wide text-red-600">{{ __('Canceled At') }}:</span> <span class="text-red-700">{{ LocalTime::format($job->canceled_at, 'M j, Y g:i A') }}</span></p>

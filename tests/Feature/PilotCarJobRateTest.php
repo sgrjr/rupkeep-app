@@ -190,6 +190,153 @@ class PilotCarJobRateTest extends TestCase
             "Invoice total for {$rateCode} must equal the configured flat amount (no billable miles).");
     }
 
+    /* -------------------- Additive "mini" add-on stacks on top of rate (TASK-307) -------------------- */
+
+    public function test_mini_addon_stacks_on_top_of_flat_rate_job(): void
+    {
+        $organization = Organization::factory()->create();
+        $customer = Customer::factory()->create(['organization_id' => $organization->id]);
+
+        $flatAmount = (float) config('pricing.rates.day_rate.flat_amount'); // 575.00
+
+        $job = PilotCarJob::create([
+            'job_no' => 'JOB-MINI-STACK',
+            'customer_id' => $customer->id,
+            'organization_id' => $organization->id,
+            'load_no' => 'LOAD-MINI-STACK',
+            'pickup_address' => 'Pickup',
+            'delivery_address' => 'Delivery',
+            'rate_code' => 'day_rate',
+            'rate_value' => (string) $flatAmount,
+            'mini_addon_amount' => '100.00',
+        ]);
+
+        $values = $job->invoiceValues()['values'];
+
+        // No tolls/hotel/extra set on this job, so expenses are 0 here, but assert the
+        // formula generically: total must equal flat total + mini add-on + expenses.
+        $expectedExpenses = (float) $values['tolls'] + (float) $values['hotel'] + (float) $values['extra_charge'];
+        $expectedTotal = $flatAmount + 100.00 + $expectedExpenses;
+
+        $this->assertSame('day_rate', $values['effective_rate_code'],
+            'The mini add-on must not replace the existing rate_code.');
+        $this->assertEqualsWithDelta(100.00, (float) $values['mini_addon_amount'], 0.001,
+            'The mini add-on amount must be surfaced as its own itemized component.');
+        $this->assertEqualsWithDelta($expectedTotal, (float) $values['total'], 0.001,
+            'Total must equal flat total + mini add-on + expenses (additive stacking).');
+    }
+
+    public function test_mini_addon_stacks_on_top_of_flat_rate_job_with_expenses(): void
+    {
+        $organization = Organization::factory()->create();
+        $customer = Customer::factory()->create(['organization_id' => $organization->id]);
+
+        $flatAmount = (float) config('pricing.rates.day_rate.flat_amount'); // 575.00
+
+        $job = PilotCarJob::create([
+            'job_no' => 'JOB-MINI-STACK-EXP',
+            'customer_id' => $customer->id,
+            'organization_id' => $organization->id,
+            'load_no' => 'LOAD-MINI-STACK-EXP',
+            'pickup_address' => 'Pickup',
+            'delivery_address' => 'Delivery',
+            'rate_code' => 'day_rate',
+            'rate_value' => (string) $flatAmount,
+            'mini_addon_amount' => '75.50',
+        ]);
+
+        UserLog::create([
+            'job_id' => $job->id,
+            'organization_id' => $organization->id,
+            'tolls' => 20.00,
+            'started_at' => Carbon::now()->subDay(),
+            'ended_at' => Carbon::now(),
+        ]);
+
+        $values = $job->invoiceValues()['values'];
+
+        $expectedTotal = $flatAmount + 75.50 + 20.00;
+
+        $this->assertEqualsWithDelta($expectedTotal, (float) $values['total'], 0.001,
+            'Mini add-on and tolls must both stack on top of the flat rate total.');
+    }
+
+    public function test_mini_addon_is_unset_by_default_and_does_not_change_total(): void
+    {
+        $organization = Organization::factory()->create();
+        $customer = Customer::factory()->create(['organization_id' => $organization->id]);
+
+        $job = PilotCarJob::create([
+            'job_no' => 'JOB-NO-MINI',
+            'customer_id' => $customer->id,
+            'organization_id' => $organization->id,
+            'load_no' => 'LOAD-NO-MINI',
+            'pickup_address' => 'Pickup',
+            'delivery_address' => 'Delivery',
+            'rate_code' => 'per_mile_rate_2_00',
+            'rate_value' => '2.00',
+        ]);
+
+        $values = $job->invoiceValues()['values'];
+
+        $this->assertNull($job->mini_addon_amount);
+        $this->assertEqualsWithDelta(0.00, (float) $values['mini_addon_amount'], 0.001);
+        $this->assertEqualsWithDelta(0.00, (float) $values['total'], 0.001,
+            'A job with no billable miles/logs and no mini add-on should have a $0 total (regression).');
+    }
+
+    public function test_mini_addon_can_be_saved_via_edit_pilot_car_job(): void
+    {
+        $organization = Organization::factory()->create();
+        $manager = User::factory()->manager()->create(['organization_id' => $organization->id]);
+        $customer = Customer::factory()->create(['organization_id' => $organization->id]);
+
+        $job = PilotCarJob::create([
+            'job_no' => 'JOB-MINI-EDIT',
+            'customer_id' => $customer->id,
+            'organization_id' => $organization->id,
+            'load_no' => 'LOAD-MINI-EDIT',
+            'pickup_address' => 'Pickup',
+            'delivery_address' => 'Delivery',
+            'rate_code' => 'day_rate',
+            'rate_value' => '575.00',
+        ]);
+
+        Livewire::actingAs($manager)->test(EditPilotCarJob::class, ['job' => $job->id])
+            ->set('form.mini_addon_amount', '50')
+            ->call('saveJob')
+            ->assertHasNoErrors();
+
+        $job->refresh();
+
+        $this->assertSame('day_rate', $job->rate_code,
+            'Saving the mini add-on must not overwrite the existing rate_code.');
+        $this->assertEqualsWithDelta(50.00, (float) $job->mini_addon_amount, 0.001);
+    }
+
+    public function test_mini_addon_can_be_set_via_create_pilot_car_job(): void
+    {
+        $organization = Organization::factory()->create();
+        $manager = User::factory()->manager()->create(['organization_id' => $organization->id]);
+        $customer = Customer::factory()->create(['organization_id' => $organization->id]);
+
+        Livewire::actingAs($manager)->test(CreatePilotCarJob::class)
+            ->set('form.customer_id', $customer->id)
+            ->set('form.job_no', 'JOB-MINI-CREATE')
+            ->set('form.load_no', 'LOAD-MINI-CREATE')
+            ->set('form.pickup_address', '123 Pickup St')
+            ->set('form.delivery_address', '456 Delivery Ave')
+            ->set('form.rate_code', 'day_rate')
+            ->set('form.rate_value', '575.00')
+            ->set('form.mini_addon_amount', '40')
+            ->call('createJob');
+
+        $job = PilotCarJob::where('job_no', 'JOB-MINI-CREATE')->firstOrFail();
+
+        $this->assertSame('day_rate', $job->rate_code);
+        $this->assertEqualsWithDelta(40.00, (float) $job->mini_addon_amount, 0.001);
+    }
+
     public function test_determine_cancellation_type_matches_timing_and_logs(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-07-13 12:00:00'));

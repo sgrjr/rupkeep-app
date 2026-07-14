@@ -43,6 +43,7 @@ class PilotCarJob extends Model
         'invoice_no',
         'rate_code',
         'rate_value',
+        'mini_addon_amount',
         'canceled_at',
         'canceled_reason',
         'memo',
@@ -51,6 +52,16 @@ class PilotCarJob extends Model
         'default_driver_id',
         'default_truck_driver_id',
         'deleted_at'
+    ];
+
+    /**
+     * `mini_addon_amount` is an ADDITIVE line-item charge (stacks on top of
+     * whatever the job's rate_code produces, including flat rates). It is
+     * intentionally separate from the `mini_flat_rate` rate_code, which is
+     * a standalone rate rather than a stackable add-on.
+     */
+    protected $casts = [
+        'mini_addon_amount' => 'decimal:2',
     ];
 
     public function attachments(): MorphMany
@@ -1501,6 +1512,7 @@ class PilotCarJob extends Model
             'cars_count' =>$this->getCarsCount($logs),
             'rate_code' =>$this->rate_code,
             'rate_value' =>$this->rate_value,
+            'mini_addon_amount' => (float) ($this->mini_addon_amount ?? 0),
             'total_due' => 0.00,
             'billable_miles' => $miles['total_billable'],
             'nonbillable_miles' => $miles['total_nonbillable'],
@@ -1826,6 +1838,12 @@ class PilotCarJob extends Model
             'wait_time' => 0.00,
         ];
 
+        // Additive "mini" line-item charge (TASK-307). This stacks on top of
+        // whatever the rate_code path below produces — including flat-rate
+        // and "excludes expenses" jobs — and is NOT part of the $expenses
+        // bucket summed below, so it survives every branch untouched.
+        $miniAddonAmount = (float) str_replace(',', '', (string) ($totals['mini_addon_amount'] ?? 0));
+
         // Get organization ID from totals or job
         $organizationId = $totals['organization_id'] ?? $this->organization_id ?? null;
         
@@ -1937,6 +1955,13 @@ class PilotCarJob extends Model
             // Already numeric, ensure it's a float
             $values['total'] = (float) $values['total'];
         }
+
+        // Stack the mini add-on on top of the total produced above, as a
+        // distinct, itemized component. Applied last and unconditionally so
+        // every rate_code path (per-mile, flat, mini_flat_rate, legacy flat,
+        // flat_rate_excludes_expenses, fallback) picks it up identically.
+        $values['mini_addon_amount'] = $miniAddonAmount;
+        $values['total'] += $miniAddonAmount;
 
         return $values;
     }

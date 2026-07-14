@@ -174,6 +174,14 @@
                         <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p>
                     @enderror
                 </div>
+                <div>
+                    <label for="mini_addon_amount" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Mini Add-On') }}</label>
+                    <input type="text" id="mini_addon_amount" wire:model="form.mini_addon_amount" placeholder="100.00" class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                    <p class="mt-2 text-xs text-slate-400">{{ __('Optional flat amount added on top of the rate above (stacks with flat-rate jobs). Leave blank for none.') }}</p>
+                    @error('form.mini_addon_amount')
+                        <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p>
+                    @enderror
+                </div>
             </div>
         </section>
 

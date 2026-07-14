@@ -139,7 +139,7 @@ class QuickBooksExportController extends Controller
                     number_format((float) ($expenses['extra_charge'] ?? $values['extra_charge'] ?? 0), 2, '.', ''),
                     $values['deadhead_count'] ?? $totals['deadhead_count'] ?? ($job && $job->is_deadhead ? 1 : 0),
                     number_format((float) ($totals['deadhead'] ?? $values['dead_head_charge'] ?? 0), 2, '.', ''),
-                    number_format((float) ($totals['mini'] ?? $values['mini_cost'] ?? 0), 2, '.', ''),
+                    number_format((float) ($totals['mini'] ?? $values['mini_addon_amount'] ?? $values['mini_cost'] ?? 0), 2, '.', ''),
                     number_format((float) ($totals['total'] ?? ($values['total'] ?? 0)), 2, '.', ''),
                     $invoice->paid_in_full ? 'Paid' : 'Unpaid',
                     $invoice->paid_in_full && $invoice->updated_at ? $invoice->updated_at->format('m/d/Y') : '',

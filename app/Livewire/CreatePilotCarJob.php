@@ -51,6 +51,9 @@ class NewJobForm extends Form
     #[Validate('nullable|numeric')]
     public $rate_value = null;
 
+    #[Validate('nullable|numeric|min:0')]
+    public $mini_addon_amount = null;
+
     #[Validate('nullable|string|min:3')]
     public $memo = null;
 
@@ -178,6 +181,9 @@ class CreatePilotCarJob extends Component
         // Sanitize and set rate_value explicitly
         $form['rate_value'] = $this->sanitizeRateValue($this->form->rate_value, $form['rate_code']);
 
+        // Sanitize the additive mini add-on amount (nullable; blank leaves it unset)
+        $form['mini_addon_amount'] = $this->sanitizeMiniAddonAmount($this->form->mini_addon_amount);
+
         $user = Auth::user();
         $job = $user->organization->jobs()->create($form);
         $this->form->reset();
@@ -205,6 +211,21 @@ class CreatePilotCarJob extends Component
         }
 
         return $value;
+    }
+
+    protected function sanitizeMiniAddonAmount($rawValue): ?string
+    {
+        if ($rawValue === null || $rawValue === '') {
+            return null;
+        }
+
+        $normalized = preg_replace('/[^0-9\.\-]/', '', (string) $rawValue);
+
+        if ($normalized === '' || ! is_numeric($normalized)) {
+            return null;
+        }
+
+        return number_format(max(0, (float) $normalized), 2, '.', '');
     }
 
     public function updatedFormRateCode($value): void
