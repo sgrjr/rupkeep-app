@@ -75,4 +75,39 @@ class JobStatsCountTest extends TestCase
         $filtered->assertOk();
         $this->assertSame(2, $filtered->viewData('jobs')->total());
     }
+
+    public function test_jobs_index_route_renders_for_employee_with_stats(): void
+    {
+        // Regression for TASK-336: the /jobs route (JobsController) shares the
+        // pilot-car-jobs.index view with /my/jobs, but did not pass the stat
+        // vars or a paginator, so a standard employee (driver) hit
+        // "Undefined variable $totalJobs" then Collection::hasPages.
+        $org = Organization::factory()->create();
+        $driver = User::factory()->standard()->create(['organization_id' => $org->id]);
+        $customer = Customer::factory()->create(['organization_id' => $org->id]);
+
+        PilotCarJob::factory()->create([
+            'organization_id' => $org->id, 'customer_id' => $customer->id,
+            'job_no' => 'JOB-PAID', 'invoice_paid' => 1, 'canceled_at' => null,
+        ]);
+        PilotCarJob::factory()->create([
+            'organization_id' => $org->id, 'customer_id' => $customer->id,
+            'job_no' => null, 'invoice_paid' => null, 'canceled_at' => null,
+        ]);
+
+        // The exact URL shape from the bug report: /jobs?organization=<id>&car_driver_id=<id>
+        // (note: `organization`, not `organization_id`, so it falls through to
+        // the all-jobs branch — which crashed just the same before the fix).
+        $response = $this->actingAs($driver)
+            ->get(route('jobs.index', ['organization' => $org->id, 'car_driver_id' => 3]));
+
+        $response->assertOk()
+            ->assertViewHas('totalJobs', 2)
+            ->assertViewHas('paidJobs', 1)
+            ->assertViewHas('unpaidJobs', 1)
+            ->assertViewHas('missingJobNo', 1);
+
+        // $jobs must be a paginator so the view's pagination calls work.
+        $this->assertTrue(method_exists($response->viewData('jobs'), 'hasPages'));
+    }
 }

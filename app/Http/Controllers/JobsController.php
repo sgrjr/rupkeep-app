@@ -17,43 +17,60 @@ class JobsController extends Controller
 
         $this->authorize('viewAny', Job::class);
 
+        $eagerLoad = ['customer', 'organization', 'logs', 'singleInvoices', 'summaryInvoices'];
+        $userOrgId = auth()->user()->organization_id;
+        $showDeleted = $request->boolean('show_deleted', false);
+
+        // Build the base (filtered, unpaginated) query. Stats and the paginated
+        // result set are both derived from this so they always agree. This view
+        // is shared with MyJobsController@index, which requires the stat vars and
+        // a paginator — returning a bare collection here broke /jobs entirely
+        // (Undefined variable $totalJobs, then Collection::hasPages) — TASK-336.
+        $query = Job::with($eagerLoad);
+
         if($request->has('organization_id')){
-            $jobs = Job::where('organization_id', $request->get('organization_id'))
-                ->orderBy('scheduled_pickup_at', 'desc')
-                ->get();
+            $query->where('organization_id', $request->get('organization_id'));
             $customer = false;
         }else if($request->has('customer')){
-            $jobs = Job::where('organization_id', auth()->user()
-                ->organization_id)->where('customer_id', $request->get('customer'))
-                ->orderBy('scheduled_pickup_at', 'desc')
-                ->get();
+            $query->where('organization_id', $userOrgId)
+                ->where('customer_id', $request->get('customer'));
             $customer = Customer::where('id', $request->get('customer'))->first();
         }else if($request->has('search_field')){
-            
             $customer = false;
             if(in_array($request->search_field, ['job_no','load_no','invoice_no','check_no','delivery_address','pickup_address'])){
-                $jobs = Job::where($request->search_field, $request->search_value)
-                ->orderBy('scheduled_pickup_at', 'desc')
-                ->get();
+                $query->where($request->search_field, $request->search_value);
             }else if($request->search_field === 'has_customer_name'){
-                $jobs = collect([]);
-                Customer::with('jobs')->where('name', 'like', '%'.$request->search_value.'%')->where('organization_id', auth()->user()->organization_id)->get()->each(function($c)use(&$jobs){
-                    $jobs = $jobs->merge($c->jobs); 
-                });
+                $customerIds = Customer::where('name', 'like', '%'.$request->search_value.'%')
+                    ->where('organization_id', $userOrgId)
+                    ->pluck('id');
+                $query->whereIn('customer_id', $customerIds);
             }else{
                 $scope = Str::camel($request->search_field);
-
-                $jobs = Job::scope()
-                ->orderBy('scheduled_pickup_at', 'desc')
-                ->get();
+                $query->$scope();
             }
         }else{
-            $jobs = Job::orderBy('scheduled_pickup_at', 'desc')->get();
             $customer = false;
         }
 
+        if($showDeleted){
+            $query->withTrashed();
+        }
+
+        // Independent counts, each from a fresh clone so where() clauses don't
+        // accumulate across counts (see TASK-325).
+        $totalJobs = (clone $query)->count();
+        $paidJobs = (clone $query)->where('invoice_paid', '>=', 1)->count();
+        $unpaidJobs = $totalJobs - $paidJobs;
+        $canceledJobs = (clone $query)->whereNotNull('canceled_at')->count();
+        $missingJobNo = (clone $query)->whereNull('job_no')->count();
+
+        $jobs = $query
+            ->orderByRaw('CASE WHEN deleted_at IS NULL THEN 0 ELSE 1 END')
+            ->orderBy('scheduled_pickup_at', 'desc')
+            ->paginate(15);
+
         $redirect_to_root = true;
-        
-        return view('pilot-car-jobs.index', compact('jobs','customer', 'redirect_to_root'));
+
+        return view('pilot-car-jobs.index', compact('jobs','customer', 'redirect_to_root', 'showDeleted', 'totalJobs', 'paidJobs', 'unpaidJobs', 'canceledJobs', 'missingJobNo'));
     }
 }
