@@ -371,7 +371,12 @@
                             @endphp
                             <tr>
                                 <td class="px-4 py-3 font-semibold text-slate-800">
-                                    <a href="{{ route('my.jobs.show', ['job' => $job->id]) }}" class="text-orange-600 hover:text-orange-700">{{ $job->job_no ?? __('No #') }}</a>
+                                    <div class="flex items-center gap-2">
+                                        <a href="{{ route('my.jobs.show', ['job' => $job->id]) }}" class="text-orange-600 hover:text-orange-700">{{ $job->job_no ?? __('No #') }}</a>
+                                        <a href="{{ route('my.jobs.show', ['job' => $job->id]) }}" class="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-600 transition hover:border-orange-300 hover:text-orange-600">
+                                            {{ __('Show') }}
+                                        </a>
+                                    </div>
                                 </td>
                                 <td class="px-4 py-3">{{ $job->load_no ?? '—' }}</td>
                                 <td class="px-4 py-3 text-xs text-slate-500">{{ LocalTime::format($job->scheduled_pickup_at, 'M j, Y g:ia', '—') }}</td>
