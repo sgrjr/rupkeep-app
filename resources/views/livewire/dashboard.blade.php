@@ -227,7 +227,7 @@
                             <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">{{ __('Recent Submissions') }}</p>
                             <div class="space-y-2 max-h-48 overflow-y-auto pr-1">
                                 @foreach($recentFeedback as $task)
-                                    <a href="{{ route('tasks.show', $task) }}" class="block rounded-xl border border-slate-100 bg-white px-3 py-2 shadow-sm transition hover:border-orange-300 hover:bg-orange-50/40">
+                                    <a href="{{ auth()->user()->isCustomer() ? route('portal.tasks.show', $task) : route('tasks.show', $task) }}" class="block rounded-xl border border-slate-100 bg-white px-3 py-2 shadow-sm transition hover:border-orange-300 hover:bg-orange-50/40">
                                         <div class="flex items-center justify-between gap-2 mb-1">
                                             <span class="text-xs font-semibold text-orange-600">{{ $task->code }}</span>
                                             <span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide shrink-0 {{ $task->type === 'bug' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700' }}">

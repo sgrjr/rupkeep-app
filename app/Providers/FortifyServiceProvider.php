@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
+use Laravel\Fortify\Contracts\LoginResponse as LoginResponseContract;
 use Laravel\Fortify\Fortify;
 
 class FortifyServiceProvider extends ServiceProvider
@@ -28,6 +29,11 @@ class FortifyServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Role-aware post-login landing: managers go to the Jobs index, every
+        // other role keeps Fortify's default destination. Bound in boot() so it
+        // overrides Fortify's own singleton binding (registered in register()).
+        $this->app->singleton(LoginResponseContract::class, \App\Http\Responses\LoginResponse::class);
+
         Fortify::createUsersUsing(CreateNewUser::class);
         Fortify::updateUserProfileInformationUsing(UpdateUserProfileInformation::class);
         Fortify::updateUserPasswordsUsing(UpdateUserPassword::class);

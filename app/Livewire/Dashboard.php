@@ -158,17 +158,31 @@ class Dashboard extends Component
            ]];
        }
 
-       // Feedback + Requests — every signed-in user sees the same triage count.
+       // Feedback + Requests.
+       // Customers see only THEIR OWN submissions ("You have N open requests"):
+       // count excludes closed (done/declined) tasks, and the recent list is
+       // scoped to their own tasks. Staff (admin/manager/standard employees)
+       // keep the org-wide triage view unchanged.
        // Card link goes to the Public Roadmap for everyone; super users
        // additionally get a direct path into the staff triage queue.
-       // (Future: scope the count + recent list to the viewer when they're a customer — TASK-324.)
        $viewer = Auth::user();
-       $recentFeedback = \App\Models\Task::with('submitter')
-           ->where('status', 'triage')
-           ->orderBy('created_at', 'desc')
-           ->take(5)
-           ->get();
-       $totalFeedback = \App\Models\Task::where('status', 'triage')->count();
+       if ($viewer->isCustomer()) {
+           $recentFeedback = \App\Models\Task::with('submitter')
+               ->where('submitter_user_id', $viewer->id)
+               ->orderBy('updated_at', 'desc')
+               ->take(5)
+               ->get();
+           $totalFeedback = \App\Models\Task::where('submitter_user_id', $viewer->id)
+               ->whereNotIn('status', ['done', 'declined'])
+               ->count();
+       } else {
+           $recentFeedback = \App\Models\Task::with('submitter')
+               ->where('status', 'triage')
+               ->orderBy('created_at', 'desc')
+               ->take(5)
+               ->get();
+           $totalFeedback = \App\Models\Task::where('status', 'triage')->count();
+       }
 
        $links = [
            ['url'=> route('documentation.roadmap'), 'title'=>'Public Roadmap'],
