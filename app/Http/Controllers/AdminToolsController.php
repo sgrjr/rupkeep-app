@@ -195,7 +195,7 @@ class AdminToolsController extends Controller
     /**
      * Run a command and capture full output buffer
      */
-    private function runCommand(array $commandDef): array
+    protected function runCommand(array $commandDef): array
     {
         $startTime = now();
         $commandString = '';
@@ -203,10 +203,27 @@ class AdminToolsController extends Controller
         if ($commandDef['type'] === 'artisan') {
             // Execute artisan command via Process to capture full output
             $commandString = "php artisan {$commandDef['command']}";
-            
+
             // Split command string to handle flags (e.g., 'migrate:rollback --force')
             $commandParts = explode(' ', $commandDef['command']);
-            
+
+            // Guard (TASK-338): never attempt to run an artisan command that
+            // isn't registered. The historical `queue:status` typo surfaced as
+            // an uncaught CommandNotFoundException ("Command \"queue:status\" is
+            // not defined."). Fail fast with a clean, handled result instead of
+            // shelling out to a doomed subprocess (or, worse, 500-ing if this is
+            // ever wired to an in-process Artisan::call()).
+            $baseCommand = $commandParts[0] ?? '';
+            if (! $this->artisanCommandExists($baseCommand)) {
+                return [
+                    'command' => $commandString,
+                    'exit_code' => 1,
+                    'stdout' => '',
+                    'stderr' => "Command \"{$baseCommand}\" is not defined.",
+                    'timestamp' => $startTime->toDateTimeString(),
+                ];
+            }
+
             // Use Process to execute artisan command and capture all output
             // Passing null for env allows Process to inherit parent environment variables
             // Laravel will read .env file during bootstrap, so no need to pass env explicitly
@@ -260,6 +277,22 @@ class AdminToolsController extends Controller
             'stderr' => $stderr,
             'timestamp' => $startTime->toDateTimeString(),
         ];
+    }
+
+    /**
+     * Determine whether an artisan command is actually registered.
+     *
+     * Used by runCommand() to reject unknown commands (TASK-338) before they
+     * are handed to a subprocess. Keeps the ops page from surfacing a confusing
+     * CommandNotFoundException for a whitelist typo.
+     */
+    protected function artisanCommandExists(string $name): bool
+    {
+        if ($name === '') {
+            return false;
+        }
+
+        return array_key_exists($name, Artisan::all());
     }
 
     /**
