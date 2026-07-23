@@ -4,6 +4,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use App\Http\Middleware\EnsureCustomer;
+use App\Http\Middleware\EnsureStaff;
 use App\Http\Middleware\IsSuperAdmin;
 use App\Http\Middleware\TrackNavigationHistory;
 use Illuminate\View\ViewException;
@@ -18,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
             'customer' => EnsureCustomer::class,
+            'staff' => EnsureStaff::class,
             'super' => IsSuperAdmin::class,
         ]);
 

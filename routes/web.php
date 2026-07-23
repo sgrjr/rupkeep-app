@@ -96,7 +96,10 @@ Route::middleware([
     Route::post('/users/{user}/restore', [UsersController::class, 'restore'])->name('user.restore');
     Route::delete('/users/{user}', [UsersController::class, 'delete'])->name('user.delete');
 
-    Route::resource('/customers', CustomersController::class);
+    // Staff-only customer management. Customer-portal/guest accounts share the
+    // company's organization_id, so this whole resource is gated behind the
+    // staff role (TASK-358) in addition to each action's own authorization.
+    Route::resource('/customers', CustomersController::class)->middleware('staff');
     Route::resource('/customers/{customer}/contacts', CustomerContactsController::class)->names([
         'index' => 'customers.contacts.index',
         'create' => 'customers.contacts.create',
@@ -108,7 +111,7 @@ Route::middleware([
     ]);
 
     // Customers routes - explicitly defined to ensure all routes are registered
-    Route::get('/my/customers', [MyCustomersController::class, 'index'])->name('my.customers.index');
+    Route::get('/my/customers', [MyCustomersController::class, 'index'])->name('my.customers.index')->middleware('staff');
     Route::get('/my/customers/create', [MyCustomersController::class, 'create'])->name('my.customers.create');
     Route::post('/my/customers', [MyCustomersController::class, 'store'])->name('my.customers.store');
     Route::get('/my/customers/{customer}', [MyCustomersController::class, 'show'])->name('my.customers.show');
@@ -118,7 +121,7 @@ Route::middleware([
     Route::delete('/my/customers/{customer}', [MyCustomersController::class, 'destroy'])->name('my.customers.destroy');
     
     // Users routes - explicitly defined to ensure all routes are registered
-    Route::get('/my/users', [MyUsersController::class, 'index'])->name('my.users.index');
+    Route::get('/my/users', [MyUsersController::class, 'index'])->name('my.users.index')->middleware('staff');
     Route::get('/my/users/create', [MyUsersController::class, 'create'])->name('my.users.create');
     Route::post('/my/users', [MyUsersController::class, 'store'])->name('my.users.store');
     Route::get('/my/users/{user}', [MyUsersController::class, 'show'])->name('my.users.show');
@@ -127,7 +130,7 @@ Route::middleware([
     Route::delete('/my/users/{user}', [MyUsersController::class, 'destroy'])->name('my.users.destroy');
     
     // Vehicles routes - explicitly defined to ensure all routes are registered
-    Route::get('/my/vehicles', [MyVehiclesController::class, 'index'])->name('my.vehicles.index');
+    Route::get('/my/vehicles', [MyVehiclesController::class, 'index'])->name('my.vehicles.index')->middleware('staff');
     Route::get('/my/vehicles/create', [MyVehiclesController::class, 'create'])->name('my.vehicles.create');
     Route::post('/my/vehicles', [MyVehiclesController::class, 'store'])->name('my.vehicles.store');
     Route::get('/my/vehicles/{vehicle}', [MyVehiclesController::class, 'show'])->name('my.vehicles.show');
@@ -139,7 +142,7 @@ Route::middleware([
     Route::post('/my/vehicles/{vehicle}/maintenance', [VehicleMaintenanceController::class, 'store'])->name('my.vehicles.maintenance.store');
     
     // Jobs routes - using resource for index, store, update, destroy, but Livewire components for create, show, edit
-    Route::get('/my/jobs', [MyJobsController::class, 'index'])->name('my.jobs.index');
+    Route::get('/my/jobs', [MyJobsController::class, 'index'])->name('my.jobs.index')->middleware('staff');
     Route::post('/my/jobs', [MyJobsController::class, 'store'])->name('my.jobs.store');
     Route::put('/my/jobs/{job}', [MyJobsController::class, 'update'])->name('my.jobs.update');
     Route::delete('/my/jobs/{job}', [MyJobsController::class, 'destroy'])->name('my.jobs.destroy');
@@ -174,8 +177,8 @@ Route::middleware([
     Route::get('my/invoices/{invoice}/pdf', [MyInvoicesController::class, 'pdf'])->name('my.invoices.pdf');
 
     // Reports
-    Route::get('my/reports', [MyReportsController::class, 'index'])->name('my.reports.index');
-    Route::get('my/reports/annual-vehicle-report', [MyReportsController::class, 'annualVehicleReport'])->name('my.reports.annual-vehicle-report');
+    Route::get('my/reports', [MyReportsController::class, 'index'])->name('my.reports.index')->middleware('staff');
+    Route::get('my/reports/annual-vehicle-report', [MyReportsController::class, 'annualVehicleReport'])->name('my.reports.annual-vehicle-report')->middleware('staff');
 });
 
 Route::middleware([

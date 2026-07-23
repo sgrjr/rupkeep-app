@@ -103,6 +103,30 @@ class VehicleMaintenanceTest extends TestCase
         $this->assertTrue($vehicle->fresh()->is_in_garage);
     }
 
+    public function test_creating_a_vehicle_without_an_odometer_does_not_error(): void
+    {
+        // Regression (TASK-359): the create form leaves odometer optional, but
+        // store() read $data['odometer'] without a null-guard, so a submission
+        // that omitted it 500'd on an undefined array key instead of creating
+        // the vehicle.
+        $organization = Organization::factory()->create();
+        $manager = User::factory()->manager()->create([
+            'organization_id' => $organization->id,
+        ]);
+
+        $response = $this->actingAs($manager)->post(route('my.vehicles.store'), [
+            'name' => 'Escort 303',
+        ]);
+
+        $vehicle = Vehicle::where('name', 'Escort 303')->first();
+
+        $this->assertNotNull($vehicle, 'The vehicle should be created even with no odometer.');
+        $response->assertRedirect(route('my.vehicles.edit', $vehicle));
+        $this->assertNull($vehicle->odometer);
+        $this->assertNull($vehicle->odometer_updated_at);
+        $this->assertSame($organization->id, $vehicle->organization_id);
+    }
+
     public function test_manager_can_log_vehicle_maintenance_record(): void
     {
         $organization = Organization::factory()->create();
