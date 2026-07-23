@@ -2026,22 +2026,32 @@ class PilotCarJob extends Model
      */
     public function getStatusAttribute(): string
     {
+        // Prefer eager-loaded relations throughout: the jobs index renders a
+        // status badge per card, and hitting the DB here turned every page of
+        // 15 jobs into 30-45 extra queries (TASK-303).
         if ($this->canceled_at) {
             // Check if it's a "show but no-go" (has logs but was canceled)
-            if ($this->logs()->exists()) {
-                return 'CANCELLED'; // Show but no-go
-            }
-            return 'CANCELLED_NO_GO'; // Cancelled before any work
+            $hasLogs = $this->relationLoaded('logs')
+                ? $this->logs->isNotEmpty()
+                : $this->logs()->exists();
+
+            return $hasLogs
+                ? 'CANCELLED'        // Show but no-go
+                : 'CANCELLED_NO_GO'; // Cancelled before any work
         }
 
         // Check if job has invoices (completed)
         // Check both single invoices (via pilot_car_job_id) and summary invoices (via pivot)
-        $hasSingleInvoice = Invoice::where('pilot_car_job_id', $this->id)
-            ->where('invoice_type', '!=', 'summary')
-            ->whereNull('parent_invoice_id')
-            ->exists();
-        $hasSummaryInvoice = $this->summaryInvoices()->exists();
-        
+        $hasSingleInvoice = $this->relationLoaded('singleInvoices')
+            ? $this->singleInvoices->isNotEmpty()
+            : Invoice::where('pilot_car_job_id', $this->id)
+                ->where('invoice_type', '!=', 'summary')
+                ->whereNull('parent_invoice_id')
+                ->exists();
+        $hasSummaryInvoice = $this->relationLoaded('summaryInvoices')
+            ? $this->summaryInvoices->isNotEmpty()
+            : $this->summaryInvoices()->exists();
+
         if ($hasSingleInvoice || $hasSummaryInvoice) {
             return 'COMPLETED';
         }
