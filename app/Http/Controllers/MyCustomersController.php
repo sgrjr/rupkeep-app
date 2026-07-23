@@ -46,8 +46,14 @@ class MyCustomersController extends Controller
             'contacts',
             'jobs.singleInvoices.children',
             'jobs.summaryInvoices.children',
-        ])->where('id', $customer_id)->first();
-        
+        ])->findOrFail($customer_id);
+
+        // Cross-tenant guard (TASK-356): a customer belongs to exactly one
+        // organization. Without this check any authenticated staff member could
+        // read another org's customer, contacts and invoices. Mirrors the
+        // sibling update/destroy actions, which already authorize.
+        $this->authorize('view', $customer);
+
         // The invoices() method on PilotCarJob will merge singleInvoices and summaryInvoices
         // when accessed, so we don't need additional merging logic
         
@@ -114,7 +120,12 @@ class MyCustomersController extends Controller
     }
 
     public function edit(Request $request, int $customer_id){
-        $customer = Customer::with('contacts')->where('id', $customer_id)->first();
+        $customer = Customer::with('contacts')->findOrFail($customer_id);
+
+        // Cross-tenant guard (TASK-356): editing is gated by the same ability as
+        // the sibling update action — same-org admins/managers (or a super user).
+        $this->authorize('update', $customer);
+
         return view('customers.edit', compact('customer'));
     }
 

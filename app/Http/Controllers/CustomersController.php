@@ -46,7 +46,12 @@ class CustomersController extends Controller
 
     public function edit(Request $request, int $customer_id){
 
-        $customer = Customer::with('contacts')->where('id', $customer_id)->first();
+        $customer = Customer::with('contacts')->findOrFail($customer_id);
+
+        // Cross-tenant guard (TASK-356): editing is gated by the same ability as
+        // the sibling update action — same-org admins/managers (or a super user).
+        $this->authorize('update', $customer);
+
         return view('customers.edit', compact('customer'));
     }
 

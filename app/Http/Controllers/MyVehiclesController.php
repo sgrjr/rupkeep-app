@@ -72,11 +72,16 @@ class MyVehiclesController extends Controller
             'odometer' => ['nullable', 'integer', 'min:0'],
         ]);
 
+        // The create form leaves odometer optional (TASK-359). Resolve it once
+        // with a null-guard so a submission that omits it can't read an
+        // undefined array key and 500 before the request is even authorized.
+        $odometer = $data['odometer'] ?? null;
+
         $vehicle = new Vehicle([
             'name' => $data['name'],
             'organization_id' => $request->user()->organization_id,
-            'odometer' => $data['odometer'] ?? null,
-            'odometer_updated_at' => $data['odometer'] ? now() : null,
+            'odometer' => $odometer,
+            'odometer_updated_at' => $odometer !== null ? now() : null,
         ]);
 
         $this->authorize('create', $vehicle);

@@ -177,8 +177,14 @@ class EditUserLog extends Component
             // Assigned driver must confirm/deny before editing - don't authorize update yet
             // They'll see the approval UI instead
         } elseif ($this->log->approval_status === 'denied') {
-            // Denied logs cannot be edited
-            // Still allow view access
+            // Denied logs cannot be edited, but the tenant/ownership boundary
+            // must still hold (TASK-357). Previously this branch skipped
+            // authorization entirely, so ANY authenticated user from ANY org
+            // could open a denied log and read its driver, mileage and expense
+            // detail. Authorize 'view' instead: a same-org member (including the
+            // assigned driver) can still read their own denied log, while a
+            // cross-tenant user is refused.
+            $this->authorize('view', $this->log);
         } else {
             // Normal authorization for confirmed logs or managers/admins
             $this->authorize('update', $this->log);
