@@ -1,5 +1,5 @@
 @props(['drivers'=>[], 'vehicles'=>[]])
-@php use App\Support\LocalTime; @endphp
+@php use App\Support\LocalTime; use App\Support\Money; @endphp
 
 <div class="bg-slate-100/80 pb-32" x-data>
     <style>
@@ -117,17 +117,17 @@
                                         <div class="rounded-lg border border-slate-200 bg-slate-50 p-2">
                                             <p class="text-[9px] font-semibold uppercase tracking-wide text-slate-600">{{ __('Current Rate') }}</p>
                                             <p class="mt-1 text-sm font-bold text-slate-900">{{ $rateComparison['current_rate_label'] }}</p>
-                                            <p class="mt-0.5 text-lg font-bold text-slate-900">${{ number_format($rateComparison['current_cost'], 2) }}</p>
+                                            <p class="mt-0.5 text-lg font-bold text-slate-900">{{ Money::currency($rateComparison['current_cost']) }}</p>
                                         </div>
                                         <div class="rounded-lg border-2 border-orange-400 bg-orange-50 p-2">
                                             <p class="text-[9px] font-semibold uppercase tracking-wide text-orange-700">{{ __('Mini-Run Rate') }}</p>
-                                            <p class="mt-1 text-sm font-bold text-slate-900">Mini-Run ({{ $rateComparison['billable_miles'] }} miles)</p>
-                                            <p class="mt-0.5 text-lg font-bold text-slate-900">${{ number_format($rateComparison['mini_cost'], 2) }}</p>
+                                            <p class="mt-1 text-sm font-bold text-slate-900">Mini-Run ({{ number_format($rateComparison['billable_miles'], 0) }} miles)</p>
+                                            <p class="mt-0.5 text-lg font-bold text-slate-900">{{ Money::currency($rateComparison['mini_cost']) }}</p>
                                         </div>
                                     </div>
                                     <div class="mt-2 rounded-lg border-2 border-orange-400 px-2 py-1.5 bg-orange-50">
                                         <p class="text-[10px] font-bold uppercase tracking-wide text-orange-700">
-                                            {{ __('Earn $:amount more by switching to Mini-Run', ['amount' => number_format($rateComparison['savings'], 2)]) }}
+                                            {{ __('Earn :amount more by switching to Mini-Run', ['amount' => Money::currency($rateComparison['savings'])]) }}
                                         </p>
                                     </div>
                                     <details class="mt-2">
@@ -139,7 +139,7 @@
                                         </summary>
                                         <div class="mt-2 rounded-lg border border-orange-300 bg-slate-50 p-3 text-[10px] text-slate-700 space-y-2">
                                             <p class="font-semibold text-slate-900">{{ __('What this means:') }}</p>
-                                            <p>{{ __('This job qualifies for Mini-Run (≤:miles miles). Your current billing rate ($:current) is lower than the Mini-Run flat rate ($:mini). Switching to Mini-Run would increase revenue by $:amount.', ['miles' => number_format($rateComparison['billable_miles'], 0), 'current' => number_format($rateComparison['current_cost'], 2), 'mini' => number_format($rateComparison['mini_cost'], 2), 'amount' => number_format($rateComparison['savings'], 2)]) }}</p>
+                                            <p>{{ __('This job qualifies for Mini-Run (≤:miles miles). Your current billing rate (:current) is lower than the Mini-Run flat rate (:mini). Switching to Mini-Run would increase revenue by :amount.', ['miles' => number_format($rateComparison['billable_miles'], 0), 'current' => Money::currency($rateComparison['current_cost']), 'mini' => Money::currency($rateComparison['mini_cost']), 'amount' => Money::currency($rateComparison['savings'])]) }}</p>
                                             <p class="pt-2 border-t border-orange-200">{{ __('Consider updating the billing rate to Mini-Run to maximize revenue for this job.') }}</p>
                                         </div>
                                     </details>
@@ -152,11 +152,11 @@
                             <div class="mt-2 grid grid-cols-2 gap-2 text-xs">
                                 <div class="rounded border border-slate-200 bg-slate-50 p-2">
                                     <p class="text-[9px] text-slate-600">{{ __('Current') }}</p>
-                                    <p class="mt-0.5 text-sm font-bold text-slate-900">${{ number_format($rateComparison['current_cost'], 2) }}</p>
+                                    <p class="mt-0.5 text-sm font-bold text-slate-900">{{ Money::currency($rateComparison['current_cost']) }}</p>
                                 </div>
                                 <div class="rounded border border-slate-200 bg-slate-50 p-2">
                                     <p class="text-[9px] text-slate-600">{{ __('Mini-Run') }}</p>
-                                    <p class="mt-0.5 text-sm font-bold text-slate-900">${{ number_format($rateComparison['mini_cost'], 2) }}</p>
+                                    <p class="mt-0.5 text-sm font-bold text-slate-900">{{ Money::currency($rateComparison['mini_cost']) }}</p>
                                 </div>
                             </div>
                             <details class="mt-2">
@@ -168,8 +168,8 @@
                                 </summary>
                                 <div class="mt-2 rounded-lg border border-emerald-300 bg-emerald-50 p-3 text-[10px] text-slate-700 space-y-2">
                                     <p class="font-semibold text-slate-900">{{ __('What this means:') }}</p>
-                                    <p>{{ __('Your current billing rate ($:current) is higher than the Mini-Run flat rate ($:mini) for this job. You are already maximizing revenue with the current rate.', ['current' => number_format($rateComparison['current_cost'], 2), 'mini' => number_format($rateComparison['mini_cost'], 2)]) }}</p>
-                                    <p class="pt-2 border-t border-emerald-200">{{ __('Note: This job qualifies for Mini-Run (≤:miles miles), but switching to Mini-Run would result in $:amount less revenue.', ['miles' => number_format($rateComparison['billable_miles'], 0), 'amount' => number_format($rateComparison['savings'], 2)]) }}</p>
+                                    <p>{{ __('Your current billing rate (:current) is higher than the Mini-Run flat rate (:mini) for this job. You are already maximizing revenue with the current rate.', ['current' => Money::currency($rateComparison['current_cost']), 'mini' => Money::currency($rateComparison['mini_cost'])]) }}</p>
+                                    <p class="pt-2 border-t border-emerald-200">{{ __('Note: This job qualifies for Mini-Run (≤:miles miles), but switching to Mini-Run would result in :amount less revenue.', ['miles' => number_format($rateComparison['billable_miles'], 0), 'amount' => Money::currency($rateComparison['savings'])]) }}</p>
                                 </div>
                             </details>
                         </div>

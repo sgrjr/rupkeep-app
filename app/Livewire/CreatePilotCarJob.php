@@ -184,6 +184,16 @@ class CreatePilotCarJob extends Component
         // Sanitize the additive mini add-on amount (nullable; blank leaves it unset)
         $form['mini_addon_amount'] = $this->sanitizeMiniAddonAmount($this->form->mini_addon_amount);
 
+        // Double-count guard (TASK-335): the additive mini add-on cannot stack on
+        // a job already billed at the mini flat rate — that would charge the mini
+        // twice. Reject the combination; the additive design stays intact for every
+        // other rate code.
+        if ($form['rate_code'] === 'mini_flat_rate' && $form['mini_addon_amount'] !== null && (float) $form['mini_addon_amount'] > 0) {
+            $this->addError('form.mini_addon_amount', __('A Mini Add-On cannot be applied to a Mini-Run (mini_flat_rate) job — that would charge the mini rate twice. Remove the add-on or choose a different rate.'));
+
+            return;
+        }
+
         $user = Auth::user();
         $job = $user->organization->jobs()->create($form);
         $this->form->reset();

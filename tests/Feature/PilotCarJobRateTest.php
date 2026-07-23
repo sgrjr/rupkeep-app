@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Livewire\CreatePilotCarJob;
 use App\Livewire\EditPilotCarJob;
+use App\Livewire\ShowPilotCarJob;
 use App\Models\Customer;
 use App\Models\CustomerContact;
 use App\Models\Organization;
@@ -363,6 +364,274 @@ class PilotCarJobRateTest extends TestCase
         $this->assertSame('cancel_without_billing', $farNoLogs->determineCancellationType());
 
         Carbon::setTestNow();
+    }
+
+    /* -------------------- Flat-rate vs. mini billing comparison (TASK-308) -------------------- */
+
+    /**
+     * Build a job with a single log carrying an explicit billable-miles override
+     * (and optional expense fields) so the comparison inputs are deterministic.
+     */
+    private function jobWithBillableMiles(
+        Organization $organization,
+        Customer $customer,
+        string $rateCode,
+        ?string $rateValue,
+        ?float $billableMiles,
+        array $logExtra = [],
+        ?string $miniAddon = null,
+    ): PilotCarJob {
+        static $seq = 0;
+        $seq++;
+
+        $job = PilotCarJob::create([
+            'job_no' => 'JOB-CMP-' . $seq,
+            'customer_id' => $customer->id,
+            'organization_id' => $organization->id,
+            'load_no' => 'LOAD-CMP-' . $seq,
+            'pickup_address' => 'Pickup',
+            'delivery_address' => 'Delivery',
+            'rate_code' => $rateCode,
+            'rate_value' => $rateValue,
+            'mini_addon_amount' => $miniAddon,
+        ]);
+
+        if ($billableMiles !== null) {
+            UserLog::create([
+                'job_id' => $job->id,
+                'organization_id' => $organization->id,
+                'billable_miles' => $billableMiles,
+                'started_at' => Carbon::now()->subDay(),
+                'ended_at' => Carbon::now(),
+            ] + $logExtra);
+        }
+
+        return $job->fresh();
+    }
+
+    public function test_rate_comparison_flags_mini_as_greater_when_per_mile_total_is_lower(): void
+    {
+        $organization = Organization::factory()->create();
+        $customer = Customer::factory()->create(['organization_id' => $organization->id]);
+
+        // 100 billable miles @ $2.00 = $200 per-mile, below the $350 mini flat rate.
+        $job = $this->jobWithBillableMiles($organization, $customer, 'per_mile_rate_2_00', '2.00', 100);
+
+        $comparison = $job->getRateComparison();
+
+        $this->assertNotNull($comparison);
+        $this->assertEqualsWithDelta(200.00, $comparison['current_cost'], 0.001);
+        $this->assertEqualsWithDelta(350.00, $comparison['mini_cost'], 0.001);
+        $this->assertTrue($comparison['is_mini_better'], 'Mini flat rate bills more here, so it is the amount to charge.');
+        $this->assertEqualsWithDelta(150.00, $comparison['savings'], 0.001);
+        $this->assertEqualsWithDelta(100.0, $comparison['billable_miles'], 0.001);
+    }
+
+    public function test_rate_comparison_keeps_current_rate_when_per_mile_total_is_higher(): void
+    {
+        $organization = Organization::factory()->create();
+        $customer = Customer::factory()->create(['organization_id' => $organization->id]);
+
+        // 120 billable miles @ $3.50 = $420 per-mile, above the $350 mini flat rate.
+        $job = $this->jobWithBillableMiles($organization, $customer, 'per_mile_rate_3_50', '3.50', 120);
+
+        $comparison = $job->getRateComparison();
+
+        $this->assertNotNull($comparison);
+        $this->assertEqualsWithDelta(420.00, $comparison['current_cost'], 0.001);
+        $this->assertEqualsWithDelta(350.00, $comparison['mini_cost'], 0.001);
+        $this->assertFalse($comparison['is_mini_better'], 'The current per-mile rate bills more, so it stays.');
+        $this->assertEqualsWithDelta(70.00, $comparison['savings'], 0.001);
+    }
+
+    public function test_rate_comparison_includes_expenses_on_both_sides(): void
+    {
+        $organization = Organization::factory()->create();
+        $customer = Customer::factory()->create(['organization_id' => $organization->id]);
+
+        // 100 mi @ $2.00 = $200 rate charge, plus $20 tolls + $30 extra = $50 expenses.
+        $job = $this->jobWithBillableMiles(
+            $organization,
+            $customer,
+            'per_mile_rate_2_00',
+            '2.00',
+            100,
+            ['tolls' => 20.00, 'extra_charge' => 30.00],
+        );
+
+        $comparison = $job->getRateComparison();
+
+        $this->assertNotNull($comparison);
+        // Regression guard: the old comparison read non-existent value keys and
+        // silently dropped extra_charge/load_stops/wait_time from the expense sum.
+        $this->assertEqualsWithDelta(50.00, $comparison['expenses'], 0.001);
+        $this->assertEqualsWithDelta(250.00, $comparison['current_cost'], 0.001, 'rate charge + expenses');
+        $this->assertEqualsWithDelta(400.00, $comparison['mini_cost'], 0.001, 'mini flat + same expenses');
+    }
+
+    public function test_rate_comparison_is_null_when_billable_miles_exceed_mini_threshold(): void
+    {
+        $organization = Organization::factory()->create();
+        $customer = Customer::factory()->create(['organization_id' => $organization->id]);
+
+        // 200 billable miles is beyond the 125-mile mini threshold: no flat-vs-mini choice.
+        $job = $this->jobWithBillableMiles($organization, $customer, 'per_mile_rate_2_00', '2.00', 200);
+
+        $this->assertNull($job->getRateComparison());
+    }
+
+    public function test_rate_comparison_is_null_when_no_billable_miles(): void
+    {
+        $organization = Organization::factory()->create();
+        $customer = Customer::factory()->create(['organization_id' => $organization->id]);
+
+        // No logs at all -> nothing to bill per-mile against -> not a meaningful comparison.
+        $job = $this->jobWithBillableMiles($organization, $customer, 'per_mile_rate_2_00', '2.00', null);
+
+        $this->assertNull($job->getRateComparison());
+    }
+
+    /* -------------------- Mini add-on double-count guard (TASK-335) -------------------- */
+
+    public function test_mini_addon_is_ignored_on_mini_flat_rate_job_but_still_stacks_elsewhere(): void
+    {
+        $organization = Organization::factory()->create();
+        $customer = Customer::factory()->create(['organization_id' => $organization->id]);
+
+        $miniFlat = (float) config('pricing.rates.mini_flat_rate.flat_amount'); // 350.00
+        $dayFlat = (float) config('pricing.rates.day_rate.flat_amount');        // 575.00
+
+        // A mini_flat_rate job that ALSO carries a mini add-on must NOT charge the
+        // mini twice: the add-on is dropped, total equals the mini flat amount.
+        $miniJob = PilotCarJob::create([
+            'job_no' => 'JOB-GUARD-MINI',
+            'customer_id' => $customer->id,
+            'organization_id' => $organization->id,
+            'load_no' => 'LOAD-GUARD-MINI',
+            'pickup_address' => 'Pickup',
+            'delivery_address' => 'Delivery',
+            'rate_code' => 'mini_flat_rate',
+            'rate_value' => (string) $miniFlat,
+            'mini_addon_amount' => '100.00',
+        ]);
+
+        $miniValues = $miniJob->invoiceValues()['values'];
+        $this->assertEqualsWithDelta(0.00, (float) $miniValues['mini_addon_amount'], 0.001,
+            'The add-on component must be zeroed out on a mini_flat_rate job.');
+        $this->assertEqualsWithDelta($miniFlat, (float) $miniValues['total'], 0.001,
+            'Total must equal the single mini flat amount, not mini + mini add-on.');
+
+        // The additive design stays intact for every other rate code.
+        $dayJob = PilotCarJob::create([
+            'job_no' => 'JOB-GUARD-DAY',
+            'customer_id' => $customer->id,
+            'organization_id' => $organization->id,
+            'load_no' => 'LOAD-GUARD-DAY',
+            'pickup_address' => 'Pickup',
+            'delivery_address' => 'Delivery',
+            'rate_code' => 'day_rate',
+            'rate_value' => (string) $dayFlat,
+            'mini_addon_amount' => '100.00',
+        ]);
+
+        $dayValues = $dayJob->invoiceValues()['values'];
+        $this->assertEqualsWithDelta(100.00, (float) $dayValues['mini_addon_amount'], 0.001,
+            'The add-on still stacks on non-mini rate codes.');
+        $this->assertEqualsWithDelta($dayFlat + 100.00, (float) $dayValues['total'], 0.001);
+    }
+
+    public function test_edit_rejects_mini_addon_on_mini_flat_rate_job(): void
+    {
+        $organization = Organization::factory()->create();
+        $manager = User::factory()->manager()->create(['organization_id' => $organization->id]);
+        $customer = Customer::factory()->create(['organization_id' => $organization->id]);
+
+        $job = PilotCarJob::create([
+            'job_no' => 'JOB-GUARD-EDIT',
+            'customer_id' => $customer->id,
+            'organization_id' => $organization->id,
+            'load_no' => 'LOAD-GUARD-EDIT',
+            'pickup_address' => 'Pickup',
+            'delivery_address' => 'Delivery',
+            'rate_code' => 'day_rate',
+            'rate_value' => '575.00',
+        ]);
+
+        Livewire::actingAs($manager)->test(EditPilotCarJob::class, ['job' => $job->id])
+            ->set('form.rate_code', 'mini_flat_rate')
+            ->set('form.mini_addon_amount', '100')
+            ->call('saveJob')
+            ->assertHasErrors('form.mini_addon_amount');
+
+        $job->refresh();
+
+        $this->assertSame('day_rate', $job->rate_code, 'The rejected save must not persist.');
+        $this->assertNull($job->mini_addon_amount);
+    }
+
+    public function test_edit_allows_mini_addon_on_non_mini_rate(): void
+    {
+        $organization = Organization::factory()->create();
+        $manager = User::factory()->manager()->create(['organization_id' => $organization->id]);
+        $customer = Customer::factory()->create(['organization_id' => $organization->id]);
+
+        $job = PilotCarJob::create([
+            'job_no' => 'JOB-GUARD-EDIT-OK',
+            'customer_id' => $customer->id,
+            'organization_id' => $organization->id,
+            'load_no' => 'LOAD-GUARD-EDIT-OK',
+            'pickup_address' => 'Pickup',
+            'delivery_address' => 'Delivery',
+            'rate_code' => 'per_mile_rate_2_00',
+            'rate_value' => '2.00',
+        ]);
+
+        Livewire::actingAs($manager)->test(EditPilotCarJob::class, ['job' => $job->id])
+            ->set('form.mini_addon_amount', '60')
+            ->call('saveJob')
+            ->assertHasNoErrors();
+
+        $job->refresh();
+
+        $this->assertEqualsWithDelta(60.00, (float) $job->mini_addon_amount, 0.001);
+    }
+
+    public function test_create_rejects_mini_addon_on_mini_flat_rate_job(): void
+    {
+        $organization = Organization::factory()->create();
+        $manager = User::factory()->manager()->create(['organization_id' => $organization->id]);
+        $customer = Customer::factory()->create(['organization_id' => $organization->id]);
+
+        Livewire::actingAs($manager)->test(CreatePilotCarJob::class)
+            ->set('form.customer_id', $customer->id)
+            ->set('form.job_no', 'JOB-GUARD-CREATE')
+            ->set('form.load_no', 'LOAD-GUARD-CREATE')
+            ->set('form.pickup_address', '123 Pickup St')
+            ->set('form.delivery_address', '456 Delivery Ave')
+            ->set('form.rate_code', 'mini_flat_rate')
+            ->set('form.rate_value', '350.00')
+            ->set('form.mini_addon_amount', '100')
+            ->call('createJob')
+            ->assertHasErrors('form.mini_addon_amount');
+
+        $this->assertSame(0, PilotCarJob::where('job_no', 'JOB-GUARD-CREATE')->count(),
+            'A job that violates the double-count guard must not be created.');
+    }
+
+    public function test_job_show_page_renders_rate_comparison_callout(): void
+    {
+        $organization = Organization::factory()->create();
+        $manager = User::factory()->manager()->create(['organization_id' => $organization->id]);
+        $customer = Customer::factory()->create(['organization_id' => $organization->id]);
+
+        // 100 mi @ $2.00 => $200 current vs $350 mini: a mini-better callout.
+        $job = $this->jobWithBillableMiles($organization, $customer, 'per_mile_rate_2_00', '2.00', 100);
+
+        // Rendering the full show component exercises the Blade panel + Money::currency().
+        Livewire::actingAs($manager)->test(ShowPilotCarJob::class, ['job' => $job->id])
+            ->assertOk()
+            ->assertSee('Rate Comparison')
+            ->assertSee(\App\Support\Money::currency(350.00));
     }
 }
 

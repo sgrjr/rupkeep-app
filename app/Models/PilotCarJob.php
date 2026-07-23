@@ -1525,10 +1525,14 @@ class PilotCarJob extends Model
             'end_job_time' => $this->getEndJobTime($logs),
         ];
 
-        $values['total'] = $this->calculateTotalDue($values);
-        $values['effective_rate_code'] = $values['total']['effective_rate_code'];
-        $values['effective_rate_value'] = $values['total']['effective_rate_value'];
-        $values['total'] = $values['total']['total'];
+        $computed = $this->calculateTotalDue($values);
+        $values['effective_rate_code'] = $computed['effective_rate_code'];
+        $values['effective_rate_value'] = $computed['effective_rate_value'];
+        // Surface the ACTUAL add-on that was billed, not the raw input: the
+        // double-count guard (TASK-335) zeroes it on a mini_flat_rate job, so
+        // the itemized "Mini Add-On" invoice line stays consistent with the total.
+        $values['mini_addon_amount'] = $computed['mini_addon_amount'];
+        $values['total'] = $computed['total'];
 
         // Check if job is marked as paid (from CSV import or manual update)
         $paidInFull = (bool)($this->invoice_paid ?? false);
@@ -1966,10 +1970,19 @@ class PilotCarJob extends Model
             $values['total'] = (float) $values['total'];
         }
 
+        // Defensive double-count guard (TASK-335): the additive mini add-on must
+        // never stack on a job that is ALREADY billed at the mini flat rate —
+        // that would charge the mini twice. Validation in Create/Edit prevents
+        // this combination at the source; this guards the math itself for
+        // imported/legacy rows and any direct model writes that slip both in.
+        if ($rateCode === 'mini_flat_rate' && $miniAddonAmount > 0) {
+            $miniAddonAmount = 0.0;
+        }
+
         // Stack the mini add-on on top of the total produced above, as a
-        // distinct, itemized component. Applied last and unconditionally so
-        // every rate_code path (per-mile, flat, mini_flat_rate, legacy flat,
-        // flat_rate_excludes_expenses, fallback) picks it up identically.
+        // distinct, itemized component. Applied last so every OTHER rate_code
+        // path (per-mile, flat, legacy flat, flat_rate_excludes_expenses,
+        // fallback) picks it up identically; mini_flat_rate is excluded above.
         $values['mini_addon_amount'] = $miniAddonAmount;
         $values['total'] += $miniAddonAmount;
 
@@ -2112,91 +2125,70 @@ class PilotCarJob extends Model
     }
 
     /**
-     * Get rate comparison data for display
-     * Returns array with current rate cost, mini rate cost, and savings
+     * Compare how this job bills under its CURRENT rate versus the mini flat
+     * rate, and surface whichever is greater — the amount that should be billed
+     * (TASK-308). The company's interest is the higher of the two.
+     *
+     * Both sides are computed through the canonical invoice math
+     * ({@see invoiceValues()} / {@see calculateTotalDue()}) so the figures never
+     * drift from the real invoice total (the class of bug behind TASK-353):
+     *
+     *   - current_cost = the job's real rate charge + expenses (the additive
+     *     mini add-on is stripped out — it is orthogonal and would stack on
+     *     EITHER side equally, so leaving it in would distort the comparison).
+     *   - mini_cost    = the mini flat amount + the same expenses.
+     *
+     * Returns null when the comparison is not meaningful: a job with no billable
+     * miles (nothing to bill per-mile against) or one whose billable miles
+     * exceed the mini threshold (above which the mini rate itself falls back to
+     * per-mile, so there is no distinct flat-vs-mini choice to make).
      */
     public function getRateComparison(): ?array
     {
-        $billableMiles = (float) ($this->miles->billable ?? 0);
-        
-        // Only show comparison if billable miles <= 125 (mini threshold)
         $organizationId = $this->organization_id;
         $miniMaxMiles = $organizationId
             ? PricingSetting::getValueForOrganization($organizationId, 'rates.mini_flat_rate.max_miles', config('pricing.rates.mini_flat_rate.max_miles', 125))
             : config('pricing.rates.mini_flat_rate.max_miles', 125);
-            
-        if ($billableMiles > $miniMaxMiles) {
-            return null; // Not eligible for mini rate
+
+        // Canonical invoice inputs + total for the CURRENT rate. Using the same
+        // billable-miles figure that actually drives billing keeps the "meaningful"
+        // gate and the displayed totals consistent with the real invoice.
+        $values = $this->invoiceValues()['values'];
+        $billableMiles = (float) ($values['billable_miles'] ?? 0);
+
+        if ($billableMiles <= 0 || $billableMiles > $miniMaxMiles) {
+            return null; // Nothing to bill per-mile, or too long to be a mini run.
         }
 
         $miniRate = $organizationId
             ? PricingSetting::getValueForOrganization($organizationId, 'rates.mini_flat_rate.flat_amount', config('pricing.rates.mini_flat_rate.flat_amount', 350.00))
             : config('pricing.rates.mini_flat_rate.flat_amount', 350.00);
 
-        // Calculate current rate cost
-        $currentCost = 0.00;
-        $currentRateCode = $this->rate_code ?? '';
-        $currentRateValue = (float) ($this->rate_value ?? 0);
+        // Re-run the canonical math to recover the expense breakdown and the
+        // exact add-on that was applied (the guarded amount, so a mini_flat_rate
+        // job reports a 0 add-on rather than a stacked one).
+        $breakdown = $this->calculateTotalDue($values);
+        $addon = (float) ($breakdown['mini_addon_amount'] ?? 0);
+        $expenses = (float) ($breakdown['tolls'] ?? 0)
+            + (float) ($breakdown['hotel'] ?? 0)
+            + (float) ($breakdown['extra'] ?? 0)
+            + (float) ($breakdown['load_stops'] ?? 0)
+            + (float) ($breakdown['wait_time'] ?? 0);
 
-        // Get expenses (these apply to both rates)
-        $invoiceValues = $this->invoiceValues();
-        $expenses = 0.00;
-        if (isset($invoiceValues['values'])) {
-            $vals = $invoiceValues['values'];
-            $expenses = (float) ($vals['tolls'] ?? 0) + 
-                       (float) ($vals['hotel'] ?? 0) + 
-                       (float) ($vals['extra'] ?? 0) + 
-                       (float) ($vals['load_stops'] ?? 0) + 
-                       (float) ($vals['wait_time'] ?? 0);
-        }
+        // Rate charge + expenses only (strip the orthogonal mini add-on).
+        $currentCost = (float) ($breakdown['total'] ?? 0) - $addon;
+        $miniCost = (float) $miniRate + $expenses;
 
-        // Calculate cost based on current rate
-        if (str_starts_with($currentRateCode, 'per_mile_rate') || $currentRateCode === 'lead_chase_per_mile') {
-            // Per-mile rate
-            $perMileRate = $currentRateValue > 0 ? $currentRateValue : 
-                ($organizationId
-                    ? PricingSetting::getValueForOrganization($organizationId, 'rates.lead_chase_per_mile.rate_per_mile', config('pricing.rates.lead_chase_per_mile.rate_per_mile', 2.00))
-                    : config('pricing.rates.lead_chase_per_mile.rate_per_mile', 2.00));
-            $currentCost = ($billableMiles * $perMileRate) + $expenses;
-        } elseif (str_starts_with($currentRateCode, 'flat_rate') || $currentRateCode === 'custom_flat_rate') {
-            // Flat rate
-            $flatAmount = $currentRateValue > 0 ? $currentRateValue : 0;
-            if ($currentRateCode === 'flat_rate_excludes_expenses') {
-                $currentCost = $flatAmount + $expenses;
-            } else {
-                $currentCost = $flatAmount + $expenses;
-            }
-        } elseif ($currentRateCode === 'mini_flat_rate') {
-            // Already using mini rate
-            $currentCost = $miniRate + $expenses;
-        } else {
-            // Unknown rate type, try to calculate from invoice values
-            if (isset($invoiceValues['values']['total'])) {
-                $currentCost = (float) $invoiceValues['values']['total'];
-            }
-        }
-
-        // Calculate mini rate cost (always includes expenses)
-        $miniCost = $miniRate + $expenses;
-
-        // Determine which is better FROM COMPANY'S PERSPECTIVE (higher revenue is better)
-        // Mini-Run is better if it would charge MORE than current rate
+        // "Better" = higher revenue for the company.
         $isMiniBetter = $miniCost > $currentCost;
-        
-        // Calculate potential additional revenue (or savings if current is better)
-        if ($isMiniBetter) {
-            $savings = $miniCost - $currentCost; // How much MORE they'd make with Mini-Run
-        } else {
-            $savings = $currentCost - $miniCost; // How much MORE they're making with current rate
-        }
 
         return [
             'current_cost' => $currentCost,
-            'current_rate_code' => $currentRateCode,
-            'current_rate_label' => $this->getRateLabel($currentRateCode),
+            'current_rate_code' => $this->rate_code ?? '',
+            'current_rate_label' => $this->getRateLabel($this->rate_code ?? ''),
             'mini_cost' => $miniCost,
-            'mini_rate' => $miniRate,
-            'savings' => abs($savings),
+            'mini_rate' => (float) $miniRate,
+            'savings' => abs($miniCost - $currentCost),
             'is_mini_better' => $isMiniBetter,
             'expenses' => $expenses,
             'billable_miles' => $billableMiles,
