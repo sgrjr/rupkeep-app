@@ -114,10 +114,14 @@
                     <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Load #') }}:</span> <span class="text-slate-900">{{ $log->job->load_no ?? '—' }}</span></p>
                     <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Customer') }}:</span> <span class="text-slate-900">{{ $log->job->customer?->name ?? '—' }}</span></p>
                     @if($log->job->default_driver_id)
-                        <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Default Driver') }}:</span> <span class="text-slate-900">{{ $log->job->defaultDriver?->name ?? '—' }}</span></p>
+                        <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Default Driver') }}:</span> <span class="text-slate-900">{{ $log->job->defaultDriver?->name ?? '—' }}</span>
+                            <x-tel-link :number="$log->job->defaultDriver?->getPhoneFromNotificationAddress()" class="ml-1 text-xs" />
+                        </p>
                     @endif
                     @if($log->job->default_truck_driver_id)
-                        <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Default Truck Driver') }}:</span> <span class="text-slate-900">{{ $log->job->defaultTruckDriver?->name ?? '—' }}</span></p>
+                        <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Default Truck Driver') }}:</span> <span class="text-slate-900">{{ $log->job->defaultTruckDriver?->name ?? '—' }}</span>
+                            <x-tel-link :number="$log->job->defaultTruckDriver?->phone" class="ml-1 text-xs" />
+                        </p>
                     @endif
                     <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Check #') }}:</span> <span class="text-slate-900">{{ $log->job->check_no ?? '—' }}</span></p>
                     <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Invoice Paid') }}:</span> <span class="font-semibold {{ $log->job->invoice_paid < 1 ? 'text-red-500' : 'text-emerald-600' }}">{{ $log->job->invoice_paid < 1 ? __('No') : __('Yes') }}</span></p>

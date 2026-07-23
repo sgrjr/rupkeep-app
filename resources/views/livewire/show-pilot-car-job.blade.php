@@ -489,10 +489,14 @@
                     <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Load #') }}:</span> <span class="text-slate-900">{{ $job->load_no ?? '—' }}</span></p>
                     <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Customer') }}:</span> <span class="text-slate-900">{{ $job->customer?->name ?? '—' }}</span></p>
                     @if($job->default_driver_id)
-                        <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Default Driver') }}:</span> <span class="text-slate-900">{{ $job->defaultDriver?->name ?? '—' }}</span></p>
+                        <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Default Driver') }}:</span> <span class="text-slate-900">{{ $job->defaultDriver?->name ?? '—' }}</span>
+                            <x-tel-link :number="$job->defaultDriver?->getPhoneFromNotificationAddress()" class="ml-1 text-xs" />
+                        </p>
                     @endif
                     @if($job->default_truck_driver_id)
-                        <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Default Truck Driver') }}:</span> <span class="text-slate-900">{{ $job->defaultTruckDriver?->name ?? '—' }}</span></p>
+                        <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Default Truck Driver') }}:</span> <span class="text-slate-900">{{ $job->defaultTruckDriver?->name ?? '—' }}</span>
+                            <x-tel-link :number="$job->defaultTruckDriver?->phone" class="ml-1 text-xs" />
+                        </p>
                     @endif
                     <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Check #') }}:</span> <span class="text-slate-900">{{ $job->check_no ?? '—' }}</span></p>
                     <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Invoice Paid') }}:</span> <span class="font-semibold {{ $job->invoice_paid < 1 ? 'text-red-500' : 'text-emerald-600' }}">{{ $job->invoice_paid < 1 ? __('No') : __('Yes') }}</span></p>
@@ -815,7 +819,9 @@
                                             @endif
                                         </div>
                                         <p class="text-sm font-semibold text-slate-900">{{ LocalTime::mediumDate($log->created_at) }}</p>
-                                        <p class="text-xs text-slate-500">{{ __('Driver') }}: {{ $log->user?->name ?? '—' }}</p>
+                                        <p class="text-xs text-slate-500">{{ __('Driver') }}: {{ $log->user?->name ?? '—' }}
+                                            <x-tel-link :number="$log->user?->getPhoneFromNotificationAddress()" class="ml-1" />
+                                        </p>
                                     </div>
                                     <div class="flex flex-wrap items-center gap-2">
                                         @if(auth()->user()->can('update', $log))
