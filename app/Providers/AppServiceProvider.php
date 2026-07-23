@@ -17,6 +17,7 @@ use App\Models\PilotCarJob;
 use App\Observers\InvoiceObserver;
 use App\Observers\PilotCarJobObserver;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -34,6 +35,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        $this->forceApplicationUrl();
+
         Event::listen(JobAssigned::class, SendJobAssignedNotification::class);
         Event::listen(JobWasCanceled::class, NotifyAssignedDriversOfJobCancellation::class);
         Event::listen(JobWasUncanceled::class, NotifyAssignedDriversOfJobUncancellation::class);
@@ -45,6 +48,36 @@ class AppServiceProvider extends ServiceProvider
         PilotCarJob::observe(PilotCarJobObserver::class);
 
         $this->suppressMinishlinkGmpBcmathWarning();
+    }
+
+    /**
+     * Defensive fix for TASK-351.
+     *
+     * Notification links (e.g. "http://localhost/logs/1023") were being sent in
+     * real SMS/email because they are generated inside QUEUED listeners. A queue
+     * worker (or any CLI/console context) has no inbound HTTP request to infer
+     * the host from, so route()/url() fall back entirely to config('app.url').
+     * When the worker's APP_URL is stale or wrong, every generated link is wrong.
+     *
+     * The proper fix is operational — set APP_URL correctly in the production
+     * environment and restart the queue worker. This is belt-and-suspenders: by
+     * explicitly rooting the URL generator at config('app.url') at boot, every
+     * context (web, queue, scheduler, artisan) generates links against the same
+     * configured host, and an https app URL always produces https links.
+     */
+    protected function forceApplicationUrl(): void
+    {
+        $appUrl = config('app.url');
+
+        if (! is_string($appUrl) || $appUrl === '') {
+            return;
+        }
+
+        URL::forceRootUrl($appUrl);
+
+        if (str_starts_with($appUrl, 'https://')) {
+            URL::forceScheme('https');
+        }
     }
 
     /**
