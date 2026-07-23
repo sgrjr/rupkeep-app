@@ -5,10 +5,12 @@ namespace App\Providers;
 use App\Events\InvoiceFlagged;
 use App\Events\InvoiceReady;
 use App\Events\JobAssigned;
+use App\Events\JobStatusChanged;
 use App\Events\JobWasCanceled;
 use App\Events\JobWasUncanceled;
 use App\Listeners\NotifyAssignedDriversOfJobCancellation;
 use App\Listeners\NotifyAssignedDriversOfJobUncancellation;
+use App\Listeners\NotifyDriversOfJobStatusChange;
 use App\Listeners\SendInvoiceFlaggedNotification;
 use App\Listeners\SendInvoiceReadyNotification;
 use App\Listeners\SendJobAssignedNotification;
@@ -40,6 +42,7 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(JobAssigned::class, SendJobAssignedNotification::class);
         Event::listen(JobWasCanceled::class, NotifyAssignedDriversOfJobCancellation::class);
         Event::listen(JobWasUncanceled::class, NotifyAssignedDriversOfJobUncancellation::class);
+        Event::listen(JobStatusChanged::class, NotifyDriversOfJobStatusChange::class);
         Event::listen(InvoiceReady::class, SendInvoiceReadyNotification::class);
         Event::listen(InvoiceFlagged::class, SendInvoiceFlaggedNotification::class);
 

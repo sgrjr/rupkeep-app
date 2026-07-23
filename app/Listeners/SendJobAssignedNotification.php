@@ -5,7 +5,9 @@ namespace App\Listeners;
 use App\Events\JobAssigned;
 use App\Listeners\Concerns\SendsNotificationMail;
 use App\Mail\UserNotification;
+use App\Mail\UserNotificationSms;
 use App\Notifications\JobUpdate;
+use App\Support\JobSms;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Carbon;
@@ -67,30 +69,38 @@ class SendJobAssignedNotification implements ShouldQueue
         // there is nothing to accept — the message is purely informational.
         $needsConfirmation = ! $event->log || $event->log->approval_status === 'pending';
 
-        // Kept short and ASCII-only (GSM-7) so carriers send it as plain SMS
-        // rather than converting a long/Unicode body into an MMS attachment.
-        // "tap Confirm" makes clear acceptance is a deliberate action in the
-        // app — opening the link alone does not accept the job.
-        $callToAction = $needsConfirmation
-            ? sprintf('Open and tap Confirm to accept: %s', $actionUrl)
-            : sprintf('View job details: %s', $actionUrl);
-
-        $message = sprintf(
-            "Job %s assigned to you.\nPickup: %s\nScheduled: %s\n%s",
-            $job->job_no ?? ('#'.$job->id),
-            $job->pickup_address ?: 'Not yet provided',
-            $scheduledAt ?: 'Not scheduled',
-            $callToAction
-        );
-
-        $subject = sprintf('Job Assigned: %s', $job->job_no ?? ('Job '.$job->id));
-
         // Best-effort send — a mail misconfig must not dead-letter the job.
-        $this->mailSafely($recipient, new UserNotification($message, $subject, 'mail.job-assigned', [
-            'job' => $job,
-            'driver' => $driver,
-            'log' => $event->log,
-        ], $job->organization?->name));
+        //
+        // When the recipient is an email-to-SMS gateway address the whole
+        // payload must fit in one 160-char SMS or iOS turns the overflow into an
+        // unreadable attachment (TASK-352). Compose a short, URL-safe body and
+        // send it subject-less as plain text. A real email address still gets
+        // the full rich HTML template.
+        if ($driver->usesSmsGateway()) {
+            $this->mailSafely($recipient, new UserNotificationSms(
+                JobSms::assigned($job, $actionUrl, $needsConfirmation)
+            ));
+        } else {
+            $callToAction = $needsConfirmation
+                ? sprintf('Open and tap Confirm to accept: %s', $actionUrl)
+                : sprintf('View job details: %s', $actionUrl);
+
+            $message = sprintf(
+                "Job %s assigned to you.\nPickup: %s\nScheduled: %s\n%s",
+                $job->job_no ?? ('#'.$job->id),
+                $job->pickup_address ?: 'Not yet provided',
+                $scheduledAt ?: 'Not scheduled',
+                $callToAction
+            );
+
+            $subject = sprintf('Job Assigned: %s', $job->job_no ?? ('Job '.$job->id));
+
+            $this->mailSafely($recipient, new UserNotification($message, $subject, 'mail.job-assigned', [
+                'job' => $job,
+                'driver' => $driver,
+                'log' => $event->log,
+            ], $job->organization?->name));
+        }
 
         // Send push notification if driver has push subscriptions
         try {

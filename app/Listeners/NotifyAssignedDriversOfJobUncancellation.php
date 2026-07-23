@@ -4,6 +4,7 @@ namespace App\Listeners;
 
 use App\Actions\SendUserNotification;
 use App\Events\JobWasUncanceled;
+use App\Support\JobSms;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Carbon;
@@ -67,16 +68,25 @@ class NotifyAssignedDriversOfJobUncancellation implements ShouldQueue
                 $scheduledAt = Carbon::parse($job->scheduled_pickup_at)->toDayDateTimeString();
             }
 
-            $message = sprintf(
-                "Hello %s,\n\nJob %s has been REACTIVATED (uncanceled).\n\nJob Details:\n- Job #: %s\n- Load #: %s\n- Pickup: %s\n- Delivery: %s\n- Scheduled Pickup: %s\n\nThis job is now active again. Please proceed as scheduled. If you have any questions, contact your manager.",
-                $driver->name,
-                $job->job_no ?? ('#'.$job->id),
-                $job->job_no ?? ('#'.$job->id),
-                $job->load_no ?: 'Not provided',
-                $job->pickup_address ?: 'Not yet provided',
-                $job->delivery_address ?: 'Not yet provided',
-                $scheduledAt ?: 'Not scheduled'
-            );
+            // A carrier SMS gateway needs a body that fits one 160-char text
+            // (TASK-352); a real mailbox gets the full detailed message.
+            if ($driver->usesSmsGateway()) {
+                $message = JobSms::reactivated(
+                    $job,
+                    route('my.jobs.show', ['job' => $job->id])
+                );
+            } else {
+                $message = sprintf(
+                    "Hello %s,\n\nJob %s has been REACTIVATED (uncanceled).\n\nJob Details:\n- Job #: %s\n- Load #: %s\n- Pickup: %s\n- Delivery: %s\n- Scheduled Pickup: %s\n\nThis job is now active again. Please proceed as scheduled. If you have any questions, contact your manager.",
+                    $driver->name,
+                    $job->job_no ?? ('#'.$job->id),
+                    $job->job_no ?? ('#'.$job->id),
+                    $job->load_no ?: 'Not provided',
+                    $job->pickup_address ?: 'Not yet provided',
+                    $job->delivery_address ?: 'Not yet provided',
+                    $scheduledAt ?: 'Not scheduled'
+                );
+            }
 
             $subject = sprintf('Job Reactivated: %s', $job->job_no ?? ('Job '.$job->id));
 
