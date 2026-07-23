@@ -239,17 +239,11 @@ class RolePermissionBoundaryTest extends TestCase
         $org = $this->createOrganization('Org A');
         $customerUser = $this->createUserForOrganization($org, User::ROLE_CUSTOMER);
 
-        $response = $this->actingAs($customerUser)->get(route('my.jobs.index'));
-
-        if ($response->getStatusCode() !== 403) {
-            $this->markTestSkipped(
-                'PERMISSION HOLE: route my.jobs.index (MyJobsController::index) has no role/policy gate — only '
-                . 'auth+verified — so a customer-role user (whose organization_id is the pilot-car company) can '
-                . "load the company's full internal job list. Same gap on my.vehicles.index and customers.index."
-            );
-        }
-
-        $response->assertForbidden();
+        // EnsureStaff middleware redirects customer accounts to their portal
+        // instead of a bare 403 (guests still get 403).
+        $this->actingAs($customerUser)
+            ->get(route('my.jobs.index'))
+            ->assertRedirect(route('customer.invoices.index'));
     }
 
     public function test_customer_cannot_reach_staff_vehicles_index(): void
@@ -257,16 +251,9 @@ class RolePermissionBoundaryTest extends TestCase
         $org = $this->createOrganization('Org A');
         $customerUser = $this->createUserForOrganization($org, User::ROLE_CUSTOMER);
 
-        $response = $this->actingAs($customerUser)->get(route('my.vehicles.index'));
-
-        if ($response->getStatusCode() !== 403) {
-            $this->markTestSkipped(
-                'PERMISSION HOLE: route my.vehicles.index (MyVehiclesController::index) has no role/policy gate, '
-                . 'so a customer-role user can enumerate the pilot-car company\'s internal vehicle fleet.'
-            );
-        }
-
-        $response->assertForbidden();
+        $this->actingAs($customerUser)
+            ->get(route('my.vehicles.index'))
+            ->assertRedirect(route('customer.invoices.index'));
     }
 
     public function test_customer_cannot_reach_staff_customers_index(): void
@@ -274,16 +261,8 @@ class RolePermissionBoundaryTest extends TestCase
         $org = $this->createOrganization('Org A');
         $customerUser = $this->createUserForOrganization($org, User::ROLE_CUSTOMER);
 
-        $response = $this->actingAs($customerUser)->get(route('customers.index'));
-
-        if ($response->getStatusCode() !== 403) {
-            $this->markTestSkipped(
-                'PERMISSION HOLE: route customers.index (CustomersController::index) has no role/policy gate, so a '
-                . "customer-role user can enumerate every OTHER customer of the same pilot-car company (names, "
-                . 'contacts, job counts). A customer must never see the org-wide customer roster.'
-            );
-        }
-
-        $response->assertForbidden();
+        $this->actingAs($customerUser)
+            ->get(route('customers.index'))
+            ->assertRedirect(route('customer.invoices.index'));
     }
 }
