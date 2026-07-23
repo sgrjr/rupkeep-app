@@ -1737,16 +1737,21 @@ class PilotCarJob extends Model
         return $stops;
     }
 
+    // Expense aggregators sum as floats (an (Int) cast here used to silently
+    // drop cents from every toll/hotel/extra charge) and format WITHOUT a
+    // thousands separator: both calculateTotalDue() and the invoice render
+    // template consume these with a bare (float) cast, which stops at the
+    // first comma — a $1,234.00 expense line was billing as $1.00 (TASK-353).
     public function getTotalTolls($logs = false){
         if(!$logs) $logs = $this->logs;
         $tolls = 0;
 
         foreach($logs as $log){
             if($log->tolls && !empty($log->tolls)){
-                $tolls += (Int)$log->tolls;
+                $tolls += (float)$log->tolls;
             }
         }
-        return number_format($tolls,2);
+        return number_format($tolls, 2, '.', '');
     }
 
     public function getTotalHotel($logs = false){
@@ -1755,10 +1760,10 @@ class PilotCarJob extends Model
 
         foreach($logs as $log){
             if($log->hotel && !empty($log->hotel)){
-                $hotel += (Int)$log->hotel;
+                $hotel += (float)$log->hotel;
             }
         }
-        return number_format( $hotel,2);
+        return number_format($hotel, 2, '.', '');
     }
 
     public function getExtraCharges($logs = false){
@@ -1767,10 +1772,10 @@ class PilotCarJob extends Model
 
         foreach($logs as $log){
             if($log->extra_charge && !empty($log->extra_charge)){
-                $extra_charge += (Int)$log->extra_charge;
+                $extra_charge += (float)$log->extra_charge;
             }
         }
-        return number_format($extra_charge,2);
+        return number_format($extra_charge, 2, '.', '');
     }
 
     public function getCarsCount($logs = false){
@@ -1830,10 +1835,15 @@ class PilotCarJob extends Model
 
     public function calculateTotalDue(Array $totals){
 
+        // Comma-tolerant parse: the aggregators no longer emit thousands
+        // separators, but historical invoice values (and any caller-supplied
+        // totals) may still carry them, and (float)"1,234.00" is 1.0.
+        $money = fn ($v) => (float) str_replace(',', '', (string) ($v ?? 0));
+
         $values = [
-            'tolls' => (float)$totals['tolls'],
-            'hotel' => (float)$totals['hotel'],
-            'extra' => (float)$totals['extra_charge'],
+            'tolls' => $money($totals['tolls']),
+            'hotel' => $money($totals['hotel']),
+            'extra' => $money($totals['extra_charge']),
             'load_stops' => 0.00,
             'wait_time' => 0.00,
         ];

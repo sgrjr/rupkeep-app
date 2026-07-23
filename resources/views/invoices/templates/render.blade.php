@@ -21,12 +21,16 @@
     $lineItems = [];
     if (!$isSummary) {
         // Calculate base service amount (total minus all other charges)
-        $waitTimeAmount = isset($values['cost_of_wait_time']) ? (float) $values['cost_of_wait_time'] : 0;
+        // Comma-tolerant money parse: invoices created before TASK-353 stored
+        // number_format()ed strings, and (float)"1,234.00" is 1.0.
+        $money = fn ($v) => (float) str_replace(',', '', (string) ($v ?? 0));
+
+        $waitTimeAmount = isset($values['cost_of_wait_time']) ? $money($values['cost_of_wait_time']) : 0;
         $extraStopsAmount = isset($values['cost_of_extra_stop']) && isset($values['extra_load_stops_count'])
-            ? (float) ($values['extra_load_stops_count'] * $values['cost_of_extra_stop'])
+            ? (float) ($values['extra_load_stops_count'] * $money($values['cost_of_extra_stop']))
             : 0;
-        $deadAmount = isset($values['dead_head_charge']) ? (float) $values['dead_head_charge'] : 0;
-        $tollsAmount = isset($values['tolls']) ? (float) $values['tolls'] : 0;
+        $deadAmount = isset($values['dead_head_charge']) ? $money($values['dead_head_charge']) : 0;
+        $tollsAmount = isset($values['tolls']) ? $money($values['tolls']) : 0;
         $totalMileageAmount = isset($values['cost_for_mileage']) ? (float) $values['cost_for_mileage'] : 0;
         $miniAddonAmount = isset($values['mini_addon_amount']) ? (float) $values['mini_addon_amount'] : 0;
 
@@ -110,9 +114,9 @@
         __('Billable Miles') => $billableMiles ? number_format((float) $billableMiles, 2) : null,
         __('Rate Applied') => $rateValue ? '$' . number_format((float) $rateValue, 2) : null,
         __('Deadhead Trips') => $values['dead_head'] ?? null,
-        __('Tolls') => isset($values['tolls']) ? '$' . number_format((float) $values['tolls'], 2) : null,
-        __('Hotel') => isset($values['hotel']) ? '$' . number_format((float) $values['hotel'], 2) : null,
-        __('Extra Charges') => isset($values['extra_charge']) ? '$' . number_format((float) $values['extra_charge'], 2) : null,
+        __('Tolls') => isset($values['tolls']) ? '$' . number_format((float) str_replace(',', '', (string) $values['tolls']), 2) : null,
+        __('Hotel') => isset($values['hotel']) ? '$' . number_format((float) str_replace(',', '', (string) $values['hotel']), 2) : null,
+        __('Extra Charges') => isset($values['extra_charge']) ? '$' . number_format((float) str_replace(',', '', (string) $values['extra_charge']), 2) : null,
         __('Extra Load Stops') => $values['extra_load_stops_count'] ?? null,
         __('Wait Time (hrs)') => $values['wait_time_hours'] ?? null,
         __('Mini Add-On') => (isset($values['mini_addon_amount']) && (float) $values['mini_addon_amount'] > 0) ? '$' . number_format((float) $values['mini_addon_amount'], 2) : null,
