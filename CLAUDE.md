@@ -121,7 +121,7 @@ Issue the token by signing into the production app as a super user, going to Jet
 
 ## Other helpful pointers
 
-- **Tests**: `php artisan test`. Suite is currently green (54/54). Use `--filter=TaskTest` to scope.
+- **Tests**: `php artisan test`. Suite is green (256 passed, 21 pre-existing Jetstream feature-gate skips as of 2026-07). Use `--filter=TaskTest` to scope.
 - **Currency formatting** in views: use `App\Support\Money::currency($amount)` — it falls back gracefully when `ext-intl` isn't loaded.
 - **Memory** for session-spanning facts: see `C:\Users\sreynoldsjr\.claude\projects\.../memory/MEMORY.md` (Claude Code only).
 - **Architectural decisions** + **glossary** are in [`docs/ROADMAP.md`](docs/ROADMAP.md).
