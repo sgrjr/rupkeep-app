@@ -133,6 +133,26 @@ For local testing without a worker, you can make listeners synchronous — see [
 
 ---
 
+## Scheduler (cron)
+
+Scheduled commands (defined in `routes/console.php` — currently the daily
+`vehicles:send-maintenance-reminders` digest, TASK-041) only run if the host
+cron invokes Laravel's scheduler every minute:
+
+```bash
+# crontab -e  (as the web/app user)
+* * * * * cd /var/www/rupkeep-app && php artisan schedule:run >> /dev/null 2>&1
+```
+
+**This cron entry is not yet installed on production** — until it is, scheduled
+commands never fire. Verify what's due with:
+
+```bash
+php artisan schedule:list
+```
+
+---
+
 ## Utilities
 
 ### Tail Laravel logs
