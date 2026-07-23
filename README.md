@@ -1,66 +1,117 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Rupkeep
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Rupkeep is the operations platform for **Casco Bay Pilot Car**, an escort / pilot-car company.
+It manages the full job lifecycle — pilot-car jobs, driver logs, invoicing, customers, and
+vehicles — replacing an earlier Google Sheets workflow with a single job-tracking, logging,
+and billing system.
 
-## About Laravel
+Production runs at **https://pilotcar.io**.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+This is a private business application, not an open-source project.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## What it does
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- **Pilot-car jobs** — schedule and track escort assignments for oversized loads.
+- **Driver logs** — mobile-first forms drivers use to record daily work against a job
+  (mileage, expenses, deadhead, wait time).
+- **Invoicing** — calculate billable miles, rates, mini/deadhead charges, and expenses,
+  then generate customer invoices (print-optimized HTML, with PDF support via dompdf).
+- **Customers & contacts** — customer records with one-time login codes for portal access
+  (customers view their invoices without a password).
+- **Vehicles** — fleet inventory with odometer, maintenance, and assignment tracking.
 
-## Learning Laravel
+The app is multi-tenant: each `Organization` owns its own users, customers, vehicles, and jobs.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Tech stack
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+- **PHP 8.2+**, **Laravel 11.9**
+- **Livewire 3** for reactive UI, **Jetstream** for auth/teams, **Sanctum** for API tokens
+- **Tailwind CSS 3**, built with **Vite**
+- **MySQL** in production, **SQLite** in local development; tests run on SQLite `:memory:`
+- Email via **Brevo** (`getbrevo/brevo-php`); PDF via **dompdf**; web push notifications
+- Primary brand color: `#f9b104` (orange)
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Local development
 
-## Laravel Sponsors
+Requires PHP 8.2+, Composer, and Node.js.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+```bash
+# 1. Clone and install dependencies
+git clone <repo-url> rupkeep-app
+cd rupkeep-app
+composer install
+npm install
 
-### Premium Partners
+# 2. Environment
+cp .env.example .env
+php artisan key:generate
+# Set APP_NAME=Rupkeep in .env (the example still ships Laravel defaults).
+# DB_CONNECTION defaults to sqlite — no MySQL needed for local dev.
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+# 3. Database (SQLite)
+# Create the SQLite file if it doesn't exist, then migrate.
+php artisan migrate
 
-## Contributing
+# Optional: seed the Casco Bay org, users, and vehicles (values in config/setup.php)
+php artisan db:seed
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+# 4. Build front-end assets
+npm run build      # one-off production build
+# — or —
+npm run dev        # Vite dev server with hot reload
 
-## Code of Conduct
+# 5. Run the app
+php artisan serve
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+On Windows, if the SQLite file is missing, create `database/database.sqlite` before
+running `php artisan migrate`.
 
-## Security Vulnerabilities
+For a full local dev loop (server + queue worker + logs + Vite) in one command:
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```bash
+composer run dev
+```
 
-## License
+### Running tests
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```bash
+php artisan test               # full suite (SQLite :memory:)
+php artisan test --filter=TaskTest
+```
+
+## Where work is tracked — Dispatch
+
+There is **no `TASKS.md`**. All open work — feature requests, bug reports, tech debt,
+verification, and customer-facing roadmap items — lives in the database-backed **Dispatch**
+system:
+
+| Surface | Location |
+|---------|----------|
+| Dev task list | `/admin/tasks` |
+| Dev kanban board | `/admin/tasks/board` |
+| Public roadmap | `/documentation/roadmap` (public tasks only) |
+| Customer portal | `/portal/tasks` |
+
+Agents and developers interact with Dispatch through `php artisan dispatch:*` commands
+(`dispatch:next`, `dispatch:show`, `dispatch:note`, `dispatch:done`, `dispatch:pull`,
+`dispatch:push`). See [`CLAUDE.md`](CLAUDE.md) for the full workflow and
+[`docs/TASKS_SCHEMA.md`](docs/TASKS_SCHEMA.md) for the task schema.
+
+## Documentation
+
+- [`CLAUDE.md`](CLAUDE.md) — working guide for anyone (human or AI) picking up this repo.
+- [`docs/ROADMAP.md`](docs/ROADMAP.md) — architectural decisions and domain glossary.
+- [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) — deployment and operational runbook.
+- [`docs/FEATURE_FLAGS.md`](docs/FEATURE_FLAGS.md) — feature-flag reference.
+- [`docs/TASKS_SCHEMA.md`](docs/TASKS_SCHEMA.md) — Dispatch task schema.
+- [`docs/BUGS.md`](docs/BUGS.md) — bug repros and investigation notes.
+
+## Glossary (quick reference)
+
+- **Pilot car** — escort vehicle for an oversized load.
+- **Job** — a pilot-car assignment; may span multiple days/logs.
+- **Log** — a single driver's work record for a job (a daily entry).
+- **Deadhead** — empty return trip (flat charge).
+- **Mini** — short job at or below the billable-mile threshold (flat charge).
+- **Billable miles** — miles charged to the customer (job start to job end).
