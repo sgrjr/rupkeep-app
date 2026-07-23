@@ -14,6 +14,7 @@ use Livewire\WithFileUploads;
 use App\Actions\SendUserNotification;
 use App\Actions\SendCustomerContactNotification;
 use App\Events\InvoiceReady;
+use App\Events\JobStatusChanged;
 use App\Events\JobWasUncanceled;
 use App\Models\Invoice;
 use App\Models\JobInvoice;
@@ -237,12 +238,18 @@ class ShowPilotCarJob extends Component
     }
 
     public function generateInvoice(){
+        // Capture status before invoicing so we can announce the ACTIVE ->
+        // COMPLETED transition to assigned drivers (TASK-311).
+        $fromStatus = $this->job->fresh()?->status ?? $this->job->status;
+
         // Create single invoice for this job (no pivot entry needed)
         $invoice = $this->job->createInvoice();
 
         $invoice->refresh();
 
         event(new InvoiceReady($invoice));
+
+        JobStatusChanged::fireIfChanged($this->job, $fromStatus);
 
         $this->recentInvoiceId = $invoice->id;
 
@@ -271,21 +278,27 @@ class ShowPilotCarJob extends Component
 
         // Build job status message
         $status = $this->job->status_label;
-        $scheduledAt = $this->job->scheduled_pickup_at 
+        $scheduledAt = $this->job->scheduled_pickup_at
             ? \Carbon\Carbon::parse($this->job->scheduled_pickup_at)->toDayDateTimeString()
             : 'Not scheduled';
-        
-        $message = sprintf(
-            "Hello %s,\n\nJob Status Update for %s\n\nJob Details:\n- Job #: %s\n- Load #: %s\n- Status: %s\n- Pickup: %s\n- Delivery: %s\n- Scheduled Pickup: %s\n\nFor updates, contact your dispatcher.",
-            $contact->name,
-            $this->job->customer->name,
-            $this->job->job_no ?? ('#'.$this->job->id),
-            $this->job->load_no ?: 'Not provided',
-            $status,
-            $this->job->pickup_address ?: 'Not yet provided',
-            $this->job->delivery_address ?: 'Not yet provided',
-            $scheduledAt
-        );
+
+        // A carrier SMS gateway needs a body that fits one 160-char text
+        // (TASK-352); a real mailbox gets the full detailed message.
+        if ($contact->usesSmsGateway()) {
+            $message = \App\Support\JobSms::customerStatus($this->job, $status);
+        } else {
+            $message = sprintf(
+                "Hello %s,\n\nJob Status Update for %s\n\nJob Details:\n- Job #: %s\n- Load #: %s\n- Status: %s\n- Pickup: %s\n- Delivery: %s\n- Scheduled Pickup: %s\n\nFor updates, contact your dispatcher.",
+                $contact->name,
+                $this->job->customer->name,
+                $this->job->job_no ?? ('#'.$this->job->id),
+                $this->job->load_no ?: 'Not provided',
+                $status,
+                $this->job->pickup_address ?: 'Not yet provided',
+                $this->job->delivery_address ?: 'Not yet provided',
+                $scheduledAt
+            );
+        }
 
         $subject = sprintf('Job Status: %s - %s', $status, $this->job->job_no ?? ('Job '.$this->job->id));
 
@@ -343,6 +356,9 @@ class ShowPilotCarJob extends Component
         // Store previous cancellation reason before updating
         $previousReason = $this->job->canceled_reason;
 
+        // Capture status before reactivation for the status-transition event.
+        $fromStatus = $this->job->fresh()?->status ?? $this->job->status;
+
         $this->job->update($updateData);
         $this->job->refresh();
 
@@ -351,6 +367,12 @@ class ShowPilotCarJob extends Component
             $this->job,
             $previousReason
         ));
+
+        // Also emit the generic status-transition event (TASK-311). Driver
+        // reactivation messaging is owned by
+        // NotifyAssignedDriversOfJobUncancellation, so the status listener
+        // no-ops for transitions out of a cancelled state.
+        JobStatusChanged::fireIfChanged($this->job, $fromStatus);
 
         $this->loadJobRelations();
 

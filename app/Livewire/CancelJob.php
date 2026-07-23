@@ -5,6 +5,7 @@ namespace App\Livewire;
 use Livewire\Component;
 use Livewire\Attributes\Validate;
 use App\Models\PilotCarJob;
+use App\Events\JobStatusChanged;
 use App\Events\JobWasCanceled;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -90,6 +91,10 @@ class CancelJob extends Component
                 $reasonText .= ': ' . $this->customReason;
             }
 
+            // Capture the pre-cancel status so we can emit a status-transition
+            // event once the cancellation is committed (TASK-311).
+            $fromStatus = $this->job->fresh()?->status ?? $this->job->status;
+
             // Update the job
             $updateData = [
                 'canceled_at' => now(),
@@ -127,6 +132,13 @@ class CancelJob extends Component
                     $actualCancellationType
                 ));
                 
+                // Also emit the generic status-transition event (TASK-311). The
+                // driver-facing cancellation message is owned by
+                // NotifyAssignedDriversOfJobCancellation, so its status listener
+                // deliberately no-ops for cancellations — this keeps the event
+                // stream complete without double-texting drivers.
+                JobStatusChanged::fireIfChanged($this->job, $fromStatus);
+
                 \Log::info('CancelJob: Event fired successfully', [
                     'job_id' => $this->job->id,
                 ]);

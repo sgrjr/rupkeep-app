@@ -78,4 +78,43 @@ class CustomerContact extends Model
     {
         return $this->getSmsGatewayAddress() !== null;
     }
+
+    /**
+     * Whether this contact's notification address is an actual carrier
+     * email-to-SMS gateway (e.g. 2075551234@mms.uscc.net) rather than an
+     * ordinary mailbox. Used to decide whether a message must be squeezed into a
+     * single 160-char SMS (TASK-352). Mirrors {@see User::usesSmsGateway()}.
+     */
+    public function usesSmsGateway(): bool
+    {
+        $address = $this->getSmsGatewayAddress();
+
+        if ($address === null) {
+            return false;
+        }
+
+        $at = strrchr($address, '@');
+
+        if ($at === false) {
+            return false;
+        }
+
+        $domain = strtolower(substr($at, 1));
+
+        foreach (config('sms_gateways.providers', []) as $provider) {
+            foreach ([$provider['sms'] ?? null, $provider['mms'] ?? null] as $suffix) {
+                if ($suffix === null) {
+                    continue;
+                }
+
+                $suffix = strtolower(ltrim($suffix, '@'));
+
+                if ($suffix !== '' && str_ends_with($domain, $suffix)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
 }

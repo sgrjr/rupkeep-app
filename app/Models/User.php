@@ -275,4 +275,48 @@ class User extends Authenticatable
     {
         return $this->getSmsGatewayAddress() !== null;
     }
+
+    /**
+     * Whether this user's notification address is an actual carrier email-to-SMS
+     * gateway (e.g. 2075551234@mms.uscc.net) rather than an ordinary mailbox.
+     *
+     * getSmsGatewayAddress() treats any address containing "@" as a gateway,
+     * which is fine for routing but too loose to decide message length: a real
+     * mailbox can take the full email, whereas a carrier gateway must fit in one
+     * 160-char SMS (TASK-352). This checks the domain against the configured
+     * carrier gateway suffixes so we only truncate when the message truly
+     * becomes a text.
+     */
+    public function usesSmsGateway(): bool
+    {
+        $address = $this->getSmsGatewayAddress();
+
+        if ($address === null) {
+            return false;
+        }
+
+        $at = strrchr($address, '@');
+
+        if ($at === false) {
+            return false;
+        }
+
+        $domain = strtolower(substr($at, 1));
+
+        foreach (config('sms_gateways.providers', []) as $provider) {
+            foreach ([$provider['sms'] ?? null, $provider['mms'] ?? null] as $suffix) {
+                if ($suffix === null) {
+                    continue;
+                }
+
+                $suffix = strtolower(ltrim($suffix, '@'));
+
+                if ($suffix !== '' && str_ends_with($domain, $suffix)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
 }

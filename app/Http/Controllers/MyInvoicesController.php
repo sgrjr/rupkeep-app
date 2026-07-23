@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Events\InvoiceReady;
+use App\Events\JobStatusChanged;
 use Illuminate\Http\Request;
 use App\Models\Invoice;
 use App\Models\PilotCarJob;
@@ -279,6 +280,11 @@ class MyInvoicesController extends Controller
             return back()->with('error', __('Some selected jobs are already part of a summary invoice: :jobs', ['jobs' => $jobNumbers ?: __('Job IDs: ') . $jobsInSummary->pluck('id')->implode(', ')]));
         }
 
+        // Capture each job's status before invoicing so we can announce the
+        // ACTIVE -> COMPLETED transition to assigned drivers afterwards
+        // (TASK-311).
+        $statusBefore = $jobs->mapWithKeys(fn (PilotCarJob $job) => [$job->id => $job->status]);
+
         $createdInvoices = DB::transaction(function () use ($jobs) {
             $createdInvoices = collect();
             $existingInvoices = collect();
@@ -336,6 +342,12 @@ class MyInvoicesController extends Controller
         $invoice = $createdInvoices->first();
 
         event(new InvoiceReady($invoice));
+
+        // A job moves ACTIVE -> COMPLETED once it has an invoice; tell assigned
+        // drivers for any job whose status actually changed (TASK-311).
+        foreach ($jobs as $job) {
+            JobStatusChanged::fireIfChanged($job, $statusBefore[$job->id]);
+        }
 
         return redirect()->route('my.invoices.edit', ['invoice' => $invoice->id]);
     }

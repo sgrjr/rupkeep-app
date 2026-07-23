@@ -18,11 +18,23 @@ class UserNotificationSms extends Mailable
 
     /**
      * Create a new message instance.
+     *
+     * SMS gateway messages are sent subject-less on purpose (see envelope()) so
+     * the carrier treats the payload as plain text, not a titled email.
      */
     public function __construct($message)
     {
-        $this->subject = $subject;
+        $this->subject = '';
         $this->message = $message;
+    }
+
+    /**
+     * The composed SMS body. Exposed for assertions/tests; the body is rendered
+     * into the text view for delivery.
+     */
+    public function body(): string
+    {
+        return (string) $this->message;
     }
 
     /**
