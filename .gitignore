@@ -27,3 +27,6 @@ yarn-error.log
 # Force-commit with `git add -f docs/tasks.jsonld` if you ever want a frozen
 # snapshot in history.
 /docs/tasks.jsonld
+
+# Claude Code agent worktrees (transient)
+/.claude/worktrees/
