@@ -285,7 +285,7 @@
                         </div>
 
                         <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                            <p>{{ __('Preferences configuration coming soon. You can manage organization settings from the organization edit page.') }}</p>
+                            <p>{{ __('Manage organization settings — branding, pricing, and preferences — anytime from the organization edit page.') }}</p>
                         </div>
                     </div>
                 @endif

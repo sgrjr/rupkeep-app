@@ -356,7 +356,7 @@
                         <li>{{ __('Register vehicles in your fleet') }}</li>
                         <li>{{ __('Track vehicle assignments to jobs') }}</li>
                         <li>{{ __('Monitor odometer readings') }}</li>
-                        <li>{{ __('Vehicle maintenance tracking (future feature)') }}</li>
+                        <li>{{ __('Track vehicle maintenance needs from driver logs') }}</li>
                     </ul>
                 </div>
 
