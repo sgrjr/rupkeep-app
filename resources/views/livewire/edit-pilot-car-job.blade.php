@@ -156,10 +156,26 @@
                             <option value="{{ $contact['value'] }}">{{ $contact['name'] }}</option>
                         @endforeach
                     </select>
-                    <p class="mt-1 text-xs text-slate-400">{{ __('Select from customer contacts') }}</p>
+                    <p class="mt-1 text-xs text-slate-400">{{ __('Select from the customer contacts, or add a new one below.') }}</p>
                     @error('form.default_truck_driver_id')
                         <p class="mt-1 text-xs font-semibold text-red-500">{{ $message }}</p>
                     @enderror
+
+                    {{-- TASK-362: add a truck driver without leaving the job form. --}}
+                    <div class="mt-3 space-y-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-3">
+                        <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{{ __('Or add a new truck driver') }}</p>
+                        <input type="text" wire:model.blur="form.new_truck_driver_name" placeholder="{{ __('Driver name') }}"
+                               class="block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                        @error('form.new_truck_driver_name')
+                            <p class="text-xs font-semibold text-red-500">{{ $message }}</p>
+                        @enderror
+                        <input type="text" wire:model.blur="form.new_truck_driver_phone" placeholder="{{ __('Phone (optional)') }}"
+                               class="block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                        @error('form.new_truck_driver_phone')
+                            <p class="text-xs font-semibold text-red-500">{{ $message }}</p>
+                        @enderror
+                        <p class="text-[11px] text-slate-500">{{ __('Attached to the customer above.') }}</p>
+                    </div>
                 </div>
             </div>
         </section>

@@ -66,10 +66,19 @@ class NewJobForm extends Form
     #[Validate('nullable|exists:customer_contacts,id')]
     public $default_truck_driver_id = null;
 
+    // Inline "add a truck driver" (TASK-362). Transient: resolved to a
+    // CustomerContact in createJob() and stripped before the job is written.
+    #[Validate('nullable|string|max:255')]
+    public $new_truck_driver_name = null;
+
+    #[Validate('nullable|string|max:255')]
+    public $new_truck_driver_phone = null;
+
 }
 
 class CreatePilotCarJob extends Component
 {
+    use \App\Livewire\Concerns\ResolvesTruckDriverContact;
 
     public NewJobForm $form;
 
@@ -105,10 +114,17 @@ class CreatePilotCarJob extends Component
            ->get()
            ->each(fn($user) => $this->drivers[] = ['name' => $user->name, 'value' => $user->id]);
        
-       // Truck drivers will be loaded when customer is selected
-       $this->truckDrivers = [
-           ['name' => '(select customer first)', 'value' => null]
-       ];
+       // Truck drivers follow the selected customer. On a fresh form there is
+       // none yet; on a re-render (validation error, wire:model round-trip) the
+       // customer may already be set, and rebuilding the placeholder-only list
+       // would blank out a selection the user already made.
+       if ($this->form->customer_id) {
+           $this->loadTruckDriversForCustomer($this->form->customer_id);
+       } else {
+           $this->truckDrivers = [
+               ['name' => '(select customer first)', 'value' => null]
+           ];
+       }
 
        if (empty($this->form->rate_code)) {
            $this->form->rate_code = 'per_mile_rate_2_00';
@@ -119,16 +135,25 @@ class CreatePilotCarJob extends Component
 
     public function updatedFormCustomerId($value)
     {
-        // Reload truck drivers when customer changes
+        $this->loadTruckDriversForCustomer($value);
+    }
+
+    protected function loadTruckDriversForCustomer($customerId): void
+    {
         $this->truckDrivers = [
             ['name' => '(none selected)', 'value' => null]
         ];
-        
-        if ($value) {
-            CustomerContact::where('customer_id', $value)
-                ->get()
-                ->each(fn($contact) => $this->truckDrivers[] = ['name' => $contact->name, 'value' => $contact->id]);
+
+        if (! $customerId) {
+            return;
         }
+
+        CustomerContact::where('customer_id', $customerId)
+            ->get()
+            ->each(function ($contact) {
+                $label = $contact->phone ? $contact->name . ' (' . $contact->phone . ')' : $contact->name;
+                $this->truckDrivers[] = ['name' => $label, 'value' => $contact->id];
+            });
     }
 
     public function render()
@@ -177,6 +202,23 @@ class CreatePilotCarJob extends Component
 
             $form['customer_id'] = $customer_id;
         }
+
+        // Resolve the inline truck driver AFTER the customer is settled above, so
+        // a driver typed alongside a brand-new company lands on that company
+        // rather than being dropped (TASK-362).
+        $resolvedTruckDriverId = $this->resolveTruckDriverContact(
+            $this->form->new_truck_driver_name,
+            $this->form->new_truck_driver_phone,
+            $form['customer_id'] ?? null,
+            $organization->id,
+        );
+
+        if ($resolvedTruckDriverId) {
+            $form['default_truck_driver_id'] = $resolvedTruckDriverId;
+        }
+
+        // Transient form-only fields — not columns on pilot_car_jobs.
+        unset($form['new_truck_driver_name'], $form['new_truck_driver_phone']);
 
         // Sanitize and set rate_value explicitly
         $form['rate_value'] = $this->sanitizeRateValue($this->form->rate_value, $form['rate_code']);

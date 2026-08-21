@@ -66,10 +66,19 @@ class EditJobForm extends Form
     #[Validate('nullable|exists:customer_contacts,id')]
     public $default_truck_driver_id = null;
 
+    // Inline "add a truck driver" (TASK-362). Transient: resolved to a
+    // CustomerContact in saveJob() and stripped before the job is written.
+    #[Validate('nullable|string|max:255')]
+    public $new_truck_driver_name = null;
+
+    #[Validate('nullable|string|max:255')]
+    public $new_truck_driver_phone = null;
+
 }
 
 class EditPilotCarJob extends Component
 {
+    use \App\Livewire\Concerns\ResolvesTruckDriverContact;
     
     public EditJobForm $form;
     
@@ -140,7 +149,23 @@ class EditPilotCarJob extends Component
         $this->form->validate();
 
         $form = $this->form->all();
-        
+
+        // Inline truck driver (TASK-362), attached to whichever customer the
+        // job is filed under.
+        $resolvedTruckDriverId = $this->resolveTruckDriverContact(
+            $this->form->new_truck_driver_name,
+            $this->form->new_truck_driver_phone,
+            $form['customer_id'] ?? $this->job->customer_id,
+            $this->job->organization_id,
+        );
+
+        if ($resolvedTruckDriverId) {
+            $form['default_truck_driver_id'] = $resolvedTruckDriverId;
+        }
+
+        // Transient form-only fields — not columns on pilot_car_jobs.
+        unset($form['new_truck_driver_name'], $form['new_truck_driver_phone']);
+
         // Ensure rate_code is explicitly set
         $form['rate_code'] = $this->form->rate_code ?? $this->job->rate_code ?? 'per_mile_rate_2_00';
         
