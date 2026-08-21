@@ -163,12 +163,27 @@ class TaskTest extends TestCase
         $org = Organization::factory()->create(['name' => 'Reynolds Upkeep']);
         $super = User::factory()->admin()->create(['organization_id' => $org->id]);
 
-        $this->actingAs($super)
+        $target = $this->actingAs($super)
             ->get(route('admin.feedback.index'))
-            ->assertRedirect(route('tasks.index', [
-                'statusFilter' => 'triage',
-                'labelFilter' => 'source:feedback',
-            ]));
+            ->assertRedirect()
+            ->headers->get('Location');
+
+        parse_str((string) parse_url($target, PHP_URL_QUERY), $params);
+
+        // Asserted literally, not via route() built from the same array this
+        // route uses - that compared the URL to itself and would have passed
+        // for ANY param names. It passed happily while the redirect pointed at
+        // ?statusFilter=&labelFilter=, which TaskList ignores: it declares
+        // #[Url(as: 'status')] and #[Url(as: 'label')]. (TASK-376)
+        $this->assertSame('triage', $params['status'] ?? null, "Bad redirect: {$target}");
+        $this->assertSame('source:feedback', $params['label'] ?? null, "Bad redirect: {$target}");
+
+        // ... and prove those names actually bind on the real component.
+        \Livewire\Livewire::actingAs($super)
+            ->withQueryParams($params)
+            ->test(\App\Livewire\TaskList::class)
+            ->assertSet('statusFilter', 'triage')
+            ->assertSet('labelFilter', 'source:feedback');
     }
 
     public function test_backfill_command_converts_legacy_feedback_events_to_tasks(): void

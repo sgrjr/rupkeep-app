@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Livewire\Dashboard;
+use App\Livewire\TaskList;
 use App\Models\Customer;
 use App\Models\Organization;
 use App\Models\Task;
@@ -89,5 +90,51 @@ class DashboardFeedbackCardTest extends TestCase
         Livewire::actingAs($admin)
             ->test(Dashboard::class)
             ->assertViewHas('totalFeedback', 2);
+    }
+
+    /**
+     * TASK-376 - the card's "View Triage" link pointed at ?statusFilter=triage,
+     * but TaskList declares #[Url(as: 'status')]. Livewire drops the
+     * unrecognised key without complaint, so the link opened an unfiltered list
+     * showing every status.
+     *
+     * Asserted as a round trip rather than a hardcoded string on both sides:
+     * whatever URL the dashboard emits is fed to the real TaskList, which must
+     * come up filtered to triage.
+     */
+    public function test_view_triage_link_actually_filters_the_task_list(): void
+    {
+        $org = Organization::factory()->create();
+        $super = User::factory()->superUser()->forOrganization($org)->create();
+
+        $this->makeTask(['status' => 'triage', 'title' => 'Needs triage']);
+        $this->makeTask(['status' => 'done', 'title' => 'Already finished']);
+
+        $url = null;
+
+        Livewire::actingAs($super)
+            ->test(Dashboard::class)
+            ->assertViewHas('cards', function ($cards) use (&$url) {
+                foreach ($cards as $card) {
+                    foreach ($card->links ?? [] as $link) {
+                        if (($link['title'] ?? null) === 'View Triage') {
+                            $url = $link['url'];
+                        }
+                    }
+                }
+
+                return $url !== null;
+            });
+
+        parse_str((string) parse_url($url, PHP_URL_QUERY), $params);
+
+        $this->assertNotEmpty($params, "The View Triage link carried no query string: {$url}");
+
+        Livewire::actingAs($super)
+            ->withQueryParams($params)
+            ->test(TaskList::class)
+            ->assertSet('statusFilter', 'triage')
+            ->assertSee('Needs triage')
+            ->assertDontSee('Already finished');
     }
 }

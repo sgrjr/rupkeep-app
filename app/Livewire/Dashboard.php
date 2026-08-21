@@ -188,7 +188,7 @@ class Dashboard extends Component
            ['url'=> route('documentation.roadmap'), 'title'=>'Public Roadmap'],
        ];
        if ($viewer->isSuper()) {
-           array_unshift($links, ['url'=> route('tasks.index', ['statusFilter' => 'triage']), 'title'=>'View Triage']);
+           array_unshift($links, ['url'=> route('tasks.index', ['status' => 'triage']), 'title'=>'View Triage']);
        }
 
        $cards[] = (Object)[

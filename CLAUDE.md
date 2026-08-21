@@ -20,7 +20,7 @@ All open work (feature requests, bug reports, tech debt, verification, customer-
 | Dev list view | `/admin/tasks` |
 | Dev kanban board | `/admin/tasks/board` |
 | Individual task | `/admin/tasks/{TASK-###}` |
-| Triage queue (where new submissions land) | `/admin/tasks?statusFilter=triage` |
+| Triage queue (where new submissions land) | `/admin/tasks?status=triage` |
 | Customer-facing list | `/portal/tasks` |
 | Public roadmap | `/documentation/roadmap` (only `is_public=true` tasks) |
 | Customer feedback intake | The `<livewire:feedback-form>` modal (footer + dedicated `/feedback` page). Submissions create a **task** in `triage` status with label `source:feedback`. There is no separate feedback inbox anymore. |

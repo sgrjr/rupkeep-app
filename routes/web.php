@@ -72,8 +72,8 @@ Route::middleware([
     // Keep the redirect so old bookmarks land in the right place.
     Route::get('/admin/feedback', function () {
         return redirect()->route('tasks.index', [
-            'statusFilter' => 'triage',
-            'labelFilter' => 'source:feedback',
+            'status' => 'triage',
+            'label' => 'source:feedback',
         ]);
     })->name('admin.feedback.index');
 

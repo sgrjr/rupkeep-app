@@ -76,7 +76,7 @@ class UserEventController extends Controller
     }
 
     // feedback() was removed when feedback submissions became Dispatch tasks
-    // directly. /admin/feedback now redirects to /admin/tasks?statusFilter=triage
+    // directly. /admin/feedback now redirects to /admin/tasks?status=triage
     // &labelFilter=source:feedback (see routes/web.php). Historical user_events
     // rows with type='feedback' are backfilled by `dispatch:backfill-feedback`.
 
