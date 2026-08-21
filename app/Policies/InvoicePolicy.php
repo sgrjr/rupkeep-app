@@ -34,7 +34,14 @@ class InvoicePolicy
     /**
      * Determine whether the user can create models.
      */
-    public function create(User $user, Invoice $model): bool
+    /**
+     * $model is optional because the Gate passes only the user when a caller
+     * authorizes against the class rather than an instance — which is exactly
+     * what the summary-invoice path does. With it required, every attempt to
+     * create a summary died on an ArgumentCountError before reaching the
+     * controller (TASK-371).
+     */
+    public function create(User $user, ?Invoice $model = null): bool
     {
         return $user->isAdmin() || $user->is_super;
     }

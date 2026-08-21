@@ -353,7 +353,26 @@
                         <tr>
                             <td>{{ LocalTime::format($item['date_of_service'] ?? $item['created_at'] ?? null, 'm/d/Y', '—') }}</td>
                             <td>{{ $item['invoice_number'] ?? '—' }}</td>
-                            <td>{{ $item['description'] ?? \App\Models\Invoice::generateDescriptionOfWork($item['pickup_address'] ?? null, $item['delivery_address'] ?? null) }}</td>
+                            <td>
+                                {{ $item['description'] ?? \App\Models\Invoice::generateDescriptionOfWork($item['pickup_address'] ?? null, $item['delivery_address'] ?? null) }}
+                                @php
+                                    // TASK-345: the TASK-344 required fields that map onto a
+                                    // summary row. Kept as a second line rather than three more
+                                    // columns — the table is already six wide on letter portrait,
+                                    // and a monthly summary can run to twenty rows.
+                                    $equipment = array_filter([
+                                        $item['truck_driver_name'] ?? null,
+                                        !empty($item['truck_number']) ? __('Truck :no', ['no' => $item['truck_number']]) : null,
+                                        !empty($item['trailer_number']) ? __('Trailer :no', ['no' => $item['trailer_number']]) : null,
+                                    ]);
+                                @endphp
+                                @if($equipment)
+                                    <div class="summary-item__equipment">{{ implode(' · ', $equipment) }}</div>
+                                @endif
+                                @if(!empty($item['canceled_at']))
+                                    <div class="summary-item__canceled">{{ __('CANCELED') }}@if(!empty($item['canceled_reason'])) — {{ $item['canceled_reason'] }}@endif</div>
+                                @endif
+                            </td>
                             <td>{{ $item['job_no'] ?? '—' }}</td>
                             <td>{{ $item['load_no'] ?? '—' }}</td>
                             <td class="amount-due">{{ isset($item['total']) ? '$' . number_format((float) $item['total'], 2) : '—' }}</td>

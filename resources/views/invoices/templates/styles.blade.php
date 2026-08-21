@@ -397,6 +397,25 @@
         color: var(--invoice-text);
     }
 
+    /*
+     * Per-row detail on a summary invoice (TASK-345): truck driver, truck and
+     * trailer ride under the description rather than as three more columns,
+     * so a twenty-row monthly summary still fits letter portrait.
+     */
+    .invoice-doc .summary-item__equipment {
+        margin-top: 0.15rem;
+        font-size: 0.6rem;
+        color: var(--invoice-muted);
+    }
+
+    .invoice-doc .summary-item__canceled {
+        margin-top: 0.15rem;
+        font-size: 0.6rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        color: #dc2626;
+    }
+
     .invoice-doc .summary {
         margin-top: 1rem;
         display: flex;

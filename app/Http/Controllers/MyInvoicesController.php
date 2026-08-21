@@ -471,21 +471,38 @@ class MyInvoicesController extends Controller
             $deliveryAddress = data_get($childValues, 'delivery_address');
             $description = \App\Models\Invoice::generateDescriptionOfWork($pickupAddress, $deliveryAddress);
 
-            // Get job info if available
+            // The job may be gone (force-deleted) while the invoice remains, so
+            // every read below goes through optional chaining rather than
+            // assuming a relation.
             $job = $child->job;
+
             $items[] = [
                 'invoice_id' => $child->id,
                 'invoice_number' => $child->invoice_number ?? '—',
                 'title' => data_get($childValues, 'title', 'INVOICE'),
-                'job_no' => data_get($childValues, 'job_no') ?? $job->job_no ?? data_get($childValues, 'load_no') ?? '—',
-                'load_no' => data_get($childValues, 'load_no') ?? $job->load_no ?? '—',
-                'pickup_address' => $pickupAddress ?? $job->pickup_address ?? '—',
-                'delivery_address' => $deliveryAddress ?? $job->delivery_address ?? '—',
+                'job_no' => data_get($childValues, 'job_no') ?? $job?->job_no ?? data_get($childValues, 'load_no') ?? '—',
+                'load_no' => data_get($childValues, 'load_no') ?? $job?->load_no ?? '—',
+                'pickup_address' => $pickupAddress ?? $job?->pickup_address ?? '—',
+                'delivery_address' => $deliveryAddress ?? $job?->delivery_address ?? '—',
                 'description' => $description ?? '—',
                 'total' => $childTotal > 0 ? $childTotal : (float)data_get($childValues, 'total', 0),
                 'billable_miles' => $childMiles > 0 ? $childMiles : (float)data_get($childValues, 'billable_miles', 0),
-                'rate_code' => data_get($childValues, 'effective_rate_code') ?? data_get($childValues, 'rate_code') ?? $job->rate_code ?? '—',
-                'date_of_service' => $child->created_at?->format('Y-m-d') ?? '—',
+                'rate_code' => data_get($childValues, 'effective_rate_code') ?? data_get($childValues, 'rate_code') ?? $job?->rate_code ?? '—',
+                // When the WORK happened, not when the invoice was cut (TASK-345).
+                // These were previously all the child invoice's created_at, so
+                // every row of a monthly summary carried the same date.
+                'date_of_service' => $job?->scheduled_pickup_at
+                    ?? data_get($childValues, 'start_job_time')
+                    ?? $child->created_at?->format('Y-m-d')
+                    ?? '—',
+                // The TASK-344 required fields that map onto a summary row. A
+                // summary aggregates several jobs, so these ride per-row rather
+                // than in the single-invoice job block.
+                'truck_driver_name' => trim((string) (data_get($childValues, 'truck_driver_name') ?? '')) ?: null,
+                'truck_number' => trim((string) (data_get($childValues, 'truck_number') ?? '')) ?: null,
+                'trailer_number' => trim((string) (data_get($childValues, 'trailer_number') ?? '')) ?: null,
+                'canceled_at' => $job?->canceled_at ? (string) $job->canceled_at : null,
+                'canceled_reason' => trim((string) ($job?->canceled_reason ?? '')) ?: null,
             ];
         }
 
