@@ -266,6 +266,8 @@
                         $expenseSummary = __('Tolls') . ': ' . ($log->tolls ?? 0) . ' • ' . __('Hotel') . ': ' . ($log->hotel ?? 0);
                         $loadSummary = __('Truck') . ': ' . ($log->truck_no ?? '—') . ' • ' . __('Trailer') . ': ' . ($log->trailer_no ?? '—');
                         $attachmentsCount = $log->attachments?->count() ?? 0;
+                        // Permits and route sheets live on the JOB, not the log (TASK-363).
+                        $jobDocuments = $log->job?->attachments ?? collect();
                     @endphp
                     <summary wire:click="$toggle('isDriverVehicleOpen')" class="flex flex-wrap cursor-pointer items-center justify-between gap-3 border-b border-slate-100 pb-3 text-lg font-semibold text-slate-900 sm:flex-nowrap">
                         <span>{{ $driverVehicleSummary }}</span>
@@ -529,10 +531,28 @@
             <section class="rounded-3xl border border-slate-200 bg-white/90 p-5 shadow-sm sm:p-6">
                 <details {{ $isAttachmentsOpen ? 'open' : '' }} class="group space-y-5">
                     <summary wire:click="$toggle('isAttachmentsOpen')" class="flex cursor-pointer items-center justify-between gap-4 border-b border-slate-100 pb-3 text-lg font-semibold text-slate-900">
-                        <span>{{ __('Attachments & Proof') }} <span class="text-sm font-normal text-slate-500">— {{ trans_choice(':count attachment|:count attachments', $attachmentsCount) }}</span></span>
+                        <span>{{ __('Attachments & Proof') }} <span class="text-sm font-normal text-slate-500">— {{ trans_choice(':count attachment|:count attachments', $attachmentsCount) }}@if($jobDocuments->isNotEmpty()), {{ trans_choice(':count job document|:count job documents', $jobDocuments->count()) }}@endif</span></span>
                         <svg class="h-4 w-4 transition group-open:rotate-180" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>
                     </summary>
                     <div class="space-y-4">
+                        {{-- Permits, route sheets and anything else the office attached to
+                             the job. Read-only here: the driver needs to SEE them on the
+                             road (TASK-363), but they belong to the job, not this log. --}}
+                        @if($jobDocuments->isNotEmpty())
+                            <div class="space-y-2 rounded-2xl border border-sky-200 bg-sky-50/60 px-4 py-3">
+                                <p class="text-xs font-semibold uppercase tracking-wider text-sky-800">{{ __('Job Documents') }}</p>
+                                <p class="text-[11px] text-sky-700">{{ __('Permits and paperwork attached to this job by the office.') }}</p>
+                                @foreach($jobDocuments as $doc)
+                                    <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-sky-200 bg-white px-3 py-2">
+                                        <a class="min-w-0 flex-1 truncate text-sm font-semibold text-orange-600 hover:text-orange-700" href="{{ route('attachments.download', ['attachment' => $doc->id]) }}">
+                                            {{ $doc->file_name }}
+                                        </a>
+                                        <span class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{{ __('View / download') }}</span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
+
                         <div class="space-y-3">
                             <div class="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
                                 <input type="file" wire:model="file" class="grow rounded-xl border border-dashed border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none" />
@@ -594,7 +614,11 @@
                                     </div>
                                 </div>
                             @empty
-                                <p class="text-sm text-slate-500">{{ __('No attachments yet. Upload photos of permits, route sheets, or receipts above.') }}</p>
+                                @if($jobDocuments->isNotEmpty())
+                                    <p class="text-sm text-slate-500">{{ __('You have not uploaded anything yet. Job documents from the office are listed above.') }}</p>
+                                @else
+                                    <p class="text-sm text-slate-500">{{ __('No attachments yet. Upload photos of permits, route sheets, or receipts above.') }}</p>
+                                @endif
                             @endforelse
                         </div>
                     </div>

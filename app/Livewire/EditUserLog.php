@@ -219,7 +219,7 @@ class EditUserLog extends Component
 
     public function mount(UserLog $log)
     {
-        $this->log = $log->load('organization', 'job', 'job.customer', 'attachments', 'approvedBy');
+        $this->log = $log->load('organization', 'job', 'job.customer', 'job.attachments', 'attachments', 'approvedBy', 'completedBy');
 
         // Check if log requires approval before editing
         if ($this->log->approval_status === 'pending' && $this->log->car_driver_id && auth()->user()->id === $this->log->car_driver_id) {
