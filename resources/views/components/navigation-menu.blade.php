@@ -165,6 +165,13 @@
                                 {{ __('Profile') }}
                             </x-dropdown-link>
 
+                            {{-- TASK-361: the only route to "My Requests" used to be the
+                                 transient feedback success message, so a user who dismissed
+                                 it could never get back to what they had submitted. --}}
+                            <x-dropdown-link href="{{ route('portal.tasks.index') }}">
+                                {{ __('My Requests') }}
+                            </x-dropdown-link>
+
                             @if (Laravel\Jetstream\Jetstream::hasApiFeatures())
                                 <x-dropdown-link href="{{ route('api-tokens.index') }}">
                                     {{ __('API Tokens') }}
@@ -227,6 +234,10 @@
                 <!-- Account Management -->
                 <x-responsive-nav-link href="{{ route('my.profile') }}" :active="request()->routeIs('my.profile')">
                     {{ __('Profile') }}
+                </x-responsive-nav-link>
+
+                <x-responsive-nav-link href="{{ route('portal.tasks.index') }}" :active="request()->routeIs('portal.tasks.*')">
+                    {{ __('My Requests') }}
                 </x-responsive-nav-link>
 
                 @if (Laravel\Jetstream\Jetstream::hasApiFeatures())

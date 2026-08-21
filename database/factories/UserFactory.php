@@ -74,6 +74,17 @@ class UserFactory extends Factory
         ]);
     }
 
+    /**
+     * A customer-role user with no linked Customer record. Use asCustomer()
+     * when the test needs the association too.
+     */
+    public function customerRole(): static
+    {
+        return $this->state(fn () => [
+            'organization_role' => User::ROLE_CUSTOMER,
+        ]);
+    }
+
     public function asCustomer(Customer $customer): static
     {
         return $this->state(fn () => [

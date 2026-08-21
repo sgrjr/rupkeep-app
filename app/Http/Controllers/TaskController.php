@@ -27,10 +27,21 @@ class TaskController extends Controller
         return view('tasks.show', ['task' => $task]);
     }
 
+    /**
+     * "My Requests" — every authenticated user's own submissions plus the
+     * public roadmap.
+     *
+     * There is deliberately no role gate here (TASK-361). The feedback form is
+     * open to any authenticated user and links them straight to the task it
+     * created, so gating this on isCustomer/isAdmin/is_super meant a manager or
+     * driver who submitted feedback got a 403 on their own submission. The
+     * listing itself is scoped in {@see \App\Livewire\TaskList::render()} to
+     * submitter_user_id plus public tasks, so opening the route exposes nothing
+     * a user could not already see.
+     */
     public function portalIndex()
     {
-        $user = auth()->user();
-        if (!$user || (!$user->isCustomer() && !$user->isAdmin() && !$user->is_super)) {
+        if (! auth()->check()) {
             abort(403);
         }
 
@@ -39,11 +50,12 @@ class TaskController extends Controller
 
     public function portalShow(Task $task)
     {
-        $user = auth()->user();
-        if (!$user || (!$user->isCustomer() && !$user->isAdmin() && !$user->is_super)) {
+        if (! auth()->check()) {
             abort(403);
         }
 
+        // TaskPolicy::view() is the authority: staff on the owning org, the
+        // submitter, or anyone in the org when the task is public.
         $this->authorize('view', $task);
 
         return view('customer-portal.tasks.show', ['task' => $task]);
