@@ -14,6 +14,17 @@ class TaskList extends Component
 {
     use WithPagination;
 
+    /*
+     * The property name is NOT the URL name - each filter is aliased to a
+     * short query-string key below. Livewire drops an unrecognised key
+     * silently, so a link built with the property name (?statusFilter=triage)
+     * renders an unfiltered list rather than erroring. That was TASK-376.
+     *
+     * Build links with the alias, not the property:
+     *   route('tasks.index', ['status' => 'triage', 'label' => 'source:feedback'])
+     *
+     * The mapping is also tabulated in CLAUDE.md; keep both in step.
+     */
     #[Url(as: 'q', except: '')]
     public string $search = '';
 

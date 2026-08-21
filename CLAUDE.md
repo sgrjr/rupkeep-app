@@ -27,6 +27,32 @@ All open work (feature requests, bug reports, tech debt, verification, customer-
 | File-side bridge | `docs/tasks.jsonld` — read/written by `dispatch:pull`/`push` and `tasks:export`/`import`. NOT the source of truth. |
 | Schema doc | [`docs/TASKS_SCHEMA.md`](docs/TASKS_SCHEMA.md) |
 
+### Filtering the task list by URL
+
+`App\Livewire\TaskList` aliases every filter to a short query-string name via
+`#[Url(as: ...)]`, so **the property name is not the URL name**. Livewire drops
+an unrecognised key silently, so a guessed param produces an unfiltered list
+rather than an error - that is TASK-376, which reached production because this
+table documented the wrong one.
+
+| Filter | Property | **URL param** |
+|--------|----------|---------------|
+| Search | `$search` | `q` |
+| Status | `$statusFilter` | `status` |
+| Type | `$typeFilter` | `type` |
+| Priority | `$priorityFilter` | `priority` |
+| Label | `$labelFilter` | `label` |
+| Assignee | `$assigneeFilter` | `assignee` |
+| Public/private | `$publicFilter` | `pub` |
+| Sort | `$sort` | `sort` |
+
+`TaskBoard` uses the same short names for `type`, `priority` and `label`.
+
+Use the right-hand column when building a link:
+`route('tasks.index', ['status' => 'triage', 'label' => 'source:feedback'])`.
+If you change an alias, update this table and the round-trip assertions in
+`DashboardFeedbackCardTest` / `TaskTest`.
+
 ## Agent workflow — the seven verbs
 
 These artisan commands are designed for a single agent's working loop. Use them like you would have used a markdown checklist.

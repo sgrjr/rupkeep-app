@@ -421,4 +421,48 @@ class TaskTest extends TestCase
 
         return $relative;
     }
+
+    /**
+     * TASK-376 - the filter URL aliases are documented in CLAUDE.md and relied
+     * on by every hand-built link to the task list. A rename here silently
+     * breaks those links (Livewire drops unrecognised keys without erroring),
+     * so pin them: if this fails, update CLAUDE.md's table and the call sites
+     * in Dashboard.php / routes/web.php in the same commit.
+     */
+    public function test_task_filter_url_aliases_are_pinned(): void
+    {
+        $expected = [
+            \App\Livewire\TaskList::class => [
+                'search' => 'q',
+                'statusFilter' => 'status',
+                'typeFilter' => 'type',
+                'priorityFilter' => 'priority',
+                'labelFilter' => 'label',
+                'assigneeFilter' => 'assignee',
+                'publicFilter' => 'pub',
+                'sort' => 'sort',
+            ],
+            \App\Livewire\TaskBoard::class => [
+                'typeFilter' => 'type',
+                'priorityFilter' => 'priority',
+                'labelFilter' => 'label',
+            ],
+        ];
+
+        foreach ($expected as $component => $aliases) {
+            $actual = [];
+
+            foreach ((new \ReflectionClass($component))->getProperties() as $property) {
+                foreach ($property->getAttributes(\Livewire\Attributes\Url::class) as $attribute) {
+                    $actual[$property->getName()] = $attribute->newInstance()->as ?? $property->getName();
+                }
+            }
+
+            $this->assertSame(
+                $aliases,
+                $actual,
+                "URL aliases on {$component} changed. Update the table in CLAUDE.md and every route('tasks.*', [...]) call site."
+            );
+        }
+    }
 }

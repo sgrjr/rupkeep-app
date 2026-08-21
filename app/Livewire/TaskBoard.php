@@ -16,6 +16,11 @@ class TaskBoard extends Component
     /** Columns we render, in order. (Declined is hidden from the board.) */
     public const COLUMNS = ['triage', 'open', 'in_progress', 'verifying', 'done'];
 
+    /*
+     * As in TaskList: the property name is NOT the URL name. Build links with
+     * the alias - route('tasks.board', ['type' => 'bug']) - not the property.
+     * See TASK-376 and the table in CLAUDE.md.
+     */
     #[Url(as: 'type', except: '')]
     public string $typeFilter = '';
 
