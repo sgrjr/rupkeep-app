@@ -118,9 +118,22 @@ class User extends Authenticatable
         return self::ROLE_LABELS[$this->organization_role] ?? ucfirst(str_replace('_', ' ', (string)$this->organization_role));
     }
 
-    public static function superUser(){
+    /**
+     * The application-wide super user, preferring the real flag (TASK-366) and
+     * falling back to the bootstrap email from config/setup.php — which is what
+     * `super:create` uses before any user carries the flag.
+     */
+    public static function superUser(): ?self
+    {
+        $byFlag = static::where('is_super', true)->orderBy('id')->first();
+
+        if ($byFlag) {
+            return $byFlag;
+        }
+
         $email = config('setup.super_user.email');
-        return static::where('email', $email)->first();
+
+        return $email ? static::where('email', $email)->first() : null;
     }
 
     public static function themes(){

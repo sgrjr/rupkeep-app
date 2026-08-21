@@ -51,6 +51,36 @@ Alternative: set a pull strategy (`git config pull.rebase false`) before `git pu
 
 ---
 
+## Super users (application-wide access)
+
+"Super user" is application-wide platform access, and is deliberately **not**
+the same thing as `organization_role = admin`, which is scoped to a single
+organization. Mary and Matthew are org admins; they are not super users.
+
+It is a real column, `users.is_super`, set only by:
+
+```bash
+php artisan super:grant                    # list current super users
+php artisan super:grant someone@example.com
+php artisan super:grant someone@example.com --revoke
+```
+
+`is_super` is absent from `User::$fillable`, so nothing in the HTTP layer can
+grant it. Revoking the last super user is refused — nothing else in the app can
+grant it back.
+
+**On an existing database** (`php artisan migrate --force`), the TASK-366
+migration backfills the flag onto the admins of the organization that used to be
+treated as super. Confirm the result with `php artisan super:grant` before
+relying on it.
+
+**On a fresh install** (`php artisan db:reset`, i.e. `migrate:fresh` →
+`super:create` → `db:seed`), the migration runs against an empty `users` table
+and promotes nobody. `super:create` is what mints the super user, from
+`SUPER_EMAIL` / `SUPER_NAME` / `SUPER_PASSWORD` in `.env`. **If `SUPER_EMAIL` is
+unset the command now fails loudly** rather than leaving the install with no
+super user and every admin tool unreachable.
+
 ## Build & cache invalidation
 
 After deploy:
