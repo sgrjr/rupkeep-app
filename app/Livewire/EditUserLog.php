@@ -5,6 +5,7 @@ namespace App\Livewire;
 use Livewire\Component;
 use Livewire\Form;
 use Livewire\Attributes\Validate;
+use App\Events\LogCompleted;
 use App\Models\User;
 use App\Models\UserLog;
 use App\Models\PilotCarJob;
@@ -168,6 +169,54 @@ class EditUserLog extends Component
         $this->dispatch('updated');
     }
 
+    /**
+     * The driver's "I'm done" signal (TASK-364). Saving a log only recorded
+     * data; nothing told the office the job was ready to review and bill, and
+     * job status was derived solely from whether an invoice already existed.
+     */
+    public function markComplete()
+    {
+        $this->authorize('complete', $this->log);
+
+        if ($this->log->approval_status === 'denied') {
+            session()->flash('error', __('This log has been denied and cannot be completed.'));
+            return;
+        }
+
+        if ($this->log->isComplete()) {
+            return; // Already handed off - don't re-notify the office.
+        }
+
+        $this->log->update([
+            'completed_at' => now(),
+            'completed_by_id' => Auth::id(),
+        ]);
+
+        $this->log->refresh();
+
+        LogCompleted::dispatch($this->log, Auth::user());
+
+        session()->flash('success', __('Job marked complete. The office has been notified.'));
+        $this->dispatch('updated');
+    }
+
+    /**
+     * Managers only - see UserLogPolicy::reopen().
+     */
+    public function reopenLog()
+    {
+        $this->authorize('reopen', $this->log);
+
+        $this->log->update([
+            'completed_at' => null,
+            'completed_by_id' => null,
+        ]);
+
+        $this->log->refresh();
+        session()->flash('success', __('Log reopened for edits.'));
+        $this->dispatch('updated');
+    }
+
     public function mount(UserLog $log)
     {
         $this->log = $log->load('organization', 'job', 'job.customer', 'attachments', 'approvedBy');
@@ -261,6 +310,14 @@ class EditUserLog extends Component
         // Prevent saving if log is pending approval and user is the assigned driver
         if ($this->log->approval_status === 'pending' && $this->log->car_driver_id && auth()->user()->id === $this->log->car_driver_id) {
             session()->flash('error', __('Please confirm or deny this log assignment before editing.'));
+            return;
+        }
+
+        // A completed log has been handed to the office for review (TASK-364).
+        // The driver cannot keep editing underneath that review; a manager can,
+        // since they are the ones doing the reviewing.
+        if ($this->log->isComplete() && ! auth()->user()->can('reopen', $this->log)) {
+            session()->flash('error', __('This job is marked complete. Ask a manager to reopen it if it needs changes.'));
             return;
         }
         

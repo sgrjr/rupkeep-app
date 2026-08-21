@@ -789,12 +789,17 @@
                     <div class="space-y-4">
                         @foreach($job->logs ?? [] as $log)
                             @php
-                                $statusCard = match($log->approval_status) {
-                                    'pending' => 'border-amber-200 bg-amber-50/60',
-                                    'confirmed' => 'border-emerald-200 bg-emerald-50/60',
-                                    'denied' => 'border-red-200 bg-red-50/60',
-                                    default => 'border-slate-200 bg-white',
-                                };
+                                // A completed log outranks its approval status here (TASK-364):
+                                // "driver says this is done" is the state the office is
+                                // scanning this list for.
+                                $statusCard = $log->isComplete()
+                                    ? 'border-sky-300 bg-sky-50/60'
+                                    : match($log->approval_status) {
+                                        'pending' => 'border-amber-200 bg-amber-50/60',
+                                        'confirmed' => 'border-emerald-200 bg-emerald-50/60',
+                                        'denied' => 'border-red-200 bg-red-50/60',
+                                        default => 'border-slate-200 bg-white',
+                                    };
                             @endphp
                             <div class="rounded-3xl border {{ $statusCard }} p-5 shadow-sm">
                                 <div class="flex flex-wrap items-start justify-between gap-3">
@@ -815,6 +820,12 @@
                                                 <span class="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">
                                                     <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                                                     {{ __('Denied') }}
+                                                </span>
+                                            @endif
+                                            @if($log->isComplete())
+                                                <span class="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold text-sky-700">
+                                                    <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                                    {{ __('Complete — ready to invoice') }}
                                                 </span>
                                             @endif
                                         </div>

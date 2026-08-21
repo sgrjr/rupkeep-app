@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Events\InvoiceFlagged;
 use App\Events\InvoiceReady;
 use App\Events\JobAssigned;
+use App\Events\LogCompleted;
 use App\Events\JobStatusChanged;
 use App\Events\JobWasCanceled;
 use App\Events\JobWasUncanceled;
@@ -14,6 +15,7 @@ use App\Listeners\NotifyDriversOfJobStatusChange;
 use App\Listeners\SendInvoiceFlaggedNotification;
 use App\Listeners\SendInvoiceReadyNotification;
 use App\Listeners\SendJobAssignedNotification;
+use App\Listeners\SendLogCompletedNotification;
 use App\Models\Invoice;
 use App\Models\PilotCarJob;
 use App\Observers\InvoiceObserver;
@@ -45,6 +47,7 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(JobStatusChanged::class, NotifyDriversOfJobStatusChange::class);
         Event::listen(InvoiceReady::class, SendInvoiceReadyNotification::class);
         Event::listen(InvoiceFlagged::class, SendInvoiceFlaggedNotification::class);
+        Event::listen(LogCompleted::class, SendLogCompletedNotification::class);
 
         // Register model observers for payment status synchronization
         Invoice::observe(InvoiceObserver::class);

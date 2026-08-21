@@ -96,6 +96,36 @@
             </section>
         @endif
 
+        {{-- TASK-364: the driver's hand-off to the office. Until this existed a
+             driver could only save; nothing told Mary and Matt a job was done. --}}
+        @if($log->isComplete())
+            <section class="rounded-3xl border-2 border-emerald-200 bg-emerald-50 p-5 shadow-sm sm:p-6">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <svg class="h-6 w-6 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <div>
+                            <h2 class="text-lg font-semibold text-emerald-900">{{ __('Job Marked Complete') }}</h2>
+                            <p class="text-sm text-emerald-700">{{ __('The office has been notified and will review this for invoicing.') }}</p>
+                            <p class="text-xs text-emerald-600 mt-1">
+                                {{ __('Completed :date', ['date' => LocalTime::format($log->completed_at, 'M j, Y g:i A')]) }}
+                                @if($log->completedBy)
+                                    {{ __('by :name', ['name' => $log->completedBy->name]) }}
+                                @endif
+                            </p>
+                        </div>
+                    </div>
+                    @can('reopen', $log)
+                        <button type="button" wire:click="reopenLog" class="inline-flex items-center gap-2 rounded-full border border-emerald-300 bg-white px-4 py-2 text-sm font-semibold text-emerald-700 shadow-sm transition hover:bg-emerald-100">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992V4.356M2.985 19.644v-4.992h4.992M4.031 9.348a8.25 8.25 0 0113.803-3.7l3.181 3.182m-16.99 2.51l3.181 3.182a8.25 8.25 0 0013.803-3.7"/></svg>
+                            {{ __('Reopen for Edits') }}
+                        </button>
+                    @endcan
+                </div>
+            </section>
+        @endif
+
         <section class="rounded-3xl border border-slate-200 bg-white/90 p-5 shadow-sm sm:p-6">
             <header class="mb-6 flex flex-wrap items-center justify-between gap-3">
                 <div>
@@ -192,10 +222,24 @@
                         {{ __('Saved!') }}
                     </x-action-message>
                 </div>
-                <x-button type="submit" class="w-full justify-center sm:w-auto">
-                    <span wire:loading wire:target="saveLog" class="h-4 w-4 animate-spin border-2 border-white/80 border-t-transparent rounded-full"></span>
-                    {{ __('Save Changes') }}
-                </x-button>
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <x-button type="submit" class="w-full justify-center sm:w-auto">
+                        <span wire:loading wire:target="saveLog" class="h-4 w-4 animate-spin border-2 border-white/80 border-t-transparent rounded-full"></span>
+                        {{ __('Save Changes') }}
+                    </x-button>
+
+                    {{-- Save records the work; this hands it to the office (TASK-364). --}}
+                    @if(!$log->isComplete() && $log->approval_status !== 'denied')
+                        @can('complete', $log)
+                            <button type="button" wire:click="markComplete"
+                                    class="inline-flex w-full items-center justify-center gap-2 rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600 sm:w-auto">
+                                <span wire:loading wire:target="markComplete" class="h-4 w-4 animate-spin rounded-full border-2 border-white/80 border-t-transparent"></span>
+                                <svg wire:loading.remove wire:target="markComplete" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+                                {{ __('Mark Job Complete') }}
+                            </button>
+                        @endcan
+                    @endif
+                </div>
             </div>
 
             <section class="rounded-3xl border border-slate-200 bg-white/90 p-5 shadow-sm sm:p-6">

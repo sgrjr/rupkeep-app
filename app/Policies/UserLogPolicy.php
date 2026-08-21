@@ -101,4 +101,34 @@ class UserLogPolicy
         return $canDeny;
     }
 
+    /**
+     * Determine whether the user can mark the log complete (TASK-364).
+     *
+     * The assigned driver is the primary actor — completing is their way of
+     * saying "I'm done, it's ready to bill". Managers and admins can also
+     * complete on a driver's behalf (a driver who forgot, or is off shift).
+     */
+    public function complete(User $user, UserLog $model): bool
+    {
+        $canManage = ($user->organization_id === $model->organization_id && ($user->isAdmin() || $user->isManager())) || $user->is_super;
+
+        if (!$canManage && $model->car_driver_id === $user->id && $user->organization_id === $model->organization_id) {
+            return true;
+        }
+
+        return $canManage;
+    }
+
+    /**
+     * Determine whether the user can reopen a completed log.
+     *
+     * Deliberately narrower than complete(): once a driver has handed a job
+     * off to the office, only the office decides it needs more work. Letting
+     * the driver silently reopen would take the job back out of the review
+     * queue after the office had already been told it was ready.
+     */
+    public function reopen(User $user, UserLog $model): bool
+    {
+        return ($user->organization_id === $model->organization_id && ($user->isAdmin() || $user->isManager())) || $user->is_super;
+    }
 }
