@@ -41,7 +41,7 @@
 
                 @if (Route::has('login-code.create'))
                     <a class="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md ml-3" href="{{ route('login-code.create') }}">
-                        {{ __('Sign in with a login code') }}
+                        {{ __('Email me a sign-in link') }}
                     </a>
                 @endif
 

@@ -78,7 +78,7 @@ class InviteCustomerUser
             : __('Here is a reminder of how to access your invoices and jobs online.');
 
         $message = sprintf(
-            "Hello %s,\n\n%s\n\nTo sign in, request a one-time login code here:\n%s\n\nEnter your email (%s) and we will send you a code that signs you in — no password required.",
+            "Hello %s,\n\n%s\n\nTo sign in, request a one-time sign-in link here:\n%s\n\nEnter your email (%s) and we will email you a link that signs you in with one click — no password required.",
             $user->name,
             $intro,
             $loginUrl,

@@ -48,5 +48,24 @@ class FortifyServiceProvider extends ServiceProvider
         RateLimiter::for('two-factor', function (Request $request) {
             return Limit::perMinute(5)->by($request->session()->get('login.id'));
         });
+
+        // Passwordless sign-in (TASK-319). Requesting a link sends real email
+        // to a real inbox, so the request limit is the tight one — three per
+        // hour per email, as the customer specified. The two redemption
+        // endpoints are throttled per-IP instead, since they are guessable
+        // secrets on unauthenticated routes rather than a send trigger.
+        RateLimiter::for('login-code', function (Request $request) {
+            $throttleKey = Str::transliterate(Str::lower((string) $request->input('email')).'|'.$request->ip());
+
+            return Limit::perHour(3)->by($throttleKey);
+        });
+
+        RateLimiter::for('login-code-verify', function (Request $request) {
+            return Limit::perMinute(5)->by($request->ip());
+        });
+
+        RateLimiter::for('login-link', function (Request $request) {
+            return Limit::perMinute(10)->by($request->ip());
+        });
     }
 }
