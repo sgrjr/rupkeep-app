@@ -44,7 +44,7 @@ class InvoiceItemizationTest extends TestCase
             'start_job_mileage' => 0,
             'end_job_mileage' => 100,
             'extra_load_stops_count' => 1,
-            'wait_time_hours' => 3,
+            'wait_time_hours' => 2,
         ], $logAttributes));
 
         return $job->fresh();
@@ -62,7 +62,7 @@ class InvoiceItemizationTest extends TestCase
     {
         $values = $this->jobWithExtras()->invoiceValues()['values'];
 
-        // 3 hrs, first hour free at the configured minimum => 2 × $30.00
+        // Every logged hour bills: 2 × $30.00.
         $this->assertSame(60.0, (float) $values['cost_of_wait_time']);
     }
 
@@ -160,13 +160,22 @@ class InvoiceItemizationTest extends TestCase
         $this->assertArrayNotHasKey('cost_of_wait_time', $invoice->fresh()->values);
     }
 
-    public function test_wait_time_honors_configured_minimum_hours(): void
+    public function test_a_single_logged_wait_hour_bills(): void
     {
-        config()->set('pricing.charges.wait_time.minimum_hours', 0);
+        // The reported symptom: 1 hour logged showed qty 1 but $0.00 due,
+        // because the old math hard-coded a free first hour.
+        $values = $this->jobWithExtras(['wait_time_hours' => 1])->invoiceValues()['values'];
+
+        $this->assertSame(30.0, (float) $values['cost_of_wait_time']);
+    }
+
+    public function test_wait_time_honors_a_configured_grace_period(): void
+    {
+        config()->set('pricing.charges.wait_time.minimum_hours', 1);
 
         $values = $this->jobWithExtras()->invoiceValues()['values'];
 
-        // With no free hour, all 3 hours bill: 3 × $30.00
-        $this->assertSame(90.0, (float) $values['cost_of_wait_time']);
+        // 2 hrs logged, 1 free => 1 × $30.00
+        $this->assertSame(30.0, (float) $values['cost_of_wait_time']);
     }
 }

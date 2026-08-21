@@ -157,24 +157,50 @@ class InvoiceCalculationTest extends TestCase
     // Expense charges
     // ---------------------------------------------------------------
 
-    public function test_first_wait_hour_is_free(): void
+    public function test_every_logged_wait_hour_bills(): void
     {
+        // No free first hour (TASK-365): an hour that should not be billed is
+        // handled by not logging it, not by the invoice discounting it.
         $result = $this->job()->calculateTotalDue($this->totals([
             'wait_time_hours' => 1,
         ]));
 
-        $this->assertSame(0.0, $result['wait_time']);
+        $this->assertSame(30.0, $result['wait_time']);
     }
 
-    public function test_wait_time_charged_per_hour_after_the_first(): void
+    public function test_wait_time_charged_per_hour_at_the_config_rate(): void
     {
         $result = $this->job()->calculateTotalDue($this->totals([
             'wait_time_hours' => 3,
         ]));
 
-        // (3 − 1) × config rate ($30.00/hr)
-        $this->assertSame(60.0, $result['wait_time']);
-        $this->assertSame(60.0, $result['total']);
+        // 3 × config rate ($30.00/hr)
+        $this->assertSame(90.0, $result['wait_time']);
+        $this->assertSame(90.0, $result['total']);
+    }
+
+    public function test_a_configured_grace_period_is_honored_when_an_org_sets_one(): void
+    {
+        // minimum_hours defaults to 0 but stays editable at /my/pricing. It was
+        // previously ignored entirely, with one free hour hard-coded instead.
+        config()->set('pricing.charges.wait_time.minimum_hours', 2);
+
+        $result = $this->job()->calculateTotalDue($this->totals([
+            'wait_time_hours' => 3,
+        ]));
+
+        $this->assertSame(30.0, $result['wait_time']); // (3 − 2) × $30.00
+    }
+
+    public function test_a_grace_period_never_produces_a_negative_charge(): void
+    {
+        config()->set('pricing.charges.wait_time.minimum_hours', 2);
+
+        $result = $this->job()->calculateTotalDue($this->totals([
+            'wait_time_hours' => 1,
+        ]));
+
+        $this->assertSame(0.0, $result['wait_time']);
     }
 
     public function test_extra_stops_charged_per_stop(): void
@@ -197,8 +223,8 @@ class InvoiceCalculationTest extends TestCase
             'wait_time_hours' => 2,
         ]));
 
-        // 200 miles charge + 15.50 + 120 + 10.25 + 30 stops + 30 wait
-        $this->assertSame(405.75, $result['total']);
+        // 200 miles charge + 15.50 + 120 + 10.25 + 30 stops + 60 wait (2 hrs)
+        $this->assertSame(435.75, $result['total']);
     }
 
     public function test_deadhead_count_flows_through_but_adds_no_charge(): void

@@ -88,7 +88,12 @@ return [
         'wait_time' => [
             'name' => 'Wait Time / Over 8 Hr.',
             'rate_per_hour' => 30.00,
-            'minimum_hours' => 1, // Charged after first hour
+            // Free hours before wait time starts billing. 0 = every logged hour
+            // bills, which is the intended policy: hours that should not be
+            // billed are handled by not logging them, not by the invoice
+            // quietly discounting what a driver did log (TASK-365). Orgs that
+            // genuinely want a grace period can raise this at /my/pricing.
+            'minimum_hours' => 0,
         ],
         'extra_stop' => [
             'name' => 'Extra Stop',
