@@ -47,11 +47,27 @@
             'amount' => $pilotCarServiceAmount,
         ];
 
-        // Wait Time (always show, even if 0)
-        $waitTimeQty = isset($values['wait_time_hours']) ? (float) $values['wait_time_hours'] : 0;
-        $waitTimeRate = $waitTimeQty > 0 ? ($waitTimeAmount / $waitTimeQty) : 0;
+        // Wait Time (always show, even if 0). Quantity is the BILLABLE hours,
+        // not the logged hours: with a free-hour minimum configured, dividing
+        // the amount by logged hours invented a rate that matched no published
+        // price (3 hrs / $60 read as "3 x $20.00" instead of "2 x $30.00").
+        // The free hours are called out in the description so the customer can
+        // still reconcile the line against the hours the driver logged.
+        $waitTimeLoggedHours = isset($values['wait_time_hours']) ? (float) $values['wait_time_hours'] : 0;
+        $waitTimeQty = isset($values['wait_time_billable_hours'])
+            ? (float) $values['wait_time_billable_hours']
+            : $waitTimeLoggedHours;
+        $waitTimeRate = isset($values['wait_time_rate']) && (float) $values['wait_time_rate'] > 0
+            ? (float) $values['wait_time_rate']
+            : ($waitTimeQty > 0 ? ($waitTimeAmount / $waitTimeQty) : 0);
+        $waitTimeFreeHours = max(0, $waitTimeLoggedHours - $waitTimeQty);
         $lineItems[] = [
-            'description' => __('Wait Time'),
+            'description' => $waitTimeFreeHours > 0
+                ? __('Wait Time (:logged hrs logged, first :free free)', [
+                    'logged' => rtrim(rtrim(number_format($waitTimeLoggedHours, 2), '0'), '.'),
+                    'free' => rtrim(rtrim(number_format($waitTimeFreeHours, 2), '0'), '.'),
+                ])
+                : __('Wait Time'),
             'quantity' => $waitTimeQty,
             'rate' => $waitTimeRate,
             'amount' => $waitTimeAmount,
@@ -59,7 +75,9 @@
 
         // Extra Stops (always show, even if 0)
         $extraStopsQty = isset($values['extra_load_stops_count']) ? (float) $values['extra_load_stops_count'] : 0;
-        $extraStopsRate = $extraStopsQty > 0 ? ($extraStopsAmount / $extraStopsQty) : 0;
+        $extraStopsRate = isset($values['cost_of_extra_stop'])
+            ? $money($values['cost_of_extra_stop'])
+            : ($extraStopsQty > 0 ? ($extraStopsAmount / $extraStopsQty) : 0);
         $lineItems[] = [
             'description' => __('Extra Stops'),
             'quantity' => $extraStopsQty,

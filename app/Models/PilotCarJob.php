@@ -1534,6 +1534,19 @@ class PilotCarJob extends Model
         $values['mini_addon_amount'] = $computed['mini_addon_amount'];
         $values['total'] = $computed['total'];
 
+        // Persist the per-charge dollar amounts the invoice template itemizes
+        // (TASK-365). Before this, the template's cost_of_* keys were written
+        // by nothing at all, so every extra rendered as $0.00 while its money
+        // was still inside `total` — silently absorbed by the catch-all
+        // "Pilot Car Service" line. `cost_of_extra_stop` is the per-stop RATE
+        // (the template multiplies it by extra_load_stops_count); the others
+        // are total amounts.
+        $values['cost_of_extra_stop'] = (float) ($computed['extra_stop_rate'] ?? 0);
+        $values['cost_of_wait_time'] = (float) ($computed['wait_time'] ?? 0);
+        $values['cost_for_mileage'] = (float) ($computed['miles_charge'] ?? 0);
+        $values['wait_time_rate'] = (float) ($computed['wait_time_rate'] ?? 0);
+        $values['wait_time_billable_hours'] = (float) ($computed['wait_time_billable_hours'] ?? 0);
+
         // Check if job is marked as paid (from CSV import or manual update)
         $paidInFull = (bool)($this->invoice_paid ?? false);
         
@@ -1861,27 +1874,47 @@ class PilotCarJob extends Model
         // Get organization ID from totals or job
         $organizationId = $totals['organization_id'] ?? $this->organization_id ?? null;
         
-        // Extra stops: $30.00 per stop
+        // Extra stops. The resolved per-stop rate is kept on the breakdown
+        // (TASK-365) so callers can itemize the charge instead of re-deriving
+        // the rate by dividing the amount back out by the count.
+        $extraStopRate = (float) ($organizationId
+            ? PricingSetting::getValueForOrganization($organizationId, 'charges.extra_stop.rate_per_stop', config('pricing.charges.extra_stop.rate_per_stop', 30.00))
+            : config('pricing.charges.extra_stop.rate_per_stop', 30.00));
         if($totals['extra_load_stops_count'] > 0){
-            $extraStopRate = $organizationId
-                ? PricingSetting::getValueForOrganization($organizationId, 'charges.extra_stop.rate_per_stop', config('pricing.charges.extra_stop.rate_per_stop', 30.00))
-                : config('pricing.charges.extra_stop.rate_per_stop', 30.00);
             $values['load_stops'] = $totals['extra_load_stops_count'] * $extraStopRate;
         }
 
-        // Wait time: $25.00 per hour (charged after first hour)
-        if($totals['wait_time_hours'] > 1){
-            $waitTimeRate = $organizationId
-                ? PricingSetting::getValueForOrganization($organizationId, 'charges.wait_time.rate_per_hour', config('pricing.charges.wait_time.rate_per_hour', 25.00))
-                : config('pricing.charges.wait_time.rate_per_hour', 25.00);
-            $values['wait_time'] = ($totals['wait_time_hours'] - 1) * $waitTimeRate;
-        }
+        // Wait time, billed per hour beyond the free minimum. `minimum_hours`
+        // is editable at /my/pricing and advertised on the public pricing page,
+        // so read it here rather than hard-coding the one free hour the
+        // original implementation assumed (TASK-365) — an org that sets it to 0
+        // to bill from the first hour was silently still giving that hour away.
+        $waitTimeRate = (float) ($organizationId
+            ? PricingSetting::getValueForOrganization($organizationId, 'charges.wait_time.rate_per_hour', config('pricing.charges.wait_time.rate_per_hour', 30.00))
+            : config('pricing.charges.wait_time.rate_per_hour', 30.00));
+        $waitFreeHours = (float) ($organizationId
+            ? PricingSetting::getValueForOrganization($organizationId, 'charges.wait_time.minimum_hours', config('pricing.charges.wait_time.minimum_hours', 1))
+            : config('pricing.charges.wait_time.minimum_hours', 1));
 
+        $billableWaitHours = max(0.0, (float) ($totals['wait_time_hours'] ?? 0) - $waitFreeHours);
+
+        $values['wait_time'] = $billableWaitHours * $waitTimeRate;
+
+        // Sum the expense buckets by name. The previous implementation summed
+        // every element of $values blindly, which made the total silently wrong
+        // the moment any non-money key was added to the breakdown.
         $expenses = 0.00;
 
-        foreach($values as $v){
-            $expenses += $v;
+        foreach(['tolls','hotel','extra','load_stops','wait_time'] as $expenseKey){
+            $expenses += (float) $values[$expenseKey];
         }
+
+        // Itemization metadata (TASK-365). Assigned AFTER $expenses is summed
+        // so these descriptive keys can never be mistaken for money buckets.
+        $values['extra_stop_rate'] = $extraStopRate;
+        $values['wait_time_rate'] = $waitTimeRate;
+        $values['wait_time_free_hours'] = $waitFreeHours;
+        $values['wait_time_billable_hours'] = $billableWaitHours;
 
         $normalizedRateValue = (float) str_replace(',', '', (string) ($totals['rate_value'] ?? 0));
         $rateCode = $totals['rate_code'] ?? '';
