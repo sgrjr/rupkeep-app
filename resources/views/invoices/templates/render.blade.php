@@ -33,21 +33,29 @@
         $tollsAmount = isset($values['tolls']) ? $money($values['tolls']) : 0;
         $totalMileageAmount = isset($values['cost_for_mileage']) ? (float) $values['cost_for_mileage'] : 0;
         $miniAddonAmount = isset($values['mini_addon_amount']) ? (float) $values['mini_addon_amount'] : 0;
+        // Hotel and extra charges are expense buckets that calculateTotalDue()
+        // adds into `total`, but they were missing from the subtraction below,
+        // so both vanished into the Pilot Car Service line (TASK-367). A $575
+        // day rate with a $125 hotel and a $10 toll billed a correct $710 total
+        // while showing "Pilot Car Service $700" and no hotel anywhere.
+        $hotelAmount = isset($values['hotel']) ? $money($values['hotel']) : 0;
+        $extraChargeAmount = isset($values['extra_charge']) ? $money($values['extra_charge']) : 0;
 
-        $otherChargesTotal = $waitTimeAmount + $extraStopsAmount + $deadAmount + $tollsAmount + $totalMileageAmount + $miniAddonAmount;
+        $otherChargesTotal = $waitTimeAmount + $extraStopsAmount + $deadAmount + $tollsAmount
+            + $totalMileageAmount + $miniAddonAmount + $hotelAmount + $extraChargeAmount;
         $pilotCarServiceAmount = (float) ($values['total'] ?? 0) - $otherChargesTotal;
-        
-        // Pilot Car Service - main service charge (always show)
-        $pilotCarServiceRate = $pilotCarServiceAmount;
-        $pilotCarServiceQty = 1;
+
+        // Whatever the rate itself charged, once every itemized expense is
+        // accounted for. On a per-mile job this is 0 and the Total Mileage line
+        // carries the charge instead; on a flat/day rate it IS the flat amount.
         $lineItems[] = [
             'description' => __('Pilot Car Service'),
-            'quantity' => $pilotCarServiceQty,
-            'rate' => $pilotCarServiceRate,
+            'quantity' => 1,
+            'rate' => $pilotCarServiceAmount,
             'amount' => $pilotCarServiceAmount,
         ];
 
-        // Wait Time (always show, even if 0). Quantity is the BILLABLE hours,
+        // Wait Time. Quantity is the BILLABLE hours,
         // not the logged hours: with a free-hour minimum configured, dividing
         // the amount by logged hours invented a rate that matched no published
         // price (3 hrs / $60 read as "3 x $20.00" instead of "2 x $30.00").
@@ -73,7 +81,7 @@
             'amount' => $waitTimeAmount,
         ];
 
-        // Extra Stops (always show, even if 0)
+        // Extra Stops
         $extraStopsQty = isset($values['extra_load_stops_count']) ? (float) $values['extra_load_stops_count'] : 0;
         $extraStopsRate = isset($values['cost_of_extra_stop'])
             ? $money($values['cost_of_extra_stop'])
@@ -85,7 +93,7 @@
             'amount' => $extraStopsAmount,
         ];
 
-        // Dead (Deadhead) (always show, even if 0)
+        // Dead (Deadhead)
         $deadQty = isset($values['dead_head']) ? (float) $values['dead_head'] : 0;
         $deadRate = $deadQty > 0 ? ($deadAmount / $deadQty) : 0;
         $lineItems[] = [
@@ -95,17 +103,31 @@
             'amount' => $deadAmount,
         ];
 
-        // Tolls (always show, even if 0)
-        $tollsQty = $tollsAmount > 0 ? 1 : 0;
-        $tollsRate = $tollsAmount;
+        // Tolls
         $lineItems[] = [
             'description' => __('Tolls'),
-            'quantity' => $tollsQty,
-            'rate' => $tollsRate,
+            'quantity' => $tollsAmount > 0 ? 1 : 0,
+            'rate' => $tollsAmount,
             'amount' => $tollsAmount,
         ];
 
-        // Total Mileage (always show, even if 0)
+        // Overnight / Hotel — a reimbursement, billed at actual cost.
+        $lineItems[] = [
+            'description' => __('Overnight / Hotel'),
+            'quantity' => $hotelAmount > 0 ? 1 : 0,
+            'rate' => $hotelAmount,
+            'amount' => $hotelAmount,
+        ];
+
+        // Extra charges recorded against the job's logs.
+        $lineItems[] = [
+            'description' => __('Extra Charges'),
+            'quantity' => $extraChargeAmount > 0 ? 1 : 0,
+            'rate' => $extraChargeAmount,
+            'amount' => $extraChargeAmount,
+        ];
+
+        // Total Mileage
         $totalMileageQty = isset($values['billable_miles']) ? (float) $values['billable_miles'] : 0;
         $totalMileageRate = $totalMileageQty > 0 ? ($totalMileageAmount / $totalMileageQty) : 0;
         $lineItems[] = [
@@ -116,16 +138,22 @@
         ];
 
         // Mini Add-On (TASK-307): additive line item that stacks on top of
-        // the rate above (including flat-rate jobs). Only shown when set,
-        // since unlike the other charges it is opt-in per job.
-        if ($miniAddonAmount > 0) {
-            $lineItems[] = [
-                'description' => __('Mini Add-On'),
-                'quantity' => 1,
-                'rate' => $miniAddonAmount,
-                'amount' => $miniAddonAmount,
-            ];
-        }
+        // the rate above (including flat-rate jobs).
+        $lineItems[] = [
+            'description' => __('Mini Add-On'),
+            'quantity' => $miniAddonAmount > 0 ? 1 : 0,
+            'rate' => $miniAddonAmount,
+            'amount' => $miniAddonAmount,
+        ];
+
+        // Only bill what was actually charged (TASK-367). The zero rows were
+        // not a PDF layout requirement — these are plain table rows — they just
+        // padded the invoice with "Wait Time 1 x $0.00" noise that read as a
+        // mistake to the customer.
+        $lineItems = array_values(array_filter(
+            $lineItems,
+            fn ($item) => round((float) $item['amount'], 2) != 0.0
+        ));
     }
 
     $charges = $charges ?? [
@@ -340,7 +368,7 @@
                     @foreach($lineItems as $item)
                         <tr>
                             <td>{{ $item['description'] }}</td>
-                            <td class="text-right">{{ number_format($item['quantity'], 0) }}</td>
+                            <td class="text-right">{{ floor($item['quantity']) == $item['quantity'] ? number_format($item['quantity'], 0) : rtrim(rtrim(number_format($item['quantity'], 2), '0'), '.') }}</td>
                             <td class="text-right">${{ number_format($item['rate'], 2) }}</td>
                             <td class="text-right">${{ number_format($item['amount'], 2) }}</td>
                         </tr>

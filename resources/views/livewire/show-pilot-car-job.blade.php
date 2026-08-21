@@ -1141,5 +1141,33 @@
                 </div>
             </div>
         </section>
+
+        {{-- TASK-368: read the record the invoice math actually runs on, rather
+             than inferring it from rendered labels. Staff-only; the payload is
+             assembled field-by-field in ShowPilotCarJob::debugPayload(). --}}
+        @can('update', $job)
+            <div class="flex justify-center pb-4"
+                 x-data="{
+                     dump() {
+                         $wire.debugPayload().then(data => {
+                             console.log('%c Job ' + (data.job.job_no ?? data.job.id) + ' — debug payload', 'background:#f9b104;color:#111;font-weight:bold;padding:2px 6px;border-radius:3px');
+                             console.log(data);
+                             console.log('JSON:', JSON.stringify(data, null, 2));
+                             this.copied = true;
+                             setTimeout(() => this.copied = false, 2000);
+                         });
+                     },
+                     copied: false
+                 }">
+                <button type="button" x-on:click="dump()"
+                        class="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-400 transition hover:text-slate-600">
+                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0021 18V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v12a2.25 2.25 0 002.25 2.25z"/>
+                    </svg>
+                    <span x-show="!copied">{{ __('Log job JSON to console') }}</span>
+                    <span x-show="copied" x-cloak class="text-emerald-600">{{ __('Sent to console — open DevTools (F12)') }}</span>
+                </button>
+            </div>
+        @endcan
     </div>
 </div>

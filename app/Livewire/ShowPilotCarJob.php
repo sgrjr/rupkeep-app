@@ -161,6 +161,68 @@ class ShowPilotCarJob extends Component
         return view('livewire.show-pilot-car-job');
     }
 
+    /**
+     * Debug payload for the job page's "Log job JSON to console" button
+     * (TASK-368). Diagnosing an invoice figure previously meant guessing from
+     * rendered labels; this surfaces the record the math actually runs on --
+     * including the computed invoice values -- so a discrepancy can be read
+     * directly instead of inferred.
+     *
+     * Staff-only, and deliberately assembled field-by-field rather than dumping
+     * models: it must not expose anything the viewer cannot already see here.
+     */
+    public function debugPayload(): array
+    {
+        $this->authorize('update', $this->job);
+
+        $job = $this->job->loadMissing('logs', 'customer');
+
+        return [
+            'job' => [
+                'id' => $job->id,
+                'job_no' => $job->job_no,
+                'load_no' => $job->load_no,
+                'status' => $job->status,
+                'customer' => $job->customer?->name,
+                'rate_code' => $job->rate_code,
+                'rate_value' => $job->rate_value,
+                'mini_addon_amount' => $job->mini_addon_amount,
+                'scheduled_pickup_at' => (string) $job->scheduled_pickup_at,
+                'scheduled_delivery_at' => (string) $job->scheduled_delivery_at,
+                'canceled_at' => (string) $job->canceled_at,
+            ],
+            'logs' => $job->logs->map(fn ($log) => [
+                'id' => $log->id,
+                'driver' => $log->user?->name,
+                'approval_status' => $log->approval_status,
+                'completed_at' => (string) $log->completed_at,
+                'start_mileage' => $log->start_mileage,
+                'end_mileage' => $log->end_mileage,
+                'start_job_mileage' => $log->start_job_mileage,
+                'end_job_mileage' => $log->end_job_mileage,
+                'billable_miles' => $log->billable_miles,
+                'total_billable_miles' => $log->total_billable_miles,
+                'is_deadhead' => $log->is_deadhead,
+                'extra_load_stops_count' => $log->extra_load_stops_count,
+                'wait_time_hours' => $log->wait_time_hours,
+                'tolls' => $log->tolls,
+                'hotel' => $log->hotel,
+                'gas' => $log->gas,
+                'extra_charge' => $log->extra_charge,
+            ])->all(),
+            // What an invoice generated right now would contain. Compare against
+            // an existing invoice's stored snapshot to spot drift.
+            'computed_invoice_values' => $job->invoiceValues()['values'],
+            'existing_invoices' => $job->getAllInvoices()->map(fn ($invoice) => [
+                'id' => $invoice->id,
+                'invoice_number' => $invoice->invoice_number,
+                'created_at' => (string) $invoice->created_at,
+                'paid_in_full' => $invoice->paid_in_full,
+                'stored_values' => $invoice->values,
+            ])->values()->all(),
+        ];
+    }
+
     public function assignJob(){
         try {
             // Validate the form - this will throw ValidationException if it fails
