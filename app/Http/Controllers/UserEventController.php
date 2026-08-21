@@ -20,7 +20,7 @@ class UserEventController extends Controller
     public function index(Request $request)
     {
         // Only super users can view all events
-        if (! Auth::user()->is_super) {
+        if (! Auth::user()->isSuper()) {
             abort(403);
         }
 
@@ -66,7 +66,7 @@ class UserEventController extends Controller
     public function show(UserEvent $userEvent)
     {
         // Only super users can view events
-        if (! Auth::user()->is_super) {
+        if (! Auth::user()->isSuper()) {
             abort(403);
         }
 
@@ -128,7 +128,7 @@ class UserEventController extends Controller
     public function prune(Request $request)
     {
         // Only super users can prune events
-        if (! Auth::user()->is_super) {
+        if (! Auth::user()->isSuper()) {
             abort(403);
         }
 
@@ -164,7 +164,7 @@ class UserEventController extends Controller
     public function clearAll(Request $request)
     {
         // Only super users can clear all events
-        if (! Auth::user()->is_super) {
+        if (! Auth::user()->isSuper()) {
             abort(403);
         }
 

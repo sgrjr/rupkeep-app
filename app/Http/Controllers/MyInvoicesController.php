@@ -39,7 +39,7 @@ class MyInvoicesController extends Controller
     {
         $user = $request->user();
 
-        if (! $user->is_super && ! $user->isAdmin() && ! $user->isManager()) {
+        if (! $user->isSuper() && ! $user->isAdmin() && ! $user->isManager()) {
             abort(403);
         }
 
@@ -63,7 +63,7 @@ class MyInvoicesController extends Controller
 
         $user = $request->user();
 
-        if (! $user->is_super && ! $user->isAdmin() && ! $user->isManager()) {
+        if (! $user->isSuper() && ! $user->isAdmin() && ! $user->isManager()) {
             abort(403);
         }
 

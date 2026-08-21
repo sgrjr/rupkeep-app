@@ -75,7 +75,7 @@ class TaskList extends Component
                           }));
                   });
             });
-        } elseif ($user && !($user->organization?->is_super)) {
+        } elseif ($user && !($user->isSuper())) {
             // Staff: scope to own org (super sees all)
             $query->where(function (Builder $q) use ($user) {
                 $q->whereNull('organization_id')->orWhere('organization_id', $user->organization_id);

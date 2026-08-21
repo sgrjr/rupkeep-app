@@ -24,7 +24,7 @@ class ServerManagement extends Component
 
     public function mount()
     {
-        if (!Auth::user() || !Auth::user()->is_super) {
+        if (!Auth::user() || !Auth::user()->isSuper()) {
             abort(403);
         }
         

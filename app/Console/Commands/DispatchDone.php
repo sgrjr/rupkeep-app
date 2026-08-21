@@ -66,7 +66,7 @@ class DispatchDone extends Command
         if ($email = $this->option('author')) {
             return \App\Models\User::where('email', $email)->first();
         }
-        return \App\Models\User::whereHas('organization', fn ($q) => $q->where('name', 'Reynolds Upkeep'))->first()
+        return \App\Models\User::where('is_super', true)->orderBy('id')->first()
             ?? \App\Models\User::orderBy('id')->first();
     }
 }

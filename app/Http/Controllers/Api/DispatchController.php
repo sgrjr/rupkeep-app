@@ -173,7 +173,7 @@ class DispatchController extends Controller
     protected function ensureSuper(Request $request): void
     {
         $user = $request->user();
-        if (!$user || !$user->organization || !$user->organization->is_super) {
+        if (!$user || !$user->organization || !$user->isSuper()) {
             abort(403, 'Dispatch API requires a super-user token.');
         }
     }

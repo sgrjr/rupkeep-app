@@ -20,7 +20,7 @@ class InvoiceController extends Controller
             ]);
         }
 
-        if (! $user->isCustomer() && ! $user->isAdmin() && ! $user->is_super) {
+        if (! $user->isCustomer() && ! $user->isAdmin() && ! $user->isSuper()) {
             return $this->accessDenied($request, [
                 'title' => __('Customer portal access required'),
                 'message' => __('This portal is designed for customer accounts using one-time login codes. Sign out and sign back in with a customer link, or head back to your dashboard.'),
@@ -77,7 +77,7 @@ class InvoiceController extends Controller
             ]);
         }
 
-        if (! $user->isCustomer() && ! $user->isAdmin() && ! $user->is_super) {
+        if (! $user->isCustomer() && ! $user->isAdmin() && ! $user->isSuper()) {
             return $this->accessDenied($request, [
                 'title' => __('Customer portal access required'),
                 'message' => __('You are currently signed in as a staff member. Sign out and sign back in with a customer link to view invoices in the portal.'),

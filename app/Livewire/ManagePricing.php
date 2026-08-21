@@ -25,7 +25,7 @@ class ManagePricing extends Component
         
         // Super users can manage any organization's pricing
         // Regular admins can only manage their own organization
-        if ($user->is_super && request()->has('organization_id')) {
+        if ($user->isSuper() && request()->has('organization_id')) {
             $this->organization = Organization::findOrFail(request('organization_id'));
         } else {
             $this->organization = $user->organization;

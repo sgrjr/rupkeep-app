@@ -172,7 +172,7 @@ class UserProfile extends Component
      */
     public function clearInvoices()
     {
-        if (!auth()->user()->is_super) {
+        if (!auth()->user()->isSuper()) {
             session()->flash('error', __('Only super users can clear all invoices.'));
             return;
         }

@@ -16,7 +16,7 @@ class CustomerContactsController extends Controller
      * Display a listing of the resource.
      */
     public function index(Request $request){
-        if(Auth::user()->is_super){
+        if(Auth::user()->isSuper()){
             $contacts = CustomerContact::all();
         }else{
             $contacts = CustomerContact::where('organization_id', Auth::user()->organization_id)->get();

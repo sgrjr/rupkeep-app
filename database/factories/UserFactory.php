@@ -53,6 +53,18 @@ class UserFactory extends Factory
         ]);
     }
 
+    /**
+     * An application-wide super user (TASK-366). Distinct from admin(), which
+     * is organization-scoped. is_super is not fillable, so it is set directly.
+     */
+    public function superUser(): static
+    {
+        return $this->state(fn () => [
+            'organization_role' => User::ROLE_ADMIN,
+            'is_super' => true,
+        ]);
+    }
+
     public function admin(): static
     {
         return $this->state(fn () => [

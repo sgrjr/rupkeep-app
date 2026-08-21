@@ -77,7 +77,7 @@ class OnboardingWizard extends Component
     public function mount()
     {
         $user = Auth::user();
-        if (! $user || ! $user->is_super) {
+        if (! $user || ! $user->isSuper()) {
             abort(403, 'Only super users can access onboarding.');
         }
     }

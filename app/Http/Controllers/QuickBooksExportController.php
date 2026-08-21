@@ -13,7 +13,7 @@ class QuickBooksExportController extends Controller
     {
         $user = $request->user();
 
-        if (! $user->isAdmin() && ! $user->isManager() && ! $user->is_super) {
+        if (! $user->isAdmin() && ! $user->isManager() && ! $user->isSuper()) {
             abort(403);
         }
 

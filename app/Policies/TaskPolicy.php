@@ -9,7 +9,7 @@ class TaskPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->isEmployee() || $user->isAdmin() || $user->isManager() || $user->organization?->is_super;
+        return $user->isEmployee() || $user->isAdmin() || $user->isManager() || $user->isSuper();
     }
 
     public function view(User $user, Task $task): bool
@@ -31,7 +31,7 @@ class TaskPolicy
 
     public function create(User $user): bool
     {
-        return $user->isEmployee() || $user->isAdmin() || $user->isManager() || $user->organization?->is_super;
+        return $user->isEmployee() || $user->isAdmin() || $user->isManager() || $user->isSuper();
     }
 
     public function update(User $user, Task $task): bool
@@ -41,7 +41,7 @@ class TaskPolicy
 
     public function delete(User $user, Task $task): bool
     {
-        return $user->isAdmin() || $user->organization?->is_super;
+        return $user->isAdmin() || $user->isSuper();
     }
 
     public function comment(User $user, Task $task): bool
@@ -61,12 +61,12 @@ class TaskPolicy
 
     public function manageLabels(User $user): bool
     {
-        return $user->isAdmin() || $user->organization?->is_super;
+        return $user->isAdmin() || $user->isSuper();
     }
 
     protected function isStaff(User $user, ?int $taskOrgId): bool
     {
-        if ($user->organization?->is_super) {
+        if ($user->isSuper()) {
             return true;
         }
 

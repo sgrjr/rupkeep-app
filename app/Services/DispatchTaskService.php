@@ -65,11 +65,11 @@ class DispatchTaskService
 
     /**
      * The default submitter for tasks created without an explicit author:
-     * the operating organization's first user, falling back to the lowest id.
+     * the first application-wide super user, falling back to the lowest id.
      */
     public function resolveDefaultSubmitter(): ?User
     {
-        return User::whereHas('organization', fn ($q) => $q->where('name', 'Reynolds Upkeep'))->first()
+        return User::where('is_super', true)->orderBy('id')->first()
             ?? User::orderBy('id')->first();
     }
 }

@@ -31,7 +31,7 @@ class Organization extends Model
         'deleted_at'
     ];
 
-    public $appends = ['logo','is_super'];
+    public $appends = ['logo'];
 
     public function getLogoAttribute(){
         if(empty($this->logo_url)){
@@ -42,10 +42,6 @@ class Organization extends Model
             return url('storage/uploads/'. $this->logo_url);
         }
         
-    }
-
-    public function getIsSuperAttribute(){
-        return $this->name == 'Reynolds Upkeep';
     }
 
     public function getOwnerEmailAttribute(){

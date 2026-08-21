@@ -16,7 +16,7 @@ class GitUpdateController extends Controller
     {
         $user = $request->user();
 
-        abort_unless($user && $user->is_super, 403);
+        abort_unless($user && $user->isSuper(), 403);
 
         $process = Process::fromShellCommandline('git pull', base_path());
         $process->run();

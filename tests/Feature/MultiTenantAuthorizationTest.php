@@ -78,8 +78,9 @@ class MultiTenantAuthorizationTest extends TestCase
 
     public function test_super_admin_can_view_vehicle_across_organizations(): void
     {
-        $superOrg = $this->createOrganization('Reynolds Upkeep');
+        $superOrg = $this->createOrganization('Platform Org');
         $superAdmin = $this->createUserForOrganization($superOrg, User::ROLE_ADMIN);
+        $superAdmin->forceFill(['is_super' => true])->save();
 
         $otherOrg = $this->createOrganization('Org C');
         $vehicle = $this->createVehicleForOrganization($otherOrg);

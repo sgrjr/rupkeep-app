@@ -111,7 +111,7 @@
         </div>
         @endcan
 
-        @if(auth()->user()->is_super)
+        @if(auth()->user()->isSuper())
         <x-section-border />
 
         <div class="mt-10 sm:mt-0">

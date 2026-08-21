@@ -15,10 +15,11 @@ class DispatchApiTest extends TestCase
 
     private function superUser(): User
     {
-        // is_super is derived from the organization name.
-        $org = Organization::factory()->create(['name' => 'Reynolds Upkeep']);
+        // Super is a per-user flag (TASK-366), no longer inferred from the
+        // organization's name.
+        $org = Organization::factory()->create(['name' => 'Platform Org']);
 
-        return User::factory()->admin()->create(['organization_id' => $org->id]);
+        return User::factory()->superUser()->create(['organization_id' => $org->id]);
     }
 
     public function test_apply_requires_super_user(): void

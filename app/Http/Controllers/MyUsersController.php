@@ -17,7 +17,7 @@ class MyUsersController extends Controller
     public function index(Request $request){
         $users = User::where('organization_id', auth()->user()->organization_id)->get();
 
-        if(auth()->user()->is_super){
+        if(auth()->user()->isSuper()){
             $all_users = User::all();
         }else{
             $all_users = false;

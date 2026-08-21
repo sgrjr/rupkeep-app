@@ -14,7 +14,7 @@ class CustomersController extends Controller
 
     public function index(Request $request){
         // Always get all customers for metrics and full listing
-        if(auth()->user()->is_super){
+        if(auth()->user()->isSuper()){
             $allCustomers = Customer::with(['contacts', 'jobs'])->get();
         }else{
             $allCustomers = Customer::with(['contacts', 'jobs'])->where('organization_id', auth()->user()->organization_id)->get();

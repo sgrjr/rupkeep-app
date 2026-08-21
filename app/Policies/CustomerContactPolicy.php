@@ -13,7 +13,7 @@ class CustomerContactPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->organization->is_super;
+        return $user->isSuper();
     }
 
     /**
@@ -21,7 +21,7 @@ class CustomerContactPolicy
      */
     public function view(User $user, CustomerContact $customer_contact): bool
     {
-        return $user->organization_id === $customer_contact->organization_id || $user->organization->is_super;
+        return $user->organization_id === $customer_contact->organization_id || $user->isSuper();
     }
 
     /**
@@ -30,7 +30,7 @@ class CustomerContactPolicy
     public function create(User $user, CustomerContact $customer_contact): bool
     {
         return ($user->organization_id === $customer_contact->organization_id && ($user->isAdmin() || $user->isManager()))
-            || $user->organization->is_super;
+            || $user->isSuper();
     }
 
     /**
@@ -39,7 +39,7 @@ class CustomerContactPolicy
     public function update(User $user, CustomerContact $customer_contact): bool
     {
         return ($user->organization_id === $customer_contact->organization_id && ($user->isAdmin() || $user->isManager() || $user->isStandardEmployee()))
-            || $user->organization->is_super;
+            || $user->isSuper();
     }
 
     /**
@@ -48,7 +48,7 @@ class CustomerContactPolicy
     public function delete(User $user, CustomerContact $customer_contact): bool
     {
         return ($user->organization_id === $customer_contact->organization_id && $user->isAdmin())
-            || $user->organization->is_super;
+            || $user->isSuper();
     }
 
     /**
@@ -57,7 +57,7 @@ class CustomerContactPolicy
     public function restore(User $user, CustomerContact $customer_contact): bool
     {
         return ($user->organization_id === $customer_contact->organization_id && $user->isAdmin())
-            || $user->organization->is_super;
+            || $user->isSuper();
     }
 
     /**
@@ -66,13 +66,13 @@ class CustomerContactPolicy
     public function forceDelete(User $user, CustomerContact $customer_contact): bool
     {
         return ($user->organization_id === $customer_contact->organization_id && $user->isAdmin())
-            || $user->organization->is_super;
+            || $user->isSuper();
     }
 
     public function createCustomer(User $user, CustomerContact $customer_contact): bool
     {
         return ($user->organization_id === $customer_contact->organization_id && $user->isAdmin())
-            || $user->organization->is_super;
+            || $user->isSuper();
     }
     
 }

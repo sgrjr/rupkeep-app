@@ -12,7 +12,7 @@ class UserLogPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->is_super;
+        return $user->isSuper();
     }
 
     /**
@@ -20,7 +20,7 @@ class UserLogPolicy
      */
     public function view(User $user, UserLog $model): bool
     {
-        return $user->organization_id === $model->organization_id || $user->is_super;
+        return $user->organization_id === $model->organization_id || $user->isSuper();
     }
 
     /**
@@ -28,7 +28,7 @@ class UserLogPolicy
      */
     public function create(User $user, UserLog $model): bool
     {
-        return ($user->organization_id === $model->organization_id && ($user->isAdmin() || $user->isManager())) || $user->is_super;
+        return ($user->organization_id === $model->organization_id && ($user->isAdmin() || $user->isManager())) || $user->isSuper();
     }
 
     /**
@@ -36,7 +36,7 @@ class UserLogPolicy
      */
     public function update(User $user, UserLog $model): bool
     {
-        return ($user->organization_id === $model->organization_id && ($user->isAdmin() || $user->isManager() || $user->isStandardEmployee())) || $user->is_super;
+        return ($user->organization_id === $model->organization_id && ($user->isAdmin() || $user->isManager() || $user->isStandardEmployee())) || $user->isSuper();
     }
 
     /**
@@ -44,7 +44,7 @@ class UserLogPolicy
      */
     public function delete(User $user, UserLog $model): bool
     {
-        return ($user->organization_id === $model->organization_id && ($user->isAdmin() || $user->isManager())) || $user->is_super;
+        return ($user->organization_id === $model->organization_id && ($user->isAdmin() || $user->isManager())) || $user->isSuper();
     }
 
     /**
@@ -52,7 +52,7 @@ class UserLogPolicy
      */
     public function restore(User $user, UserLog $model): bool
     {
-        return ($user->organization_id === $model->organization_id && ($user->isAdmin() || $user->isManager())) || $user->is_super;
+        return ($user->organization_id === $model->organization_id && ($user->isAdmin() || $user->isManager())) || $user->isSuper();
     }
 
     /**
@@ -60,7 +60,7 @@ class UserLogPolicy
      */
     public function forceDelete(User $user, UserLog $model): bool
     {
-        return $user->is_super;
+        return $user->isSuper();
     }
 
     /**
@@ -76,7 +76,7 @@ class UserLogPolicy
      */
     public function confirm(User $user, UserLog $model): bool
     {
-        $canManage = ($user->organization_id === $model->organization_id && ($user->isAdmin() || $user->isManager())) || $user->is_super;
+        $canManage = ($user->organization_id === $model->organization_id && ($user->isAdmin() || $user->isManager())) || $user->isSuper();
 
         if (!$canManage && $model->car_driver_id === $user->id) {
             return true;
@@ -91,7 +91,7 @@ class UserLogPolicy
     public function deny(User $user, UserLog $model): bool
     {
         // Managers can deny any log, assigned driver can deny their own log
-        $canDeny = ($user->organization_id === $model->organization_id && ($user->isAdmin() || $user->isManager())) || $user->is_super;
+        $canDeny = ($user->organization_id === $model->organization_id && ($user->isAdmin() || $user->isManager())) || $user->isSuper();
         
         // Also allow the assigned driver to deny
         if (!$canDeny && $model->car_driver_id === $user->id) {
@@ -110,7 +110,7 @@ class UserLogPolicy
      */
     public function complete(User $user, UserLog $model): bool
     {
-        $canManage = ($user->organization_id === $model->organization_id && ($user->isAdmin() || $user->isManager())) || $user->is_super;
+        $canManage = ($user->organization_id === $model->organization_id && ($user->isAdmin() || $user->isManager())) || $user->isSuper();
 
         if (!$canManage && $model->car_driver_id === $user->id && $user->organization_id === $model->organization_id) {
             return true;
@@ -129,6 +129,6 @@ class UserLogPolicy
      */
     public function reopen(User $user, UserLog $model): bool
     {
-        return ($user->organization_id === $model->organization_id && ($user->isAdmin() || $user->isManager())) || $user->is_super;
+        return ($user->organization_id === $model->organization_id && ($user->isAdmin() || $user->isManager())) || $user->isSuper();
     }
 }

@@ -90,6 +90,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_super' => 'boolean',
         ];
     }
 
@@ -166,8 +167,21 @@ class User extends Authenticatable
         return $this->organization?->name;
     }
 
-    public function getIsSuperAttribute(){
-        return $this->organization_name === 'Reynolds Upkeep' && $this->isAdmin();
+    /**
+     * Application-wide super user (TASK-366).
+     *
+     * Distinct from {@see isAdmin()}, which is organization-scoped: an admin
+     * runs their own organization, a super user operates across all of them.
+     * Backed by a real per-user column rather than the old arrangement, where
+     * "super" meant belonging to an organization whose NAME matched a literal
+     * string — which made every member of that org, drivers and customer
+     * accounts included, a platform administrator.
+     *
+     * Granted with `php artisan super:grant`; never mass-assignable.
+     */
+    public function isSuper(): bool
+    {
+        return (bool) $this->is_super;
     }
 
     public function isAdmin(): bool

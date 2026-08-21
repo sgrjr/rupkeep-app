@@ -22,7 +22,7 @@ class AppLayout extends Component
             $this->theme = Auth::user()->dashboard_theme;
         }
 
-        //if(auth()->check() && auth()->user()->is_super){
+        //if(auth()->check() && auth()->user()->isSuper()){
             $this->organizations = Organization::select('id','name')->get();
         //}
     }

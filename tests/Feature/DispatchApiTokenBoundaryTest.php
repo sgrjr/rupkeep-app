@@ -12,7 +12,7 @@ use Tests\TestCase;
  *
  * `/api/dispatch/snapshot` and `/api/dispatch/apply` sit behind `auth:sanctum`
  * and additionally require a SUPER-user token — DispatchController::ensureSuper()
- * checks `$user->organization->is_super` (org name === 'Reynolds Upkeep') and
+ * checks `$user->isSuper()` (a per-user flag, TASK-366) and
  * aborts 403 otherwise. The existing DispatchApiTest exercises this via the
  * session guard (actingAs); this class exercises the real personal-access-token
  * path with an `Authorization: Bearer` header, which is how production actually
@@ -31,8 +31,9 @@ class DispatchApiTokenBoundaryTest extends TestCase
 
     private function superUserToken(): string
     {
-        $org = $this->createOrganization('Reynolds Upkeep');
+        $org = $this->createOrganization('Platform Org');
         $user = $this->createUserForOrganization($org, User::ROLE_ADMIN);
+        $user->forceFill(['is_super' => true])->save();
 
         return $user->createToken('dispatch-test')->plainTextToken;
     }

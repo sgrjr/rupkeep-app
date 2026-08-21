@@ -144,14 +144,14 @@ class Dashboard extends Component
              ['url'=> route('organizations.index'), 'title'=>'View All'],
              ['url'=> route('organizations.create'), 'title'=>'+Create New'],
          ];
-        if(auth()->user()->is_super){
+        if(auth()->user()->isSuper()){
             $links[] = ['url'=> route('organizations.onboard'), 'title'=>'Onboard New'];
         }
         $cards[] = (Object)['title'=>'Organizations', 'count'=> Organization::count(), 'links'=> $links];
        }
 
        // Experience Tracker for super users
-       if(Auth::user()->is_super){
+       if(Auth::user()->isSuper()){
            $errorCount = \App\Models\UserEvent::errors()->whereDate('created_at', '>=', now()->subDays(7))->count();
            $cards[] = (Object)['title'=>'Experience Tracker', 'count'=> $errorCount, 'links'=> [
                ['url'=> route('user-events.index'), 'title'=>'View Events'],
@@ -187,7 +187,7 @@ class Dashboard extends Component
        $links = [
            ['url'=> route('documentation.roadmap'), 'title'=>'Public Roadmap'],
        ];
-       if ($viewer->is_super) {
+       if ($viewer->isSuper()) {
            array_unshift($links, ['url'=> route('tasks.index', ['statusFilter' => 'triage']), 'title'=>'View Triage']);
        }
 
@@ -238,7 +238,7 @@ class Dashboard extends Component
         ]];
        }
        
-        if(Auth::user()->is_super){
+        if(Auth::user()->isSuper()){
             $organizations = \App\Models\Organization::all();
         }
 

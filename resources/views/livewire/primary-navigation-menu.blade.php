@@ -148,7 +148,7 @@
                                     <x-dropdown-link href="{{ route('tasks.board') }}">{{ __('Board (kanban)') }}</x-dropdown-link>
                                     <div class="border-t border-slate-100"></div>
                                     <x-dropdown-link href="{{ route('documentation.roadmap') }}">{{ __('Public Roadmap') }}</x-dropdown-link>
-                                    @if(auth()->user()->is_super)
+                                    @if(auth()->user()->isSuper())
                                         <div class="border-t border-slate-100"></div>
                                         <x-dropdown-link href="{{ route('admin.feedback.index') }}">{{ __('Feedback Inbox') }}</x-dropdown-link>
                                     @endif
@@ -222,7 +222,7 @@
                                 {{ __('Send Feedback') }}
                             </x-dropdown-link>
 
-                            @if(auth()->user()->is_super)
+                            @if(auth()->user()->isSuper())
                                 <div class="border-t border-slate-100"></div>
                                 <x-dropdown-link href="{{ route('user-events.index', ['type' => 'feedback']) }}">
                                     {{ __('View All Feedback') }}
@@ -350,7 +350,7 @@
                         {{ __('Send Feedback') }}
                     </x-responsive-nav-link>
 
-                    @if(auth()->user()->is_super)
+                    @if(auth()->user()->isSuper())
                         <x-responsive-nav-link href="{{ route('user-events.index', ['type' => 'feedback']) }}" :active="request()->routeIs('user-events.index') && request()->get('type') === 'feedback'">
                             {{ __('View All Feedback') }}
                         </x-responsive-nav-link>

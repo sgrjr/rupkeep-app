@@ -115,7 +115,7 @@ class AdminToolsController extends Controller
     public function executeCommand(Request $request)
     {
         $user = Auth::user();
-        if (!$user || !$user->is_super) {
+        if (!$user || !$user->isSuper()) {
             abort(403);
         }
 
@@ -144,7 +144,7 @@ class AdminToolsController extends Controller
     public function executeWorkflow(Request $request)
     {
         $user = Auth::user();
-        if (!$user || !$user->is_super) {
+        if (!$user || !$user->isSuper()) {
             abort(403);
         }
 
@@ -301,7 +301,7 @@ class AdminToolsController extends Controller
     public function getCommands(Request $request)
     {
         $user = Auth::user();
-        if (!$user || !$user->is_super) {
+        if (!$user || !$user->isSuper()) {
             abort(403);
         }
 
@@ -314,7 +314,7 @@ class AdminToolsController extends Controller
     public function updateFromGit(Request $request)
     {
         $user = Auth::user();
-        if (!$user || !$user->is_super) {
+        if (!$user || !$user->isSuper()) {
             abort(403);
         }
 

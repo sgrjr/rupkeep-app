@@ -12,17 +12,17 @@ class AttachmentPolicy
      */
     public function download(User $user, Attachment $attachment): bool
     {
-        return $user->is_super || $attachment->organization_id === $user->organization_id;
+        return $user->isSuper() || $attachment->organization_id === $user->organization_id;
     }
 
     public function delete(User $user, Attachment $attachment): bool
     {
-        return $user->is_super || $attachment->organization_id === $user->organization_id;
+        return $user->isSuper() || $attachment->organization_id === $user->organization_id;
     }
 
     public function updateVisibility(User $user, Attachment $attachment): bool
     {
-        return $user->is_super
+        return $user->isSuper()
             || ($attachment->organization_id === $user->organization_id && ($user->isAdmin() || $user->isManager()));
     }
 }

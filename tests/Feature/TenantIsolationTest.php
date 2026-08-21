@@ -18,7 +18,7 @@ use Tests\TestCase;
  * Tenancy in this app is a single-database, organization-scoped model: every
  * first-class record (jobs, logs, invoices, customers, vehicles, users) carries
  * an `organization_id`, and isolation is enforced per-request by policies
- * (`$user->organization_id === $model->organization_id || $user->is_super`) plus
+ * (`$user->organization_id === $model->organization_id || $user->isSuper()`) plus
  * explicit `->where('organization_id', ...)` query scoping in controllers. There
  * is no global scope; a route that forgets to authorize or scope leaks across
  * tenants. A "super" org (name === 'Reynolds Upkeep', role admin) sees everything.

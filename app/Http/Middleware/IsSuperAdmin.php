@@ -15,7 +15,7 @@ class IsSuperAdmin
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!auth()->user() || !auth()->user()->is_super) {
+        if (!auth()->user() || !auth()->user()->isSuper()) {
             abort(403);
         }
 

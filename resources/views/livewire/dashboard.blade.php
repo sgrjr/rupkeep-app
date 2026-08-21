@@ -258,7 +258,7 @@
         </div>
     </section>
 
-        @if(auth()->user()->is_super)
+        @if(auth()->user()->isSuper())
         <section class="mx-4 sm:mx-6 lg:mx-8 rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm">
             <div class="space-y-4">
                 <div class="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">

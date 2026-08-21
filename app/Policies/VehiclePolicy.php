@@ -12,7 +12,7 @@ class VehiclePolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->organization->is_super || $user->isEmployee();
+        return $user->isSuper() || $user->isEmployee();
     }
 
     /**
@@ -20,7 +20,7 @@ class VehiclePolicy
      */
     public function view(User $user, Vehicle $model): bool
     {
-        return $user->organization_id === $model->organization_id || $user->organization->is_super;
+        return $user->organization_id === $model->organization_id || $user->isSuper();
     }
 
     /**
@@ -28,7 +28,7 @@ class VehiclePolicy
      */
     public function create(User $user): bool
     {
-        return $user->organization->is_super || $user->isAdmin() || $user->isManager();
+        return $user->isSuper() || $user->isAdmin() || $user->isManager();
     }
 
     /**
@@ -36,7 +36,7 @@ class VehiclePolicy
      */
     public function update(User $user, Vehicle $model): bool
     {
-        return ($user->organization_id === $model->organization_id && ($user->isAdmin() || $user->isManager())) || $user->organization->is_super;
+        return ($user->organization_id === $model->organization_id && ($user->isAdmin() || $user->isManager())) || $user->isSuper();
     }
 
     /**
@@ -44,7 +44,7 @@ class VehiclePolicy
      */
     public function delete(User $user, Vehicle $model): bool
     {
-        return ($user->organization_id === $model->organization_id && $user->isAdmin()) || $user->organization->is_super;
+        return ($user->organization_id === $model->organization_id && $user->isAdmin()) || $user->isSuper();
     }
 
     /**
@@ -52,7 +52,7 @@ class VehiclePolicy
      */
     public function restore(User $user, Vehicle $model): bool
     {
-        return ($user->organization_id === $model->organization_id && $user->isAdmin()) || $user->organization->is_super;
+        return ($user->organization_id === $model->organization_id && $user->isAdmin()) || $user->isSuper();
     }
 
     /**
@@ -60,7 +60,7 @@ class VehiclePolicy
      */
     public function forceDelete(User $user, Vehicle $model): bool
     {
-        return ($user->organization_id === $model->organization_id && $user->isAdmin()) || $user->organization->is_super;
+        return ($user->organization_id === $model->organization_id && $user->isAdmin()) || $user->isSuper();
     }
 
 }
