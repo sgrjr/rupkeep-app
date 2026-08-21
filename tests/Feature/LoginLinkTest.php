@@ -18,6 +18,10 @@ use Tests\TestCase;
  * The request form at /login-code issues a single login_codes row carrying two
  * secrets: the typed `code` and the emailed `link_token`. They share one
  * `used_at`, so redeeming either retires both.
+ *
+ * The link is redeemed in two steps on purpose: GET /login-link/{token} only
+ * renders a confirm button, and POST spends the token. See
+ * test_get_does_not_spend_the_token for why.
  */
 class LoginLinkTest extends TestCase
 {
@@ -48,31 +52,82 @@ class LoginLinkTest extends TestCase
         });
     }
 
-    public function test_clicking_the_link_signs_the_user_in_and_burns_the_token(): void
+    /**
+     * The reason the flow has an interstitial at all. Corporate mail scanners
+     * (Outlook Safe Links and friends) issue a GET against every URL in an
+     * email. If that GET signed the user in, the scanner would spend the
+     * single-use token and the human would arrive to a dead link.
+     */
+    public function test_get_does_not_spend_the_token(): void
+    {
+        $user = $this->staff();
+        $code = app(LoginCodeService::class)->generate($user);
+
+        // Three prefetches, as an aggressive scanner might.
+        for ($i = 0; $i < 3; $i++) {
+            $this->get(route('login-link', $code->link_token))->assertOk();
+        }
+
+        $this->assertGuest();
+        $this->assertFalse($code->fresh()->isUsed());
+
+        // The human then clicks through and still gets in.
+        $this->post(route('login-link.confirm', $code->link_token))
+            ->assertRedirect('/dashboard');
+
+        $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_confirm_page_names_the_account_being_signed_into(): void
     {
         $user = $this->staff();
         $code = app(LoginCodeService::class)->generate($user);
 
         $this->get(route('login-link', $code->link_token))
+            ->assertOk()
+            ->assertSee($user->name)
+            ->assertSee($user->email)
+            ->assertSee(route('login-link.confirm', $code->link_token));
+    }
+
+    public function test_confirming_signs_the_user_in_and_burns_the_token(): void
+    {
+        $user = $this->staff();
+        $code = app(LoginCodeService::class)->generate($user);
+
+        $this->post(route('login-link.confirm', $code->link_token))
             ->assertRedirect('/dashboard');
 
         $this->assertAuthenticatedAs($user);
         $this->assertTrue($code->fresh()->isUsed());
     }
 
-    public function test_a_second_click_is_rejected(): void
+    public function test_a_second_confirm_is_rejected(): void
     {
         $user = $this->staff();
         $code = app(LoginCodeService::class)->generate($user);
 
-        $this->get(route('login-link', $code->link_token));
+        $this->post(route('login-link.confirm', $code->link_token));
+        $this->post(route('logout'));
+
+        $this->post(route('login-link.confirm', $code->link_token))
+            ->assertRedirect(route('login-code.create'))
+            ->assertSessionHas('warning');
+
+        $this->assertGuest();
+    }
+
+    public function test_spent_link_shows_the_request_form_not_the_confirm_page(): void
+    {
+        $user = $this->staff();
+        $code = app(LoginCodeService::class)->generate($user);
+
+        $this->post(route('login-link.confirm', $code->link_token));
         $this->post(route('logout'));
 
         $this->get(route('login-link', $code->link_token))
             ->assertRedirect(route('login-code.create'))
             ->assertSessionHas('warning');
-
-        $this->assertGuest();
     }
 
     public function test_expired_link_is_rejected(): void
@@ -84,12 +139,18 @@ class LoginLinkTest extends TestCase
         $this->get(route('login-link', $code->link_token))
             ->assertRedirect(route('login-code.create'));
 
+        $this->post(route('login-link.confirm', $code->link_token))
+            ->assertRedirect(route('login-code.create'));
+
         $this->assertGuest();
     }
 
     public function test_unknown_token_is_rejected(): void
     {
         $this->get(route('login-link', str_repeat('z', 64)))
+            ->assertRedirect(route('login-code.create'));
+
+        $this->post(route('login-link.confirm', str_repeat('z', 64)))
             ->assertRedirect(route('login-code.create'));
 
         $this->assertGuest();
@@ -114,12 +175,12 @@ class LoginLinkTest extends TestCase
         $this->assertGuest();
     }
 
-    public function test_clicking_the_link_invalidates_the_code(): void
+    public function test_confirming_the_link_invalidates_the_code(): void
     {
         $user = $this->staff();
         $code = app(LoginCodeService::class)->generate($user);
 
-        $this->get(route('login-link', $code->link_token));
+        $this->post(route('login-link.confirm', $code->link_token));
         $this->post(route('logout'));
 
         $this->from(route('login-code.verify-form'))
@@ -136,7 +197,7 @@ class LoginLinkTest extends TestCase
 
         $code = app(LoginCodeService::class)->generate($manager);
 
-        $this->get(route('login-link', $code->link_token))
+        $this->post(route('login-link.confirm', $code->link_token))
             ->assertRedirect(route('my.jobs.index'));
 
         $this->assertAuthenticatedAs($manager);
@@ -150,7 +211,7 @@ class LoginLinkTest extends TestCase
 
         $code = app(LoginCodeService::class)->generate($customerUser);
 
-        $this->get(route('login-link', $code->link_token))
+        $this->post(route('login-link.confirm', $code->link_token))
             ->assertRedirect(route('customer.invoices.index'));
 
         $this->assertAuthenticatedAs($customerUser);

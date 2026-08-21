@@ -38,6 +38,8 @@ Primary color: `#f9b104` orange (on-brand construction theme).
 
 **Amended (TASK-319, Aug 2026):** Passwordless sign-in is no longer customer-only and no longer code-only. One request form at `/login-code` is open to **every** role and issues a single `login_codes` row carrying two secrets — a high-entropy `link_token` for the one-click link emailed to the user, and the short `code` they can type instead if the link is mangled in transit. Both share one `used_at`, so redeeming either retires the other. Expiry is **2 hours** for both (was 24h), and requests are limited to **3 per email per hour**. Password login is unchanged and remains the primary path; this is an alternative, not a replacement.
 
+The emailed link redeems in two steps: `GET /login-link/{token}` only renders a "Sign me in" button naming the account, and the `POST` behind that button is what actually spends the token. This is deliberate — corporate mail scanners follow every URL in an email, and a GET that logged the user straight in would let a scanner burn a single-use token before the human ever clicked.
+
 **Permissions:** Whitelist-based. A customer can:
 - View their own organization's invoices (index + detail)
 - Comment on any of their invoices

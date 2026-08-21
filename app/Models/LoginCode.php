@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Carbon\CarbonInterval;
 use Illuminate\Support\Carbon;
 
 class LoginCode extends Model
@@ -56,6 +57,28 @@ class LoginCode extends Model
     public function markUsed(): void
     {
         $this->forceFill(['used_at' => now()])->save();
+    }
+
+    /**
+     * How long is left, in words: "2 hours", "45 minutes".
+     *
+     * Rounds UP rather than using diffForHumans() directly, which truncates:
+     * a code minted two hours ago-minus-a-second reads as "1 hour", which
+     * understates the window every single time and reads as a bug to the user.
+     */
+    public function expiresInWords(): ?string
+    {
+        if (!$this->expires_at instanceof Carbon) {
+            return null;
+        }
+
+        $minutes = (int) ceil(now()->diffInMinutes($this->expires_at, false));
+
+        if ($minutes <= 0) {
+            return null;
+        }
+
+        return CarbonInterval::minutes($minutes)->cascade()->forHumans(['parts' => 1]);
     }
 
     protected function remainingMinutes(): Attribute

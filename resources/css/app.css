@@ -284,12 +284,18 @@ input:where([type='submit']):hover {
     border: solid 1px var(--white);
 }
 
-.dark-theme button, .dark-theme .dropdown-link a, .dark-theme .dropdown-link button, .dark-theme input:where([type='submit']), .dark-theme .button {
+/* TASK-319: skip buttons that declare their own Tailwind background.
+   `.dark-theme button` (specificity 0,1,1) outranks a single utility class
+   like `.bg-orange-500` (0,1,0), so this blanket rule was repainting every
+   primary button gray-300 while the component kept `text-white` - about 1.5:1
+   contrast, effectively invisible. The blanket treatment is meant for buttons
+   that have NOT said what they should look like; one that has, wins. */
+.dark-theme button:not([class*="bg-"]), .dark-theme .dropdown-link a, .dark-theme .dropdown-link button:not([class*="bg-"]), .dark-theme input:where([type='submit']):not([class*="bg-"]), .dark-theme .button:not([class*="bg-"]) {
     border:solid 1px var(--white);
     background-color: var(--white);
 }
 
-.dark-theme button:hover, .dark-theme .dropdown-link a:hover, .dark-theme .dropdown-link button:hover, .dark-theme .dark-theme input:where([type='submit']):hover, .dark-theme .button:hover {
+.dark-theme button:not([class*="bg-"]):hover, .dark-theme .dropdown-link a:hover, .dark-theme .dropdown-link button:not([class*="bg-"]):hover, .dark-theme .dark-theme input:where([type='submit']):not([class*="bg-"]):hover, .dark-theme .button:not([class*="bg-"]):hover {
     color:var(--main-text-color);
     background-color: var(--main-background-color);
 }

@@ -158,6 +158,28 @@ class LoginCodeTest extends TestCase
     }
 
     /**
+     * TASK-319 - a 2-hour window must read as "2 hours". Carbon's
+     * diffForHumans() truncates, so a code minted 120 minutes ago-minus-a-
+     * second reported "1 hour" - understating the window on every single
+     * send, in both the email and the confirm page.
+     */
+    public function test_expiry_wording_rounds_up_rather_than_truncating(): void
+    {
+        Config::set('login-codes.expires_after_minutes', 120);
+
+        $organization = Organization::factory()->create();
+        $user = User::factory()->standard()->forOrganization($organization)->create();
+
+        $code = app(LoginCodeService::class)->generate($user);
+
+        $this->assertSame('2 hours', $code->expiresInWords());
+
+        $this->get(route('login-link', $code->link_token))
+            ->assertOk()
+            ->assertSee('This link expires in 2 hours.');
+    }
+
+    /**
      * TASK-319 — the code is typed off a screen, so it must be exactly the
      * configured length and drawn from an unambiguous alphabet. The previous
      * implementation regex-stripped a mixed-case random string, which silently

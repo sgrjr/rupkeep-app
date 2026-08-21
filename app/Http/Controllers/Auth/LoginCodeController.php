@@ -95,24 +95,58 @@ class LoginCodeController extends Controller
     }
 
     /**
-     * Redeem a one-click sign-in link from an email.
+     * Show the sign-in link confirmation page.
+     *
+     * Deliberately does NOT spend the token. Mail scanners (Outlook Safe
+     * Links and friends) follow every URL in an email, and a GET that logged
+     * the user straight in would let a scanner burn a single-use token before
+     * the human ever clicked - the standard magic-link failure mode. The token
+     * is only spent by the POST below, which needs a real form submission and
+     * a valid CSRF token.
      */
     public function link(Request $request, string $token)
+    {
+        $loginCode = $this->service->findLiveLinkToken($token);
+
+        if (!$loginCode) {
+            return $this->deadLink();
+        }
+
+        return view('auth.login-link-confirm', [
+            'token' => $token,
+            'user' => $loginCode->user,
+            'expirySentence' => $this->expirySentence($loginCode),
+        ]);
+    }
+
+    /**
+     * Spend the token and sign the user in. Reached only from the button on
+     * the confirmation page above.
+     */
+    public function confirm(Request $request, string $token)
     {
         $user = $this->service->consumeLinkToken($token);
 
         if (!$user) {
-            // A spent or stale link is a dead end otherwise — send them back to
-            // the request form with a way out rather than an error page.
-            // Flashed as a warning, not a status: this is a soft failure, and
-            // the green success styling would read as "it worked".
-            return redirect()->route('login-code.create')->with(
-                'warning',
-                __('That sign-in link has already been used or has expired. Enter your email below and we will send a new one.')
-            );
+            return $this->deadLink();
         }
 
         return $this->signIn($request, $user);
+    }
+
+    /**
+     * A spent or stale link would otherwise be a dead end - send them back to
+     * the request form with a way out rather than an error page.
+     *
+     * Flashed as a warning, not a status: this is a soft failure, and the
+     * green success styling would read as "it worked".
+     */
+    protected function deadLink()
+    {
+        return redirect()->route('login-code.create')->with(
+            'warning',
+            __('That sign-in link has already been used or has expired. Enter your email below and we will send a new one.')
+        );
     }
 
     /**
@@ -184,15 +218,10 @@ class LoginCodeController extends Controller
 
     protected function expirySentence(LoginCode $code): string
     {
-        if (! $code->expires_at) {
-            return __('This link does not expire.');
-        }
+        $words = $code->expiresInWords();
 
-        return __('This link expires in :time.', [
-            'time' => now()->diffForHumans($code->expires_at, [
-                'syntax' => \Carbon\CarbonInterface::DIFF_ABSOLUTE,
-                'parts' => 1,
-            ]),
-        ]);
+        return $words
+            ? __('This link expires in :time.', ['time' => $words])
+            : __('This link does not expire.');
     }
 }

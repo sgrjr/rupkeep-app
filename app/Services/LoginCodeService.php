@@ -63,24 +63,40 @@ class LoginCodeService
     }
 
     /**
-     * Attempt to consume an emailed sign-in link token and return the user.
+     * Look up a live sign-in link token WITHOUT spending it.
      *
-     * Unlike a typed code this is matched case-sensitively — the token is
-     * never retyped by hand, so there is nothing to be lenient about, and
-     * folding case would throw away entropy.
+     * The GET side of the link flow uses this so that a mail scanner
+     * prefetching the URL cannot burn the token before the human clicks
+     * (TASK-319). Only the confirming POST calls consumeLinkToken().
+     *
+     * Matched case-sensitively: the token is never retyped by hand, so there
+     * is nothing to be lenient about, and folding case would throw away
+     * entropy.
      */
-    public function consumeLinkToken(string $token): ?User
+    public function findLiveLinkToken(string $token): ?LoginCode
     {
         /** @var LoginCode|null $loginCode */
         $loginCode = LoginCode::query()
             ->where('link_token', $token)
             ->first();
 
-        if ($loginCode && ! hash_equals((string) $loginCode->link_token, $token)) {
+        if (!$loginCode || !hash_equals((string) $loginCode->link_token, $token)) {
             return null;
         }
 
-        return $this->redeem($loginCode);
+        if ($loginCode->isUsed() || $loginCode->isExpired()) {
+            return null;
+        }
+
+        return $loginCode;
+    }
+
+    /**
+     * Attempt to consume an emailed sign-in link token and return the user.
+     */
+    public function consumeLinkToken(string $token): ?User
+    {
+        return $this->redeem($this->findLiveLinkToken($token));
     }
 
     /**

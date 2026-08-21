@@ -201,7 +201,10 @@ Route::middleware([
         Route::post('/login-code', [\App\Http\Controllers\Auth\LoginCodeController::class, 'store'])->middleware('throttle:login-code')->name('login-code.store');
         Route::get('/login-code/verify', [\App\Http\Controllers\Auth\LoginCodeController::class, 'verifyForm'])->name('login-code.verify-form');
         Route::post('/login-code/verify', [\App\Http\Controllers\Auth\LoginCodeController::class, 'verify'])->middleware('throttle:login-code-verify')->name('login-code.verify');
+        // GET renders a confirm button and does NOT spend the token; only the
+        // POST does, so a mail scanner prefetching the URL cannot burn it.
         Route::get('/login-link/{token}', [\App\Http\Controllers\Auth\LoginCodeController::class, 'link'])->middleware('throttle:login-link')->name('login-link');
+        Route::post('/login-link/{token}', [\App\Http\Controllers\Auth\LoginCodeController::class, 'confirm'])->middleware('throttle:login-link')->name('login-link.confirm');
     });
 
     Route::prefix('portal')->group(function () {
