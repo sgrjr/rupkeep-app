@@ -167,6 +167,10 @@ Route::middleware([
 
     Route::post('my/invoices/create', [MyInvoicesController::class, 'store'])->name('my.invoices.store');
     Route::get('my/invoices/{invoice}/edit', [MyInvoicesController::class, 'edit'])->name('my.invoices.edit');
+    // Only PUT was bound to this URI, so the bare show URL — the natural thing
+    // to type or paste — was a hard 405 rather than a page (TASK-370). The
+    // invoice has no distinct read-only staff view; edit IS the staff view.
+    Route::get('my/invoices/{invoice}', [MyInvoicesController::class, 'show'])->name('my.invoices.show');
     Route::put('my/invoices/{invoice}', [MyInvoicesController::class, 'update'])->name('my.invoices.update');
     Route::post('my/invoices/{invoice}/apply-late-fees', [MyInvoicesController::class, 'applyLateFees'])->name('my.invoices.apply-late-fees');
     Route::post('my/invoices/{invoice}/toggle-marked-for-attention', [MyInvoicesController::class, 'toggleMarkedForAttention'])->name('my.invoices.toggle-marked-for-attention');

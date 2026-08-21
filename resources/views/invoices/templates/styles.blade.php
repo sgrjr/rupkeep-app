@@ -1,6 +1,32 @@
 <style>
+    /*
+     * Invoice type scale (TASK-369). The document was set noticeably larger
+     * than an invoice needs to be, which pushed content down the page and cost
+     * a second sheet on longer jobs. Every size here is one step down from the
+     * original; the smallest uppercase labels are floored so they stay legible
+     * in print rather than scaling into illegibility.
+     *
+     * Scoped entirely to .invoice-doc — the customer portal renders this
+     * document inside the app's guest layout, so the root font size must not be
+     * touched.
+     */
+
     @page {
         margin: 0;
+    }
+
+    /*
+     * Border-box everywhere in the invoice document (TASK-369). Without this,
+     * any element combining an explicit width with padding renders wider than
+     * its container and gets sliced off by the .page overflow:hidden — which is
+     * exactly how the bill-to block ended up cut mid-word ("South Portland,
+     * Maine 4…") on the print view.
+     */
+    .invoice-doc,
+    .invoice-doc *,
+    .invoice-doc *::before,
+    .invoice-doc *::after {
+        box-sizing: border-box;
     }
 
     :root {
@@ -82,7 +108,7 @@
 
     .invoice-doc header h1 {
         margin: 0 0 0.5rem;
-        font-size: 2.2rem;
+        font-size: 1.87rem;
         font-weight: 700;
         letter-spacing: -0.02em;
         color: var(--invoice-text);
@@ -90,7 +116,7 @@
 
     .invoice-doc header .company-name-large {
         margin: 0 0 0.25rem;
-        font-size: 1.8rem;
+        font-size: 1.53rem;
         font-weight: 700;
         letter-spacing: -0.02em;
         color: var(--invoice-text);
@@ -99,13 +125,13 @@
 
     .invoice-doc header .company-tagline {
         margin: 0 0 0.75rem;
-        font-size: 0.85rem;
+        font-size: 0.72rem;
         color: var(--invoice-accent);
         font-weight: 500;
     }
 
     .invoice-doc header .company-info {
-        font-size: 0.9rem;
+        font-size: 0.77rem;
         color: var(--invoice-text);
         line-height: 1.5;
         margin-top: 0.5rem;
@@ -117,7 +143,7 @@
 
     .invoice-doc header .invoice-summary-title {
         margin: 0 0 0.5rem;
-        font-size: 1.8rem;
+        font-size: 1.53rem;
         font-weight: 700;
         letter-spacing: -0.02em;
         color: var(--invoice-text);
@@ -125,7 +151,7 @@
     }
 
     .invoice-doc header .summary-id {
-        font-size: 0.9rem;
+        font-size: 0.77rem;
         font-weight: 600;
         color: var(--invoice-text);
         margin-bottom: 1rem;
@@ -139,7 +165,7 @@
 
     .invoice-doc header .bill-to-label {
         margin: 0 0 0.5rem;
-        font-size: 0.75rem;
+        font-size: 0.65rem;
         text-transform: uppercase;
         letter-spacing: 0.1em;
         font-weight: 700;
@@ -148,7 +174,7 @@
     }
 
     .invoice-doc header .bill-to-info {
-        font-size: 0.9rem;
+        font-size: 0.77rem;
         color: var(--invoice-text);
         line-height: 1.5;
     }
@@ -159,27 +185,27 @@
     }
 
     .invoice-doc header .bill-to-contact {
-        font-size: 0.9rem;
+        font-size: 0.77rem;
         color: var(--invoice-text);
         line-height: 1.5;
         margin-bottom: 0.15rem;
     }
 
     .invoice-doc header .bill-to-address {
-        font-size: 0.9rem;
+        font-size: 0.77rem;
         color: var(--invoice-text);
         line-height: 1.5;
         margin-bottom: 0.15rem;
     }
 
     .invoice-doc header .organization-info {
-        font-size: 0.9rem;
+        font-size: 0.77rem;
         color: var(--invoice-text);
         line-height: 1.5;
     }
 
     .invoice-doc header .organization-name {
-        font-size: 1.1rem;
+        font-size: 0.94rem;
         font-weight: 700;
         color: var(--invoice-text);
         margin-bottom: 0.5rem;
@@ -187,14 +213,14 @@
     }
 
     .invoice-doc header .organization-contact {
-        font-size: 0.9rem;
+        font-size: 0.77rem;
         color: var(--invoice-text);
         line-height: 1.5;
         margin-bottom: 0.15rem;
     }
 
     .invoice-doc header .organization-address {
-        font-size: 0.9rem;
+        font-size: 0.77rem;
         color: var(--invoice-text);
         line-height: 1.5;
         margin-bottom: 0.15rem;
@@ -202,7 +228,7 @@
 
     .invoice-doc header .invoice-title-right {
         margin: 0 0 0.5rem;
-        font-size: 1.8rem;
+        font-size: 1.53rem;
         font-weight: 700;
         letter-spacing: -0.02em;
         color: var(--invoice-text);
@@ -210,7 +236,7 @@
     }
 
     .invoice-doc header .invoice-date {
-        font-size: 0.9rem;
+        font-size: 0.77rem;
         color: var(--invoice-text);
         margin-top: 0.25rem;
         text-align: right;
@@ -222,7 +248,7 @@
     }
 
     .invoice-doc header .invoice-number {
-        font-size: 1rem;
+        font-size: 0.85rem;
         font-weight: 600;
         color: var(--invoice-text);
         margin-bottom: 0.25rem;
@@ -234,7 +260,7 @@
     }
 
     .invoice-doc header .company-name {
-        font-size: 1.3rem;
+        font-size: 1.1rem;
         font-weight: 700;
         color: var(--invoice-text);
         margin-bottom: 0.5rem;
@@ -242,14 +268,14 @@
     }
 
     .invoice-doc header .company-address {
-        font-size: 0.9rem;
+        font-size: 0.77rem;
         color: var(--invoice-text);
         line-height: 1.5;
         margin-bottom: 0.15rem;
     }
 
     .invoice-doc header .company-contact {
-        font-size: 0.85rem;
+        font-size: 0.72rem;
         color: var(--invoice-muted);
         line-height: 1.5;
         margin-top: 0.5rem;
@@ -257,7 +283,7 @@
 
     .invoice-doc .muted {
         color: var(--invoice-muted);
-        font-size: 0.9rem;
+        font-size: 0.77rem;
     }
 
     .invoice-doc .meta {
@@ -278,7 +304,7 @@
 
     .invoice-doc .meta h2 {
         margin: 0 0 0.75rem;
-        font-size: 0.75rem;
+        font-size: 0.65rem;
         text-transform: uppercase;
         letter-spacing: 0.1em;
         font-weight: 700;
@@ -288,7 +314,7 @@
     .invoice-doc .meta p {
         margin: 0.35rem 0;
         line-height: 1.5;
-        font-size: 0.9rem;
+        font-size: 0.77rem;
         color: var(--invoice-text);
     }
 
@@ -310,7 +336,7 @@
 
     .invoice-doc thead th {
         text-align: left;
-        font-size: 0.75rem;
+        font-size: 0.65rem;
         text-transform: uppercase;
         letter-spacing: 0.1em;
         font-weight: 700;
@@ -335,7 +361,7 @@
 
     .invoice-doc tbody td {
         padding: 0.75rem;
-        font-size: 0.9rem;
+        font-size: 0.77rem;
         color: var(--invoice-text);
     }
 
@@ -367,29 +393,34 @@
         text-align: right;
         font-variant-numeric: tabular-nums;
         font-weight: 700;
-        font-size: 1rem;
+        font-size: 0.85rem;
         color: var(--invoice-text);
     }
 
     .invoice-doc .summary {
-        margin-top: 1.5rem;
+        margin-top: 1rem;
         display: flex;
         justify-content: flex-end;
     }
 
+    /*
+     * The summary is a closing recap, not the body of the invoice — it was
+     * taking a disproportionate share of the page, so the padding and type
+     * scale are deliberately tighter than the line-item table above it.
+     */
     .invoice-doc .summary section {
         border: 1px solid #e2e8f0;
         border-radius: 8px;
-        padding: 1.5rem;
+        padding: 0.85rem 1rem;
         background: #f8fafc;
-        min-width: 280px;
+        min-width: 240px;
     }
 
     .invoice-doc .summary h3 {
-        margin: 0 0 1rem;
-        font-size: 0.85rem;
+        margin: 0 0 0.5rem;
+        font-size: 0.65rem;
         text-transform: uppercase;
-        letter-spacing: 0.1em;
+        letter-spacing: 0.08em;
         font-weight: 700;
         color: var(--invoice-muted);
     }
@@ -397,16 +428,16 @@
     .invoice-doc .summary p {
         display: flex;
         justify-content: space-between;
-        margin: 0.5rem 0;
-        font-size: 0.95rem;
+        margin: 0.25rem 0;
+        font-size: 0.68rem;
         color: var(--invoice-text);
     }
 
     .invoice-doc .summary p:last-of-type {
-        margin-top: 1rem;
-        padding-top: 1rem;
-        border-top: 2px solid #e2e8f0;
-        font-size: 1.1rem;
+        margin-top: 0.5rem;
+        padding-top: 0.5rem;
+        border-top: 1px solid #e2e8f0;
+        font-size: 0.81rem;
         font-weight: 700;
     }
 
@@ -419,7 +450,7 @@
         margin-top: 1.5rem;
         padding: 1rem 1.5rem;
         border-top: 1px solid var(--invoice-border);
-        font-size: 0.9rem;
+        font-size: 0.77rem;
         color: var(--invoice-text);
         background: rgba(249, 177, 4, 0.08);
     }
@@ -436,14 +467,14 @@
 
     .invoice-attachments__header h2 {
         margin: 0;
-        font-size: 1.1rem;
+        font-size: 0.94rem;
         font-weight: 600;
         color: var(--invoice-text);
     }
 
     .invoice-attachments__header p {
         margin-top: 0.25rem;
-        font-size: 0.9rem;
+        font-size: 0.77rem;
         color: var(--invoice-muted);
     }
 
@@ -492,7 +523,7 @@
 
     .invoice-attachments__meta {
         margin: 0.2rem 0 0;
-        font-size: 0.75rem;
+        font-size: 0.65rem;
         text-transform: uppercase;
         letter-spacing: 0.08em;
         color: var(--invoice-muted);
@@ -506,7 +537,7 @@
         border-radius: 9999px;
         border: 1px solid rgba(249, 177, 4, 0.4);
         color: var(--invoice-accent);
-        font-size: 0.75rem;
+        font-size: 0.65rem;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.05em;
@@ -527,7 +558,7 @@
         border: 1px dashed rgba(148, 163, 184, 0.6);
         background: rgba(248, 250, 252, 0.65);
         color: var(--invoice-muted);
-        font-size: 0.9rem;
+        font-size: 0.77rem;
     }
 
     .invoice-portal-footer {
@@ -537,7 +568,7 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        font-size: 0.8rem;
+        font-size: 0.68rem;
         color: rgba(100, 116, 139, 0.9);
         gap: 1rem;
     }
@@ -571,7 +602,7 @@
         background: var(--invoice-accent);
         color: #fff;
         font-weight: 600;
-        font-size: 0.85rem;
+        font-size: 0.72rem;
         text-decoration: none;
         border: none;
         cursor: pointer;
@@ -614,7 +645,7 @@
         text-align: left;
         font-weight: 400;
         padding: 0.3rem 0.75rem 0.3rem 0;
-        font-size: 0.9rem;
+        font-size: 0.77rem;
         color: var(--invoice-text);
     }
 
@@ -630,7 +661,7 @@
     .invoice-doc .job-info__label {
         display: block;
         margin-bottom: 0.1rem;
-        font-size: 0.7rem;
+        font-size: 0.65rem;
         text-transform: uppercase;
         letter-spacing: 0.08em;
         font-weight: 700;
@@ -640,7 +671,7 @@
     .invoice-doc .job-info__canceled {
         margin-top: 0.5rem;
         font-weight: 700;
-        font-size: 0.85rem;
+        font-size: 0.72rem;
         text-transform: uppercase;
         letter-spacing: 0.05em;
         color: #dc2626;
@@ -675,21 +706,85 @@
         box-shadow: none;
     }
 
+    /*
+     * The rules above are unconditional because dompdf ignores @media print
+     * (TASK-340) — but they were also stretching the on-screen preview across
+     * the full browser window, so /print looked nothing like the PDF it is
+     * previewing (TASK-369). `--screen` is applied only by the browser route,
+     * never by the dompdf one, so the preview gets a letter-width page back
+     * while the generated PDF stays full-bleed.
+     */
+    .invoice-doc--print.invoice-doc--screen {
+        background: var(--invoice-background);
+        padding: 2rem 1rem;
+    }
+
+    .invoice-doc--print.invoice-doc--screen .page {
+        width: min(8.5in, 100%);
+        margin: 0 auto;
+        border: 1px solid var(--invoice-border);
+        border-radius: 12px;
+        box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.15);
+    }
+
+    @media print {
+        .invoice-doc--print.invoice-doc--screen {
+            background: #ffffff;
+            padding: 0;
+        }
+
+        .invoice-doc--print.invoice-doc--screen .page {
+            width: 100%;
+            border: none;
+            border-radius: 0;
+            box-shadow: none;
+        }
+    }
+
     /* dompdf ignores flexbox; lay the header out as a fixed table so the two
        columns sit side by side instead of stacking. */
     .invoice-doc--print header {
         display: table;
         width: 100%;
         table-layout: fixed;
-        padding: 1rem 1.25rem;
+        padding: 0;
         gap: 0;
     }
 
+    /*
+     * The padding lives on the cells, not the table (TASK-369). A `display:
+     * table` at width:100% WITH horizontal padding measures 100% + 2.5rem, so
+     * the header ran 40px past .page and its overflow:hidden clipped the
+     * right-hand bill-to column. Padding the cells keeps the same visual inset
+     * without ever exceeding the container, in any renderer.
+     */
     .invoice-doc--print header .header-left,
     .invoice-doc--print header .header-right {
         display: table-cell;
         width: 50%;
         vertical-align: top;
+        padding: 1rem 1.25rem;
+    }
+
+    .invoice-doc--print header .header-left {
+        padding-right: 0.625rem;
+    }
+
+    .invoice-doc--print header .header-right {
+        padding-left: 0.625rem;
+    }
+
+    /*
+     * Long unbroken values (company names, street addresses, emails) must wrap
+     * rather than run off the edge of a fixed-width table cell.
+     */
+    .invoice-doc--print header .header-left,
+    .invoice-doc--print header .header-right,
+    .invoice-doc .bill-to-info,
+    .invoice-doc .organization-info,
+    .invoice-doc header .company-info {
+        overflow-wrap: break-word;
+        word-wrap: break-word;
     }
 
     .invoice-doc--print header .header-right {
@@ -710,18 +805,41 @@
     /* A tighter, single-line company name reads more like a letterhead than the
        oversized heading that wrapped inside the half-width header column. */
     .invoice-doc--print header .company-name-large {
-        font-size: 1.35rem;
+        font-size: 1.15rem;
         line-height: 1.25;
         margin-bottom: 0.15rem;
     }
 
     .invoice-doc--print header .organization-name {
-        font-size: 1.25rem;
+        font-size: 1.06rem;
     }
 
     .invoice-doc--print header .invoice-title-right,
     .invoice-doc--print header .invoice-summary-title {
-        font-size: 1.6rem;
+        font-size: 1.36rem;
+    }
+
+    /*
+     * Summary rows are flex label/value pairs, and dompdf ignores flexbox, so
+     * in the PDF they collapsed to inline text — "Subtotal $357.00" run
+     * together instead of the label left and the amount right (TASK-369). Same
+     * fix as the header above: lay them out as a table for the PDF only, so the
+     * browser keeps its flex layout untouched.
+     */
+    .invoice-doc--print .summary p {
+        display: table;
+        width: 100%;
+        table-layout: fixed;
+    }
+
+    .invoice-doc--print .summary p > span:first-child {
+        display: table-cell;
+        text-align: left;
+    }
+
+    .invoice-doc--print .summary p > span:last-child {
+        display: table-cell;
+        text-align: right;
     }
 
     @media print {
@@ -772,7 +890,7 @@
             max-width: 150px;
         }
         .invoice-doc header h1 {
-            font-size: 1.8rem;
+            font-size: 1.53rem;
         }
         .invoice-doc .meta {
             padding: 1.5rem 1.5rem;
@@ -786,18 +904,18 @@
         }
         .invoice-doc thead th {
             padding: 0.6rem 0.75rem;
-            font-size: 0.7rem;
+            font-size: 0.65rem;
         }
         .invoice-doc tbody td {
             padding: 0.75rem;
-            font-size: 0.85rem;
+            font-size: 0.72rem;
         }
         .invoice-doc .summary {
-            margin-top: 1.5rem;
+            margin-top: 0.9rem;
         }
         .invoice-doc .summary section {
-            padding: 1.25rem;
-            min-width: 240px;
+            padding: 0.75rem 0.9rem;
+            min-width: 210px;
         }
         .invoice-attachments,
         .invoice-support-message,
@@ -816,7 +934,7 @@
     .invoice-print-button {
         width: 100%;
         justify-content: center;
-        font-size: 0.8rem;
+        font-size: 0.68rem;
         padding: 0.65rem 1.1rem;
     }
 

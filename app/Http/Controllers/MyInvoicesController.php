@@ -25,6 +25,16 @@ class MyInvoicesController extends Controller
 
       return view('invoices.edit', compact('invoice'));
     }
+    /**
+     * The bare /my/invoices/{invoice} URL. There is no separate read-only staff
+     * view — edit is the staff view — so send them there rather than 405 on a
+     * URL that looks like it should work (TASK-370).
+     */
+    public function show(Invoice $invoice)
+    {
+        return redirect()->route('my.invoices.edit', ['invoice' => $invoice->id]);
+    }
+
     public function print(Request $request, Invoice $invoice)
     {
         $user = $request->user();
@@ -40,6 +50,7 @@ class MyInvoicesController extends Controller
         return view('invoices.print', [
             'invoice' => $invoice,
             'values' => is_array($invoice->values) ? $invoice->values : [],
+            'forPdf' => false,
         ]);
     }
 
@@ -67,6 +78,7 @@ class MyInvoicesController extends Controller
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('invoices.print', [
             'invoice' => $invoice,
             'values' => $values,
+            'forPdf' => true,
         ]);
 
         // Set paper size and orientation

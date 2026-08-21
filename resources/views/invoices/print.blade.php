@@ -6,7 +6,9 @@
     <title>{{ __('Invoice #:number', ['number' => $invoice->invoice_number]) }}</title>
     @include('invoices.templates.styles')
 </head>
-<body class="invoice-doc invoice-doc--print">
+{{-- $forPdf is set only by the dompdf route. The browser preview adds
+     --screen, which restores a letter-width page; see styles.blade.php. --}}
+<body class="invoice-doc invoice-doc--print @unless($forPdf ?? false) invoice-doc--screen @endunless">
     @php
         $values = is_array($values ?? $invoice->values) ? ($values ?? $invoice->values) : [];
     @endphp
