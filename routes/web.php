@@ -193,11 +193,15 @@ Route::middleware([
 
     Route::get('/pricing', [PricingController::class, 'show'])->name('pricing');
 
+    // Passwordless sign-in (TASK-319). One request form issues one row that is
+    // redeemable either by clicking the emailed link or by typing the code.
+    // Limiter definitions live in App\Providers\FortifyServiceProvider.
     Route::middleware('guest')->group(function () {
         Route::get('/login-code', [\App\Http\Controllers\Auth\LoginCodeController::class, 'create'])->name('login-code.create');
-        Route::post('/login-code', [\App\Http\Controllers\Auth\LoginCodeController::class, 'store'])->name('login-code.store');
+        Route::post('/login-code', [\App\Http\Controllers\Auth\LoginCodeController::class, 'store'])->middleware('throttle:login-code')->name('login-code.store');
         Route::get('/login-code/verify', [\App\Http\Controllers\Auth\LoginCodeController::class, 'verifyForm'])->name('login-code.verify-form');
-        Route::post('/login-code/verify', [\App\Http\Controllers\Auth\LoginCodeController::class, 'verify'])->name('login-code.verify');
+        Route::post('/login-code/verify', [\App\Http\Controllers\Auth\LoginCodeController::class, 'verify'])->middleware('throttle:login-code-verify')->name('login-code.verify');
+        Route::get('/login-link/{token}', [\App\Http\Controllers\Auth\LoginCodeController::class, 'link'])->middleware('throttle:login-link')->name('login-link');
     });
 
     Route::prefix('portal')->group(function () {

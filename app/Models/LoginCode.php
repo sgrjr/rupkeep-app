@@ -15,6 +15,7 @@ class LoginCode extends Model
     protected $fillable = [
         'user_id',
         'code',
+        'link_token',
         'expires_at',
         'used_at',
         'ip_address',

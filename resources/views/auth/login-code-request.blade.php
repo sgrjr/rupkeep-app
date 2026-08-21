@@ -7,8 +7,14 @@
         </x-slot>
 
         <div class="mb-4 text-sm text-gray-600">
-            {{ __('Enter your email and we will send you a one-time login code.') }}
+            {{ __('Enter your email and we will send you a one-click sign-in link — plus a code you can type instead, if the link gives you trouble.') }}
         </div>
+
+        @if (session('warning'))
+            <div class="mb-4 font-medium text-sm text-amber-700">
+                {{ session('warning') }}
+            </div>
+        @endif
 
         @if (session('status'))
             <div class="mb-4 font-medium text-sm text-green-600">
@@ -37,7 +43,7 @@
 
             <div class="flex items-center justify-end mt-4">
                 <x-button>
-                    {{ __('Send login code') }}
+                    {{ __('Email me a sign-in link') }}
                 </x-button>
             </div>
         </form>

@@ -35,11 +35,11 @@
                     </div>
 
                     <div class="rounded-2xl border border-orange-200 bg-orange-50/60 p-6 shadow-sm">
-                        <h2 class="text-sm font-semibold uppercase tracking-wide text-orange-600">{{ __('Request one-time code') }}</h2>
-                        <p class="mt-2 text-sm text-orange-700">{{ __('No password handy? Get a secure code sent to your inbox. Codes expire quickly for privacy.') }}</p>
+                        <h2 class="text-sm font-semibold uppercase tracking-wide text-orange-600">{{ __('Sign in without a password') }}</h2>
+                        <p class="mt-2 text-sm text-orange-700">{{ __('No password handy? We will email you a one-click sign-in link, with a code you can type instead. Both expire quickly for privacy.') }}</p>
                         <a href="{{ $loginCodeUrl }}"
                            class="mt-4 inline-flex items-center gap-2 rounded-full border border-orange-300 bg-white px-4 py-2 text-sm font-semibold text-orange-600 shadow-sm transition hover:border-orange-400 hover:text-orange-700">
-                            {{ __('Email me a login code') }}
+                            {{ __('Email me a sign-in link') }}
                         </a>
                     </div>
                 </div>

@@ -34,7 +34,9 @@ Primary color: `#f9b104` orange (on-brand construction theme).
 
 ## Epic: Customer Portal & Login Codes
 
-**Decision (Oct 2025):** Customers do *not* use traditional email/password. They request a one-time login code (24h expiry default, configurable), then access their invoice index and detail views.
+**Decision (Oct 2025):** Customers do *not* use traditional email/password. They request a one-time code, then access their invoice index and detail views.
+
+**Amended (TASK-319, Aug 2026):** Passwordless sign-in is no longer customer-only and no longer code-only. One request form at `/login-code` is open to **every** role and issues a single `login_codes` row carrying two secrets — a high-entropy `link_token` for the one-click link emailed to the user, and the short `code` they can type instead if the link is mangled in transit. Both share one `used_at`, so redeeming either retires the other. Expiry is **2 hours** for both (was 24h), and requests are limited to **3 per email per hour**. Password login is unchanged and remains the primary path; this is an alternative, not a replacement.
 
 **Permissions:** Whitelist-based. A customer can:
 - View their own organization's invoices (index + detail)

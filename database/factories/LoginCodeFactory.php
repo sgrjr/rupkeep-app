@@ -19,6 +19,7 @@ class LoginCodeFactory extends Factory
         return [
             'user_id' => User::factory(),
             'code' => strtoupper(Str::random(8)),
+            'link_token' => Str::random(64),
             'expires_at' => now()->addMinutes(30),
             'used_at' => null,
             'ip_address' => $this->faker->ipv4(),
