@@ -183,6 +183,10 @@ Route::middleware([
     // Reports
     Route::get('my/reports', [MyReportsController::class, 'index'])->name('my.reports.index')->middleware('staff');
     Route::get('my/reports/annual-vehicle-report', [MyReportsController::class, 'annualVehicleReport'])->name('my.reports.annual-vehicle-report')->middleware('staff');
+    // Impersonation lived outside this group, so an anonymous hit reached a
+    // controller that calls auth()->user()->can(...) on null and 500d instead of
+    // bouncing to login (TASK-373).
+    Route::get('/impersonate/{user}', [MyUsersController::class, 'impersonate'])->name('impersonate');
 });
 
 Route::middleware([
@@ -224,5 +228,3 @@ Route::middleware([
         Route::post('/logout', [\App\Http\Controllers\Admin\SetupController::class, 'logout'])->name('setup.logout');
     });
 });
-
-Route::get('/impersonate/{user}', [MyUsersController::class, 'impersonate'])->name('impersonate');

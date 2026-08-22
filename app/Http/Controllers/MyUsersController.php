@@ -134,6 +134,13 @@ class MyUsersController extends Controller
     {
         $impersonator = auth()->user();
         $user = User::find($id);
+
+        // A stale or hand-typed id used to reach the failure branch below and
+        // read ->name off null, which is a 500 for a signed-in admin (TASK-373).
+        if (! $user) {
+            abort(404);
+        }
+
         if(auth()->user()->can('impersonate', $user)){
             auth()->guard()->logoutCurrentDevice();
             session()->flush();
