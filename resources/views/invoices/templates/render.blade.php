@@ -201,6 +201,7 @@
     $truckDriverName = trim((string) ($values['truck_driver_name'] ?? '')) ?: null;
     $truckNumber = trim((string) ($values['truck_number'] ?? '')) ?: null;
     $trailerNumber = trim((string) ($values['trailer_number'] ?? '')) ?: null;
+    $truckNotes = trim((string) ($values['truck_notes'] ?? '')) ?: null;
     $pickupAddress = ($values['pickup_address'] ?? null) ?: $job?->pickup_address;
     $deliveryAddress = ($values['delivery_address'] ?? null) ?: $job?->delivery_address;
     $canceledAt = $job?->canceled_at;
@@ -337,6 +338,11 @@
                 <td><span class="job-info__label">{{ __('Truck Number') }}</span>{{ $truckNumber ?: '—' }}</td>
                 <td><span class="job-info__label">{{ __('Trailer Number') }}</span>{{ $trailerNumber ?: '—' }}</td>
             </tr>
+            @if($truckNotes)
+            <tr>
+                <td colspan="3"><span class="job-info__label">{{ __('Truck Notes') }}</span>{{ $truckNotes }}</td>
+            </tr>
+            @endif
         </table>
         <table class="job-info__grid job-info__locations">
             <tr>

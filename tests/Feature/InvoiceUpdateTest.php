@@ -245,5 +245,102 @@ class InvoiceUpdateTest extends TestCase
             'invoice_id' => $summary->id,
         ]);
     }
-}
 
+    /**
+     * TASK-382: the edit form had an "Invoice Notes" textarea and a "Truck Notes"
+     * text input both named values[notes]. The later one in the DOM won on submit,
+     * so whatever an admin typed into Invoice Notes - the field that prints as the
+     * Notes block on the invoice - was silently replaced by the (usually blank)
+     * Truck Notes value. Truck Notes now owns values[truck_notes].
+     */
+    public function test_invoice_notes_and_truck_notes_do_not_share_a_field_name(): void
+    {
+        $organization = Organization::factory()->create();
+        $manager = User::factory()->admin()->create([
+            'organization_id' => $organization->id,
+        ]);
+
+        $customer = Customer::factory()->create([
+            'organization_id' => $organization->id,
+        ]);
+
+        $job = PilotCarJob::create([
+            'job_no' => 'JOB-NOTES',
+            'customer_id' => $customer->id,
+            'organization_id' => $organization->id,
+            'rate_code' => 'per_mile_rate_2_00',
+            'rate_value' => '2.00',
+        ]);
+
+        $invoice = Invoice::create([
+            'organization_id' => $organization->id,
+            'customer_id' => $customer->id,
+            'pilot_car_job_id' => $job->id,
+            'values' => ['title' => 'INVOICE', 'total' => 500],
+        ]);
+
+        JobInvoice::create([
+            'invoice_id' => $invoice->id,
+            'pilot_car_job_id' => $job->id,
+        ]);
+
+        $html = $this->actingAs($manager)
+            ->get(route('my.invoices.edit', $invoice))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertSame(
+            1,
+            substr_count($html, 'name="values[notes]"'),
+            'The edit form must post exactly one values[notes] field, or the last one in the DOM silently wins.'
+        );
+        $this->assertSame(1, substr_count($html, 'name="values[truck_notes]"'));
+    }
+
+    /**
+     * TASK-382: the two fields must survive a save independently - filling Truck
+     * Notes must not blank out the invoice Notes block, and vice versa.
+     */
+    public function test_truck_notes_does_not_clobber_invoice_notes_on_save(): void
+    {
+        $organization = Organization::factory()->create();
+        $manager = User::factory()->admin()->create([
+            'organization_id' => $organization->id,
+        ]);
+
+        $customer = Customer::factory()->create([
+            'organization_id' => $organization->id,
+        ]);
+
+        $job = PilotCarJob::create([
+            'job_no' => 'JOB-NOTES-SAVE',
+            'customer_id' => $customer->id,
+            'organization_id' => $organization->id,
+        ]);
+
+        $invoice = Invoice::create([
+            'organization_id' => $organization->id,
+            'customer_id' => $customer->id,
+            'pilot_car_job_id' => $job->id,
+            'values' => ['title' => 'INVOICE'],
+        ]);
+
+        JobInvoice::create([
+            'invoice_id' => $invoice->id,
+            'pilot_car_job_id' => $job->id,
+        ]);
+
+        $this->actingAs($manager)->put(route('my.invoices.update', $invoice), [
+            'paid_in_full' => 'no',
+            'values' => [
+                'notes' => 'Please remit within 30 days.',
+                'truck_notes' => 'Blue Peterbilt, refrigerated',
+            ],
+        ])->assertRedirect(route('my.invoices.edit', $invoice));
+
+        $invoice->refresh();
+
+        $this->assertSame('Please remit within 30 days.', data_get($invoice->values, 'notes'));
+        $this->assertSame('Blue Peterbilt, refrigerated', data_get($invoice->values, 'truck_notes'));
+    }
+}

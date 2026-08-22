@@ -613,7 +613,7 @@
                     </div>
                     <div>
                         <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Truck Notes') }}</label>
-                        <input type="text" name="values[notes]" value="{{ old('values.notes', data_get($values, 'notes')) }}"
+                        <input type="text" name="values[truck_notes]" value="{{ old('values.truck_notes', data_get($values, 'truck_notes')) }}"
                                class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200" />
                     </div>
                     <div>
