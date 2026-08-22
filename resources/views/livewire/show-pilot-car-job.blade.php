@@ -871,6 +871,12 @@
                                     </div>
                                 </div>
 
+                                {{-- TASK-330: add a named one-off charge without leaving the job page.
+                                     It writes to this log -- charges are always a log property. --}}
+                                <div class="mt-4 border-t border-slate-200 pt-4">
+                                    <livewire:log-extra-charges :log="$log" :key="'job-log-extra-charges-'.$log->id" />
+                                </div>
+
                                 <div class="mt-4 text-sm text-slate-600">
                                     <p class="font-semibold text-slate-900">{{ __('Memo') }}</p>
                                     <p class="mt-1 text-slate-500">{{ $log->memo ?? __('No memo recorded.') }}</p>

@@ -1509,6 +1509,7 @@ class PilotCarJob extends Model
             'tolls' =>$this->getTotalTolls($logs),
             'hotel' =>$this->getTotalHotel($logs),
             'extra_charge' =>$this->getExtraCharges($logs),
+            'extra_charges' =>$this->getExtraChargeLines($logs),
             'cars_count' =>$this->getCarsCount($logs),
             'rate_code' =>$this->rate_code,
             'rate_value' =>$this->rate_value,
@@ -1783,6 +1784,17 @@ class PilotCarJob extends Model
         return number_format($hotel, 2, '.', '');
     }
 
+    /**
+     * Total of every ad-hoc charge on this job's logs.
+     *
+     * Sums the named `log_extra_charges` rows AND the legacy `extra_charge`
+     * column (TASK-330). The migration nulls that column as it moves each
+     * value into a row, so in practice only one side contributes per log --
+     * but summing both means a log written by an older code path still bills.
+     *
+     * Returns a formatted string on purpose; see the comment above
+     * getTotalTolls() for why the thousands separator is omitted.
+     */
     public function getExtraCharges($logs = false){
         if(!$logs) $logs = $this->logs;
         $extra_charge = 0;
@@ -1791,8 +1803,47 @@ class PilotCarJob extends Model
             if($log->extra_charge && !empty($log->extra_charge)){
                 $extra_charge += (float)$log->extra_charge;
             }
+
+            foreach($log->extraCharges as $charge){
+                $extra_charge += (float)$charge->amount;
+            }
         }
         return number_format($extra_charge, 2, '.', '');
+    }
+
+    /**
+     * The same money as getExtraCharges(), itemized (TASK-330).
+     *
+     * Feeds values['extra_charges'] on the invoice snapshot so each charge
+     * prints as its own line rather than vanishing into one "Extra Charges"
+     * lump. A log still holding a legacy column value contributes one entry
+     * described the way invoices used to label it, so nothing reads
+     * differently after the migration.
+     */
+    public function getExtraChargeLines($logs = false): array
+    {
+        if(!$logs) $logs = $this->logs;
+        $lines = [];
+
+        foreach($logs as $log){
+            if($log->extra_charge && !empty($log->extra_charge)){
+                $lines[] = [
+                    'description' => 'Extra Charges',
+                    'amount' => (float) $log->extra_charge,
+                    'log_id' => $log->id,
+                ];
+            }
+
+            foreach($log->extraCharges as $charge){
+                $lines[] = [
+                    'description' => $charge->description,
+                    'amount' => (float) $charge->amount,
+                    'log_id' => $log->id,
+                ];
+            }
+        }
+
+        return $lines;
     }
 
     public function getCarsCount($logs = false){

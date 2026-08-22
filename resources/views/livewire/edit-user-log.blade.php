@@ -460,11 +460,14 @@
                             <input type="number" id="wait_time_hours" wire:model.blur="form.wait_time_hours" step="0.25" min="0" class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
                             @error('form.wait_time_hours') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                         </div>
-                        <div>
-                            <label for="extra_charge" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Extra Charge') }}</label>
-                            <input type="number" id="extra_charge" wire:model.blur="form.extra_charge" step="0.01" min="0" class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
-                            @error('form.extra_charge') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
-                        </div>
+                    </div>
+
+                    {{-- TASK-330: the single unlabeled "Extra Charge" box lived here. Named
+                         charges replace it so a one-off expense bills back legibly instead of
+                         reaching the customer as an unexplained lump. Saves on its own, like
+                         the attachments below. --}}
+                    <div class="mt-4 border-t border-slate-200 pt-4">
+                        <livewire:log-extra-charges :log="$log" :key="'log-extra-charges-'.$log->id" />
                     </div>
                 </details>
             </section>

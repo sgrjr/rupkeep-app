@@ -119,13 +119,35 @@
             'amount' => $hotelAmount,
         ];
 
-        // Extra charges recorded against the job's logs.
-        $lineItems[] = [
-            'description' => __('Extra Charges'),
-            'quantity' => $extraChargeAmount > 0 ? 1 : 0,
-            'rate' => $extraChargeAmount,
-            'amount' => $extraChargeAmount,
-        ];
+        // Extra charges recorded against the job's logs. Each one carries its
+        // own description now (TASK-330), so a one-off expense bills back as
+        // "Equipment rental" rather than an unexplained "Extra Charges" lump.
+        //
+        // Snapshots written before TASK-330 have only the scalar and no array,
+        // so they keep printing the single aggregate row exactly as before.
+        // $extraChargeAmount stays the scalar either way -- it is what the
+        // Pilot Car Service subtraction above is built from.
+        $extraChargeLines = $values['extra_charges'] ?? null;
+
+        if (is_array($extraChargeLines) && count($extraChargeLines) > 0) {
+            foreach ($extraChargeLines as $extraChargeLine) {
+                $lineAmount = (float) ($extraChargeLine['amount'] ?? 0);
+
+                $lineItems[] = [
+                    'description' => $extraChargeLine['description'] ?: __('Extra Charges'),
+                    'quantity' => $lineAmount != 0 ? 1 : 0,
+                    'rate' => $lineAmount,
+                    'amount' => $lineAmount,
+                ];
+            }
+        } else {
+            $lineItems[] = [
+                'description' => __('Extra Charges'),
+                'quantity' => $extraChargeAmount > 0 ? 1 : 0,
+                'rate' => $extraChargeAmount,
+                'amount' => $extraChargeAmount,
+            ];
+        }
 
         // Total Mileage
         $totalMileageQty = isset($values['billable_miles']) ? (float) $values['billable_miles'] : 0;

@@ -151,7 +151,6 @@ class MyInvoicesController extends Controller
             'dead_head',
             'tolls',
             'hotel',
-            'extra_charge',
             'cars_count',
             'billable_miles',
             'nonbillable_miles',
@@ -177,7 +176,11 @@ class MyInvoicesController extends Controller
         }
 
         // Explicitly handle top-level numeric keys that may not work with Arr::dot/set
-        foreach (['tolls', 'hotel', 'extra_charge', 'wait_time_hours', 'billable_miles', 'total'] as $topKey) {
+        // extra_charge is deliberately absent: it is derived from the job's
+        // log_extra_charges rows (TASK-330) and kept in step by
+        // App\Livewire\LogExtraCharges. Accepting it from this form would let a
+        // stale posted value clobber the itemized charges it is meant to total.
+        foreach (['tolls', 'hotel', 'wait_time_hours', 'billable_miles', 'total'] as $topKey) {
             if (isset($incomingValues[$topKey])) {
                 $val = trim((string) $incomingValues[$topKey]);
                 $values[$topKey] = $val === '' ? null : (float) $val;

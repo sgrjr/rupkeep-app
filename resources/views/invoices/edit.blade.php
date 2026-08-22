@@ -682,9 +682,9 @@
                                class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200" />
                     </div>
                     <div>
-                        <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Extra Charge') }}</label>
-                        <input type="number" step="0.01" name="values[extra_charge]" value="{{ old('values.extra_charge', data_get($values, 'extra_charge')) }}"
-                               class="mt-2 block w-full rounded-xl border border-slate-200	bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200" />
+                        <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Extra Charges') }}</label>
+                        <p class="mt-2 text-sm font-semibold text-slate-900">${{ number_format((float) str_replace(',', '', (string) data_get($values, 'extra_charge', 0)), 2) }}</p>
+                        <p class="mt-1 text-xs text-slate-500">{{ __('Itemized below.') }}</p>
                     </div>
                     <div>
                         <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Total Due Override') }}</label>
@@ -693,6 +693,40 @@
                     </div>
                 </div>
             </section>
+
+            {{-- TASK-330: named one-off charges. These live on the job's driver logs --
+                 never on the invoice -- so the same charge shows up whether you open it
+                 here, on the job, or in the log itself. Adding one here updates this
+                 invoice's stored total straight away. Summary invoices carry no expense
+                 breakdown at all, so the section is single-job only. --}}
+            @if(! $invoice->isSummary() && $invoice->job)
+                @php
+                    $chargeLogs = $invoice->job->logs()->with(['extraCharges', 'user'])->get();
+                @endphp
+                <section class="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm space-y-4">
+                    <header>
+                        <h2 class="text-lg font-semibold text-slate-900">{{ __('Extra Charges') }}</h2>
+                        <p class="mt-1 text-sm text-slate-500">{{ __('One-off charges for this job. Each prints as its own invoice line.') }}</p>
+                    </header>
+
+                    @forelse($chargeLogs as $chargeLog)
+                        <div class="rounded-2xl border border-slate-200 p-4">
+                            @if($chargeLogs->count() > 1)
+                                <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                                    {{ $chargeLog->user?->name ?? __('Unassigned') }}
+                                    @if($chargeLog->started_at)
+                                        &middot; {{ LocalTime::format($chargeLog->started_at, 'M j, Y') }}
+                                    @endif
+                                </p>
+                            @endif
+
+                            <livewire:log-extra-charges :log="$chargeLog" :invoice="$invoice" :key="'invoice-log-extra-charges-'.$chargeLog->id" />
+                        </div>
+                    @empty
+                        <p class="text-sm text-slate-400">{{ __('This job has no driver logs yet, so there is nowhere to record a charge. Add a log first.') }}</p>
+                    @endforelse
+                </section>
+            @endif
 
             @if($invoice->isSummary())
                 <section class="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm space-y-4">

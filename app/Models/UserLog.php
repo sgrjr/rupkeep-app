@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Models\Vehicle;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -66,6 +67,17 @@ class UserLog extends Model
     public function attachments(): MorphMany
     {
         return $this->morphMany(Attachment::class, 'attachable');
+    }
+
+    /**
+     * Named ad-hoc charges on this log (TASK-330). These replaced the single
+     * unlabeled `extra_charge` column and each becomes its own invoice line.
+     */
+    public function extraCharges(): HasMany
+    {
+        return $this->hasMany(LogExtraCharge::class)
+            ->orderBy('sort_order')
+            ->orderBy('id');
     }
 
     public function getTotalBillableMilesAttribute()
