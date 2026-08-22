@@ -1,7 +1,15 @@
+@php
+    // /my/invoices does not pass these; only the cross-organization screen does.
+    $crossOrganization = $crossOrganization ?? false;
+    $organizations = $organizations ?? collect();
+@endphp
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Invoices') }}
+            {{ $crossOrganization ? __('All Invoices') : __('Invoices') }}
+            @if($crossOrganization)
+                <span class="ml-2 rounded-full bg-purple-100 px-2 py-0.5 text-[11px] font-semibold uppercase text-purple-700">{{ __('Super User') }}</span>
+            @endif
         </h2>
     </x-slot>
 
@@ -9,7 +17,7 @@
         <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
 
             <section class="rounded-3xl border border-slate-200 bg-white/90 m-6 p-6 shadow-sm">
-                <form method="GET" action="{{ route('my.invoices.index') }}" class="grid gap-4 md:grid-cols-6">
+                <form method="GET" action="{{ $crossOrganization ? route('invoices.index') : route('my.invoices.index') }}" class="grid gap-4 md:grid-cols-6">
                     <div class="md:col-span-2">
                         <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600 mb-1">{{ __('Search') }}</label>
                         <input type="text" name="q" value="{{ $filters['q'] ?? '' }}"
@@ -41,6 +49,18 @@
                         <input type="date" name="to" value="{{ $filters['to'] ?? '' }}" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
                     </div>
 
+                    @if($crossOrganization)
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600 mb-1">{{ __('Organization') }}</label>
+                            <select name="organization_id" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                <option value="">{{ __('All Organizations') }}</option>
+                                @foreach($organizations as $org)
+                                    <option value="{{ $org->id }}" @selected((string) ($filters['organization_id'] ?? '') === (string) $org->id)>{{ $org->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    @endif
+
                     <div class="md:col-span-6 flex flex-wrap items-center justify-between gap-3">
                         <label class="inline-flex items-center gap-2 text-xs font-medium text-slate-600">
                             <input type="checkbox" name="orphaned" value="1" @checked(($filters['orphaned'] ?? '') === '1')
@@ -48,7 +68,7 @@
                             {{ __('Only invoices with no job attached') }}
                         </label>
                         <div class="flex gap-2">
-                            <a href="{{ route('my.invoices.index') }}" class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">{{ __('Clear') }}</a>
+                            <a href="{{ $crossOrganization ? route('invoices.index') : route('my.invoices.index') }}" class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">{{ __('Clear') }}</a>
                             <x-button type="submit">{{ __('Search') }}</x-button>
                         </div>
                     </div>
@@ -69,6 +89,9 @@
                             <tr>
                                 <th class="px-4 py-3 text-left">{{ __('Invoice') }}</th>
                                 <th class="px-4 py-3 text-left">{{ __('Date') }}</th>
+                                @if($crossOrganization)
+                                    <th class="px-4 py-3 text-left">{{ __('Organization') }}</th>
+                                @endif
                                 <th class="px-4 py-3 text-left">{{ __('Customer') }}</th>
                                 <th class="px-4 py-3 text-left">{{ __('Job') }}</th>
                                 <th class="px-4 py-3 text-right">{{ __('Total') }}</th>
@@ -92,6 +115,9 @@
                                         @endif
                                     </td>
                                     <td class="px-4 py-3 text-slate-600">{{ optional($invoice->created_at)->format('M j, Y') }}</td>
+                                    @if($crossOrganization)
+                                        <td class="px-4 py-3 text-slate-600">{{ optional($invoice->organization)->name ?? '—' }}</td>
+                                    @endif
                                     <td class="px-4 py-3 text-slate-600">{{ optional($invoice->customer)->name ?? '—' }}</td>
                                     <td class="px-4 py-3 text-slate-600">
                                         @if($invoice->job)
@@ -121,7 +147,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="px-4 py-10 text-center text-slate-500">{{ __('No invoices match these filters.') }}</td>
+                                    <td colspan="{{ $crossOrganization ? 8 : 7 }}" class="px-4 py-10 text-center text-slate-500">{{ __('No invoices match these filters.') }}</td>
                                 </tr>
                             @endforelse
                         </tbody>

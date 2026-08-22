@@ -16,6 +16,19 @@ class InvoicePolicy
     }
 
     /**
+     * Every organization's invoices at once, at /invoices.
+     *
+     * Deliberately narrower than viewAny, which admits anyone who may see their
+     * OWN organization's invoices. Crossing that boundary is a super-user
+     * ability and nothing else, so it is named separately rather than left to a
+     * controller to remember.
+     */
+    public function viewAcrossOrganizations(User $user): bool
+    {
+        return $user->isSuper();
+    }
+
+    /**
      * Determine whether the user can view the model.
      */
     public function view(User $user, Invoice $model): bool

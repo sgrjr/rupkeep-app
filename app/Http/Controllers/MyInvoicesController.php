@@ -10,6 +10,7 @@ use App\Models\PilotCarJob;
 use App\Models\JobInvoice;
 use App\Models\UserLog;
 use App\Services\SummaryInvoiceValues;
+use App\Http\Controllers\Concerns\BuildsInvoiceIndex;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -19,6 +20,7 @@ class MyInvoicesController extends Controller
 {
 
     use AuthorizesRequests;
+    use BuildsInvoiceIndex;
 
     /**
      * The invoice list. There was not one.
@@ -41,74 +43,14 @@ class MyInvoicesController extends Controller
     {
         $this->authorize('viewAny', Invoice::class);
 
-        $filters = $request->validate([
-            'q' => ['nullable', 'string', 'max:255'],
-            'paid' => ['nullable', 'in:yes,no'],
-            'type' => ['nullable', 'in:single,summary'],
-            'orphaned' => ['nullable', 'in:1'],
-            'from' => ['nullable', 'date'],
-            'to' => ['nullable', 'date'],
-        ]);
+        $filters = $this->invoiceIndexFilters($request);
 
-        $query = Invoice::query()
-            ->with(['customer', 'job'])
+        // The tenancy scope lives here, not in the shared trait, so this screen
+        // cannot inherit a missing filter from the cross-organization one.
+        $query = $this->invoiceIndexQuery($filters)
             ->where('organization_id', $request->user()->organization_id);
 
-        if ($term = trim((string) ($filters['q'] ?? ''))) {
-            $query->where(function ($q) use ($term) {
-                $like = '%'.$term.'%';
-
-                $q->where('invoice_number', 'like', $like)
-                    // values is a JSON blob; job_no and load_no live in there for
-                    // invoices whose job row is gone, which is exactly the case
-                    // this screen exists to serve.
-                    ->orWhere('values', 'like', $like)
-                    ->orWhereHas('customer', fn ($c) => $c->where('name', 'like', $like));
-            });
-        }
-
-        if (($filters['paid'] ?? null) !== null) {
-            $query->where('paid_in_full', $filters['paid'] === 'yes');
-        }
-
-        if (($filters['type'] ?? null) === 'summary') {
-            $query->where('invoice_type', 'summary');
-        } elseif (($filters['type'] ?? null) === 'single') {
-            $query->where(fn ($q) => $q->whereNull('invoice_type')->orWhere('invoice_type', '!=', 'summary'));
-        }
-
-        // Invoices with no job to reach them from -- the ones that were
-        // invisible before this screen existed.
-        if (($filters['orphaned'] ?? null) === '1') {
-            $query->where(function ($q) {
-                $q->whereNull('pilot_car_job_id')
-                    ->orWhereDoesntHave('job');
-            });
-        }
-
-        if ($from = ($filters['from'] ?? null)) {
-            $query->whereDate('created_at', '>=', $from);
-        }
-
-        if ($to = ($filters['to'] ?? null)) {
-            $query->whereDate('created_at', '<=', $to);
-        }
-
-        // Summing the filtered set in the database rather than off the page, so
-        // the figure answers "what is in this filter" rather than "what is on
-        // screen". Totals live inside the JSON blob, so this sums what it can
-        // reach: the same rows the list shows.
-        $summed = (clone $query)->get(['id', 'values']);
-        $listedTotal = $summed->sum(fn (Invoice $invoice) => (float) data_get($invoice->values, 'total', 0));
-
-        $invoices = $query->orderByDesc('created_at')->paginate(25)->withQueryString();
-
-        return view('invoices.index', [
-            'invoices' => $invoices,
-            'listedTotal' => $listedTotal,
-            'listedCount' => $summed->count(),
-            'filters' => $filters,
-        ]);
+        return view('invoices.index', $this->invoiceIndexPayload($query, $filters));
     }
 
     public function edit(Request $request, Invoice $invoice){

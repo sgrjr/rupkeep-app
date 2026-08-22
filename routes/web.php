@@ -20,6 +20,7 @@ use App\Http\Controllers\MyCustomersController;
 use App\Http\Controllers\MyVehiclesController;
 use App\Http\Controllers\VehicleMaintenanceController;
 use App\Http\Controllers\MyJobsController;
+use App\Http\Controllers\InvoicesController;
 use App\Http\Controllers\JobsController;
 use App\Http\Controllers\UsersController;
 use App\Http\Controllers\UserLogsController;
@@ -160,6 +161,8 @@ Route::middleware([
     Route::get('/documentation/{document}', [\App\Http\Controllers\DocumentationController::class, 'show'])->name('documentation.show');
     Route::get('jobs/{job}', ShowPilotCarJob::class)->name('jobs.show');
     Route::get('jobs', [JobsController::class, 'index'])->name('jobs.index');
+    // The cross-organization counterpart to /jobs, for super users.
+    Route::get('invoices', [InvoicesController::class, 'index'])->name('invoices.index');
     Route::get('logs/{log}', EditUserLog::class)->name('logs.edit');
     Route::delete('logs/{log}',[UserLogsController::class, 'delete'])->name('logs.destroy');
 

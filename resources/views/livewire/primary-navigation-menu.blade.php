@@ -64,6 +64,11 @@
                                             {{ __('Invoices') }}
                                         </x-dropdown-link>
                                     @endcan
+                                    @can('viewAcrossOrganizations', \App\Models\Invoice::class)
+                                        <x-dropdown-link href="{{ route('invoices.index') }}">
+                                            {{ __('All Invoices') }}
+                                        </x-dropdown-link>
+                                    @endcan
                                     <div class="border-t border-slate-100"></div>
                                     <x-dropdown-link href="{{ route('my.jobs.create') }}">
                                         {{ __('Create Job') }}
@@ -303,6 +308,11 @@
                     @can('viewAny', \App\Models\Invoice::class)
                         <x-responsive-nav-link href="{{ route('my.invoices.index') }}" :active="request()->routeIs('my.invoices.*')">
                             {{ __('Invoices') }}
+                        </x-responsive-nav-link>
+                    @endcan
+                    @can('viewAcrossOrganizations', \App\Models\Invoice::class)
+                        <x-responsive-nav-link href="{{ route('invoices.index') }}" :active="request()->routeIs('invoices.index')">
+                            {{ __('All Invoices') }}
                         </x-responsive-nav-link>
                     @endcan
                     <x-responsive-nav-link href="{{ route('my.jobs.create') }}">
