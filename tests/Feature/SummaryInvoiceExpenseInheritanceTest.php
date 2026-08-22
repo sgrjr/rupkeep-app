@@ -133,8 +133,12 @@ class SummaryInvoiceExpenseInheritanceTest extends TestCase
 
     public function test_the_quickbooks_export_no_longer_bills_one_childs_hotel_against_the_summary(): void
     {
+        // Both children carry expenses, and the figures differ, so an inherited
+        // value (125 / 10, the first child's) is distinguishable from a rolled-up
+        // one (165 / 25). With only one child spending, the two are the same
+        // number and the test proves nothing.
         $a = $this->childInvoice('JOB-A', ['hotel' => 125, 'tolls' => 10]);
-        $b = $this->childInvoice('JOB-B');
+        $b = $this->childInvoice('JOB-B', ['hotel' => 40, 'tolls' => 15]);
         $summary = $this->summaryOf([$a, $b]);
 
         $csv = $this->actingAs($this->admin)
@@ -148,15 +152,21 @@ class SummaryInvoiceExpenseInheritanceTest extends TestCase
         $hotelColumn = array_search('Expenses (Hotel)', $header);
         $tollsColumn = array_search('Expenses (Tolls)', $header);
 
-        $this->assertSame('0.00', $rows[$summary->invoice_number][$hotelColumn]);
-        $this->assertSame('0.00', $rows[$summary->invoice_number][$tollsColumn]);
+        // Not 125.00 / 10.00, which is what inheriting the FIRST child looked
+        // like. The summary reports what its children add up to.
+        $this->assertSame('165.00', $rows[$summary->invoice_number][$hotelColumn]);
+        $this->assertSame('25.00', $rows[$summary->invoice_number][$tollsColumn]);
 
-        // TASK-383 then stopped exporting a child alongside its summary, because
-        // the two rows double-counted the same revenue. So the children are not
-        // in this file at all - only the summary, carrying no expenses of its
-        // own, which is exactly the point of this test.
+        // TASK-383 stopped exporting a child alongside its summary, because the
+        // two rows double-counted the same revenue. The roll-up above is how the
+        // expense detail still reaches the sheet once the children are gone.
         $this->assertArrayNotHasKey($a->fresh()->invoice_number, $rows);
         $this->assertArrayNotHasKey($b->fresh()->invoice_number, $rows);
+
+        // And the summary still stores none of it -- the roll-up is computed at
+        // export time only, so the summary document prints no expenses.
+        $this->assertArrayNotHasKey('hotel', $summary->fresh()->values);
+        $this->assertArrayNotHasKey('tolls', $summary->fresh()->values);
     }
 
     /**

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Invoice;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class QuickBooksExportController extends Controller
@@ -73,6 +74,14 @@ class QuickBooksExportController extends Controller
                 && isset($exportedIds[$invoice->parent_invoice_id]);
         })->values();
 
+        // With the children gone, their expense detail would have gone with
+        // them, since a summary stores no expense scalars of its own (TASK-379).
+        // The summary row therefore rolls its children's figures up at export
+        // time. This is computed here and never written back to the summary's
+        // `values` -- storing it is what TASK-379 fixed, and the summary
+        // document itself must keep printing no expenses.
+        $invoices->loadMissing(['children.job']);
+
         $filename = 'quickbooks-export-' . now()->format('Ymd-His') . '.csv';
         $headers = [
             'Content-Type' => 'text/csv',
@@ -108,6 +117,7 @@ class QuickBooksExportController extends Controller
                 'Payment Date',
                 'Check Number',
                 'Memo',
+                'Summary Includes',
             ];
 
             fputcsv($handle, $header);
@@ -131,13 +141,22 @@ class QuickBooksExportController extends Controller
 
                 // Extract values - handle both flat and nested structures
                 $totals = is_array($values['total'] ?? null) ? $values['total'] : [];
-                $expenses = is_array($values['expenses'] ?? null) ? $values['expenses'] : [];
                 
                 // Get billable miles from various possible locations
                 $billableMiles = $values['billable_miles'] 
                     ?? $totals['billable_miles'] 
                     ?? ($job ? $job->miles?->billable : null)
                     ?? 0;
+
+                // A summary carries no expenses of its own, so its row reports
+                // what its children add up to. A single invoice reports itself.
+                $children = $invoice->isSummary() ? $invoice->children : collect();
+                $figures = $children->isNotEmpty()
+                    ? $this->rollUpFigures($children)
+                    : $this->invoiceFigures($invoice);
+                $summaryDetail = $children->isNotEmpty()
+                    ? $this->summaryDetail($children)
+                    : '';
 
                 $row = [
                     $invoice->invoice_number,
@@ -149,21 +168,24 @@ class QuickBooksExportController extends Controller
                     number_format((float) $billableMiles, 1, '.', ''),
                     optional($job)->rate_code ?? '',
                     optional($job)->rate_value ?? '',
-                    number_format((float) ($totals['subtotal'] ?? $totals['base'] ?? ($values['subtotal'] ?? 0)), 2, '.', ''),
-                    number_format((float) ($expenses['hotel'] ?? $values['hotel'] ?? 0), 2, '.', ''),
-                    number_format((float) ($expenses['tolls'] ?? $values['tolls'] ?? 0), 2, '.', ''),
-                    number_format((float) ($expenses['gas'] ?? $values['gas'] ?? 0), 2, '.', ''),
-                    number_format((float) ($expenses['wait_time'] ?? $values['wait_time_hours'] ?? 0), 2, '.', ''),
-                    number_format((float) ($expenses['extra_charge'] ?? $values['extra_charge'] ?? 0), 2, '.', ''),
-                    $this->extraChargeDetail($values),
-                    $values['deadhead_count'] ?? $totals['deadhead_count'] ?? ($job && $job->is_deadhead ? 1 : 0),
-                    number_format((float) ($totals['deadhead'] ?? $values['dead_head_charge'] ?? 0), 2, '.', ''),
-                    number_format((float) ($totals['mini'] ?? $values['mini_addon_amount'] ?? $values['mini_cost'] ?? 0), 2, '.', ''),
+                    number_format($figures['subtotal'], 2, '.', ''),
+                    number_format($figures['hotel'], 2, '.', ''),
+                    number_format($figures['tolls'], 2, '.', ''),
+                    number_format($figures['gas'], 2, '.', ''),
+                    number_format($figures['wait_time'], 2, '.', ''),
+                    number_format($figures['extra_charge'], 2, '.', ''),
+                    $children->isNotEmpty()
+                        ? $this->rolledUpExtraChargeDetail($children)
+                        : $this->extraChargeDetail($values),
+                    $figures['deadhead_count'],
+                    number_format($figures['deadhead'], 2, '.', ''),
+                    number_format($figures['mini'], 2, '.', ''),
                     number_format((float) ($totals['total'] ?? ($values['total'] ?? 0)), 2, '.', ''),
                     $invoice->paid_in_full ? 'Paid' : 'Unpaid',
                     $invoice->paid_in_full && $invoice->updated_at ? $invoice->updated_at->format('m/d/Y') : '',
                     optional($job)->check_no ?? '',
                     $values['notes'] ?? $values['memo'] ?? ($job ? $job->memo : '') ?? '',
+                    $summaryDetail,
                 ];
 
                 fputcsv($handle, $row);
@@ -171,6 +193,115 @@ class QuickBooksExportController extends Controller
 
             fclose($handle);
         }, $filename, $headers);
+    }
+
+    /**
+     * The expense and charge figures one invoice carries, read from wherever
+     * its values blob happens to keep them (flat keys on older invoices, a
+     * nested `expenses` / `total` array on newer ones).
+     */
+    private function invoiceFigures(Invoice $invoice): array
+    {
+        $values = is_array($invoice->values) ? $invoice->values : [];
+        $totals = is_array($values['total'] ?? null) ? $values['total'] : [];
+        $expenses = is_array($values['expenses'] ?? null) ? $values['expenses'] : [];
+        $job = $invoice->job;
+
+        return [
+            'subtotal' => (float) ($totals['subtotal'] ?? $totals['base'] ?? ($values['subtotal'] ?? 0)),
+            'hotel' => (float) ($expenses['hotel'] ?? $values['hotel'] ?? 0),
+            'tolls' => (float) ($expenses['tolls'] ?? $values['tolls'] ?? 0),
+            'gas' => (float) ($expenses['gas'] ?? $values['gas'] ?? 0),
+            'wait_time' => (float) ($expenses['wait_time'] ?? $values['wait_time_hours'] ?? 0),
+            'extra_charge' => (float) ($expenses['extra_charge'] ?? $values['extra_charge'] ?? 0),
+            'deadhead_count' => (int) ($values['deadhead_count'] ?? $totals['deadhead_count'] ?? ($job && $job->is_deadhead ? 1 : 0)),
+            'deadhead' => (float) ($totals['deadhead'] ?? $values['dead_head_charge'] ?? 0),
+            'mini' => (float) ($totals['mini'] ?? $values['mini_addon_amount'] ?? $values['mini_cost'] ?? 0),
+        ];
+    }
+
+    /**
+     * The same figures for a summary, summed across the children it covers.
+     *
+     * A summary stores no expense scalars of its own -- TASK-379 removed them
+     * because it had been inheriting one arbitrary child's. Since TASK-383 stops
+     * exporting the children alongside it, rolling them up here is the only way
+     * the detail reaches the sheet at all. It stays a read: nothing is written
+     * back, so the summary document still prints no expenses.
+     */
+    private function rollUpFigures(Collection $children): array
+    {
+        $rolled = array_fill_keys([
+            'subtotal', 'hotel', 'tolls', 'gas', 'wait_time',
+            'extra_charge', 'deadhead_count', 'deadhead', 'mini',
+        ], 0);
+
+        foreach ($children as $child) {
+            foreach ($this->invoiceFigures($child) as $key => $value) {
+                $rolled[$key] += $value;
+            }
+        }
+
+        $rolled['deadhead_count'] = (int) $rolled['deadhead_count'];
+
+        return $rolled;
+    }
+
+    /**
+     * Which invoices a summary row stands for, and what each contributed.
+     *
+     * Same reasoning as extraChargeDetail() below: the CSV is one row per
+     * invoice, so N children cannot each become a column. They ride in a single
+     * text column, ready to paste into a QuickBooks memo or line description.
+     */
+    private function summaryDetail(Collection $children): string
+    {
+        $parts = [];
+
+        foreach ($children as $child) {
+            $figures = $this->invoiceFigures($child);
+            $values = is_array($child->values) ? $child->values : [];
+
+            $expenseBits = [];
+            foreach (['hotel' => 'Hotel', 'tolls' => 'Tolls', 'gas' => 'Gas', 'wait_time' => 'Wait'] as $key => $label) {
+                if ($figures[$key] > 0) {
+                    $expenseBits[] = $label.' '.number_format($figures[$key], 2, '.', '');
+                }
+            }
+
+            $label = $child->invoice_number ?? ('#'.$child->id);
+            $jobNo = $values['job_no'] ?? $child->job?->job_no;
+
+            $line = $label.($jobNo ? ' ('.$jobNo.')' : '')
+                .': '.number_format((float) ($values['total'] ?? 0), 2, '.', '');
+
+            if ($expenseBits !== []) {
+                $line .= ' — '.implode(', ', $expenseBits);
+            }
+
+            $parts[] = $line;
+        }
+
+        return implode('; ', $parts);
+    }
+
+    /**
+     * The named extra charges of every child a summary covers, each prefixed
+     * with the child it came from.
+     */
+    private function rolledUpExtraChargeDetail(Collection $children): string
+    {
+        $parts = [];
+
+        foreach ($children as $child) {
+            $detail = $this->extraChargeDetail(is_array($child->values) ? $child->values : []);
+
+            if ($detail !== '') {
+                $parts[] = ($child->invoice_number ?? ('#'.$child->id)).': '.$detail;
+            }
+        }
+
+        return implode('; ', $parts);
     }
 
     /**

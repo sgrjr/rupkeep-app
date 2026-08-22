@@ -80,6 +80,7 @@ class QuickBooksExportTest extends TestCase
             'Payment Date',
             'Check Number',
             'Memo',
+            'Summary Includes',
         ], $header);
 
         $data = str_getcsv($lines[1]);
@@ -359,5 +360,71 @@ class QuickBooksExportTest extends TestCase
         $lines = array_values(array_filter(explode("\n", trim($response->streamedContent()))));
 
         return array_map('str_getcsv', array_slice($lines, 1));
+    }
+
+    /**
+     * TASK-383 follow-up: dropping the child rows also dropped their expense
+     * detail, because a summary stores no expense scalars of its own
+     * (TASK-379). The summary row rolls its children up at export time so the
+     * detail still reaches the sheet, and names what it stands for in a
+     * "Summary Includes" column.
+     */
+    public function test_a_summary_row_names_the_invoices_it_stands_for(): void
+    {
+        [$manager, $organization, $customer] = $this->exportOrg();
+
+        $summary = Invoice::create([
+            'organization_id' => $organization->id,
+            'customer_id' => $customer->id,
+            'invoice_type' => 'summary',
+            'values' => ['total' => 3000],
+        ]);
+
+        Invoice::create([
+            'organization_id' => $organization->id,
+            'customer_id' => $customer->id,
+            'parent_invoice_id' => $summary->id,
+            'values' => ['total' => 1800, 'job_no' => 'JOB-ALPHA', 'hotel' => 120],
+        ]);
+
+        Invoice::create([
+            'organization_id' => $organization->id,
+            'customer_id' => $customer->id,
+            'parent_invoice_id' => $summary->id,
+            'values' => ['total' => 1200, 'job_no' => 'JOB-BETA', 'tolls' => 30],
+        ]);
+
+        $rows = $this->dataRows($manager);
+        $this->assertCount(1, $rows);
+
+        $row = $rows[0];
+
+        // Roll-up, not inheritance: both children contribute.
+        $this->assertSame('120.00', $row[10], 'Hotel must be the sum across children.');
+        $this->assertSame('30.00', $row[11], 'Tolls must be the sum across children.');
+
+        // The revenue total is still the summary total, not doubled.
+        $this->assertSame('3000.00', $row[19]);
+
+        $detail = $row[24];
+        $this->assertStringContainsString('JOB-ALPHA', $detail);
+        $this->assertStringContainsString('JOB-BETA', $detail);
+        $this->assertStringContainsString('1800.00', $detail);
+        $this->assertStringContainsString('1200.00', $detail);
+        $this->assertStringContainsString('Hotel 120.00', $detail);
+    }
+
+    /**
+     * A single invoice has no children, so the new column stays empty rather
+     * than repeating the invoice against itself.
+     */
+    public function test_a_single_invoice_leaves_the_summary_column_empty(): void
+    {
+        $manager = $this->exportFixture(['total' => 450.25, 'hotel' => 75]);
+
+        $data = $this->firstDataRow($manager);
+
+        $this->assertSame('', $data[24]);
+        $this->assertSame('75.00', $data[10], 'A single invoice still reports its own expenses.');
     }
 }
