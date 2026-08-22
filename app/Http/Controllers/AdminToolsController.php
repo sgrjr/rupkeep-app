@@ -35,6 +35,14 @@ class AdminToolsController extends Controller
                 'command' => ['git', 'push'],
                 'description' => 'Push changes to remote',
             ],
+            // Read-only. Explains a dashboard invoice count that disagrees with
+            // the jobs list, which needs answering on the machine holding the
+            // data rather than guessed at from a laptop.
+            'artisan_jobs_diagnose' => [
+                'type' => 'artisan',
+                'command' => 'jobs:diagnose',
+                'description' => 'Diagnose jobs missing from the jobs list (read-only)',
+            ],
             'artisan_assets_build' => [
                 'type' => 'artisan',
                 'command' => 'assets:build',
