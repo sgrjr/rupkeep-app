@@ -471,19 +471,22 @@
             </div>
 
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-                <a href="{{ route('my.jobs.index') }}" class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-orange-200 hover:shadow-md">
+                {{-- These tiles count INVOICES but pointed at the jobs list, which
+                     counts jobs. Where the two disagree -- an invoice whose job is
+                     gone -- the link led somewhere the number could never be found. --}}
+                <a href="{{ route('my.invoices.index') }}" class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-orange-200 hover:shadow-md">
                     <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">{{ __('Total Invoices') }}</p>
                     <p class="mt-2 text-3xl font-bold text-slate-900">{{ number_format($managerStats->total_invoices) }}</p>
                 </a>
-                <a href="{{ route('my.jobs.index', ['filter' => 'is_not_paid']) }}" class="rounded-2xl border border-orange-200 bg-orange-50 p-4 shadow-sm transition hover:border-orange-300 hover:shadow-md">
+                <a href="{{ route('my.invoices.index', ['paid' => 'no']) }}" class="rounded-2xl border border-orange-200 bg-orange-50 p-4 shadow-sm transition hover:border-orange-300 hover:shadow-md">
                     <p class="text-xs font-semibold uppercase tracking-wider text-orange-600">{{ __('Unpaid Invoices') }}</p>
                     <p class="mt-2 text-3xl font-bold text-orange-700">{{ number_format($managerStats->unpaid_invoices) }}</p>
                 </a>
-                <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
+                <a href="{{ route('my.invoices.index') }}" class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm transition hover:border-emerald-300 hover:shadow-md">
                     <p class="text-xs font-semibold uppercase tracking-wider text-emerald-600">{{ __('Total Revenue') }}</p>
                     <p class="mt-2 text-2xl font-bold text-emerald-700">${{ number_format($managerStats->total_revenue, 2) }}</p>
-                </div>
-                <a href="{{ route('my.jobs.index', ['filter' => 'is_not_paid']) }}" class="rounded-2xl border border-red-200 bg-red-50 p-4 shadow-sm transition hover:border-red-300 hover:shadow-md">
+                </a>
+                <a href="{{ route('my.invoices.index', ['paid' => 'no']) }}" class="rounded-2xl border border-red-200 bg-red-50 p-4 shadow-sm transition hover:border-red-300 hover:shadow-md">
                     <p class="text-xs font-semibold uppercase tracking-wider text-red-600">{{ __('Outstanding') }}</p>
                     <p class="mt-2 text-2xl font-bold text-red-700">${{ number_format($managerStats->unpaid_amount, 2) }}</p>
                 </a>

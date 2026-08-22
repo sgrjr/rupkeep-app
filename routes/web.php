@@ -166,6 +166,8 @@ Route::middleware([
     Route::get('attachments/{attachment}', [AttachmentsController::class, 'download'])->name('attachments.download');
     Route::delete('attachments/{attachment}', [AttachmentsController::class, 'delete'])->name('attachments.destroy');
 
+    // Must precede my/invoices/{invoice} so the bare path is not read as an id.
+    Route::get('my/invoices', [MyInvoicesController::class, 'index'])->name('my.invoices.index');
     Route::post('my/invoices/create', [MyInvoicesController::class, 'store'])->name('my.invoices.store');
     Route::get('my/invoices/{invoice}/edit', [MyInvoicesController::class, 'edit'])->name('my.invoices.edit');
     // Only PUT was bound to this URI, so the bare show URL — the natural thing
