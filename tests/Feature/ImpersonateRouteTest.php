@@ -99,6 +99,88 @@ class ImpersonateRouteTest extends TestCase
     }
 
     /**
+     * Impersonation has to survive the redirect, and asserting the guard in
+     * memory does not prove that -- the previous fix passed that assertion
+     * while production logged the admin straight back out to /login.
+     *
+     * Jetstream's AuthenticateSession middleware keeps the signed-in user's
+     * password hash in the session and logs everyone out when it stops matching
+     * the current user, which is how a password change kills other sessions.
+     * It re-stores that hash AFTER the response from $request->user() -- and
+     * $request->user() resolves through the DEFAULT guard, which is Sanctum's
+     * RequestGuard, which memoised the ADMIN when auth:sanctum ran at the top
+     * of the request. So the session ended up logged in as the target while
+     * carrying the impersonator's password hash, and the next request threw it
+     * away as a stale session.
+     */
+    public function test_the_impersonated_session_survives_the_next_request(): void
+    {
+        $organization = Organization::factory()->create();
+        $admin = User::factory()->admin()->create(['organization_id' => $organization->id]);
+
+        // Distinct hashes: the User factory reuses one cached bcrypt hash for
+        // every user, which makes the admin's and the target's indistinguishable
+        // and the assertion below vacuous.
+        $target = User::factory()->create([
+            'organization_id' => $organization->id,
+            'password' => bcrypt('a-different-password'),
+        ]);
+
+        $this->actingAs($admin)->get(route('impersonate', ['user' => $target->id]));
+
+        $session = app('session.store')->all();
+        $hashKey = 'password_hash_'.auth()->getDefaultDriver();
+
+        $this->assertArrayHasKey($hashKey, $session);
+        $this->assertSame(
+            $target->password,
+            $session[$hashKey],
+            'The session must carry the password hash of the user being impersonated. '
+            .'Holding the one belonging to the impersonator makes AuthenticateSession '
+            .'discard the session on the very next request.'
+        );
+
+        // And the session really does point at the target, not merely the guard
+        // we happened to leave in memory.
+        $this->assertSame(
+            $target->id,
+            $session['login_web_'.sha1(\Illuminate\Auth\SessionGuard::class)] ?? null
+        );
+    }
+
+    /**
+     * The same failure asserted end to end rather than through the mechanism.
+     *
+     * Without the fix this is a 302 to /login with a null guard, which is
+     * exactly what the admin saw: click Impersonate, get logged out.
+     */
+    public function test_a_following_request_is_still_the_impersonated_user(): void
+    {
+        $organization = Organization::factory()->create();
+        $admin = User::factory()->admin()->create(['organization_id' => $organization->id]);
+        $target = User::factory()->create([
+            'organization_id' => $organization->id,
+            'password' => bcrypt('a-different-password'),
+            'email_verified_at' => now(),
+        ]);
+
+        $this->actingAs($admin)->get(route('impersonate', ['user' => $target->id]));
+
+        $session = app('session.store')->all();
+
+        // Drop every in-memory guard and the actingAs user resolver, so the next
+        // request has to reconstruct identity from the session alone -- which is
+        // the only thing a real browser carries between the redirect and the
+        // page it lands on.
+        $this->app['auth']->forgetGuards();
+        $this->app['auth']->shouldUse('sanctum');
+
+        $this->withSession($session)->get(route('my.profile'))->assertOk();
+
+        $this->assertSame($target->id, auth()->guard('web')->id());
+    }
+
+    /**
      * The whole point of moving the route: no route may sit outside the
      * authenticated group by accident again.
      */

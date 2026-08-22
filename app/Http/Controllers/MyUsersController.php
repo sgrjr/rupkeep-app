@@ -155,6 +155,22 @@ class MyUsersController extends Controller
             $session->logoutCurrentDevice();
             session()->flush();
             $session->login($user);
+
+            // Tell the DEFAULT guard too, or the rest of this request still
+            // believes the impersonator is the one signed in. Sanctum's
+            // RequestGuard memoised them when auth:sanctum ran at the top of the
+            // request, and $request->user() resolves through it.
+            //
+            // Jetstream's AuthenticateSession is what makes that fatal rather
+            // than untidy: it keeps the signed-in user's password hash in the
+            // session and logs everyone out when it stops matching, which is how
+            // a password change kills other sessions. It re-stores that hash
+            // from $request->user() AFTER the response -- so without this line
+            // the session ends up logged in as the target while carrying the
+            // impersonator's hash, and the very next request throws it away and
+            // redirects to /login.
+            auth()->guard()->setUser($user);
+
             session()->flash('message','Success. Logged in as ' . $user->name);
             // put(), not session($key, $default) -- the two-argument helper is
             // the GETTER, so this trail was silently never recorded and the
