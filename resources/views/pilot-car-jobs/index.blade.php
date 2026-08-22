@@ -52,10 +52,10 @@
             @can('viewAny', \App\Models\Invoice::class)
                 <section class="rounded-3xl border border-slate-200 bg-white/90 m-6 p-6 shadow-sm">
                     <header class="mb-4">
-                        <h2 class="text-lg font-semibold text-slate-900">{{ __('QuickBooks Export') }}</h2>
-                        <p class="text-xs text-slate-500">{{ __('Filter invoices by date, customer, or payment status and export a detailed CSV ready for QuickBooks import.') }}</p>
+                        <h2 class="text-lg font-semibold text-slate-900">{{ __('Export') }}</h2>
+                        <p class="text-xs text-slate-500">{{ __('Filter invoices by date, customer, or payment status, then choose which file you need.') }}</p>
                     </header>
-                    <form method="GET" action="{{ route('my.invoices.export.quickbooks') }}" class="grid gap-4 md:grid-cols-6">
+                    <form method="GET" action="{{ route('my.invoices.export.jobs') }}" class="grid gap-4 md:grid-cols-6">
                         <div>
                             <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600 mb-1">{{ __('From Date') }}</label>
                             <input type="date" name="from" value="{{ request('from') }}" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
@@ -84,13 +84,24 @@
                         <div class="md:col-span-2 flex items-end justify-end gap-2">
                             <x-button type="submit" variant="secondary" class="w-full md:w-auto">
                                 <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582c1.356 0 2.643.543 3.596 1.508L12 12.83l3.822-1.872A4.999 4.999 0 0 1 19.418 9H20V4M4 20h16M4 16h16"/></svg>
-                                {{ __('Export CSV') }}
+                                {{ __('Full Job CSV') }}
+                            </x-button>
+                            <x-button type="submit" formaction="{{ route('my.invoices.export.quickbooks') }}" class="w-full md:w-auto">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+                                {{ __('QuickBooks CSV') }}
                             </x-button>
                         </div>
                     </form>
-                    <p class="mt-3 text-xs text-slate-500">
-                        {{ __('The export includes invoice details, line items, expenses, and payment information formatted for QuickBooks import.') }}
-                    </p>
+                    <dl class="mt-3 space-y-1 text-xs text-slate-500">
+                        <div>
+                            <dt class="inline font-semibold text-slate-600">{{ __('Full Job CSV') }}:</dt>
+                            <dd class="inline">{{ __('One row per job with every figure in its own column — miles, rate, each expense, payment status. For your own records, a spreadsheet, or a bookkeeper.') }}</dd>
+                        </div>
+                        <div>
+                            <dt class="inline font-semibold text-slate-600">{{ __('QuickBooks CSV') }}:</dt>
+                            <dd class="inline">{{ __('Shaped for the QuickBooks Online invoice importer — one invoice per document you billed, split into the same line items the customer sees. Upload it under Settings → Import Data → Invoices. QuickBooks accepts 100 invoices at a time.') }}</dd>
+                        </div>
+                    </dl>
                 </section>
             @endcan
 

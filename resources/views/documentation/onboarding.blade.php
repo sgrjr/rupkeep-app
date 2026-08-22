@@ -102,10 +102,10 @@
                         {{ __('We\'ve implemented CSV export functionality that generates files in QuickBooks-compatible format. This allows you to:') }}
                     </p>
                     <ul class="mt-3 space-y-2 text-sm text-slate-600 list-disc list-inside">
-                        <li>{{ __('Export invoice data to CSV format') }}</li>
-                        <li>{{ __('Import directly into QuickBooks') }}</li>
-                        <li>{{ __('Maintain all financial data in sync') }}</li>
-                        <li>{{ __('Export by date range or customer') }}</li>
+                        <li>{{ __('Export one invoice per document you billed, split into the same line items the customer sees') }}</li>
+                        <li>{{ __('Import directly through the QuickBooks Online invoice importer') }}</li>
+                        <li>{{ __('Export by date range, customer or payment status') }}</li>
+                        <li>{{ __('Or take the full job CSV instead: one row per job, every figure in its own column') }}</li>
                     </ul>
                 </div>
 
@@ -183,7 +183,8 @@
                     <h3 class="text-lg font-semibold text-slate-900">{{ __('Exporting Data') }}</h3>
                     <p class="mt-2 text-slate-600">{{ __('Export functionality is available for:') }}</p>
                     <ul class="mt-3 space-y-2 text-sm text-slate-600 list-disc list-inside">
-                        <li><strong>{{ __('QuickBooks CSV Export') }}:</strong> {{ __('Export invoice data in QuickBooks-compatible format from the Invoices section') }}</li>
+                        <li><strong>{{ __('QuickBooks CSV') }}:</strong> {{ __('One invoice per document you billed, split into line items, shaped for the QuickBooks Online invoice importer') }}</li>
+                        <li><strong>{{ __('Full Job CSV') }}:</strong> {{ __('One row per job with every figure in its own column, for a spreadsheet or a bookkeeper') }}</li>
                         <li><strong>{{ __('Reports') }}:</strong> {{ __('Generate various reports including annual vehicle reports, job summaries, and more') }}</li>
                     </ul>
                     <p class="mt-4 text-sm text-slate-600">
@@ -192,9 +193,10 @@
                     <ol class="mt-2 space-y-2 text-sm text-slate-600 list-decimal list-inside">
                         <li>{{ __('Navigate to the Invoices section') }}</li>
                         <li>{{ __('Use filters to select the invoices you want to export') }}</li>
-                        <li>{{ __('Click the "Export to CSV" or "QuickBooks Export" button') }}</li>
+                        <li>{{ __('Click the "QuickBooks CSV" button') }}</li>
                         <li>{{ __('Download the generated CSV file') }}</li>
-                        <li>{{ __('Import the CSV into QuickBooks') }}</li>
+                        <li>{{ __('In QuickBooks Online, go to Settings, then Import Data, then Invoices, and upload it') }}</li>
+                        <li>{{ __('QuickBooks accepts 100 invoices per import, so narrow the date range if it refuses') }}</li>
                     </ol>
                 </div>
             </div>

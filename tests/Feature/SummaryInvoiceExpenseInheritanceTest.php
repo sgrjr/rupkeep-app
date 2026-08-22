@@ -131,7 +131,15 @@ class SummaryInvoiceExpenseInheritanceTest extends TestCase
         $this->assertCount(2, $values['summary_items']);
     }
 
-    public function test_the_quickbooks_export_no_longer_bills_one_childs_hotel_against_the_summary(): void
+    /**
+     * The job CSV is where a summary could still expose inherited expenses,
+     * because it is the export with one column per expense bucket. (The
+     * QuickBooks CSV cannot: it bills a summary as its children's own lines.)
+     *
+     * A summary only earns a row of its own there when the jobs under it are
+     * out of range, so that is the shape this sets up.
+     */
+    public function test_the_job_export_no_longer_bills_one_childs_hotel_against_the_summary(): void
     {
         // Both children carry expenses, and the figures differ, so an inherited
         // value (125 / 10, the first child's) is distinguishable from a rolled-up
@@ -141,27 +149,18 @@ class SummaryInvoiceExpenseInheritanceTest extends TestCase
         $b = $this->childInvoice('JOB-B', ['hotel' => 40, 'tolls' => 15]);
         $summary = $this->summaryOf([$a, $b]);
 
-        $csv = $this->actingAs($this->admin)
-            ->get(route('my.invoices.export.quickbooks'))
-            ->streamedContent();
+        $this->datedApart([$a, $b], $summary);
 
-        $rows = array_map('str_getcsv', array_filter(explode("\n", trim($csv))));
-        $header = array_shift($rows);
-        $rows = collect($rows)->keyBy(fn ($row) => $row[array_search('Invoice Number', $header)]);
+        $rows = $this->exportRows(['from' => '2026-04-01', 'to' => '2026-04-30']);
+        $header = $rows['header'];
 
         $hotelColumn = array_search('Expenses (Hotel)', $header);
         $tollsColumn = array_search('Expenses (Tolls)', $header);
 
         // Not 125.00 / 10.00, which is what inheriting the FIRST child looked
         // like. The summary reports what its children add up to.
-        $this->assertSame('165.00', $rows[$summary->invoice_number][$hotelColumn]);
-        $this->assertSame('25.00', $rows[$summary->invoice_number][$tollsColumn]);
-
-        // TASK-383 stopped exporting a child alongside its summary, because the
-        // two rows double-counted the same revenue. The roll-up above is how the
-        // expense detail still reaches the sheet once the children are gone.
-        $this->assertArrayNotHasKey($a->fresh()->invoice_number, $rows);
-        $this->assertArrayNotHasKey($b->fresh()->invoice_number, $rows);
+        $this->assertSame('165.00', $rows['byNumber'][$summary->invoice_number][$hotelColumn]);
+        $this->assertSame('25.00', $rows['byNumber'][$summary->invoice_number][$tollsColumn]);
 
         // And the summary still stores none of it -- the roll-up is computed at
         // export time only, so the summary document prints no expenses.
@@ -171,9 +170,11 @@ class SummaryInvoiceExpenseInheritanceTest extends TestCase
 
     /**
      * The other half of the TASK-379 guarantee: a child's expenses ARE reported
-     * against the child that incurred them. Since TASK-383 a child only appears
-     * in an export that does not also contain its summary, so that is the shape
-     * this asserts.
+     * against the child that incurred them.
+     *
+     * The job CSV is one row per job, so the children are its rows and the
+     * summary covering them is dropped -- there is no range juggling needed
+     * here, unlike the roll-up case above.
      */
     public function test_a_childs_own_expenses_are_reported_when_it_is_exported(): void
     {
@@ -181,27 +182,46 @@ class SummaryInvoiceExpenseInheritanceTest extends TestCase
         $b = $this->childInvoice('JOB-B');
         $summary = $this->summaryOf([$a, $b]);
 
-        // The children were invoiced in March, the summary cut in April.
-        Invoice::whereIn('id', [$a->id, $b->id])
-            ->get()
-            ->each(fn ($child) => $child->forceFill(['created_at' => '2026-03-10 09:00:00'])->saveQuietly());
-        $summary->forceFill(['created_at' => '2026-04-02 09:00:00'])->saveQuietly();
-
-        $csv = $this->actingAs($this->admin)
-            ->get(route('my.invoices.export.quickbooks', ['from' => '2026-03-01', 'to' => '2026-03-31']))
-            ->streamedContent();
-
-        $rows = array_map('str_getcsv', array_filter(explode("
-", trim($csv))));
-        $header = array_shift($rows);
-        $rows = collect($rows)->keyBy(fn ($row) => $row[array_search('Invoice Number', $header)]);
+        $rows = $this->exportRows();
+        $header = $rows['header'];
 
         $hotelColumn = array_search('Expenses (Hotel)', $header);
         $tollsColumn = array_search('Expenses (Tolls)', $header);
 
-        $this->assertArrayNotHasKey($summary->invoice_number, $rows);
-        $this->assertSame('125.00', $rows[$a->fresh()->invoice_number][$hotelColumn]);
-        $this->assertSame('10.00', $rows[$a->fresh()->invoice_number][$tollsColumn]);
+        $this->assertArrayNotHasKey($summary->invoice_number, $rows['byNumber']);
+        $this->assertSame('125.00', $rows['byNumber'][$a->fresh()->invoice_number][$hotelColumn]);
+        $this->assertSame('10.00', $rows['byNumber'][$a->fresh()->invoice_number][$tollsColumn]);
+    }
+
+    /**
+     * Children invoiced in March, their summary not cut until April, so a range
+     * can catch one without the other.
+     */
+    private function datedApart(array $children, Invoice $summary): void
+    {
+        Invoice::whereIn('id', collect($children)->pluck('id')->all())
+            ->get()
+            ->each(fn ($child) => $child->forceFill(['created_at' => '2026-03-10 09:00:00'])->saveQuietly());
+
+        $summary->forceFill(['created_at' => '2026-04-02 09:00:00'])->saveQuietly();
+    }
+
+    /**
+     * @return array{header: array, byNumber: \Illuminate\Support\Collection}
+     */
+    private function exportRows(array $filters = []): array
+    {
+        $csv = $this->actingAs($this->admin)
+            ->get(route('my.invoices.export.jobs', $filters))
+            ->streamedContent();
+
+        $rows = array_map('str_getcsv', array_filter(explode("\n", trim($csv))));
+        $header = array_shift($rows);
+
+        return [
+            'header' => $header,
+            'byNumber' => collect($rows)->keyBy(fn ($row) => $row[array_search('Invoice Number', $header)]),
+        ];
     }
 
     public function test_the_summary_edit_page_offers_no_per_job_overrides(): void

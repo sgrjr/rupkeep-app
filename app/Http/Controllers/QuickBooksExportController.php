@@ -2,342 +2,310 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\FiltersInvoiceExports;
 use App\Models\Invoice;
+use App\Services\InvoiceLineItems;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
+/**
+ * An accounts-receivable feed shaped for QuickBooks Online's own invoice
+ * importer, as opposed to the job register in JobCsvExportController.
+ *
+ * The difference that matters is the shape. Our job CSV is one row per job with
+ * every figure in its own column, which is a report -- QuickBooks has no idea
+ * what "Expenses (Wait Time)" is. QuickBooks models an invoice as a header plus
+ * N line items, and its CSV importer expresses that by repeating the invoice
+ * number down consecutive rows: same *InvoiceNo, one row per line. So that is
+ * what this writes.
+ *
+ * The lines come from InvoiceLineItems -- the same code that prints the
+ * customer's invoice. That is deliberate and load-bearing: the amounts on a
+ * QuickBooks invoice will equal the amounts on the paper one line for line,
+ * because they are literally the same list. Deriving a second breakdown here
+ * would eventually disagree with the document the customer is holding.
+ *
+ * A summary invoice bills as ONE QuickBooks invoice whose lines are its
+ * children's lines, each labelled with the job it came from. That preserves the
+ * detail TASK-383 had to flatten into a text column, without double-counting:
+ * the summary's total is the sum of its children, and here so are its lines.
+ */
 class QuickBooksExportController extends Controller
 {
-    public function __invoke(Request $request): StreamedResponse
+    use FiltersInvoiceExports;
+
+    /**
+     * QuickBooks Online refuses an import above these, so a file over the limit
+     * is a wasted round trip for the user rather than a partial success.
+     */
+    private const MAX_INVOICES = 100;
+    private const MAX_ROWS = 1000;
+
+    /**
+     * Our line keys mapped to the products/services QuickBooks will post to.
+     *
+     * These become items in the customer's QuickBooks chart on first import, so
+     * they are deliberately few and stable. The specific, wordy text (which
+     * expense, which job, how many free wait hours) rides in ItemDescription,
+     * which is free text and posts to nothing.
+     */
+    private const ITEMS = [
+        'pilot_car_service' => 'Pilot Car Escort',
+        'wait_time' => 'Wait Time',
+        'extra_stops' => 'Extra Stop',
+        'dead_head' => 'Deadhead',
+        'tolls' => 'Tolls',
+        'hotel' => 'Lodging',
+        'extra_charge' => 'Extra Charge',
+        'mileage' => 'Mileage',
+        'mini_addon' => 'Mini Add-On',
+    ];
+
+    public function __invoke(Request $request): StreamedResponse|RedirectResponse
     {
-        $user = $request->user();
+        $this->authorizeExport($request);
 
-        if (! $user->isAdmin() && ! $user->isManager() && ! $user->isSuper()) {
-            abort(403);
-        }
-
-        $data = $request->validate([
-            'from' => ['nullable', 'date'],
-            'to' => ['nullable', 'date', 'after_or_equal:from'],
-            'customer_id' => ['nullable', 'integer'],
-            'paid' => ['nullable', 'in:yes,no'],
-        ]);
-        
-        // Normalize empty strings to null to ensure they're not treated as filters
-        $data['from'] = !empty($data['from']) ? $data['from'] : null;
-        $data['to'] = !empty($data['to']) ? $data['to'] : null;
-        $data['customer_id'] = !empty($data['customer_id']) ? $data['customer_id'] : null;
-        $data['paid'] = !empty($data['paid']) ? $data['paid'] : null;
-
-        $query = Invoice::query()
-            ->with(['customer', 'job'])
-            ->where('organization_id', $user->organization_id)
-            ->orderByDesc('created_at');
-
-        // Apply filters only if provided - if no filters, export ALL invoices
-        if (! empty($data['from'])) {
-            $query->whereDate('created_at', '>=', Carbon::parse($data['from']));
-        }
-
-        if (! empty($data['to'])) {
-            $query->whereDate('created_at', '<=', Carbon::parse($data['to']));
-        }
-
-        if (! empty($data['customer_id'])) {
-            $query->where('customer_id', $data['customer_id']);
-        }
-
-        if (! empty($data['paid'])) {
-            $query->where('paid_in_full', $data['paid'] === 'yes');
-        }
-
-        // Explicitly get all results - no limit, no pagination when no filters are provided
-        // This ensures ALL invoices are exported when filters are empty
-        $invoices = $query->limit(null)->get();
-
-        // TASK-383: a summary invoice's total IS the sum of its children's totals,
-        // so exporting both rows doubles the revenue for those jobs and nothing in
-        // the CSV lets the importer tell. The summary is the document the customer
-        // actually received and paid against, so that is the row we keep.
-        //
-        // A child is dropped only when its summary is present in this same export.
-        // If the range catches the children but not the summary that was cut later,
-        // dropping them would silently lose the revenue instead of double-counting
-        // it - the worse of the two failures - so those children are kept.
-        $exportedIds = $invoices->pluck('id')->all();
-        $exportedIds = array_flip($exportedIds);
-
-        $invoices = $invoices->reject(function ($invoice) use ($exportedIds) {
-            return $invoice->parent_invoice_id !== null
-                && isset($exportedIds[$invoice->parent_invoice_id]);
-        })->values();
-
-        // With the children gone, their expense detail would have gone with
-        // them, since a summary stores no expense scalars of its own (TASK-379).
-        // The summary row therefore rolls its children's figures up at export
-        // time. This is computed here and never written back to the summary's
-        // `values` -- storing it is what TASK-379 fixed, and the summary
-        // document itself must keep printing no expenses.
+        $invoices = $this->filteredInvoices($request, $this->exportFilters($request));
         $invoices->loadMissing(['children.job']);
 
-        $filename = 'quickbooks-export-' . now()->format('Ymd-His') . '.csv';
-        $headers = [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
-        ];
+        // TASK-383: a summary's total IS the sum of its children's totals, so
+        // billing both doubles the revenue for those jobs. The summary is the
+        // document the customer received and paid against, so that is the one
+        // QuickBooks should carry -- and its children's lines ride inside it.
+        //
+        // A child is dropped only when its summary is present in this same
+        // export. If the range caught the children but not the summary cut
+        // later, dropping them would lose the revenue rather than duplicate it,
+        // which is the worse failure, so those children bill on their own.
+        $present = $this->idLookup($invoices);
 
-        return response()->streamDownload(function () use ($invoices) {
+        $invoices = $invoices->reject(
+            fn (Invoice $invoice) => $invoice->parent_invoice_id !== null
+                && isset($present[$invoice->parent_invoice_id])
+        )->values();
+
+        $rows = $this->rows($invoices);
+
+        if ($over = $this->overLimit($invoices, $rows)) {
+            return back()->with('error', $over);
+        }
+
+        $filename = 'quickbooks-invoices-'.now()->format('Ymd-His').'.csv';
+
+        return response()->streamDownload(function () use ($rows) {
             $handle = fopen('php://output', 'w');
 
-            // Enhanced header with more QuickBooks-friendly fields
-            $header = [
-                'Invoice Number',
-                'Invoice Date',
-                'Customer Name',
-                'Customer Address',
-                'Job Number',
-                'Load Number',
-                'Billable Miles',
-                'Rate Code',
-                'Rate Value',
-                'Subtotal',
-                'Expenses (Hotel)',
-                'Expenses (Tolls)',
-                'Expenses (Gas)',
-                'Expenses (Wait Time)',
-                'Expenses (Extra Charges)',
-                'Extra Charges (Detail)',
-                'Deadhead Count',
-                'Deadhead Amount',
-                'Mini Charge',
-                'Total Amount',
-                'Paid Status',
-                'Payment Date',
-                'Check Number',
+            // The column names from QuickBooks Online's own downloadable sample
+            // file. Matching them means the import wizard's mapping step
+            // pre-fills instead of asking the user to pair 15 columns by hand.
+            fputcsv($handle, [
+                '*InvoiceNo',
+                '*Customer',
+                '*InvoiceDate',
+                '*DueDate',
+                'Terms',
+                'Location',
                 'Memo',
-                'Summary Includes',
-            ];
+                'Item(Product/Service)',
+                'ItemDescription',
+                'ItemQuantity',
+                'ItemRate',
+                '*ItemAmount',
+                'Taxable',
+                'TaxRate',
+                'Service Date',
+            ]);
 
-            fputcsv($handle, $header);
-
-            foreach ($invoices as $invoice) {
-                $values = is_array($invoice->values) ? $invoice->values : [];
-                $job = $invoice->job;
-                $customer = $invoice->customer;
-
-                // Build customer address
-                $customerAddress = '';
-                if ($customer) {
-                    $addressParts = array_filter([
-                        $customer->street,
-                        $customer->city,
-                        $customer->state,
-                        $customer->zip,
-                    ]);
-                    $customerAddress = implode(', ', $addressParts);
-                }
-
-                // Extract values - handle both flat and nested structures
-                $totals = is_array($values['total'] ?? null) ? $values['total'] : [];
-                
-                // Get billable miles from various possible locations
-                $billableMiles = $values['billable_miles'] 
-                    ?? $totals['billable_miles'] 
-                    ?? ($job ? $job->miles?->billable : null)
-                    ?? 0;
-
-                // A summary carries no expenses of its own, so its row reports
-                // what its children add up to. A single invoice reports itself.
-                $children = $invoice->isSummary() ? $invoice->children : collect();
-                $figures = $children->isNotEmpty()
-                    ? $this->rollUpFigures($children)
-                    : $this->invoiceFigures($invoice);
-                $summaryDetail = $children->isNotEmpty()
-                    ? $this->summaryDetail($children)
-                    : '';
-
-                $row = [
-                    $invoice->invoice_number,
-                    optional($invoice->created_at)->format('m/d/Y'), // QuickBooks date format
-                    optional($customer)->name ?? '',
-                    $customerAddress,
-                    optional($job)->job_no ?? '',
-                    optional($job)->load_no ?? '',
-                    number_format((float) $billableMiles, 1, '.', ''),
-                    optional($job)->rate_code ?? '',
-                    optional($job)->rate_value ?? '',
-                    number_format($figures['subtotal'], 2, '.', ''),
-                    number_format($figures['hotel'], 2, '.', ''),
-                    number_format($figures['tolls'], 2, '.', ''),
-                    number_format($figures['gas'], 2, '.', ''),
-                    number_format($figures['wait_time'], 2, '.', ''),
-                    number_format($figures['extra_charge'], 2, '.', ''),
-                    $children->isNotEmpty()
-                        ? $this->rolledUpExtraChargeDetail($children)
-                        : $this->extraChargeDetail($values),
-                    $figures['deadhead_count'],
-                    number_format($figures['deadhead'], 2, '.', ''),
-                    number_format($figures['mini'], 2, '.', ''),
-                    number_format((float) ($totals['total'] ?? ($values['total'] ?? 0)), 2, '.', ''),
-                    $invoice->paid_in_full ? 'Paid' : 'Unpaid',
-                    $invoice->paid_in_full && $invoice->updated_at ? $invoice->updated_at->format('m/d/Y') : '',
-                    optional($job)->check_no ?? '',
-                    $values['notes'] ?? $values['memo'] ?? ($job ? $job->memo : '') ?? '',
-                    $summaryDetail,
-                ];
-
+            foreach ($rows as $row) {
                 fputcsv($handle, $row);
             }
 
             fclose($handle);
-        }, $filename, $headers);
+        }, $filename, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ]);
     }
 
     /**
-     * The expense and charge figures one invoice carries, read from wherever
-     * its values blob happens to keep them (flat keys on older invoices, a
-     * nested `expenses` / `total` array on newer ones).
+     * Every CSV row for this export, invoice headers repeated down their lines.
      */
-    private function invoiceFigures(Invoice $invoice): array
+    private function rows(Collection $invoices): array
     {
-        $values = is_array($invoice->values) ? $invoice->values : [];
-        $totals = is_array($values['total'] ?? null) ? $values['total'] : [];
-        $expenses = is_array($values['expenses'] ?? null) ? $values['expenses'] : [];
-        $job = $invoice->job;
+        $rows = [];
 
-        return [
-            'subtotal' => (float) ($totals['subtotal'] ?? $totals['base'] ?? ($values['subtotal'] ?? 0)),
-            'hotel' => (float) ($expenses['hotel'] ?? $values['hotel'] ?? 0),
-            'tolls' => (float) ($expenses['tolls'] ?? $values['tolls'] ?? 0),
-            'gas' => (float) ($expenses['gas'] ?? $values['gas'] ?? 0),
-            'wait_time' => (float) ($expenses['wait_time'] ?? $values['wait_time_hours'] ?? 0),
-            'extra_charge' => (float) ($expenses['extra_charge'] ?? $values['extra_charge'] ?? 0),
-            'deadhead_count' => (int) ($values['deadhead_count'] ?? $totals['deadhead_count'] ?? ($job && $job->is_deadhead ? 1 : 0)),
-            'deadhead' => (float) ($totals['deadhead'] ?? $values['dead_head_charge'] ?? 0),
-            'mini' => (float) ($totals['mini'] ?? $values['mini_addon_amount'] ?? $values['mini_cost'] ?? 0),
-        ];
-    }
+        foreach ($invoices as $invoice) {
+            $values = is_array($invoice->values) ? $invoice->values : [];
+            $lines = InvoiceLineItems::forInvoice($invoice);
 
-    /**
-     * The same figures for a summary, summed across the children it covers.
-     *
-     * A summary stores no expense scalars of its own -- TASK-379 removed them
-     * because it had been inheriting one arbitrary child's. Since TASK-383 stops
-     * exporting the children alongside it, rolling them up here is the only way
-     * the detail reaches the sheet at all. It stays a read: nothing is written
-     * back, so the summary document still prints no expenses.
-     */
-    private function rollUpFigures(Collection $children): array
-    {
-        $rolled = array_fill_keys([
-            'subtotal', 'hotel', 'tolls', 'gas', 'wait_time',
-            'extra_charge', 'deadhead_count', 'deadhead', 'mini',
-        ], 0);
+            // An invoice with no itemizable lines still has to bill. This
+            // happens to summaries whose children were force-deleted, and to
+            // very old invoices carrying a total and nothing else. Billing the
+            // stored total as a single line is honest; skipping the invoice
+            // would quietly drop revenue.
+            if ($lines === []) {
+                $total = (float) ($values['total'] ?? 0);
 
-        foreach ($children as $child) {
-            foreach ($this->invoiceFigures($child) as $key => $value) {
-                $rolled[$key] += $value;
-            }
-        }
-
-        $rolled['deadhead_count'] = (int) $rolled['deadhead_count'];
-
-        return $rolled;
-    }
-
-    /**
-     * Which invoices a summary row stands for, and what each contributed.
-     *
-     * Same reasoning as extraChargeDetail() below: the CSV is one row per
-     * invoice, so N children cannot each become a column. They ride in a single
-     * text column, ready to paste into a QuickBooks memo or line description.
-     */
-    private function summaryDetail(Collection $children): string
-    {
-        $parts = [];
-
-        foreach ($children as $child) {
-            $figures = $this->invoiceFigures($child);
-            $values = is_array($child->values) ? $child->values : [];
-
-            $expenseBits = [];
-            foreach (['hotel' => 'Hotel', 'tolls' => 'Tolls', 'gas' => 'Gas', 'wait_time' => 'Wait'] as $key => $label) {
-                if ($figures[$key] > 0) {
-                    $expenseBits[] = $label.' '.number_format($figures[$key], 2, '.', '');
+                if (round($total, 2) == 0.0) {
+                    continue;
                 }
+
+                $lines = [[
+                    'invoice' => $invoice,
+                    'key' => 'pilot_car_service',
+                    'description' => __('Pilot Car Service'),
+                    'quantity' => 1,
+                    'rate' => $total,
+                    'amount' => $total,
+                ]];
             }
 
-            $label = $child->invoice_number ?? ('#'.$child->id);
-            $jobNo = $values['job_no'] ?? $child->job?->job_no;
+            $lateFees = $invoice->calculateLateFees();
+            $dueDate = $lateFees['due_date'] ?? null;
+            $invoiceDate = $invoice->created_at;
 
-            $line = $label.($jobNo ? ' ('.$jobNo.')' : '')
-                .': '.number_format((float) ($values['total'] ?? 0), 2, '.', '');
+            $header = [
+                $invoice->invoice_number,
+                optional($invoice->customer)->name ?? '',
+                $this->date($invoiceDate),
+                $this->date($dueDate),
+                $this->terms($invoiceDate, $dueDate),
+                '',
+                $this->memo($invoice, $values),
+            ];
 
-            if ($expenseBits !== []) {
-                $line .= ' — '.implode(', ', $expenseBits);
+            foreach ($lines as $line) {
+                $source = $line['invoice'];
+
+                $rows[] = array_merge($header, [
+                    self::ITEMS[$line['key']] ?? 'Pilot Car Escort',
+                    $this->describe($invoice, $source, $line['description']),
+                    $this->number((float) $line['quantity'], 2),
+                    $this->number((float) $line['rate'], 2),
+                    $this->number((float) $line['amount'], 2),
+                    'N',
+                    '',
+                    $this->date($source->job?->scheduled_pickup_at),
+                ]);
             }
-
-            $parts[] = $line;
         }
 
-        return implode('; ', $parts);
+        return $rows;
     }
 
     /**
-     * The named extra charges of every child a summary covers, each prefixed
-     * with the child it came from.
+     * The line's own text, told which job it belongs to when the invoice covers
+     * more than one. On a single-job invoice the job number is already in the
+     * memo, so repeating it on every line is noise.
+     *
+     * Separators here are plain ASCII on purpose. This file is parsed by
+     * QuickBooks rather than read by a person, and it carries no byte-order
+     * mark (one would corrupt the first header name and break the importer's
+     * auto-mapping), so an em dash is a gamble for no gain.
      */
-    private function rolledUpExtraChargeDetail(Collection $children): string
+    private function describe(Invoice $invoice, Invoice $source, string $description): string
+    {
+        if (! $invoice->isSummary()) {
+            return $description;
+        }
+
+        $values = is_array($source->values) ? $source->values : [];
+        $jobNo = $values['job_no'] ?? $source->job?->job_no;
+
+        return $jobNo ? $jobNo.' - '.$description : $description;
+    }
+
+    /**
+     * What the bookkeeper reads on the invoice itself: which job (or jobs) it
+     * covers, then whatever note was written for the customer.
+     */
+    private function memo(Invoice $invoice, array $values): string
     {
         $parts = [];
 
-        foreach ($children as $child) {
-            $detail = $this->extraChargeDetail(is_array($child->values) ? $child->values : []);
+        if ($invoice->isSummary()) {
+            $jobNos = $invoice->children
+                ->map(fn (Invoice $child) => (is_array($child->values) ? $child->values : [])['job_no']
+                    ?? $child->job?->job_no)
+                ->filter()
+                ->all();
 
-            if ($detail !== '') {
-                $parts[] = ($child->invoice_number ?? ('#'.$child->id)).': '.$detail;
+            if ($jobNos !== []) {
+                $parts[] = __('Jobs: :list', ['list' => implode(', ', $jobNos)]);
             }
+        } elseif ($jobNo = ($values['job_no'] ?? $invoice->job?->job_no)) {
+            $parts[] = __('Job :no', ['no' => $jobNo]);
         }
 
-        return implode('; ', $parts);
+        $note = trim((string) ($values['notes'] ?? $values['memo'] ?? $invoice->job?->memo ?? ''));
+
+        if ($note !== '') {
+            $parts[] = $note;
+        }
+
+        return implode(' - ', $parts);
     }
 
     /**
-     * A readable breakdown of the invoice's named extra charges (TASK-378).
-     *
-     * The CSV is one row per invoice, so N charges cannot each become a column
-     * without either dynamic headers or an IIF-style line-item restructure.
-     * They ride in a single adjacent text column instead: the scalar
-     * "Expenses (Extra Charges)" stays the authoritative figure that totals
-     * against, and this one says what it was made of, ready to paste into a
-     * QuickBooks memo or description.
-     *
-     * Empty for invoices issued before TASK-330, which recorded only the total
-     * and no itemization -- an empty cell is honest there, an invented one
-     * would not be.
+     * "Net 30" and friends, derived from the grace period the invoice was
+     * actually issued under rather than assumed.
      */
-    private function extraChargeDetail(array $values): string
+    private function terms(?Carbon $invoiceDate, ?Carbon $dueDate): string
     {
-        $lines = $values['extra_charges'] ?? null;
-
-        if (! is_array($lines) || $lines === []) {
+        if (! $invoiceDate || ! $dueDate) {
             return '';
         }
 
-        $parts = [];
+        $days = (int) round($invoiceDate->diffInDays($dueDate));
 
-        foreach ($lines as $line) {
-            $description = trim((string) ($line['description'] ?? ''));
+        return $days > 0 ? 'Net '.$days : '';
+    }
 
-            if ($description === '') {
-                continue;
-            }
-
-            $parts[] = $description.' $'.number_format((float) ($line['amount'] ?? 0), 2);
+    private function date($value): string
+    {
+        if (empty($value)) {
+            return '';
         }
 
-        return implode('; ', $parts);
+        try {
+            return Carbon::parse($value)->format('m/d/Y');
+        } catch (\Throwable) {
+            return '';
+        }
+    }
+
+    /**
+     * Plain decimals, no thousands separator -- a comma inside a CSV cell is
+     * quoted correctly by fputcsv but read as text by QuickBooks.
+     */
+    private function number(float $value, int $decimals): string
+    {
+        return number_format($value, $decimals, '.', '');
+    }
+
+    /**
+     * The message shown when the export is too big for QuickBooks to swallow,
+     * or null when it fits.
+     */
+    private function overLimit(Collection $invoices, array $rows): ?string
+    {
+        if ($invoices->count() > self::MAX_INVOICES) {
+            return __(
+                'QuickBooks accepts :max invoices per import and this export has :count. Narrow the date range or pick a single customer, then export again.',
+                ['max' => self::MAX_INVOICES, 'count' => $invoices->count()]
+            );
+        }
+
+        if (count($rows) > self::MAX_ROWS) {
+            return __(
+                'QuickBooks accepts :max rows per import and this export has :count line items. Narrow the date range or pick a single customer, then export again.',
+                ['max' => self::MAX_ROWS, 'count' => count($rows)]
+            );
+        }
+
+        return null;
     }
 }
