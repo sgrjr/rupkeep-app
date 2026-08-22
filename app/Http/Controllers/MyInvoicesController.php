@@ -453,9 +453,34 @@ class MyInvoicesController extends Controller
         return redirect()->route('my.invoices.edit', ['invoice' => $summary->id]);
     }
 
+    /**
+     * The `values` blob for a summary invoice.
+     *
+     * A summary is a cover sheet: one row per child invoice at that child's
+     * total, and nothing else. It therefore carries NO per-job scalars of its
+     * own -- no hotel, tolls, extra_charge, rate_code, job_no, wait time. This
+     * used to seed itself from the first child's whole values array, so a
+     * summary silently inherited one arbitrary child's expense figures as dead
+     * keys, which the QuickBooks export then wrote out as if they were the
+     * summary's own (TASK-379).
+     *
+     * Carrying none rather than rolling them up is deliberate. Every child's
+     * expenses are already inside the child total this sums, and are itemized
+     * on the child invoice, which stays individually openable and is linked
+     * from the summary. A rolled-up figure would be a second set of numbers no
+     * template prints, and nothing recomputes a summary when a child is edited,
+     * so it would start going stale immediately.
+     *
+     * Only presentation carries over from the first child -- who the invoice is
+     * from and to, and the logo/footer chrome. All children share a customer and
+     * an organization (both call sites enforce it), so that much is not
+     * arbitrary.
+     */
     protected function buildSummaryValues(Collection $childInvoices): array
     {
-        $baseValues = $childInvoices->first()->values ?? [];
+        $firstValues = $childInvoices->first()->values ?? [];
+
+        $baseValues = Arr::only($firstValues, ['bill_from', 'bill_to', 'logo', 'footer']);
 
         $total = 0.0;
         $billableMiles = 0.0;

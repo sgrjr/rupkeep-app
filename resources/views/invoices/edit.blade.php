@@ -563,6 +563,11 @@
                 </div>
             </section>
 
+            {{-- Per-job overrides. A summary invoice has no single job behind it,
+                 so these belong on the child invoices; showing them here offered
+                 to write one job's pickup address or driver onto a cover sheet
+                 that lists several (TASK-379). --}}
+            @if(! $invoice->isSummary())
             <section class="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm space-y-6">
                 <header>
                     <h2 class="text-lg font-semibold text-slate-900">{{ __('Job & Load Details') }}</h2>
@@ -623,13 +628,19 @@
                     </div>
                 </div>
             </section>
+            @endif
 
             <section class="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm space-y-6">
                 <header>
                     <h2 class="text-lg font-semibold text-slate-900">{{ __('Charges & Overrides') }}</h2>
-                    <p class="text-xs text-slate-500">{{ __('Adjust how totals are calculated. These values override the live data pulled from job logs.') }}</p>
+                    @if($invoice->isSummary())
+                        <p class="text-xs text-slate-500">{{ __('A summary totals its child invoices. Rates and expenses are set on those, not here.') }}</p>
+                    @else
+                        <p class="text-xs text-slate-500">{{ __('Adjust how totals are calculated. These values override the live data pulled from job logs.') }}</p>
+                    @endif
                 </header>
                 <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    @if(! $invoice->isSummary())
                     <div>
                         <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Rate Code') }}</label>
                         <input type="text" name="values[rate_code]" value="{{ old('values.rate_code', data_get($values, 'rate_code')) }}"
@@ -651,11 +662,15 @@
                                value="{{ old('values.effective_rate_value', data_get($values, 'effective_rate_value')) }}"
                                class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200" />
                     </div>
+                    @endif
+                    {{-- Billable miles and the total are the two figures a summary
+                         legitimately holds: both are sums across its children. --}}
                     <div>
                         <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Billable Miles') }}</label>
                         <input type="number" step="0.1" name="values[billable_miles]" value="{{ old('values.billable_miles', data_get($values, 'billable_miles')) }}"
                                class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200" />
                     </div>
+                    @if(! $invoice->isSummary())
                     <div>
                         <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Non-billable Miles') }}</label>
                         <input type="number" step="0.1" name="values[nonbillable_miles]" value="{{ old('values.nonbillable_miles', data_get($values, 'nonbillable_miles')) }}"
@@ -686,6 +701,7 @@
                         <p class="mt-2 text-sm font-semibold text-slate-900">${{ number_format((float) str_replace(',', '', (string) data_get($values, 'extra_charge', 0)), 2) }}</p>
                         <p class="mt-1 text-xs text-slate-500">{{ __('Itemized below.') }}</p>
                     </div>
+                    @endif
                     <div>
                         <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Total Due Override') }}</label>
                         <input type="number" step="0.01" name="values[total]" value="{{ old('values.total', data_get($values, 'total')) }}"
