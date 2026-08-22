@@ -120,3 +120,5 @@ Dev environment is Windows IIS at `C:\inetpub\wwwroot\rupkeep-app`. Production t
 - **Billable Miles** — miles charged to customer (job start → job end)
 - **Non-billable Miles** — personal vehicle miles (home → job start, etc.)
 - **Rate Code** — pricing model (`per_mile_rate`, `flat_rate`, etc.)
+- **Charge** (standing) — a named rate on the published price list, sibling of Dead Head Miles and Extra Stop: applies to any job, quoted publicly at `/pricing`, edited at `/my/pricing`. Seeded from `config/pricing.php`; an org can add its own (TASK-377), stored as `charges.{key}.{field}` PricingSetting rows indexed by a `charges.custom` registry row. Display-only — invoice math reads `charges.wait_time.*` and `charges.extra_stop.*` by name and nothing else.
+- **Extra Charge** (ad-hoc) — a one-off dollar amount with a description attached to a single driver log, for something like renting special equipment on an unusual job (TASK-330). Lives in `log_extra_charges`, becomes its own invoice line, never appears on a price list. Not to be confused with a standing charge: different lifetime, different audience, different storage.
