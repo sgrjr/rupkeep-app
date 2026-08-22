@@ -9,6 +9,7 @@ use App\Models\Invoice;
 use App\Models\PilotCarJob;
 use App\Models\JobInvoice;
 use App\Models\UserLog;
+use App\Services\SummaryInvoiceValues;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -189,6 +190,13 @@ class MyInvoicesController extends Controller
 
         $invoice->values = $values;
 
+        // On a summary, a total that does not match what the children sum to is
+        // the admin's own figure, and TASK-381's auto-recompute must not later
+        // overwrite it. A total that does match is just the sum, so any earlier
+        // override is released. This has to run before save() so the flag is
+        // part of the same write.
+        SummaryInvoiceValues::markOverrideFromPostedTotal($invoice);
+
         if ($request->filled('paid_in_full')) {
             $invoice->paid_in_full = $request->input('paid_in_full') === 'yes';
         }
@@ -196,6 +204,37 @@ class MyInvoicesController extends Controller
         $invoice->save();
 
         session()->flash('success', __('Invoice updated.'));
+
+        return redirect()->route('my.invoices.edit', ['invoice' => $invoice->id]);
+    }
+
+    /**
+     * Recompute a summary invoice from its children, discarding any hand-set
+     * total (TASK-381).
+     *
+     * A summary whose total was overridden is deliberately NOT recomputed when
+     * a child changes -- it is marked stale instead, and the edit screen offers
+     * this action. Regenerating is therefore always an explicit choice.
+     */
+    public function regenerateSummary(Request $request, Invoice $invoice)
+    {
+        $this->authorize('update', $invoice);
+
+        if (! $invoice->isSummary()) {
+            session()->flash('error', __('Only a summary invoice can be regenerated from its children.'));
+
+            return redirect()->route('my.invoices.edit', ['invoice' => $invoice->id]);
+        }
+
+        if ($invoice->children()->doesntExist()) {
+            session()->flash('error', __('This summary has no child invoices to rebuild from.'));
+
+            return redirect()->route('my.invoices.edit', ['invoice' => $invoice->id]);
+        }
+
+        SummaryInvoiceValues::regenerate($invoice);
+
+        session()->flash('success', __('Summary rebuilt from its child invoices.'));
 
         return redirect()->route('my.invoices.edit', ['invoice' => $invoice->id]);
     }
@@ -456,91 +495,13 @@ class MyInvoicesController extends Controller
     /**
      * The `values` blob for a summary invoice.
      *
-     * A summary is a cover sheet: one row per child invoice at that child's
-     * total, and nothing else. It therefore carries NO per-job scalars of its
-     * own -- no hotel, tolls, extra_charge, rate_code, job_no, wait time. This
-     * used to seed itself from the first child's whole values array, so a
-     * summary silently inherited one arbitrary child's expense figures as dead
-     * keys, which the QuickBooks export then wrote out as if they were the
-     * summary's own (TASK-379).
-     *
-     * Carrying none rather than rolling them up is deliberate. Every child's
-     * expenses are already inside the child total this sums, and are itemized
-     * on the child invoice, which stays individually openable and is linked
-     * from the summary. A rolled-up figure would be a second set of numbers no
-     * template prints, and nothing recomputes a summary when a child is edited,
-     * so it would start going stale immediately.
-     *
-     * Only presentation carries over from the first child -- who the invoice is
-     * from and to, and the logo/footer chrome. All children share a customer and
-     * an organization (both call sites enforce it), so that much is not
-     * arbitrary.
+     * Construction lives in SummaryInvoiceValues so that InvoiceObserver can
+     * re-run it when a child invoice changes (TASK-381). See that class for
+     * why a summary carries no per-job scalars of its own.
      */
     protected function buildSummaryValues(Collection $childInvoices): array
     {
-        $firstValues = $childInvoices->first()->values ?? [];
-
-        $baseValues = Arr::only($firstValues, ['bill_from', 'bill_to', 'logo', 'footer']);
-
-        $total = 0.0;
-        $billableMiles = 0.0;
-        $items = [];
-
-        foreach ($childInvoices as $child) {
-            $childValues = $child->values ?? [];
-            $childTotal = (float) data_get($childValues, 'total', 0);
-            $childMiles = (float) data_get($childValues, 'billable_miles', 0);
-
-            $total += $childTotal;
-            $billableMiles += $childMiles;
-
-            // Generate description of work from pickup and delivery addresses
-            $pickupAddress = data_get($childValues, 'pickup_address');
-            $deliveryAddress = data_get($childValues, 'delivery_address');
-            $description = \App\Models\Invoice::generateDescriptionOfWork($pickupAddress, $deliveryAddress);
-
-            // The job may be gone (force-deleted) while the invoice remains, so
-            // every read below goes through optional chaining rather than
-            // assuming a relation.
-            $job = $child->job;
-
-            $items[] = [
-                'invoice_id' => $child->id,
-                'invoice_number' => $child->invoice_number ?? '—',
-                'title' => data_get($childValues, 'title', 'INVOICE'),
-                'job_no' => data_get($childValues, 'job_no') ?? $job?->job_no ?? data_get($childValues, 'load_no') ?? '—',
-                'load_no' => data_get($childValues, 'load_no') ?? $job?->load_no ?? '—',
-                'pickup_address' => $pickupAddress ?? $job?->pickup_address ?? '—',
-                'delivery_address' => $deliveryAddress ?? $job?->delivery_address ?? '—',
-                'description' => $description ?? '—',
-                'total' => $childTotal > 0 ? $childTotal : (float)data_get($childValues, 'total', 0),
-                'billable_miles' => $childMiles > 0 ? $childMiles : (float)data_get($childValues, 'billable_miles', 0),
-                'rate_code' => data_get($childValues, 'effective_rate_code') ?? data_get($childValues, 'rate_code') ?? $job?->rate_code ?? '—',
-                // When the WORK happened, not when the invoice was cut (TASK-345).
-                // These were previously all the child invoice's created_at, so
-                // every row of a monthly summary carried the same date.
-                'date_of_service' => $job?->scheduled_pickup_at
-                    ?? data_get($childValues, 'start_job_time')
-                    ?? $child->created_at?->format('Y-m-d')
-                    ?? '—',
-                // The TASK-344 required fields that map onto a summary row. A
-                // summary aggregates several jobs, so these ride per-row rather
-                // than in the single-invoice job block.
-                'truck_driver_name' => trim((string) (data_get($childValues, 'truck_driver_name') ?? '')) ?: null,
-                'truck_number' => trim((string) (data_get($childValues, 'truck_number') ?? '')) ?: null,
-                'trailer_number' => trim((string) (data_get($childValues, 'trailer_number') ?? '')) ?: null,
-                'canceled_at' => $job?->canceled_at ? (string) $job->canceled_at : null,
-                'canceled_reason' => trim((string) ($job?->canceled_reason ?? '')) ?: null,
-            ];
-        }
-
-        $baseValues['title'] = 'SUMMARY INVOICE';
-        $baseValues['total'] = round($total, 2);
-        $baseValues['billable_miles'] = round($billableMiles, 2);
-        $baseValues['summary_items'] = $items;
-        $baseValues['child_invoice_ids'] = $childInvoices->pluck('id')->all();
-
-        return $baseValues;
+        return SummaryInvoiceValues::build($childInvoices);
     }
 
     public function delete(Request $request, $log){

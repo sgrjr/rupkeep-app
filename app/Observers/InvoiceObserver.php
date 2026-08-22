@@ -4,6 +4,7 @@ namespace App\Observers;
 
 use App\Models\Invoice;
 use App\Models\PilotCarJob;
+use App\Services\SummaryInvoiceValues;
 
 class InvoiceObserver
 {
@@ -12,6 +13,20 @@ class InvoiceObserver
      */
     public function updated(Invoice $invoice): void
     {
+        // A summary invoice is a cover sheet whose total is the sum of its
+        // children's totals. Nothing used to recompute it once cut, so editing
+        // a child left the summary printing and billing the old figure while
+        // the child showed the new one (TASK-381). Both write paths for a
+        // child's figures -- MyInvoicesController::update and the
+        // LogExtraCharges component -- land here as a dirty `values` blob.
+        //
+        // The refresh saves the parent quietly, so this does not re-enter.
+        if ($invoice->isDirty('values') && $invoice->parent_invoice_id) {
+            if ($parent = $invoice->parent) {
+                SummaryInvoiceValues::refresh($parent);
+            }
+        }
+
         // Only process if paid_in_full status changed
         if (!$invoice->isDirty('paid_in_full')) {
             return;

@@ -261,6 +261,44 @@
             </div>
         </section>
 
+        {{-- TASK-381: a summary whose total was set by hand is never silently
+             recomputed when a child changes. It is marked stale instead, and
+             regenerating is an explicit choice made here. This sits outside the
+             main form because a form cannot nest inside another. --}}
+        @php
+            $summaryStaleTotal = $invoice->isSummary()
+                ? data_get($invoice->values, \App\Services\SummaryInvoiceValues::STALE_KEY)
+                : null;
+        @endphp
+
+        @if($summaryStaleTotal !== null)
+            <div class="mb-8 rounded-3xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <p class="text-sm font-semibold text-amber-900">{{ __('This summary is out of date') }}</p>
+                        <p class="mt-1 text-xs text-amber-800">
+                            {{ __('Its total was set by hand to :stored, but its child invoices now add up to :computed. The summary is still printing and billing :stored.', [
+                                'stored' => \App\Support\Money::currency((float) data_get($invoice->values, 'total', 0)),
+                                'computed' => \App\Support\Money::currency((float) $summaryStaleTotal),
+                            ]) }}
+                        </p>
+                        <p class="mt-1 text-xs text-amber-700">
+                            {{ __('Rebuilding replaces the total and the line rows with the current child figures and drops the manual total.') }}
+                        </p>
+                    </div>
+                    <form method="POST" action="{{ route('my.invoices.regenerate-summary', ['invoice' => $invoice->id]) }}" class="shrink-0">
+                        @csrf
+                        <button type="submit" class="inline-flex items-center gap-2 rounded-full bg-amber-600 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-amber-700">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992V4.356M3.985 14.652H8.977v4.992M4.031 9.348a8.25 8.25 0 0 1 13.803-3.075l3.181 3.075M19.969 14.652a8.25 8.25 0 0 1-13.803 3.075L2.985 14.652" />
+                            </svg>
+                            {{ __('Rebuild from children') }}
+                        </button>
+                    </form>
+                </div>
+            </div>
+        @endif
+
         <form action="{{ route('my.invoices.update', ['invoice' => $invoice->id]) }}" method="post" class="space-y-8">
             @csrf
             @method('PUT')

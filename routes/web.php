@@ -175,6 +175,7 @@ Route::middleware([
     Route::post('my/invoices/{invoice}/apply-late-fees', [MyInvoicesController::class, 'applyLateFees'])->name('my.invoices.apply-late-fees');
     Route::post('my/invoices/{invoice}/toggle-marked-for-attention', [MyInvoicesController::class, 'toggleMarkedForAttention'])->name('my.invoices.toggle-marked-for-attention');
     Route::post('my/invoices/create-summary', [MyInvoicesController::class, 'createSummaryFromInvoices'])->name('my.invoices.create-summary');
+    Route::post('my/invoices/{invoice}/regenerate-summary', [MyInvoicesController::class, 'regenerateSummary'])->name('my.invoices.regenerate-summary');
     Route::get('my/invoices/export/quickbooks', QuickBooksExportController::class)->name('my.invoices.export.quickbooks');
     Route::get('my/invoices/{invoice}/print', [MyInvoicesController::class, 'print'])->name('my.invoices.print');
     Route::get('my/invoices/{invoice}/pdf', [MyInvoicesController::class, 'pdf'])->name('my.invoices.pdf');

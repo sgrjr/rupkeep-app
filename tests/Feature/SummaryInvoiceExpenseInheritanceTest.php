@@ -151,7 +151,45 @@ class SummaryInvoiceExpenseInheritanceTest extends TestCase
         $this->assertSame('0.00', $rows[$summary->invoice_number][$hotelColumn]);
         $this->assertSame('0.00', $rows[$summary->invoice_number][$tollsColumn]);
 
-        // Still reported, on the invoice that actually incurred it.
+        // TASK-383 then stopped exporting a child alongside its summary, because
+        // the two rows double-counted the same revenue. So the children are not
+        // in this file at all - only the summary, carrying no expenses of its
+        // own, which is exactly the point of this test.
+        $this->assertArrayNotHasKey($a->fresh()->invoice_number, $rows);
+        $this->assertArrayNotHasKey($b->fresh()->invoice_number, $rows);
+    }
+
+    /**
+     * The other half of the TASK-379 guarantee: a child's expenses ARE reported
+     * against the child that incurred them. Since TASK-383 a child only appears
+     * in an export that does not also contain its summary, so that is the shape
+     * this asserts.
+     */
+    public function test_a_childs_own_expenses_are_reported_when_it_is_exported(): void
+    {
+        $a = $this->childInvoice('JOB-A', ['hotel' => 125, 'tolls' => 10]);
+        $b = $this->childInvoice('JOB-B');
+        $summary = $this->summaryOf([$a, $b]);
+
+        // The children were invoiced in March, the summary cut in April.
+        Invoice::whereIn('id', [$a->id, $b->id])
+            ->get()
+            ->each(fn ($child) => $child->forceFill(['created_at' => '2026-03-10 09:00:00'])->saveQuietly());
+        $summary->forceFill(['created_at' => '2026-04-02 09:00:00'])->saveQuietly();
+
+        $csv = $this->actingAs($this->admin)
+            ->get(route('my.invoices.export.quickbooks', ['from' => '2026-03-01', 'to' => '2026-03-31']))
+            ->streamedContent();
+
+        $rows = array_map('str_getcsv', array_filter(explode("
+", trim($csv))));
+        $header = array_shift($rows);
+        $rows = collect($rows)->keyBy(fn ($row) => $row[array_search('Invoice Number', $header)]);
+
+        $hotelColumn = array_search('Expenses (Hotel)', $header);
+        $tollsColumn = array_search('Expenses (Tolls)', $header);
+
+        $this->assertArrayNotHasKey($summary->invoice_number, $rows);
         $this->assertSame('125.00', $rows[$a->fresh()->invoice_number][$hotelColumn]);
         $this->assertSame('10.00', $rows[$a->fresh()->invoice_number][$tollsColumn]);
     }
