@@ -54,6 +54,51 @@ class ImpersonateRouteTest extends TestCase
     }
 
     /**
+     * The path TASK-373 never covered: impersonation actually working.
+     *
+     * Every other test here asserts a REFUSAL, so all four passed while the
+     * success path threw a 500 in production. Moving the route inside the
+     * auth:sanctum group made that middleware call Auth::shouldUse('sanctum'),
+     * which swaps the default guard to Sanctum's RequestGuard for the rest of
+     * the request -- and RequestGuard has no logoutCurrentDevice(), that lives
+     * on SessionGuard. auth()->guard() with no argument therefore stopped
+     * resolving to the session guard the moment the route became authenticated.
+     */
+    public function test_an_admin_can_actually_impersonate_someone(): void
+    {
+        $organization = Organization::factory()->create();
+        $admin = User::factory()->admin()->create(['organization_id' => $organization->id]);
+        $target = User::factory()->create(['organization_id' => $organization->id]);
+
+        $this->actingAs($admin)
+            ->get(route('impersonate', ['user' => $target->id]))
+            ->assertRedirect(route('my.profile'));
+
+        // Named guard here for the same reason the controller names it: after
+        // auth:sanctum has run, the DEFAULT guard is Sanctum's, and asking it
+        // who is logged in does not answer the question. The session guard is
+        // what the next request will read.
+        $this->assertAuthenticatedAs($target, 'web');
+    }
+
+    /**
+     * The navigation menu shows an impersonation banner from this session key,
+     * so without it an admin has no indication they are wearing someone else's
+     * account. It was written with session('impersonate', $id) -- which is the
+     * two-argument GETTER, reading the key with a default, never writing it.
+     */
+    public function test_the_session_remembers_who_is_impersonating(): void
+    {
+        $organization = Organization::factory()->create();
+        $admin = User::factory()->admin()->create(['organization_id' => $organization->id]);
+        $target = User::factory()->create(['organization_id' => $organization->id]);
+
+        $this->actingAs($admin)
+            ->get(route('impersonate', ['user' => $target->id]))
+            ->assertSessionHas('impersonate', $admin->id);
+    }
+
+    /**
      * The whole point of moving the route: no route may sit outside the
      * authenticated group by accident again.
      */

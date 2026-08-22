@@ -142,11 +142,24 @@ class MyUsersController extends Controller
         }
 
         if(auth()->user()->can('impersonate', $user)){
-            auth()->guard()->logoutCurrentDevice();
+            // Name the session guard rather than taking the default. Since this
+            // route moved inside the auth:sanctum group (TASK-373), that
+            // middleware calls Auth::shouldUse('sanctum') on a successful
+            // request, so auth()->guard() hands back Sanctum's RequestGuard --
+            // which has no logoutCurrentDevice() or session to log into. Those
+            // both live on SessionGuard, and impersonation is inherently a
+            // session operation, so it should never have been asking for
+            // whichever guard happened to be default.
+            $session = auth()->guard('web');
+
+            $session->logoutCurrentDevice();
             session()->flush();
-            auth()->guard()->login($user);
+            $session->login($user);
             session()->flash('message','Success. Logged in as ' . $user->name);
-            if($impersonator) session('impersonate', $impersonator->id);
+            // put(), not session($key, $default) -- the two-argument helper is
+            // the GETTER, so this trail was silently never recorded and the
+            // impersonation banner in the nav menu never appeared.
+            if($impersonator) session()->put('impersonate', $impersonator->id);
             return redirect()->route('my.profile',);
         }
         session()->flash('message','You cannot impersonate ' . $user->name.'.');
