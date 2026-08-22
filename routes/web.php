@@ -189,6 +189,9 @@ Route::middleware([
     // controller that calls auth()->user()->can(...) on null and 500d instead of
     // bouncing to login (TASK-373).
     Route::get('/impersonate/{user}', [MyUsersController::class, 'impersonate'])->name('impersonate');
+    // POST, not GET: this changes who you are signed in as. Distinct verb also
+    // keeps it from being swallowed by the {user} wildcard above.
+    Route::post('/impersonate/stop', [MyUsersController::class, 'stopImpersonating'])->name('impersonate.stop');
 });
 
 Route::middleware([

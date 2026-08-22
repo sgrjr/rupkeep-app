@@ -1,11 +1,22 @@
 <nav x-data="{ open: false }" class="primary-navigation-menu sticky top-0 z-40">
+    {{-- The banner named the IMPERSONATOR by raw id ("Impersonating 1"), which
+         reads as the person being impersonated and is the wrong way round. What
+         matters while you are wearing someone else's account is whose account it
+         is, and how to give it back. auth()->user() is already loaded, so naming
+         the current user costs no query. --}}
     @if(session()->has('impersonate') && session()->get('impersonate'))
         <div class="bg-slate-900 text-orange-100 text-xs tracking-wide">
-            <div class="mx-auto flex max-w-7xl items-center justify-center gap-2 px-4 py-2 sm:px-6 lg:px-8">
+            <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-3 gap-y-1 px-4 py-2 sm:px-6 lg:px-8">
                 <span class="inline-flex items-center justify-center rounded-full bg-orange-400/90 px-2 py-0.5 text-[10px] font-semibold uppercase text-slate-900">
                     {{ __('Impersonating') }}
                 </span>
-                <span class="font-medium">{{ session()->get('impersonate') }}</span>
+                <span class="font-medium">{{ auth()->user()?->name }}</span>
+                <form method="POST" action="{{ route('impersonate.stop') }}" class="inline">
+                    @csrf
+                    <button type="submit" class="rounded-full border border-orange-200/60 px-3 py-0.5 text-[11px] font-semibold text-orange-100 transition hover:bg-orange-400/90 hover:text-slate-900">
+                        {{ __('Return to my account') }}
+                    </button>
+                </form>
             </div>
         </div>
     @endif

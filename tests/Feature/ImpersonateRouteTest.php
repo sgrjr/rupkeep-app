@@ -192,4 +192,138 @@ class ImpersonateRouteTest extends TestCase
         $this->assertNotNull($route);
         $this->assertContains('auth:sanctum', $route->gatherMiddleware());
     }
+
+    /**
+     * Impersonation was a one-way door: it replaced your session with somebody
+     * else's and offered no way back short of logging out and in again. The
+     * banner could not offer one either, because the trail it reads was never
+     * written until a687f556 made the banner appear at all.
+     */
+    public function test_an_impersonator_can_return_to_their_own_account(): void
+    {
+        [$admin, $target] = $this->pair();
+
+        $this->actingAs($admin)->get(route('impersonate', ['user' => $target->id]));
+
+        $session = $this->sessionFromTheBrowser();
+
+        $this->withSession($session)
+            ->post(route('impersonate.stop'))
+            ->assertRedirect(route('dashboard'));
+
+        // And it holds: the next request, rebuilt from the session alone, is the
+        // admin again rather than a bounce to /login.
+        $back = $this->sessionFromTheBrowser();
+
+        $this->withSession($back)->get(route('my.profile'))->assertOk();
+
+        $this->assertSame($admin->id, auth()->guard('web')->id());
+    }
+
+    public function test_returning_clears_the_impersonation_trail(): void
+    {
+        [$admin, $target] = $this->pair();
+
+        $this->actingAs($admin)->get(route('impersonate', ['user' => $target->id]));
+
+        $this->withSession($this->sessionFromTheBrowser())->post(route('impersonate.stop'));
+
+        // Otherwise the banner keeps offering a way back from an account you are
+        // no longer wearing.
+        $this->assertArrayNotHasKey('impersonate', $this->sessionFromTheBrowser());
+    }
+
+    /**
+     * The exit has to be reachable, not merely routable.
+     */
+    public function test_the_banner_offers_the_way_back(): void
+    {
+        [$admin, $target] = $this->pair();
+
+        $this->withoutVite();
+
+        $this->actingAs($admin)->get(route('impersonate', ['user' => $target->id]));
+
+        $this->withSession($this->sessionFromTheBrowser())
+            ->get(route('my.profile'))
+            ->assertOk()
+            ->assertSee(route('impersonate.stop'))
+            ->assertSee($target->name);
+    }
+
+    /**
+     * Nothing in the session to go back to, so nothing happens. Posting here
+     * must never be a way to become somebody else.
+     */
+    public function test_stopping_when_not_impersonating_changes_nothing(): void
+    {
+        [$admin] = $this->pair();
+
+        $this->actingAs($admin)
+            ->post(route('impersonate.stop'))
+            ->assertRedirect(route('dashboard'));
+
+        $this->assertSame($admin->id, auth()->guard('web')->id());
+    }
+
+    /**
+     * The impersonator was deleted while they were wearing someone else's
+     * account. There is no account to hand back, and leaving them signed in as
+     * the target is the one outcome that must not happen.
+     */
+    public function test_a_vanished_impersonator_ends_the_session(): void
+    {
+        [$admin, $target] = $this->pair();
+
+        $this->actingAs($admin)->get(route('impersonate', ['user' => $target->id]));
+
+        $session = $this->sessionFromTheBrowser();
+
+        $admin->delete();
+
+        $this->withSession($session)
+            ->post(route('impersonate.stop'))
+            ->assertRedirect(route('login'));
+
+        $this->assertNull(auth()->guard('web')->user());
+    }
+
+    /**
+     * An admin and someone for them to impersonate, both able to clear the
+     * `verified` middleware, with distinct password hashes -- the User factory
+     * reuses one cached bcrypt hash, which would make AuthenticateSession's
+     * comparison vacuous.
+     */
+    private function pair(): array
+    {
+        $organization = Organization::factory()->create();
+
+        $admin = User::factory()->admin()->create([
+            'organization_id' => $organization->id,
+            'email_verified_at' => now(),
+        ]);
+
+        $target = User::factory()->create([
+            'organization_id' => $organization->id,
+            'email_verified_at' => now(),
+            'password' => bcrypt('a-different-password'),
+        ]);
+
+        return [$admin, $target];
+    }
+
+    /**
+     * The session as it stands after the last response, and a clean slate for
+     * the next request: every in-memory guard forgotten, so identity has to be
+     * rebuilt from the session the way a browser would.
+     */
+    private function sessionFromTheBrowser(): array
+    {
+        $session = app('session.store')->all();
+
+        $this->app['auth']->forgetGuards();
+        $this->app['auth']->shouldUse('sanctum');
+
+        return $session;
+    }
 }

@@ -142,34 +142,7 @@ class MyUsersController extends Controller
         }
 
         if(auth()->user()->can('impersonate', $user)){
-            // Name the session guard rather than taking the default. Since this
-            // route moved inside the auth:sanctum group (TASK-373), that
-            // middleware calls Auth::shouldUse('sanctum') on a successful
-            // request, so auth()->guard() hands back Sanctum's RequestGuard --
-            // which has no logoutCurrentDevice() or session to log into. Those
-            // both live on SessionGuard, and impersonation is inherently a
-            // session operation, so it should never have been asking for
-            // whichever guard happened to be default.
-            $session = auth()->guard('web');
-
-            $session->logoutCurrentDevice();
-            session()->flush();
-            $session->login($user);
-
-            // Tell the DEFAULT guard too, or the rest of this request still
-            // believes the impersonator is the one signed in. Sanctum's
-            // RequestGuard memoised them when auth:sanctum ran at the top of the
-            // request, and $request->user() resolves through it.
-            //
-            // Jetstream's AuthenticateSession is what makes that fatal rather
-            // than untidy: it keeps the signed-in user's password hash in the
-            // session and logs everyone out when it stops matching, which is how
-            // a password change kills other sessions. It re-stores that hash
-            // from $request->user() AFTER the response -- so without this line
-            // the session ends up logged in as the target while carrying the
-            // impersonator's hash, and the very next request throws it away and
-            // redirects to /login.
-            auth()->guard()->setUser($user);
+            $this->becomeUser($user);
 
             session()->flash('message','Success. Logged in as ' . $user->name);
             // put(), not session($key, $default) -- the two-argument helper is
@@ -180,5 +153,81 @@ class MyUsersController extends Controller
         }
         session()->flash('message','You cannot impersonate ' . $user->name.'.');
         return redirect('/');
+    }
+
+    /**
+     * Hand an impersonator back their own account.
+     *
+     * Until now there was no way out at all: impersonating replaced your
+     * session with somebody else's and the only exit was to log out and back
+     * in. The banner could not offer one either, because the trail it reads was
+     * never written (see impersonate() above).
+     *
+     * Authorization is the session itself. `impersonate` is only ever written
+     * by impersonate() after a policy check, so holding it IS the proof that
+     * this person legitimately became someone else and may become themselves
+     * again. Nothing here grants access that was not already granted.
+     */
+    public function stopImpersonating(Request $request)
+    {
+        $impersonatorId = session('impersonate');
+
+        if (! $impersonatorId) {
+            return redirect()->route('dashboard');
+        }
+
+        $impersonator = User::find($impersonatorId);
+
+        // Deleted or suspended mid-impersonation. There is no account to go
+        // back to, so end the session rather than leave them wearing somebody
+        // else's for lack of anywhere to put them.
+        if (! $impersonator) {
+            auth()->guard('web')->logoutCurrentDevice();
+            session()->flush();
+
+            return redirect()->route('login');
+        }
+
+        $this->becomeUser($impersonator);
+
+        session()->flash('message', 'Welcome back, ' . $impersonator->name . '.');
+
+        return redirect()->route('dashboard');
+    }
+
+    /**
+     * Swap the signed-in user for the rest of this request and every request
+     * after it.
+     *
+     * Both halves of impersonation go through here because the sequence is
+     * unobvious enough to have broken twice (TASK-373), and a second hand-rolled
+     * copy in stopImpersonating() would have broken the same two ways:
+     *
+     * 1. Name the SESSION guard. Inside the auth:sanctum group that middleware
+     *    calls Auth::shouldUse('sanctum'), so auth()->guard() hands back a
+     *    RequestGuard -- which has no logoutCurrentDevice() and no session to
+     *    log into. Those live on SessionGuard.
+     *
+     * 2. Then tell the DEFAULT guard as well, or the rest of the request still
+     *    believes the previous user is signed in: Sanctum's RequestGuard
+     *    memoised them when auth:sanctum ran, and $request->user() reads
+     *    through it. Jetstream's AuthenticateSession makes that fatal rather
+     *    than untidy -- it re-stores the signed-in password hash from
+     *    $request->user() AFTER the response, so the session would be logged in
+     *    as one user while carrying another's hash, and the next request
+     *    discards it and redirects to /login.
+     *
+     * session()->flush() wipes everything including the `impersonate` trail, so
+     * callers that need it must read it before calling and write it after.
+     */
+    private function becomeUser(User $user): void
+    {
+        $session = auth()->guard('web');
+
+        $session->logoutCurrentDevice();
+        session()->flush();
+        $session->login($user);
+
+        auth()->guard()->setUser($user);
     }
 }
