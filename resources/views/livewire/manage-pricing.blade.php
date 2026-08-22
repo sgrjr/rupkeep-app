@@ -17,6 +17,12 @@
             </div>
         @endif
 
+        @if(session('error'))
+            <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                {{ session('error') }}
+            </div>
+        @endif
+
         <!-- Tabs -->
         <div class="flex flex-wrap gap-2 border-b border-slate-200">
             <button wire:click="$set('activeTab', 'rates')" 
@@ -146,13 +152,24 @@
             <section class="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm">
                 <header class="mb-6">
                     <h2 class="text-lg font-semibold text-slate-900">{{ __('Additional Charges') }}</h2>
-                    <p class="text-xs text-slate-500">{{ __('Configure charges for wait time, extra stops, tolls, deadhead miles, and overnight/hotel.') }}</p>
+                    <p class="text-xs text-slate-500">{{ __('Configure charges for wait time, extra stops, tolls, deadhead miles, and overnight/hotel — and add your own.') }}</p>
                 </header>
 
                 <div class="space-y-6">
                     @foreach($charges as $key => $charge)
                         <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
                             <div class="mb-4 space-y-2">
+                                @if($charge['is_custom'])
+                                    <div class="flex items-center justify-between gap-3">
+                                        <span class="inline-flex items-center rounded-full bg-orange-100 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-orange-700">{{ __('Added by you') }}</span>
+                                        <button type="button"
+                                                wire:click="removeCharge('{{ $key }}')"
+                                                wire:confirm="{{ __('Remove :name from your price list?', ['name' => $charge['name']]) }}"
+                                                class="text-xs font-semibold text-red-600 underline-offset-2 hover:underline">
+                                            {{ __('Remove') }}
+                                        </button>
+                                    </div>
+                                @endif
                                 <div>
                                     <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Name') }}</label>
                                     <input type="text"
@@ -167,9 +184,42 @@
                                            wire:change="updateCharge('{{ $key }}', 'description', $event.target.value)"
                                            class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600 shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
                                 </div>
-                                <p class="text-[11px] text-slate-400">{{ __('Leave blank to use the default.') }}</p>
+                                @if(! $charge['is_custom'])
+                                    <p class="text-[11px] text-slate-400">{{ __('Leave blank to use the default.') }}</p>
+                                @endif
                             </div>
 
+                            @if($charge['is_custom'])
+                                {{-- A charge the org added has no config entry behind it, so its
+                                     unit is stored rather than inferred, and only the amount
+                                     field for that unit is offered. --}}
+                                <div class="grid gap-4 sm:grid-cols-2">
+                                    <div>
+                                        <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Charged') }}</label>
+                                        <select wire:change="updateCharge('{{ $key }}', 'unit', $event.target.value)"
+                                                class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                            @foreach($unitOptions as $unitValue => $unitLabel)
+                                                <option value="{{ $unitValue }}" @selected($charge['unit'] === $unitValue)>{{ $unitLabel }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    @php($amountField = \App\Services\PricingResolver::CUSTOM_UNITS[$charge['unit']] ?? null)
+                                    @if($amountField)
+                                        <div>
+                                            <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Amount') }}</label>
+                                            <div class="mt-2 flex items-center gap-2">
+                                                <span class="text-slate-500">$</span>
+                                                <input type="number"
+                                                       step="0.01"
+                                                       min="0"
+                                                       value="{{ $charge[$amountField] }}"
+                                                       wire:change="updateCharge('{{ $key }}', '{{ $amountField }}', $event.target.value)"
+                                                       class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                            </div>
+                                        </div>
+                                    @endif
+                                </div>
+                            @else
                             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                 @if(isset($charge['rate_per_hour']))
                                     <div>
@@ -227,8 +277,8 @@
                                 @if(isset($charge['free_miles']))
                                     <div>
                                         <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Free Miles') }}</label>
-                                        <input type="number" 
-                                               step="1" 
+                                        <input type="number"
+                                               step="1"
                                                min="0"
                                                value="{{ $charge['free_miles'] }}"
                                                wire:change="updateCharge('{{ $key }}', 'free_miles', $event.target.value)"
@@ -236,8 +286,70 @@
                                     </div>
                                 @endif
                             </div>
+                            @endif
                         </div>
                     @endforeach
+                </div>
+
+                {{-- TASK-377: an org can extend its own price list here rather than
+                     waiting on a deploy. These publish to the public pricing page as
+                     quoted policy; they are not wired into invoice math, which reads
+                     wait time and extra stops by name and nothing else. --}}
+                <div class="mt-8 rounded-2xl border border-dashed border-orange-300 bg-orange-50/50 p-5">
+                    <header class="mb-4">
+                        <h3 class="text-base font-semibold text-slate-900">{{ __('Add a charge') }}</h3>
+                        <p class="text-xs text-slate-500">{{ __('A standing rate you quote on every job, like Overnight / Hotel. For a one-off amount on a single job, add an extra charge to the driver log for that job instead.') }}</p>
+                    </header>
+
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Name') }}</label>
+                            <input type="text"
+                                   wire:model="newCharge.name"
+                                   placeholder="{{ __('Permit Escort') }}"
+                                   class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                            @error('newCharge.name')<p class="mt-1 text-xs font-semibold text-red-600">{{ $message }}</p>@enderror
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Description') }}</label>
+                            <input type="text"
+                                   wire:model="newCharge.description"
+                                   class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                            @error('newCharge.description')<p class="mt-1 text-xs font-semibold text-red-600">{{ $message }}</p>@enderror
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Charged') }}</label>
+                            <select wire:model.live="newCharge.unit"
+                                    class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                @foreach($unitOptions as $unitValue => $unitLabel)
+                                    <option value="{{ $unitValue }}">{{ $unitLabel }}</option>
+                                @endforeach
+                            </select>
+                            @error('newCharge.unit')<p class="mt-1 text-xs font-semibold text-red-600">{{ $message }}</p>@enderror
+                        </div>
+                        @if(($newCharge['unit'] ?? 'none') !== 'none')
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Amount') }}</label>
+                                <div class="mt-2 flex items-center gap-2">
+                                    <span class="text-slate-500">$</span>
+                                    <input type="number"
+                                           step="0.01"
+                                           min="0"
+                                           wire:model="newCharge.amount"
+                                           class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                </div>
+                                @error('newCharge.amount')<p class="mt-1 text-xs font-semibold text-red-600">{{ $message }}</p>@enderror
+                            </div>
+                        @endif
+                    </div>
+
+                    <div class="mt-4">
+                        <button type="button"
+                                wire:click="addCharge"
+                                class="inline-flex items-center rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-600">
+                            {{ __('Add to price list') }}
+                        </button>
+                    </div>
                 </div>
             </section>
         @endif

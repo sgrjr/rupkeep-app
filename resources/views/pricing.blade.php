@@ -76,6 +76,11 @@
                                         <p class="text-sm text-gray-400">First {{ $charge['free_miles'] }} miles free</p>
                                     @endif
                                 @endif
+                                {{-- Flat charges exist only on org-added entries (TASK-377);
+                                     nothing in config/pricing.php charges is flat. --}}
+                                @if(!empty($charge['flat_amount']))
+                                    <p class="text-lg"><span class="text-[#FF2D20] font-semibold">${{ number_format($charge['flat_amount'], 2) }}</span> <span class="text-gray-400">flat</span></p>
+                                @endif
                             </div>
                         </div>
                     @endforeach

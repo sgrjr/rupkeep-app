@@ -119,4 +119,27 @@ class PricingSetting extends Model
             ->where('setting_key', $key)
             ->delete();
     }
+
+    /**
+     * Delete every setting under a dotted prefix, e.g. "charges.my_key." to
+     * remove a custom charge and all of its fields (TASK-377).
+     *
+     * Matched in PHP rather than with a LIKE: setting keys are snake_case and
+     * `_` is a single-character wildcard in SQL LIKE, so "charges.my_key.%"
+     * would also match "charges.myXkey.". Escaping that portably across MySQL
+     * and SQLite is more trouble than filtering a handful of rows.
+     */
+    public static function deletePrefixForOrganization(int $organizationId, string $prefix): int
+    {
+        $ids = static::where('organization_id', $organizationId)
+            ->pluck('setting_key', 'id')
+            ->filter(fn ($key) => str_starts_with((string) $key, $prefix))
+            ->keys();
+
+        if ($ids->isEmpty()) {
+            return 0;
+        }
+
+        return static::whereIn('id', $ids)->delete();
+    }
 }
