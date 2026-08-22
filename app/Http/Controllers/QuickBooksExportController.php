@@ -82,6 +82,7 @@ class QuickBooksExportController extends Controller
                 'Expenses (Gas)',
                 'Expenses (Wait Time)',
                 'Expenses (Extra Charges)',
+                'Extra Charges (Detail)',
                 'Deadhead Count',
                 'Deadhead Amount',
                 'Mini Charge',
@@ -137,6 +138,7 @@ class QuickBooksExportController extends Controller
                     number_format((float) ($expenses['gas'] ?? $values['gas'] ?? 0), 2, '.', ''),
                     number_format((float) ($expenses['wait_time'] ?? $values['wait_time_hours'] ?? 0), 2, '.', ''),
                     number_format((float) ($expenses['extra_charge'] ?? $values['extra_charge'] ?? 0), 2, '.', ''),
+                    $this->extraChargeDetail($values),
                     $values['deadhead_count'] ?? $totals['deadhead_count'] ?? ($job && $job->is_deadhead ? 1 : 0),
                     number_format((float) ($totals['deadhead'] ?? $values['dead_head_charge'] ?? 0), 2, '.', ''),
                     number_format((float) ($totals['mini'] ?? $values['mini_addon_amount'] ?? $values['mini_cost'] ?? 0), 2, '.', ''),
@@ -153,5 +155,41 @@ class QuickBooksExportController extends Controller
             fclose($handle);
         }, $filename, $headers);
     }
-}
 
+    /**
+     * A readable breakdown of the invoice's named extra charges (TASK-378).
+     *
+     * The CSV is one row per invoice, so N charges cannot each become a column
+     * without either dynamic headers or an IIF-style line-item restructure.
+     * They ride in a single adjacent text column instead: the scalar
+     * "Expenses (Extra Charges)" stays the authoritative figure that totals
+     * against, and this one says what it was made of, ready to paste into a
+     * QuickBooks memo or description.
+     *
+     * Empty for invoices issued before TASK-330, which recorded only the total
+     * and no itemization -- an empty cell is honest there, an invented one
+     * would not be.
+     */
+    private function extraChargeDetail(array $values): string
+    {
+        $lines = $values['extra_charges'] ?? null;
+
+        if (! is_array($lines) || $lines === []) {
+            return '';
+        }
+
+        $parts = [];
+
+        foreach ($lines as $line) {
+            $description = trim((string) ($line['description'] ?? ''));
+
+            if ($description === '') {
+                continue;
+            }
+
+            $parts[] = $description.' $'.number_format((float) ($line['amount'] ?? 0), 2);
+        }
+
+        return implode('; ', $parts);
+    }
+}

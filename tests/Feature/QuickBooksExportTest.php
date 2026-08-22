@@ -71,6 +71,7 @@ class QuickBooksExportTest extends TestCase
             'Expenses (Gas)',
             'Expenses (Wait Time)',
             'Expenses (Extra Charges)',
+            'Extra Charges (Detail)',
             'Deadhead Count',
             'Deadhead Amount',
             'Mini Charge',
@@ -88,9 +89,11 @@ class QuickBooksExportTest extends TestCase
         $this->assertSame('JOB-001', $data[4]);
         $this->assertSame('LOAD-100', $data[5]);
         $this->assertSame('200.0', $data[6]);
-        $this->assertSame('450.25', $data[18]);
-        $this->assertSame('Unpaid', $data[19]);
-        $this->assertSame('Test memo', $data[22]);
+        // Indices past 14 shifted by one when Extra Charges (Detail) was added
+        // at 15 (TASK-378).
+        $this->assertSame('450.25', $data[19]);
+        $this->assertSame('Unpaid', $data[20]);
+        $this->assertSame('Test memo', $data[23]);
     }
 
     public function test_filters_by_date_and_paid_status(): void
@@ -145,9 +148,10 @@ class QuickBooksExportTest extends TestCase
         $this->assertGreaterThan(1, count($rows));
 
         $dataRow = $rows[1];
-        // Column 19 is Paid Status (Paid/Unpaid). Filter `paid=yes` should
-        // only include the paid invoice.
-        $this->assertSame('Paid', $dataRow[19]);
+        // Column 20 is Paid Status (Paid/Unpaid) -- it was 19 before Extra
+        // Charges (Detail) was inserted at 15 (TASK-378). Filter `paid=yes`
+        // should only include the paid invoice.
+        $this->assertSame('Paid', $dataRow[20]);
         $this->assertNotSame((string) $discarded->invoice_number, $dataRow[0]);
     }
 
@@ -167,6 +171,84 @@ class QuickBooksExportTest extends TestCase
 
         $response->assertForbidden();
     }
+
+    /**
+     * TASK-378. The CSV is one row per invoice, so the named charges TASK-330
+     * introduced cannot each become a column. They ride in one text column
+     * instead, while the scalar stays the figure that totals against.
+     */
+    public function test_named_extra_charges_are_listed_in_the_detail_column(): void
+    {
+        $manager = $this->exportFixture([
+            'total' => 482.00,
+            'extra_charge' => '475.00',
+            'extra_charges' => [
+                ['description' => 'Equipment rental', 'amount' => 340.00, 'log_id' => 1],
+                ['description' => 'Ferry crossing', 'amount' => 60.00, 'log_id' => 1],
+                ['description' => 'Permit expediting', 'amount' => 75.00, 'log_id' => 1],
+            ],
+        ]);
+
+        $data = $this->firstDataRow($manager);
+
+        // The scalar column is untouched, so the CSV still totals correctly.
+        $this->assertSame('475.00', $data[14]);
+        $this->assertSame(
+            'Equipment rental $340.00; Ferry crossing $60.00; Permit expediting $75.00',
+            $data[15]
+        );
+    }
+
+    /**
+     * Invoices issued before TASK-330 recorded only the total with no
+     * itemization. An empty cell is honest there; an invented one is not.
+     */
+    public function test_a_legacy_invoice_leaves_the_detail_column_empty(): void
+    {
+        $manager = $this->exportFixture([
+            'total' => 450.25,
+            'extra_charge' => '45.00',
+        ]);
+
+        $data = $this->firstDataRow($manager);
+
+        $this->assertSame('45.00', $data[14]);
+        $this->assertSame('', $data[15]);
+    }
+
+    private function exportFixture(array $values): User
+    {
+        $organization = Organization::factory()->create();
+        $manager = User::factory()->manager()->create(['organization_id' => $organization->id]);
+        $customer = Customer::factory()->create(['organization_id' => $organization->id]);
+
+        $job = PilotCarJob::create([
+            'job_no' => 'JOB-378',
+            'customer_id' => $customer->id,
+            'organization_id' => $organization->id,
+            'pickup_address' => '123 Pickup',
+            'delivery_address' => '456 Delivery',
+            'rate_code' => 'flat_rate',
+            'rate_value' => '575.00',
+        ]);
+
+        Invoice::create([
+            'organization_id' => $organization->id,
+            'customer_id' => $customer->id,
+            'pilot_car_job_id' => $job->id,
+            'values' => $values,
+        ]);
+
+        return $manager;
+    }
+
+    private function firstDataRow(User $manager): array
+    {
+        $response = $this->actingAs($manager)->get(route('my.invoices.export.quickbooks'));
+        $response->assertOk();
+
+        $lines = array_values(array_filter(explode("\n", trim($response->streamedContent()))));
+
+        return str_getcsv($lines[1]);
+    }
 }
-
-
