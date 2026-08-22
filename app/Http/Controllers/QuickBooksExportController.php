@@ -56,6 +56,23 @@ class QuickBooksExportController extends Controller
         // This ensures ALL invoices are exported when filters are empty
         $invoices = $query->limit(null)->get();
 
+        // TASK-383: a summary invoice's total IS the sum of its children's totals,
+        // so exporting both rows doubles the revenue for those jobs and nothing in
+        // the CSV lets the importer tell. The summary is the document the customer
+        // actually received and paid against, so that is the row we keep.
+        //
+        // A child is dropped only when its summary is present in this same export.
+        // If the range catches the children but not the summary that was cut later,
+        // dropping them would silently lose the revenue instead of double-counting
+        // it - the worse of the two failures - so those children are kept.
+        $exportedIds = $invoices->pluck('id')->all();
+        $exportedIds = array_flip($exportedIds);
+
+        $invoices = $invoices->reject(function ($invoice) use ($exportedIds) {
+            return $invoice->parent_invoice_id !== null
+                && isset($exportedIds[$invoice->parent_invoice_id]);
+        })->values();
+
         $filename = 'quickbooks-export-' . now()->format('Ymd-His') . '.csv';
         $headers = [
             'Content-Type' => 'text/csv',

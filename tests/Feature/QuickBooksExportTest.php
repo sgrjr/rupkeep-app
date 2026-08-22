@@ -251,4 +251,113 @@ class QuickBooksExportTest extends TestCase
 
         return str_getcsv($lines[1]);
     }
+
+    /**
+     * TASK-383: a summary invoice's Total Amount IS the sum of its children's
+     * totals. Exporting the summary row and every child row made any period
+     * containing a summary sum to roughly double the real revenue, with nothing
+     * in the CSV to tell the importer which rows overlapped. The summary is the
+     * document the customer received and paid against, so it is the row we keep.
+     */
+    public function test_children_of_a_summary_are_not_exported_alongside_it(): void
+    {
+        [$manager, $organization, $customer] = $this->exportOrg();
+
+        $summary = Invoice::create([
+            'organization_id' => $organization->id,
+            'customer_id' => $customer->id,
+            'invoice_type' => 'summary',
+            'values' => ['total' => 3000],
+        ]);
+
+        foreach ([1, 2] as $ignored) {
+            Invoice::create([
+                'organization_id' => $organization->id,
+                'customer_id' => $customer->id,
+                'parent_invoice_id' => $summary->id,
+                'values' => ['total' => 1500],
+            ]);
+        }
+
+        $rows = $this->dataRows($manager);
+
+        $this->assertCount(1, $rows, 'Only the summary row should survive.');
+        $this->assertSame((string) $summary->fresh()->invoice_number, $rows[0][0]);
+        $this->assertSame('3000.00', $rows[0][19]);
+
+        $total = array_sum(array_map(fn ($r) => (float) $r[19], $rows));
+        $this->assertSame(3000.0, $total, 'The export must sum to the revenue actually billed, not double it.');
+    }
+
+    /**
+     * TASK-383: dropping a child whose summary is NOT in the export would
+     * silently lose that revenue - a worse failure than double-counting it,
+     * because nothing on the sheet hints anything is missing. A range that
+     * catches the children but not the summary cut later keeps the children.
+     */
+    public function test_children_are_kept_when_their_summary_is_outside_the_export(): void
+    {
+        [$manager, $organization, $customer] = $this->exportOrg();
+
+        $summary = Invoice::create([
+            'organization_id' => $organization->id,
+            'customer_id' => $customer->id,
+            'invoice_type' => 'summary',
+            'values' => ['total' => 3000],
+        ]);
+
+        $childNumbers = [];
+
+        foreach ([1, 2] as $ignored) {
+            $child = Invoice::create([
+                'organization_id' => $organization->id,
+                'customer_id' => $customer->id,
+                'parent_invoice_id' => $summary->id,
+                'values' => ['total' => 1500],
+            ]);
+
+            // The children were invoiced in March; the summary covering them was
+            // not cut until April, so an export of March alone sees the children
+            // without their summary.
+            $child->forceFill(['created_at' => '2026-03-10 09:00:00'])->save();
+
+            $childNumbers[] = (string) $child->invoice_number;
+        }
+
+        sort($childNumbers);
+
+        $summary->forceFill(['created_at' => '2026-04-02 09:00:00'])->save();
+
+        $response = $this->actingAs($manager)->get(route('my.invoices.export.quickbooks', [
+            'from' => '2026-03-01',
+            'to' => '2026-03-31',
+        ]));
+        $response->assertOk();
+
+        $lines = array_values(array_filter(explode("\n", trim($response->streamedContent()))));
+        $rows = array_map('str_getcsv', array_slice($lines, 1));
+        $numbers = array_map(fn ($r) => $r[0], $rows);
+
+        sort($numbers);
+        $this->assertSame($childNumbers, $numbers);
+    }
+
+    private function exportOrg(): array
+    {
+        $organization = Organization::factory()->create();
+        $manager = User::factory()->manager()->create(['organization_id' => $organization->id]);
+        $customer = Customer::factory()->create(['organization_id' => $organization->id]);
+
+        return [$manager, $organization, $customer];
+    }
+
+    private function dataRows(User $manager): array
+    {
+        $response = $this->actingAs($manager)->get(route('my.invoices.export.quickbooks'));
+        $response->assertOk();
+
+        $lines = array_values(array_filter(explode("\n", trim($response->streamedContent()))));
+
+        return array_map('str_getcsv', array_slice($lines, 1));
+    }
 }
