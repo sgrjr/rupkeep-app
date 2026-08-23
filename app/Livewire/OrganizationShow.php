@@ -4,6 +4,8 @@ namespace App\Livewire;
 
 use Livewire\Component;
 use App\Models\Organization;
+use App\Models\Invoice;
+use App\Models\JobInvoice;
 use App\Models\User;
 use App\Models\PilotCarJob;
 use Livewire\Attributes\Validate;
@@ -71,6 +73,7 @@ class OrganizationShow extends Component
             'users_count' => $this->organization->users()->count(),
             'customers_count' => $this->organization->customers()->count(),
             'vehicles_count' => $this->organization->vehicles()->count(),
+            'invoices_count' => $this->organization->invoices()->count(),
         ]);
     }
 
@@ -87,6 +90,51 @@ class OrganizationShow extends Component
             $job->logs()->delete(); //logs do not have softdeletes trait
             $job->forceDelete();
         });
+        return back();
+    }
+
+    /**
+     * Empty the organization's invoices.
+     *
+     * Invoices hang off the organization, not off their job, so deleteJobs()
+     * above leaves every one of them standing -- which is how Casco Bay ended
+     * up with 1,020 invoices pointing at jobs that no longer existed
+     * (TASK-389). Resetting the jobs was intentional; the invoices surviving it
+     * was not, and there was no way to clear them.
+     *
+     * Unlike its siblings this one checks first. An admin may empty their own
+     * organization; a super user may empty any. A Livewire action is its own
+     * callable endpoint, so the authorize() in mount() does not cover it and
+     * the check has to live here.
+     */
+    public function deleteInvoices(){
+        $user = auth()->user();
+
+        abort_unless(
+            $user->isSuper() || ($user->isAdmin() && $user->organization_id === $this->organization->id),
+            403
+        );
+
+        $invoiceIds = Invoice::withTrashed()
+            ->where('organization_id', $this->organization->id)
+            ->pluck('id');
+
+        // The summary/child pivot first: those rows reference invoices and
+        // nothing cleans them up on its own.
+        JobInvoice::whereIn('invoice_id', $invoiceIds)->delete();
+
+        // parent_invoice_id is nullOnDelete, so parents and children can go in
+        // one statement without tripping the constraint.
+        Invoice::withTrashed()->whereIn('id', $invoiceIds)->forceDelete();
+
+        // Jobs cache their invoice state in their own columns. Leaving those set
+        // would have a job claim it is invoiced and paid with nothing behind it
+        // -- the same shape of lie this action exists to clear up.
+        $this->organization->jobs()->withTrashed()->update([
+            'invoice_no' => null,
+            'invoice_paid' => 0,
+        ]);
+
         return back();
     }
 

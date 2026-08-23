@@ -64,6 +64,15 @@ class Organization extends Model
         return $this->hasMany(PilotCarJob::class, 'organization_id','id');
     }
 
+    /**
+     * Invoices belong to the organization directly, not through their job. That
+     * is what lets an invoice outlive the job it was raised against -- and why
+     * emptying the jobs left 1,020 invoices standing (TASK-389).
+     */
+    public function invoices(){
+        return $this->hasMany(\App\Models\Invoice::class, 'organization_id','id');
+    }
+
     public function vehicles(){
         return $this->hasMany(Vehicle::class, 'organization_id','id');
     }

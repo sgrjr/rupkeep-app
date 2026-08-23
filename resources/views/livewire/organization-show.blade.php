@@ -2,7 +2,8 @@
     'jobs_count'=>0,
     'users_count'=>0,
     'customers_count'=>0,
-    'vehicles_count' => 0
+    'vehicles_count' => 0,
+    'invoices_count' => 0
     ])
 
 <div>
@@ -277,6 +278,10 @@
                                     <form class="w-full" wire:submit="deleteJobs">
                                         @csrf
                                         <button>Delete all Jobs ({{$jobs_count}})</button>
+                                    </form>
+                                    <form class="w-full" wire:submit="deleteInvoices">
+                                        @csrf
+                                        <button wire:confirm="Permanently delete all {{ $invoices_count }} invoice(s) for {{ $organization->name }}? This cannot be undone.">Delete all Invoices ({{$invoices_count}})</button>
                                     </form>
                                     <form class="w-full" wire:submit="deleteCustomers">
                                         @csrf
