@@ -483,20 +483,68 @@ class Dashboard extends Component
         }
     }
 
-    public function deleteJobs(){
-        // Delete all entries from the pivot table (summary invoices only)
-        \App\Models\JobInvoice::where('id', '!=', 0)->delete();
+    /**
+     * Empty THIS organization's jobs, logs and invoices.
+     *
+     * This used to be the platform-wide wipe -- every statement was
+     * where('id', '!=', 0), i.e. every row in the table -- so resetting your own
+     * test data took every other organization's with it. Wanting a clean slate
+     * for yourself is the ordinary case; wanting one for everybody is not, so
+     * the ordinary case is what this button now does. nuclearReset() below
+     * still exists for the rare time you mean it.
+     */
+    public function resetOrganization(){
+        $user = auth()->user();
 
-        // Delete all invoices (single invoices don't have pivot entries)
-        \App\Models\Invoice::where('id', '!=', 0)->forceDelete();
+        abort_unless($user->isSuper() || $user->isAdmin(), 403);
 
-        // Delete logs
-        UserLog::where('id','!=', 0)->forceDelete();
-
-        // Delete jobs (this should cascade, but being explicit)
-        PilotCarJob::where('id','!=', 0)->forceDelete();
+        $this->purge($user->organization_id);
 
         return back();
+    }
+
+    /**
+     * Empty EVERY organization's jobs, logs and invoices.
+     *
+     * Super users only, and checked here rather than trusted to the blade: the
+     * section this is rendered in is wrapped in an isSuper() check, but a
+     * Livewire action is its own callable endpoint and never sees that markup.
+     */
+    public function nuclearReset(){
+        abort_unless(auth()->user()->isSuper(), 403);
+
+        $this->purge(null);
+
+        return back();
+    }
+
+    /**
+     * @param  int|null  $organizationId  null means every organization.
+     */
+    private function purge(?int $organizationId): void
+    {
+        $jobs = PilotCarJob::withTrashed();
+        $invoices = \App\Models\Invoice::withTrashed();
+        $logs = UserLog::query();
+
+        if ($organizationId !== null) {
+            $jobs->where('organization_id', $organizationId);
+            $invoices->where('organization_id', $organizationId);
+            $logs->where('organization_id', $organizationId);
+        }
+
+        $jobIds = (clone $jobs)->pluck('id');
+        $invoiceIds = (clone $invoices)->pluck('id');
+
+        // The pivot first: it carries no organization of its own, so it has to
+        // be reached through the rows being removed rather than scoped directly.
+        \App\Models\JobInvoice::whereIn('invoice_id', $invoiceIds)
+            ->orWhereIn('pilot_car_job_id', $jobIds)
+            ->delete();
+
+        \App\Models\Invoice::withTrashed()->whereIn('id', $invoiceIds)->forceDelete();
+        $logs->forceDelete();
+        PilotCarJob::withTrashed()->whereIn('id', $jobIds)->forceDelete();
     }
 
     /**

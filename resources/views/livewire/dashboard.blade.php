@@ -326,16 +326,39 @@
                         </span>
                     </summary>
 
-                    <div>
-                        <p class="font-semibold">{{ __('Delete ALL Jobs + Logs + Invoices') }}</p>
-                        <p class="mt-2 text-xs text-red-500">{{ __('This operation cannot be undone and will remove every job, log, and invoice across the platform.') }}</p>
-                        <button class="mt-4 inline-flex items-center gap-2 rounded-full bg-red-500 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white shadow-sm transition hover:bg-red-600"
-                                wire:click="deleteJobs"
-                                wire:confirm="Are you sure you want to Delete ALL Jobs, Logs, and Invoices? This is not reversible!">
+                    @php $ownOrganization = auth()->user()->organization; @endphp
+
+                    {{-- Two separate blast radii, deliberately not one button.
+                         Wanting a clean slate for your own organization is the
+                         ordinary case; wanting one for every organization is
+                         not, and used to be what this section silently did. --}}
+                    <div class="rounded-2xl border border-amber-200 bg-amber-50/70 p-4">
+                        <p class="font-semibold text-amber-800">{{ __('Organization Reset') }}</p>
+                        <p class="mt-2 text-xs text-amber-700">
+                            {{ __('Removes every job, log and invoice belonging to :organization. Other organizations are untouched.', ['organization' => $ownOrganization?->name ?? __('your organization')]) }}
+                        </p>
+                        <button class="mt-4 inline-flex items-center gap-2 rounded-full bg-amber-500 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white shadow-sm transition hover:bg-amber-600"
+                                wire:click="resetOrganization"
+                                wire:confirm="Permanently delete every job, log and invoice for {{ $ownOrganization?->name }}? This cannot be undone.">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v3M4 7h16"/>
                             </svg>
-                            {{ __('Execute Nuclear Cleanup') }}
+                            {{ __('Reset This Organization') }}
+                        </button>
+                    </div>
+
+                    <div class="mt-4 rounded-2xl border border-red-300 bg-red-100/70 p-4">
+                        <p class="font-semibold text-red-800">{{ __('Nuclear Reset') }}</p>
+                        <p class="mt-2 text-xs text-red-600">
+                            {{ __('Removes every job, log and invoice belonging to EVERY organization on the platform, not just yours. Super users only.') }}
+                        </p>
+                        <button class="mt-4 inline-flex items-center gap-2 rounded-full bg-red-600 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white shadow-sm transition hover:bg-red-700"
+                                wire:click="nuclearReset"
+                                wire:confirm="This deletes EVERY organization's jobs, logs and invoices across the whole platform, not only {{ $ownOrganization?->name }}. This cannot be undone. Continue?">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9V13M12 17H12.01M5.62 19H18.38C19.78 19 20.72 17.54 20.24 16.24L13.86 1.86C13.38 0.56 11.62 0.56 11.14 1.86L4.76 16.24C4.28 17.54 5.22 19 6.62 19Z"/>
+                            </svg>
+                            {{ __('Execute Nuclear Reset') }}
                         </button>
                     </div>
 </details>
