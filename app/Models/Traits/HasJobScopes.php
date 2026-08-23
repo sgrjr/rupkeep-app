@@ -4,6 +4,31 @@ namespace App\Models\Traits;
 
 
 trait HasJobScopes {
+    /**
+     * The scope names a request is allowed to ask for by string.
+     *
+     * The jobs list used to camel-case `search_field` straight into a method
+     * call on the query builder with nothing checking it, so ?search_field=delete
+     * called delete() on the built query -- a mass delete from a GET (TASK-390).
+     * A request may name one of these and nothing else.
+     *
+     * Keep in step with the scopes below.
+     *
+     * @return array<int, string>
+     */
+    public static function searchScopes(): array
+    {
+        return [
+            'is_paid',
+            'is_not_paid',
+            'is_canceled',
+            'missing_job_no',
+            'is_active',
+            'is_completed',
+            'is_flagged',
+        ];
+    }
+
     public function scopeIsPaid($query){
         return $query->whereNotNull('invoice_paid')->where('invoice_paid', '>',0);
     }

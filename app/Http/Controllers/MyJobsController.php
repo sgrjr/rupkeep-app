@@ -121,10 +121,19 @@ class MyJobsController extends Controller
                     ->orderBy('scheduled_pickup_at', 'asc')
                     ->paginate(15);
             }else{
-                $scope = Str::camel($request->search_field);
+                // search_field used to be camel-cased straight into a method
+                // call here, so ?search_field=delete called delete() on the
+                // built query and emptied the table from a GET (TASK-390). Only
+                // the model's own scopes may be named; anything else filters
+                // nothing rather than being invoked.
+                $filtered = clone $query;
 
-                $jobs = (clone $query)
-                ->$scope()
+                if(in_array($request->search_field, Job::searchScopes(), true)){
+                    $scope = Str::camel($request->search_field);
+                    $filtered->$scope();
+                }
+
+                $jobs = $filtered
                 ->orderByRaw('CASE WHEN deleted_at IS NULL THEN 0 ELSE 1 END')
                 ->orderByRaw('CASE WHEN invoice_paid >= 1 THEN 1 ELSE 0 END')
                 ->orderByRaw('CASE WHEN canceled_at IS NOT NULL THEN 1 ELSE 0 END')

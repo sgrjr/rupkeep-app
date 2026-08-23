@@ -28,28 +28,44 @@ class JobsController extends Controller
         // (Undefined variable $totalJobs, then Collection::hasPages) — TASK-336.
         $query = Job::with($eagerLoad);
 
-        if($request->has('organization_id')){
-            $query->where('organization_id', $request->get('organization_id'));
-            $customer = false;
-        }else if($request->has('customer')){
-            $query->where('organization_id', $userOrgId)
-                ->where('customer_id', $request->get('customer'));
+        // Tenancy first, and separately from the filters (TASK-390).
+        //
+        // This used to apply an organization filter only when the request
+        // happened to carry organization_id, so a bare GET listed every
+        // organization's jobs to anyone signed in, and ?organization_id=N
+        // returned whichever organization was asked for. It stays an employee
+        // screen -- a driver hitting it is what TASK-336 was reported from --
+        // but who you are now decides the scope, not the query string.
+        $canCrossOrganizations = auth()->user()->can('viewAcrossOrganizations', Job::class);
+
+        $scopeOrganizationId = $canCrossOrganizations
+            ? ($request->filled('organization_id') ? (int) $request->get('organization_id') : null)
+            : $userOrgId;
+
+        if($scopeOrganizationId !== null){
+            $query->where('organization_id', $scopeOrganizationId);
+        }
+
+        $customer = false;
+
+        if($request->has('customer')){
+            $query->where('customer_id', $request->get('customer'));
             $customer = Customer::where('id', $request->get('customer'))->first();
         }else if($request->has('search_field')){
-            $customer = false;
             if(in_array($request->search_field, ['job_no','load_no','invoice_no','check_no','delivery_address','pickup_address'])){
                 $query->where($request->search_field, $request->search_value);
             }else if($request->search_field === 'has_customer_name'){
                 $customerIds = Customer::where('name', 'like', '%'.$request->search_value.'%')
-                    ->where('organization_id', $userOrgId)
+                    ->when($scopeOrganizationId !== null, fn($q) => $q->where('organization_id', $scopeOrganizationId))
                     ->pluck('id');
                 $query->whereIn('customer_id', $customerIds);
-            }else{
+            }else if(in_array($request->search_field, Job::searchScopes(), true)){
+                // Only the model's own scopes may be named. This used to be an
+                // unchecked $query->$scope(), so ?search_field=delete called
+                // delete() on the query -- a mass delete from a GET (TASK-390).
                 $scope = Str::camel($request->search_field);
                 $query->$scope();
             }
-        }else{
-            $customer = false;
         }
 
         if($showDeleted){

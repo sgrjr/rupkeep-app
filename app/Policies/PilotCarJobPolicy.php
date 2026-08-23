@@ -16,6 +16,20 @@ class PilotCarJobPolicy
     }
 
     /**
+     * Every organization's jobs at once, at /jobs.
+     *
+     * Deliberately narrower than viewAny, which admits any employee who may see
+     * their OWN organization's jobs at /my/jobs. Crossing that boundary is a
+     * super-user ability and nothing else, so it is named separately rather
+     * than left to a controller to remember -- forgetting is what made a bare
+     * GET /jobs list the whole platform (TASK-390).
+     */
+    public function viewAcrossOrganizations(User $user): bool
+    {
+        return $user->isSuper();
+    }
+
+    /**
      * Determine whether the user can view the model.
      */
     public function view(User $user, Job $model): bool

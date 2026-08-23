@@ -6,6 +6,7 @@ use App\Livewire\EditPilotCarJob;
 use App\Livewire\ShowPilotCarJob;
 use App\Models\Customer;
 use App\Models\Invoice;
+use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -365,5 +366,121 @@ class TenantIsolationTest extends TestCase
         }
 
         $response->assertForbidden();
+    }
+
+    /**
+     * TASK-390 — /jobs applied an organization filter only when the request
+     * happened to carry one, so a bare GET listed every organization's work to
+     * anyone signed in, and ?organization_id=N returned whichever organization
+     * was asked for.
+     *
+     * It stays an employee screen -- TASK-336 was reported by a driver using it
+     * -- but the scope now comes from who you are, not from the query string.
+     */
+    public function test_an_employee_sees_only_their_own_organizations_jobs(): void
+    {
+        [$orgA, $orgB] = [Organization::factory()->create(), Organization::factory()->create()];
+
+        $mine = $this->jobFor($orgA, 'JOB-MINE');
+        $theirs = $this->jobFor($orgB, 'JOB-THEIRS');
+
+        $employee = User::factory()->manager()->create(['organization_id' => $orgA->id]);
+
+        $response = $this->actingAs($employee)->get(route('jobs.index'))->assertOk();
+
+        $ids = $response->viewData('jobs')->pluck('id')->all();
+
+        $this->assertContains($mine->id, $ids);
+        $this->assertNotContains($theirs->id, $ids);
+    }
+
+    public function test_an_employee_cannot_ask_for_another_organization_by_id(): void
+    {
+        [$orgA, $orgB] = [Organization::factory()->create(), Organization::factory()->create()];
+
+        $mine = $this->jobFor($orgA, 'JOB-MINE');
+        $theirs = $this->jobFor($orgB, 'JOB-THEIRS');
+
+        $employee = User::factory()->manager()->create(['organization_id' => $orgA->id]);
+
+        $response = $this->actingAs($employee)
+            ->get(route('jobs.index', ['organization_id' => $orgB->id]))
+            ->assertOk();
+
+        $ids = $response->viewData('jobs')->pluck('id')->all();
+
+        $this->assertNotContains($theirs->id, $ids, 'The query string must not widen the scope.');
+        $this->assertContains($mine->id, $ids);
+    }
+
+    /**
+     * The stats are read straight off the header of this page, so they have to
+     * respect the same boundary as the rows.
+     */
+    public function test_the_job_stats_do_not_count_other_organizations(): void
+    {
+        [$orgA, $orgB] = [Organization::factory()->create(), Organization::factory()->create()];
+
+        $this->jobFor($orgA, 'JOB-MINE');
+        $this->jobFor($orgB, 'JOB-THEIRS-1');
+        $this->jobFor($orgB, 'JOB-THEIRS-2');
+
+        $employee = User::factory()->manager()->create(['organization_id' => $orgA->id]);
+
+        $this->actingAs($employee)
+            ->get(route('jobs.index'))
+            ->assertViewHas('totalJobs', 1);
+    }
+
+    public function test_a_super_user_still_sees_every_organization(): void
+    {
+        [$orgA, $orgB] = [Organization::factory()->create(), Organization::factory()->create()];
+
+        $mine = $this->jobFor($orgA, 'JOB-MINE');
+        $theirs = $this->jobFor($orgB, 'JOB-THEIRS');
+
+        $super = User::factory()->create(['organization_id' => $orgA->id, 'is_super' => true]);
+
+        $response = $this->actingAs($super)->get(route('jobs.index'))->assertOk();
+
+        $ids = $response->viewData('jobs')->pluck('id')->all();
+
+        $this->assertContains($mine->id, $ids);
+        $this->assertContains($theirs->id, $ids);
+    }
+
+    public function test_a_super_user_can_still_narrow_to_one_organization(): void
+    {
+        [$orgA, $orgB] = [Organization::factory()->create(), Organization::factory()->create()];
+
+        $mine = $this->jobFor($orgA, 'JOB-MINE');
+        $theirs = $this->jobFor($orgB, 'JOB-THEIRS');
+
+        $super = User::factory()->create(['organization_id' => $orgA->id, 'is_super' => true]);
+
+        $response = $this->actingAs($super)
+            ->get(route('jobs.index', ['organization_id' => $orgB->id]))
+            ->assertOk();
+
+        $ids = $response->viewData('jobs')->pluck('id')->all();
+
+        $this->assertContains($theirs->id, $ids);
+        $this->assertNotContains($mine->id, $ids);
+    }
+
+    private function jobFor(Organization $organization, string $jobNo): \App\Models\PilotCarJob
+    {
+        $customer = Customer::factory()->create(['organization_id' => $organization->id]);
+
+        return \App\Models\PilotCarJob::create([
+            'job_no' => $jobNo,
+            'customer_id' => $customer->id,
+            'organization_id' => $organization->id,
+            'load_no' => 'LOAD-'.$jobNo,
+            'pickup_address' => 'Gorham, ME',
+            'delivery_address' => 'Boston, MA',
+            'rate_code' => 'flat_rate',
+            'rate_value' => '575.00',
+        ]);
     }
 }
