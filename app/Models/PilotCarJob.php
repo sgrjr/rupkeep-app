@@ -1525,14 +1525,11 @@ class PilotCarJob extends Model
             'rate_code' =>$this->rate_code,
             'rate_value' =>$this->rate_value,
             'mini_addon_amount' => (float) ($this->mini_addon_amount ?? 0),
-            'total_due' => 0.00,
             'billable_miles' => $miles['total_billable'],
             'nonbillable_miles' => $miles['total_nonbillable'],
             // Driver details for invoice
             'pilot_car_driver_name' => $this->getPilotCarDrivers($logs),
             'pilot_car_driver_position' => $this->getPilotCarDriverPositions($logs),
-            'start_job_mileage' => $this->getStartJobMileage($logs),
-            'end_job_mileage' => $this->getEndJobMileage($logs),
             'start_job_time' => $this->getStartJobTime($logs),
             'end_job_time' => $this->getEndJobTime($logs),
         ];
@@ -1609,46 +1606,6 @@ class PilotCarJob extends Model
         }
         
         return implode(' & ', $positions) ?: '—';
-    }
-
-    public function getStartJobMileage($logs = false)
-    {
-        if (!$logs) {
-            $logs = $this->logs;
-        }
-        
-        $mileages = [];
-        foreach ($logs as $log) {
-            if ($log->start_job_mileage !== null) {
-                $mileages[] = (float) $log->start_job_mileage;
-            }
-        }
-        
-        if (empty($mileages)) {
-            return null;
-        }
-        
-        return min($mileages); // Use earliest start mileage
-    }
-
-    public function getEndJobMileage($logs = false)
-    {
-        if (!$logs) {
-            $logs = $this->logs;
-        }
-        
-        $mileages = [];
-        foreach ($logs as $log) {
-            if ($log->end_job_mileage !== null) {
-                $mileages[] = (float) $log->end_job_mileage;
-            }
-        }
-        
-        if (empty($mileages)) {
-            return null;
-        }
-        
-        return max($mileages); // Use latest end mileage
     }
 
     public function getStartJobTime($logs = false)

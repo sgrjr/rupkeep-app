@@ -192,7 +192,6 @@ class MyInvoicesController extends Controller
             'nonbillable_miles',
             'rate_value',
             'effective_rate_value',
-            'total_due',
             'total',
         ];
 

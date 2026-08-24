@@ -91,6 +91,10 @@
                                             <p class="text-xs font-semibold uppercase tracking-wide text-emerald-600">{{ __('Billable Miles') }}</p>
                                             <p class="mt-1 text-2xl font-semibold text-emerald-700">{{ number_format($data['billable_miles']) }}</p>
                                         </div>
+                                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Release Miles') }}</p>
+                                            <p class="mt-1 text-2xl font-semibold text-slate-700">{{ number_format($data['release_miles'] ?? 0) }}</p>
+                                        </div>
                                     </div>
                                     @endif
 

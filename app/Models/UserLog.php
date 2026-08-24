@@ -184,6 +184,28 @@ class UserLog extends Model
     }
 
     /**
+     * The escort's role in words -- Lead, Chase, Mixed -- rather than the raw
+     * column value, for the read-only surfaces that show a log (TASK-354).
+     *
+     * On a two-car job this is the distinction the whole business turns on, and
+     * it was collected at assignment and then never displayed anywhere.
+     */
+    public function getVehiclePositionLabelAttribute(): ?string
+    {
+        if (! $this->vehicle_position) {
+            return null;
+        }
+
+        foreach (Vehicle::positionOptions() as $option) {
+            if ($option['value'] === $this->vehicle_position) {
+                return $option['name'];
+            }
+        }
+
+        return ucfirst($this->vehicle_position);
+    }
+
+    /**
      * Approach legs longer than this are odometer typos, not driving. One
      * production row implies a 190,065-mile drive to the pickup; seeding that
      * as a suggested figure would put a six-figure charge in front of someone.

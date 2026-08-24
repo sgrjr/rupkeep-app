@@ -852,6 +852,11 @@
                                                     {{ __('Denied') }}
                                                 </span>
                                             @endif
+                                            @if($log->vehicle_position_label)
+                                                <span class="inline-flex items-center rounded-full bg-slate-800 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+                                                    {{ $log->vehicle_position_label }}
+                                                </span>
+                                            @endif
                                             @if($log->isComplete())
                                                 <span class="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold text-sky-700">
                                                     <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -863,6 +868,7 @@
                                         <p class="text-xs text-slate-500">{{ __('Driver') }}: {{ $log->user?->name ?? '—' }}
                                             <x-tel-link :number="$log->user?->getPhoneFromNotificationAddress()" class="ml-1" />
                                         </p>
+                                        <p class="text-xs text-slate-500">{{ __('Vehicle') }}: {{ $log->vehicle?->name ?? '—' }}</p>
                                     </div>
                                     <div class="flex flex-wrap items-center gap-2">
                                         @if(auth()->user()->can('update', $log))
@@ -994,6 +1000,7 @@
                                     <p><span class="font-semibold text-slate-900">{{ __('Total Miles') }}:</span> {{ $log->total_miles ?? '—' }}</p>
                                 </div>
                                 <div class="space-y-1 text-sm text-slate-600">
+                                    <p><span class="font-semibold text-slate-900">{{ __('Vehicle') }}:</span> {{ $log->vehicle?->name ?? '—' }}{{ $log->vehicle_position_label ? ' (' . $log->vehicle_position_label . ')' : '' }}</p>
                                     <p><span class="font-semibold text-slate-900">{{ __('Deadhead') }}:</span> {{ $log->deadHeadSummary() }}</p>
                                     <p><span class="font-semibold text-slate-900">{{ __('Tolls') }}:</span> {{ $log->tolls ? '$'.number_format($log->tolls, 2) : '—' }}</p>
                                     <p><span class="font-semibold text-slate-900">{{ __('Hotel') }}:</span> {{ $log->hotel ? '$'.number_format($log->hotel, 2) : '—' }}</p>

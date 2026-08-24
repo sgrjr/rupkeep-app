@@ -59,9 +59,9 @@ class MyReportsController extends Controller
             $deadheadMiles = 0;
             $personalMiles = 0;
             $billableMiles = 0;
+            $releaseMiles = 0;
 
             $previousLog = null;
-            $hasBillableOverrides = false;
 
             foreach ($logs as $log) {
                 // Calculate miles for this log
@@ -95,19 +95,17 @@ class MyReportsController extends Controller
                         }
                     }
 
-                    // Billable miles - use override if set
-                    if ($log->billable_miles !== null && $log->billable_miles >= 0) {
-                        $billableMiles += $log->billable_miles;
-                        $hasBillableOverrides = true;
-                    }
+                    // Billable miles, from the same accessor the invoice bills
+                    // from, so the report and the invoice cannot disagree.
+                    $logBillable = (float) ($log->total_billable_miles ?? 0);
+                    $billableMiles += $logBillable;
+
+                    // Whatever the trip covered beyond the job itself and the
+                    // approach is the drive after release. Tracked, never billed.
+                    $releaseMiles += max(0, $logMiles - $logBillable - (float) ($log->dead_head_driven ?? 0));
                 }
 
                 $previousLog = $log;
-            }
-
-            // If no billable_miles overrides were used, calculate: total - personal - deadhead
-            if (!$hasBillableOverrides) {
-                $billableMiles = max(0, $totalMiles - $personalMiles - $deadheadMiles);
             }
 
             $reportData[] = [
@@ -116,6 +114,7 @@ class MyReportsController extends Controller
                 'deadhead_miles' => $deadheadMiles,
                 'personal_miles' => $personalMiles,
                 'billable_miles' => $billableMiles,
+                'release_miles' => $releaseMiles,
                 'logs_count' => $logs->count(),
             ];
         }

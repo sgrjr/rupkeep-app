@@ -54,7 +54,7 @@
                             </div>
                         </div>
 
-                        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                             <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                                 <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Total Miles') }}</p>
                                 <p class="mt-2 text-3xl font-semibold text-slate-900">{{ number_format($data['total_miles']) }}</p>
@@ -70,6 +70,11 @@
                             <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
                                 <p class="text-xs font-semibold uppercase tracking-wide text-emerald-600">{{ __('Billable Miles') }}</p>
                                 <p class="mt-2 text-3xl font-semibold text-emerald-700">{{ number_format($data['billable_miles']) }}</p>
+                            </div>
+                            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Release Miles') }}</p>
+                                <p class="mt-2 text-3xl font-semibold text-slate-700">{{ number_format($data['release_miles'] ?? 0) }}</p>
+                                <p class="mt-1 text-xs text-slate-400">{{ __('Driven after the job released the escort. Never billed.') }}</p>
                             </div>
                         </div>
                     </div>
