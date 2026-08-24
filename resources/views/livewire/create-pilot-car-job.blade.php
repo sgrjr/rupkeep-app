@@ -28,7 +28,7 @@
             <div class="grid gap-4 md:grid-cols-2">
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Customer') }}</label>
-                    <select wire:model="form.customer_id" class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                    <select wire:model.live="form.customer_id" class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
                         @foreach($customers as $customer)
                             <option value="{{ $customer['value'] }}">{{ $customer['name'] }}</option>
                         @endforeach
@@ -39,7 +39,9 @@
                 </div>
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('New Customer Name') }}</label>
-                    <input type="text" id="new_customer_name" wire:model.blur="form.new_customer_name" placeholder="{{ __('Use if customer does not exist') }}" class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                    <input type="text" id="new_customer_name" wire:model.blur="form.new_customer_name"
+                           @disabled($form->customer_id !== \App\Livewire\CreatePilotCarJob::NEW_CUSTOMER)
+                           placeholder="{{ $form->customer_id === \App\Livewire\CreatePilotCarJob::NEW_CUSTOMER ? __('Name of the new customer') : __('Pick "+ Create a new customer" above to use this') }}" class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
                     @error('form.new_customer_name')
                         <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p>
                     @enderror

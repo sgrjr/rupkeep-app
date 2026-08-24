@@ -100,6 +100,10 @@ class JobDefaultTruckDriverTest extends TestCase
         Livewire::actingAs($this->manager)
             ->test('create-pilot-car-job')
             ->set($this->jobFields())
+            // The mode is explicit now (TASK-395): a name alone no longer
+            // implies "create one", because that was indistinguishable from
+            // simply forgetting to pick a customer.
+            ->set('form.customer_id', \App\Livewire\CreatePilotCarJob::NEW_CUSTOMER)
             ->set('form.new_customer_name', 'Brand New Freight')
             ->set('form.new_truck_driver_name', 'Dana Rooks')
             ->call('createJob');

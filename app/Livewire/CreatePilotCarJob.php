@@ -16,7 +16,12 @@ class NewJobForm extends Form
     #[Validate('required|string|max:255')]
     public $job_no = null;
  
-    #[Validate('required|numeric|exists:customers,id|min:1')]
+    // Either an existing customer id, or the NEW_CUSTOMER sentinel meaning
+    // "create the one named below". Deliberately not `required` here: the
+    // mode is checked in createJob(), because a rule demanding an id
+    // contradicted the new-customer branch that has always existed further
+    // down this class and silently disabled it (TASK-395).
+    #[Validate('nullable')]
     public $customer_id = null;
 
     #[Validate('nullable|string|min:3')]
@@ -82,6 +87,9 @@ class CreatePilotCarJob extends Component
 
     public NewJobForm $form;
 
+    /** Sentinel value for the "create a new customer" option in the picker. */
+    public const NEW_CUSTOMER = '__new__';
+
     public $customers = [];
 
     public $rates = [];
@@ -95,7 +103,8 @@ class CreatePilotCarJob extends Component
        $customers = $user->organization->customers;
 
        $this->customers = [
-        ['name'=>'(none selected)', 'value'=> null]
+        ['name'=>'(none selected)', 'value'=> null],
+        ['name'=>'+ Create a new customer', 'value'=> self::NEW_CUSTOMER],
        ];
 
        foreach($customers as $customer){
@@ -163,6 +172,17 @@ class CreatePilotCarJob extends Component
 
     public function createJob(){
 
+        // Validate on submit. Without this the form relied entirely on
+        // real-time #[Validate] feedback, which only fires on properties the
+        // user actually touched -- so a job could be created with required
+        // fields never filled in, as long as those inputs were never focused
+        // (TASK-395). EditPilotCarJob::save() has always done this.
+        $this->form->validate();
+
+        if (! $this->resolveCustomerMode()) {
+            return;
+        }
+
         $organization = Auth::user()->organization;
 
         $form = $this->form->all();
@@ -172,6 +192,10 @@ class CreatePilotCarJob extends Component
             $form['rate_code'] = $this->form->rate_code ?? 'per_mile_rate_2_00';
         } else {
             $form['rate_code'] = $this->form->rate_code;
+        }
+
+        if($this->form->customer_id === self::NEW_CUSTOMER){
+            $this->form->customer_id = null;
         }
 
         if(empty($this->form->customer_id ) && !empty($this->form->new_customer_name)){
@@ -245,8 +269,50 @@ class CreatePilotCarJob extends Component
         return redirect()->route('my.jobs.show', ['job'=>$job->id]);
     }
 
-    protected function sanitizeRateValue($rawValue, ?string $rateCode): ?string
+    /**
+     * One control decides the mode, the other follows (TASK-395).
+     *
+     * Two always-live inputs meaning the same thing were impossible to validate
+     * and confusing to use: the form demanded a customer id while offering a
+     * field whose entire purpose was to be used instead of one.
+     *
+     * Returns false when the choice is incoherent, having already surfaced the
+     * error on the field the user needs to fix.
+     */
+    private function resolveCustomerMode(): bool
     {
+        if ($this->form->customer_id === self::NEW_CUSTOMER) {
+            if (blank($this->form->new_customer_name)) {
+                $this->addError('form.new_customer_name', __('Enter a name for the new customer.'));
+
+                return false;
+            }
+
+            return true;
+        }
+
+        if (blank($this->form->customer_id)) {
+            $this->addError('form.customer_id', __('Choose a customer, or pick "+ Create a new customer" to add one.'));
+
+            return false;
+        }
+
+        // A picked customer must be a real one belonging to this organization.
+        $belongs = Auth::user()->organization
+            ->customers()
+            ->whereKey($this->form->customer_id)
+            ->exists();
+
+        if (! $belongs) {
+            $this->addError('form.customer_id', __('That customer could not be found.'));
+
+            return false;
+        }
+
+        return true;
+    }
+
+    protected function sanitizeRateValue($rawValue, ?string $rateCode): ?string    {
         $value = null;
         $user = Auth::user();
 

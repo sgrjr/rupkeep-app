@@ -327,14 +327,19 @@
                         </select>
 
                         <label class="inline-flex items-center gap-2 rounded-full border border-red-100 bg-red-50 px-3 py-1 text-xs font-semibold text-red-600">
-                            <input type="checkbox" name="delete" class="rounded border-red-200 text-red-500 focus:ring-red-400">
+                            <input type="checkbox" name="delete" id="delete_invoice" class="rounded border-red-200 text-red-500 focus:ring-red-400">
                             {{ __('Delete invoice') }}
                         </label>
                     </div>
                 </div>
 
                 @if($invoice->isSummary())
-                    <div class="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
+                    <div x-data="{ deleting: false }"
+                         x-init="const box = document.getElementById('delete_invoice');
+                                 deleting = box.checked;
+                                 box.addEventListener('change', e => deleting = e.target.checked)"
+                         x-show="deleting" x-cloak
+                         class="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
                         <p class="font-semibold text-slate-700">{{ __('When deleting this summary invoice') }}</p>
                         <div class="mt-2 space-y-2">
                             <label class="flex items-center gap-2">

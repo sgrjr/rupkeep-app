@@ -160,7 +160,11 @@ class Invoice extends Model
         }
 
         $now = now();
-        $daysSinceInvoice = $invoiceDate->diffInDays($now);
+        // Carbon 3 returns a float here where Carbon 2 returned an int, so the
+        // fractional time-of-day leaked all the way to the screen as
+        // "60.000032710208 days overdue". Floor rather than round: never
+        // overstate how late a customer is.
+        $daysSinceInvoice = (int) floor($invoiceDate->diffInDays($now));
         $lateFeePercentage = $organizationId
             ? PricingSetting::getValueForOrganization($organizationId, 'payment_terms.late_fee_percentage', config('pricing.payment_terms.late_fee_percentage', 10.0))
             : config('pricing.payment_terms.late_fee_percentage', 10.0);
