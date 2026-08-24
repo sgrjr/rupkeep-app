@@ -278,6 +278,7 @@
                                     </span>
                                     @can('restore', $job)
                                         <livewire:restore-button
+                                            :key="'job-restore-'.$job->id"
                                             :action-url="route('my.jobs.restore', $job->id)"
                                             button-text="{{ __('Restore') }}"
                                             :model-class="\App\Models\PilotCarJob::class"
@@ -297,6 +298,7 @@
                                     @endcan
                                     @can('delete', $job)
                                         <livewire:delete-confirmation-button
+                                            :key="'del-1-'.$job->id"
                                             :action-url="$destroyRoute"
                                             button-text="{{ __('Delete') }}"
                                             :model-class="\App\Models\PilotCarJob::class"

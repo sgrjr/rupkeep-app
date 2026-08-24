@@ -106,8 +106,8 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
                         <div>
-                            <h2 class="text-lg font-semibold text-emerald-900">{{ __('Job Marked Complete') }}</h2>
-                            <p class="text-sm text-emerald-700">{{ __('The office has been notified and will review this for invoicing.') }}</p>
+                            <h2 class="text-lg font-semibold text-emerald-900">{{ __('Log Marked Complete') }}</h2>
+                            <p class="text-sm text-emerald-700">{{ __('The office has been notified and will review this escort for invoicing. Other escorts on this job may still be out.') }}</p>
                             <p class="text-xs text-emerald-600 mt-1">
                                 {{ __('Completed :date', ['date' => LocalTime::format($log->completed_at, 'M j, Y g:i A')]) }}
                                 @if($log->completedBy)
@@ -235,7 +235,7 @@
                                     class="inline-flex w-full items-center justify-center gap-2 rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600 sm:w-auto">
                                 <span wire:loading wire:target="markComplete" class="h-4 w-4 animate-spin rounded-full border-2 border-white/80 border-t-transparent"></span>
                                 <svg wire:loading.remove wire:target="markComplete" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
-                                {{ __('Mark Job Complete') }}
+                                {{ __('Save and Mark Log Complete') }}
                             </button>
                         @endcan
                     @endif
@@ -660,6 +660,7 @@
                                             @endif
                                         @endcan
                                         <livewire:delete-confirmation-button
+                                            :key="'del-0-'.$att->id"
                                             :action-url="route('attachments.destroy', ['attachment'=> $att->id])"
                                             button-text="&times;"
                                             :redirect-route="Route::currentRouteName()"

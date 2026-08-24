@@ -17,7 +17,7 @@
              x-show="show" 
              x-transition
              @feedback-submitted.window="setTimeout(() => { show = false; }, 2000)">
-            <div class="w-full max-w-md rounded-3xl border border-slate-200 bg-white shadow-xl" wire:click.stop>
+            <div class="w-full max-w-md rounded-3xl border border-slate-200 bg-white shadow-xl" @click.stop>
                 <div class="border-b border-slate-200 bg-gradient-to-r from-orange-500 via-orange-400 to-orange-300 px-6 py-4">
                     <div class="flex items-center justify-between">
                         <h3 class="text-lg font-semibold text-white">{{ __('Send Feedback') }}</h3>

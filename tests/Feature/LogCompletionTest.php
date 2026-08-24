@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Events\LogCompleted;
+use App\Livewire\EditUserLog;
 use App\Listeners\SendLogCompletedNotification;
 use App\Mail\UserNotification;
 use App\Models\Customer;
@@ -251,6 +252,84 @@ class LogCompletionTest extends TestCase
             ->assertForbidden();
 
         $this->assertNotNull($log->fresh()->completed_at);
+    }
+
+    // ---------------------------------------------------------------
+    // Completing persists the work (TASK-399)
+    // ---------------------------------------------------------------
+
+    /**
+     * The defect this guards: markComplete() used to write only the completion
+     * stamp, so a driver who filled in the log and clicked complete without
+     * pressing Save first handed the office a log marked complete and empty.
+     * The typed values lived in Livewire component state, which is not the
+     * database, and were gone on the next page load.
+     */
+    public function test_completing_persists_the_form_without_a_separate_save(): void
+    {
+        $driver = $this->driver();
+        $log = $this->log($driver);
+
+        Livewire::actingAs($driver)->test(EditUserLog::class, ['log' => $log])
+            ->set('form.start_mileage', 10000)
+            ->set('form.end_mileage', 10600)
+            ->set('form.start_job_mileage', 10279)
+            ->set('form.end_job_mileage', 10479)
+            ->set('form.wait_time_hours', 2)
+            ->set('form.tolls', 18.50)
+            ->call('markComplete');
+
+        $log->refresh();
+
+        $this->assertNotNull($log->completed_at, 'log should be complete');
+        $this->assertSame(10000.0, (float) $log->start_mileage);
+        $this->assertSame(10600.0, (float) $log->end_mileage);
+        $this->assertSame(10279.0, (float) $log->start_job_mileage);
+        $this->assertSame(10479.0, (float) $log->end_job_mileage);
+        $this->assertSame(2.0, (float) $log->wait_time_hours);
+        $this->assertSame(18.50, (float) $log->tolls);
+    }
+
+    /**
+     * A refused save must leave the log incomplete. Handing the office a log
+     * marked ready while rejecting the work that made it ready is worse than
+     * either outcome alone.
+     */
+    public function test_a_refused_save_blocks_completion(): void
+    {
+        $driver = $this->driver();
+        $log = $this->log($driver);
+
+        // Billing deadhead above the published ceiling is refused by saveLog().
+        Livewire::actingAs($driver)->test(EditUserLog::class, ['log' => $log])
+            ->set('form.dead_head_driven', 100)
+            ->set('form.dead_head_billed', 90) // ceiling is 25
+            ->call('markComplete')
+            ->assertHasErrors('form.dead_head_billed');
+
+        $log->refresh();
+
+        $this->assertNull($log->completed_at, 'a refused save must not complete the log');
+        $this->assertNull($log->dead_head_billed);
+    }
+
+    /**
+     * A log is not a job. On a two-car job, completing one escort's log leaves
+     * the job itself unfinished, and the copy must not say otherwise.
+     */
+    public function test_completion_copy_refers_to_the_log_not_the_job(): void
+    {
+        $driver = $this->driver();
+        $log = $this->log($driver);
+
+        Livewire::actingAs($driver)->test(EditUserLog::class, ['log' => $log])
+            ->assertSee('Save and Mark Log Complete')
+            ->assertDontSee('Mark Job Complete')
+            ->call('markComplete');
+
+        Livewire::actingAs($driver)->test(EditUserLog::class, ['log' => $log->refresh()])
+            ->assertSee('Log Marked Complete')
+            ->assertDontSee('Job Marked Complete');
     }
 
     public function test_a_denied_log_cannot_be_completed(): void

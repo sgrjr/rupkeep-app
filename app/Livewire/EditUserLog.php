@@ -195,6 +195,15 @@ class EditUserLog extends Component
             return; // Already handed off - don't re-notify the office.
         }
 
+        // Save before handing off (TASK-399). This used to write only the
+        // completion stamp, so a driver who filled in the log and clicked this
+        // without pressing Save first handed the office a log marked complete
+        // and empty -- their typed values lived in component state, which is
+        // not the database, and were gone on the next page load.
+        if (! $this->saveLog()) {
+            return;
+        }
+
         $this->log->update([
             'completed_at' => now(),
             'completed_by_id' => Auth::id(),
@@ -204,7 +213,7 @@ class EditUserLog extends Component
 
         LogCompleted::dispatch($this->log, Auth::user());
 
-        session()->flash('success', __('Job marked complete. The office has been notified.'));
+        session()->flash('success', __('Log marked complete. The office has been notified.'));
         $this->dispatch('updated');
     }
 
@@ -318,26 +327,33 @@ class EditUserLog extends Component
         return view('livewire.edit-user-log');
     }
 
-    public function saveLog()
+    /**
+     * Persist the form onto the log.
+     *
+     * Returns whether the work was actually written, so callers that do
+     * something irreversible afterwards -- markComplete() hands the log to the
+     * office -- can refuse to proceed on a refused save (TASK-399).
+     */
+    public function saveLog(): bool
     {
         // Prevent saving if log is pending approval and user is the assigned driver
         if ($this->log->approval_status === 'pending' && $this->log->car_driver_id && auth()->user()->id === $this->log->car_driver_id) {
             session()->flash('error', __('Please confirm or deny this log assignment before editing.'));
-            return;
+            return false;
         }
 
         // A completed log has been handed to the office for review (TASK-364).
         // The driver cannot keep editing underneath that review; a manager can,
         // since they are the ones doing the reviewing.
         if ($this->log->isComplete() && ! auth()->user()->can('reopen', $this->log)) {
-            session()->flash('error', __('This job is marked complete. Ask a manager to reopen it if it needs changes.'));
-            return;
+            session()->flash('error', __('This log is marked complete. Ask a manager to reopen it if it needs changes.'));
+            return false;
         }
         
         // Prevent saving if log is denied
         if ($this->log->approval_status === 'denied') {
             session()->flash('error', __('This log has been denied and cannot be edited.'));
-            return;
+            return false;
         }
         
         try {
@@ -354,7 +370,7 @@ class EditUserLog extends Component
                     'free' => rtrim(rtrim(number_format($this->log->deadHeadFreeMiles(), 2), '0'), '.'),
                 ]));
 
-                return;
+                return false;
             }
 
             if (!empty($this->form->new_truck_driver_name)) {
@@ -425,6 +441,8 @@ class EditUserLog extends Component
 
             $this->dispatch('saved');
 
+            return true;
+
         } catch (\Illuminate\Validation\ValidationException $e) {
             session()->flash('error', 'Please correct the validation errors below.');
             throw $e;
@@ -437,6 +455,8 @@ class EditUserLog extends Component
             ]);
             session()->flash('error', 'An unexpected error occurred while saving: ' . $e->getMessage());
         }
+
+        return false;
     }
 
     /**

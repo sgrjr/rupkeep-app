@@ -459,6 +459,7 @@
                     <p class="mt-2 text-xs text-slate-500">{{ __('Removes this job and all associated logs. This cannot be undone.') }}</p>
                     <div class="mt-4">
                         <livewire:delete-confirmation-button
+                            :key="'job-del-'.$job->id"
                             :action-url="route('my.jobs.destroy', ['job'=> $job->id])"
                             button-text="{{ __('Delete Job') }}"
                             :model-class="\App\Models\PilotCarJob::class"
@@ -691,6 +692,7 @@
                                     @endif
                                 @endcan
                                 <livewire:delete-confirmation-button
+                                    :key="'del-1-'.$att->id"
                                     :action-url="route('attachments.destroy', ['attachment'=> $att->id])"
                                     button-text="&times;"
                                     :redirect-route="Route::currentRouteName()"
@@ -873,6 +875,7 @@
                                         @endif
                                         @if(auth()->user()->can('delete', $log))
                                             <livewire:delete-confirmation-button
+                                                :key="'log-del-'.$log->id"
                                                 :action-url="route('logs.destroy', ['log'=> $log->id])"
                                                 button-text="{{ __('Delete') }}"
                                                 :redirect-route="Route::currentRouteName()"
@@ -932,6 +935,7 @@
                                                         @endif
                                                     @endcan
                                                     <livewire:delete-confirmation-button
+                                                        :key="'del-3-'.$att->id"
                                                         :action-url="route('attachments.destroy', ['attachment'=> $att->id])"
                                                         button-text="&times;"
                                                         :redirect-route="Route::currentRouteName()"

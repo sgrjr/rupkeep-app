@@ -172,6 +172,7 @@
                                     @if($vehicle->trashed())
                                         @can('restore', $vehicle)
                                             <livewire:restore-button
+                                                :key="'vehicle-restore-'.$vehicle->id"
                                                 :action-url="route('my.vehicles.restore', $vehicle->id)"
                                                 button-text="{{ __('Restore') }}"
                                                 :model-class="\App\Models\Vehicle::class"
@@ -182,6 +183,7 @@
                                         @endcan
                                         @can('forceDelete', $vehicle)
                                             <livewire:delete-confirmation-button
+                                                :key="'vehicle-purge-'.$vehicle->id"
                                                 :action-url="route('my.vehicles.force-destroy', $vehicle->id)"
                                                 button-text="{{ __('Delete permanently') }}"
                                                 button-class="inline-flex items-center gap-1 rounded-full border border-red-200 bg-white px-3 py-1 text-[11px] font-semibold text-red-600 transition hover:border-red-300 hover:text-red-700"
@@ -195,6 +197,7 @@
                                     @else
                                         @can('delete', $vehicle)
                                             <livewire:delete-confirmation-button
+                                                :key="'vehicle-archive-'.$vehicle->id"
                                                 :action-url="route('my.vehicles.destroy', $vehicle)"
                                                 button-text="{{ __('Archive vehicle') }}"
                                                 button-class="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-600 transition hover:border-orange-300 hover:text-orange-600"

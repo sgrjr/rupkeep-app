@@ -6,7 +6,7 @@
              x-data="{ show: @entangle('showModal') }" 
              x-show="show" 
              x-transition>
-            <div class="w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl border border-slate-200 bg-white shadow-xl" wire:click.stop>
+            <div class="w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl border border-slate-200 bg-white shadow-xl" @click.stop>
                 <div class="sticky top-0 z-10 border-b border-slate-200 bg-gradient-to-r from-orange-500 via-orange-400 to-orange-300 px-6 py-4">
                     <div class="flex items-center justify-between">
                         <div>

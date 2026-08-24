@@ -10,7 +10,7 @@
     <!-- Confirmation Modal -->
     @if (isset($confirmingRestore) && $confirmingRestore)
         <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm" wire:click="$set('confirmingRestore', false)">
-            <div class="relative w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-xl" wire:click.stop>
+            <div class="relative w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-xl" @click.stop>
                 <div class="mb-4 flex items-center gap-3">
                     <div class="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100">
                         <svg class="h-6 w-6 text-emerald-600" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
