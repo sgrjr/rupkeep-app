@@ -18,9 +18,20 @@
                             {{ __('Monitor billing status, export invoices, and dive into job details for your escort team.') }}
                         </p>
                     </div>
-                    <span class="rounded-full border border-white/25 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white/85 shadow-sm backdrop-blur">
-                        {{ trans_choice('{0} No jobs|{1} :count job|[2,*] :count jobs', $totalJobs, ['count' => $totalJobs]) }}
-                    </span>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <span class="rounded-full border border-white/25 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white/85 shadow-sm backdrop-blur">
+                            {{ trans_choice('{0} No jobs|{1} :count job|[2,*] :count jobs', $totalJobs, ['count' => $totalJobs]) }}
+                        </span>
+                        @if(auth()->user()->can('createJob', auth()->user()->organization))
+                            <a href="{{ route('my.jobs.create') }}"
+                               class="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-orange-600 shadow-sm transition hover:bg-orange-50">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+                                </svg>
+                                {{ __('Start a new job') }}
+                            </a>
+                        @endif
+                    </div>
                 </div>
             </section>
 

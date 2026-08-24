@@ -299,7 +299,9 @@
             </div>
         @endif
 
-        <form action="{{ route('my.invoices.update', ['invoice' => $invoice->id]) }}" method="post" class="space-y-8">
+        <form action="{{ route('my.invoices.update', ['invoice' => $invoice->id]) }}" method="post" class="space-y-8"
+              x-data="{ deleting: false }"
+              x-on:submit="if (deleting && ! confirm(@js(__('Permanently delete this invoice? This cannot be undone.')))) $event.preventDefault()">
             @csrf
             @method('PUT')
 
@@ -327,18 +329,14 @@
                         </select>
 
                         <label class="inline-flex items-center gap-2 rounded-full border border-red-100 bg-red-50 px-3 py-1 text-xs font-semibold text-red-600">
-                            <input type="checkbox" name="delete" id="delete_invoice" class="rounded border-red-200 text-red-500 focus:ring-red-400">
+                            <input type="checkbox" name="delete" id="delete_invoice" x-model="deleting" class="rounded border-red-200 text-red-500 focus:ring-red-400">
                             {{ __('Delete invoice') }}
                         </label>
                     </div>
                 </div>
 
                 @if($invoice->isSummary())
-                    <div x-data="{ deleting: false }"
-                         x-init="const box = document.getElementById('delete_invoice');
-                                 deleting = box.checked;
-                                 box.addEventListener('change', e => deleting = e.target.checked)"
-                         x-show="deleting" x-cloak
+                    <div x-show="deleting" x-cloak
                          class="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
                         <p class="font-semibold text-slate-700">{{ __('When deleting this summary invoice') }}</p>
                         <div class="mt-2 space-y-2">
@@ -895,12 +893,21 @@
                         {{ __('Back to job') }}
                     </a>
                 @endif
-                    <x-button>
-                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
-                    </svg>
-                    {{ __('Save invoice changes') }}
-                    </x-button>
+                    <span x-show="! deleting">
+                        <x-button>
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        {{ __('Save invoice changes') }}
+                        </x-button>
+                    </span>
+                    <button type="submit" x-show="deleting" x-cloak
+                            class="inline-flex items-center gap-2 rounded-full bg-red-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.16-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.04-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
+                        </svg>
+                        {{ __('Delete invoice permanently') }}
+                    </button>
                 </div>
             </form>
 
