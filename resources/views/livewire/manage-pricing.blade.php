@@ -99,7 +99,7 @@
                                                    min="0"
                                                    value="{{ $rate['rate_per_mile'] }}"
                                                    wire:change="updateRate('{{ $code }}', 'rate_per_mile', $event.target.value)"
-                                                   class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                                   class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                                         </div>
                                     </div>
                                 </div>
@@ -114,7 +114,7 @@
                                                    min="0"
                                                    value="{{ $rate['flat_amount'] }}"
                                                    wire:change="updateRate('{{ $code }}', 'flat_amount', $event.target.value)"
-                                                   class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                                   class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                                         </div>
                                     </div>
                                     @if(isset($rate['max_miles']))
@@ -125,7 +125,7 @@
                                                    min="0"
                                                    value="{{ $rate['max_miles'] }}"
                                                    wire:change="updateRate('{{ $code }}', 'max_miles', $event.target.value)"
-                                                   class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                                   class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                                         </div>
                                     @endif
                                     @if(isset($rate['max_hours']))
@@ -136,7 +136,7 @@
                                                    min="0"
                                                    value="{{ $rate['max_hours'] }}"
                                                    wire:change="updateRate('{{ $code }}', 'max_hours', $event.target.value)"
-                                                   class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                                   class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                                         </div>
                                     @endif
                                 </div>
@@ -197,7 +197,7 @@
                                     <div>
                                         <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Charged') }}</label>
                                         <select wire:change="updateCharge('{{ $key }}', 'unit', $event.target.value)"
-                                                class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                                class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                                             @foreach($unitOptions as $unitValue => $unitLabel)
                                                 <option value="{{ $unitValue }}" @selected($charge['unit'] === $unitValue)>{{ $unitLabel }}</option>
                                             @endforeach
@@ -214,7 +214,7 @@
                                                        min="0"
                                                        value="{{ $charge[$amountField] }}"
                                                        wire:change="updateCharge('{{ $key }}', '{{ $amountField }}', $event.target.value)"
-                                                       class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                                       class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                                             </div>
                                         </div>
                                     @endif
@@ -231,7 +231,7 @@
                                                    min="0"
                                                    value="{{ $charge['rate_per_hour'] }}"
                                                    wire:change="updateCharge('{{ $key }}', 'rate_per_hour', $event.target.value)"
-                                                   class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                                   class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                                         </div>
                                     </div>
                                 @endif
@@ -245,7 +245,7 @@
                                                    min="0"
                                                    value="{{ $charge['rate_per_stop'] }}"
                                                    wire:change="updateCharge('{{ $key }}', 'rate_per_stop', $event.target.value)"
-                                                   class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                                   class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                                         </div>
                                     </div>
                                 @endif
@@ -259,7 +259,7 @@
                                                    min="0"
                                                    value="{{ $charge['rate_per_mile'] }}"
                                                    wire:change="updateCharge('{{ $key }}', 'rate_per_mile', $event.target.value)"
-                                                   class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                                   class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                                         </div>
                                     </div>
                                 @endif
@@ -271,7 +271,7 @@
                                                min="0"
                                                value="{{ $charge['minimum_hours'] }}"
                                                wire:change="updateCharge('{{ $key }}', 'minimum_hours', $event.target.value)"
-                                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                                     </div>
                                 @endif
                                 @if(isset($charge['free_miles']))
@@ -282,7 +282,7 @@
                                                min="0"
                                                value="{{ $charge['free_miles'] }}"
                                                wire:change="updateCharge('{{ $key }}', 'free_miles', $event.target.value)"
-                                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                                     </div>
                                 @endif
                             </div>
@@ -307,20 +307,20 @@
                             <input type="text"
                                    wire:model="newCharge.name"
                                    placeholder="{{ __('Permit Escort') }}"
-                                   class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                   class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                             @error('newCharge.name')<p class="mt-1 text-xs font-semibold text-red-600">{{ $message }}</p>@enderror
                         </div>
                         <div>
                             <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Description') }}</label>
                             <input type="text"
                                    wire:model="newCharge.description"
-                                   class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                   class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                             @error('newCharge.description')<p class="mt-1 text-xs font-semibold text-red-600">{{ $message }}</p>@enderror
                         </div>
                         <div>
                             <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Charged') }}</label>
                             <select wire:model.live="newCharge.unit"
-                                    class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                    class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                                 @foreach($unitOptions as $unitValue => $unitLabel)
                                     <option value="{{ $unitValue }}">{{ $unitLabel }}</option>
                                 @endforeach
@@ -336,7 +336,7 @@
                                            step="0.01"
                                            min="0"
                                            wire:model="newCharge.amount"
-                                           class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                           class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                                 </div>
                                 @error('newCharge.amount')<p class="mt-1 text-xs font-semibold text-red-600">{{ $message }}</p>@enderror
                             </div>
@@ -388,7 +388,7 @@
                                    min="0"
                                    value="{{ $cancellation['hours_before_pickup_for_24hr_charge'] }}"
                                    wire:change="updateCancellation('hours_before_pickup_for_24hr_charge', $event.target.value)"
-                                   class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                   class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                         </div>
                     </div>
                 </div>
@@ -426,7 +426,7 @@
                                    min="0"
                                    value="{{ $paymentTerms['grace_period_days'] }}"
                                    wire:change="updatePaymentTerms('grace_period_days', $event.target.value)"
-                                   class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                   class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                         </div>
 
                         <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
@@ -437,7 +437,7 @@
                                        min="0"
                                        value="{{ $paymentTerms['late_fee_percentage'] }}"
                                        wire:change="updatePaymentTerms('late_fee_percentage', $event.target.value)"
-                                       class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                       class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                                 <span class="text-slate-500">%</span>
                             </div>
                         </div>
@@ -449,7 +449,7 @@
                                    min="0"
                                    value="{{ $paymentTerms['late_fee_period_days'] }}"
                                    wire:change="updatePaymentTerms('late_fee_period_days', $event.target.value)"
-                                   class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                   class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                         </div>
                     </div>
 
@@ -457,7 +457,7 @@
                         <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Payment Terms Text') }}</label>
                         <textarea rows="4"
                                   wire:change="updatePaymentTerms('terms_text', $event.target.value)"
-                                  class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">{{ $paymentTerms['terms_text'] }}</textarea>
+                                  class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">{{ $paymentTerms['terms_text'] }}</textarea>
                     </div>
                 </div>
             </section>

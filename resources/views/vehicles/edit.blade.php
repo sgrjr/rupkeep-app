@@ -80,17 +80,17 @@
                         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                             <div class="sm:col-span-2">
                                 <label for="name" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Vehicle Name') }}</label>
-                                <input id="name" name="name" type="text" value="{{ old('name', $vehicle->name) }}" required class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                <input id="name" name="name" type="text" value="{{ old('name', $vehicle->name) }}" required class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                                 <x-input-error for="name" class="mt-2 text-xs font-semibold text-red-500" />
                             </div>
                             <div>
                                 <label for="odometer" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Current Odometer (mi)') }}</label>
-                                <input id="odometer" name="odometer" type="number" min="0" value="{{ old('odometer', $vehicle->odometer) }}" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                <input id="odometer" name="odometer" type="number" min="0" value="{{ old('odometer', $vehicle->odometer) }}" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                                 <x-input-error for="odometer" class="mt-2 text-xs font-semibold text-red-500" />
                             </div>
                             <div>
                                 <label for="last_service_mileage" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Last Service Mileage') }}</label>
-                                <input id="last_service_mileage" name="last_service_mileage" type="number" min="0" value="{{ old('last_service_mileage', $vehicle->last_service_mileage) }}" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                <input id="last_service_mileage" name="last_service_mileage" type="number" min="0" value="{{ old('last_service_mileage', $vehicle->last_service_mileage) }}" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                                 <x-input-error for="last_service_mileage" class="mt-2 text-xs font-semibold text-red-500" />
                             </div>
                         </div>
@@ -107,7 +107,7 @@
                         <div class="grid gap-4 sm:grid-cols-2">
                             <div>
                                 <label for="current_user_id" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Assigned Driver') }}</label>
-                                <select id="current_user_id" name="current_user_id" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                <select id="current_user_id" name="current_user_id" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                                     <option value="">{{ __('— Unassigned —') }}</option>
                                     @foreach($drivers as $driver)
                                         <option value="{{ $driver->id }}" @selected(old('current_user_id', $vehicle->current_user_id) == $driver->id)>
@@ -119,12 +119,12 @@
                             </div>
                             <div>
                                 <label for="current_assignment_started_at" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Assignment Start Date') }}</label>
-                                <input id="current_assignment_started_at" name="current_assignment_started_at" type="date" value="{{ old('current_assignment_started_at', optional($vehicle->current_assignment_started_at)->toDateString()) }}" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                <input id="current_assignment_started_at" name="current_assignment_started_at" type="date" value="{{ old('current_assignment_started_at', optional($vehicle->current_assignment_started_at)->toDateString()) }}" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                                 <x-input-error for="current_assignment_started_at" class="mt-2 text-xs font-semibold text-red-500" />
                             </div>
                             <div class="md:col-span-2">
                                 <label for="current_assignment_notes" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Assignment Notes') }}</label>
-                                <textarea id="current_assignment_notes" name="current_assignment_notes" rows="3" class="mt-2 block w-full rounded-2xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">{{ old('current_assignment_notes', $vehicle->current_assignment_notes) }}</textarea>
+                                <textarea id="current_assignment_notes" name="current_assignment_notes" rows="3" class="mt-2 block w-full rounded-2xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">{{ old('current_assignment_notes', $vehicle->current_assignment_notes) }}</textarea>
                                 <x-input-error for="current_assignment_notes" class="mt-2 text-xs font-semibold text-red-500" />
                             </div>
                         </div>
@@ -165,12 +165,12 @@
                                 <div class="grid gap-3 sm:grid-cols-2">
                                     <div>
                                         <label for="last_oil_change_at" class="block text-xs font-medium text-slate-500">{{ __('Last Service') }}</label>
-                                        <input id="last_oil_change_at" name="last_oil_change_at" type="date" value="{{ old('last_oil_change_at', optional($vehicle->last_oil_change_at)->toDateString()) }}" class="mt-1 block w-full rounded-lg border border-slate-400 bg-white px-2 py-1.5 text-xs shadow-sm focus:border-orange-400 focus:outline-none focus:ring-1 focus:ring-orange-200">
+                                        <input id="last_oil_change_at" name="last_oil_change_at" type="date" value="{{ old('last_oil_change_at', optional($vehicle->last_oil_change_at)->toDateString()) }}" class="mt-1 block w-full rounded-lg border border-slate-400 bg-white px-2 py-1.5 text-xs shadow-sm focus:border-orange-400 focus:outline-none focus:ring-1 focus:ring-orange-200 text-slate-900">
                                         <x-input-error for="last_oil_change_at" class="mt-1 text-xs font-semibold text-red-500" />
                                     </div>
                                     <div>
                                         <label for="next_oil_change_due_at" class="block text-xs font-medium text-slate-500">{{ __('Next Due') }}</label>
-                                        <input id="next_oil_change_due_at" name="next_oil_change_due_at" type="date" value="{{ old('next_oil_change_due_at', optional($vehicle->next_oil_change_due_at)->toDateString()) }}" class="mt-1 block w-full rounded-lg border {{ $oilStatus === 'overdue' ? 'border-red-300' : ($oilStatus === 'due_soon' ? 'border-amber-300' : 'border-slate-400') }} bg-white px-2 py-1.5 text-xs shadow-sm focus:border-orange-400 focus:outline-none focus:ring-1 focus:ring-orange-200">
+                                        <input id="next_oil_change_due_at" name="next_oil_change_due_at" type="date" value="{{ old('next_oil_change_due_at', optional($vehicle->next_oil_change_due_at)->toDateString()) }}" class="mt-1 block w-full rounded-lg border {{ $oilStatus === 'overdue' ? 'border-red-300' : ($oilStatus === 'due_soon' ? 'border-amber-300' : 'border-slate-400') }} bg-white px-2 py-1.5 text-xs shadow-sm focus:border-orange-400 focus:outline-none focus:ring-1 focus:ring-orange-200 text-slate-900">
                                         <x-input-error for="next_oil_change_due_at" class="mt-1 text-xs font-semibold text-red-500" />
                                     </div>
                                 </div>
@@ -198,12 +198,12 @@
                                 <div class="grid gap-3 sm:grid-cols-2">
                                     <div>
                                         <label for="last_inspection_at" class="block text-xs font-medium text-slate-500">{{ __('Last Service') }}</label>
-                                        <input id="last_inspection_at" name="last_inspection_at" type="date" value="{{ old('last_inspection_at', optional($vehicle->last_inspection_at)->toDateString()) }}" class="mt-1 block w-full rounded-lg border border-slate-400 bg-white px-2 py-1.5 text-xs shadow-sm focus:border-orange-400 focus:outline-none focus:ring-1 focus:ring-orange-200">
+                                        <input id="last_inspection_at" name="last_inspection_at" type="date" value="{{ old('last_inspection_at', optional($vehicle->last_inspection_at)->toDateString()) }}" class="mt-1 block w-full rounded-lg border border-slate-400 bg-white px-2 py-1.5 text-xs shadow-sm focus:border-orange-400 focus:outline-none focus:ring-1 focus:ring-orange-200 text-slate-900">
                                         <x-input-error for="last_inspection_at" class="mt-1 text-xs font-semibold text-red-500" />
                                     </div>
                                     <div>
                                         <label for="next_inspection_due_at" class="block text-xs font-medium text-slate-500">{{ __('Next Due') }}</label>
-                                        <input id="next_inspection_due_at" name="next_inspection_due_at" type="date" value="{{ old('next_inspection_due_at', optional($vehicle->next_inspection_due_at)->toDateString()) }}" class="mt-1 block w-full rounded-lg border {{ $inspectionStatus === 'overdue' ? 'border-red-300' : ($inspectionStatus === 'due_soon' ? 'border-amber-300' : 'border-slate-400') }} bg-white px-2 py-1.5 text-xs shadow-sm focus:border-orange-400 focus:outline-none focus:ring-1 focus:ring-orange-200">
+                                        <input id="next_inspection_due_at" name="next_inspection_due_at" type="date" value="{{ old('next_inspection_due_at', optional($vehicle->next_inspection_due_at)->toDateString()) }}" class="mt-1 block w-full rounded-lg border {{ $inspectionStatus === 'overdue' ? 'border-red-300' : ($inspectionStatus === 'due_soon' ? 'border-amber-300' : 'border-slate-400') }} bg-white px-2 py-1.5 text-xs shadow-sm focus:border-orange-400 focus:outline-none focus:ring-1 focus:ring-orange-200 text-slate-900">
                                         <x-input-error for="next_inspection_due_at" class="mt-1 text-xs font-semibold text-red-500" />
                                     </div>
                                 </div>
@@ -241,7 +241,7 @@
                     <div class="space-y-4">
                         <div>
                             <label for="type" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Maintenance Type') }}</label>
-                            <select id="type" name="type" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                            <select id="type" name="type" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                                 @foreach($maintenanceTypes as $key => $label)
                                     <option value="{{ $key }}" @selected(old('type') === $key)>{{ $label }}</option>
                                 @endforeach
@@ -250,36 +250,36 @@
                         </div>
                         <div>
                             <label for="title" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Title / Summary') }}</label>
-                            <input id="title" name="title" type="text" value="{{ old('title') }}" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                            <input id="title" name="title" type="text" value="{{ old('title') }}" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                             <x-input-error for="title" class="mt-2 text-xs font-semibold text-red-500" />
                         </div>
                         <div class="grid gap-4 sm:grid-cols-2">
                             <div>
                                 <label for="performed_at" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Performed On') }}</label>
-                                <input id="performed_at" name="performed_at" type="date" value="{{ old('performed_at') }}" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                <input id="performed_at" name="performed_at" type="date" value="{{ old('performed_at') }}" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                                 <x-input-error for="performed_at" class="mt-2 text-xs font-semibold text-red-500" />
                             </div>
                             <div>
                                 <label for="next_due_at" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Next Due') }}</label>
-                                <input id="next_due_at" name="next_due_at" type="date" value="{{ old('next_due_at') }}" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                <input id="next_due_at" name="next_due_at" type="date" value="{{ old('next_due_at') }}" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                                 <x-input-error for="next_due_at" class="mt-2 text-xs font-semibold text-red-500" />
                             </div>
                         </div>
                         <div class="grid gap-4 sm:grid-cols-2">
                             <div>
                                 <label for="mileage" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Mileage') }}</label>
-                                <input id="mileage" name="mileage" type="number" min="0" value="{{ old('mileage') }}" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                <input id="mileage" name="mileage" type="number" min="0" value="{{ old('mileage') }}" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                                 <x-input-error for="mileage" class="mt-2 text-xs font-semibold text-red-500" />
                             </div>
                             <div>
                                 <label for="cost" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Cost (USD)') }}</label>
-                                <input id="cost" name="cost" type="number" step="0.01" min="0" value="{{ old('cost') }}" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                <input id="cost" name="cost" type="number" step="0.01" min="0" value="{{ old('cost') }}" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                                 <x-input-error for="cost" class="mt-2 text-xs font-semibold text-red-500" />
                             </div>
                         </div>
                         <div>
                             <label for="notes" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Notes') }}</label>
-                            <textarea id="notes" name="notes" rows="3" class="mt-2 block w-full rounded-2xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">{{ old('notes') }}</textarea>
+                            <textarea id="notes" name="notes" rows="3" class="mt-2 block w-full rounded-2xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">{{ old('notes') }}</textarea>
                             <x-input-error for="notes" class="mt-2 text-xs font-semibold text-red-500" />
                         </div>
                     </div>

@@ -59,7 +59,7 @@
                         wire:model.live="notificationTestType"
                         wire:loading.attr="disabled"
                         wire:target="testNotification"
-                        class="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-sm disabled:opacity-50">
+                        class="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-sm disabled:opacity-50 text-slate-900">
                         <option value="default">{{ __('Standard test notification') }}</option>
                         <option value="job_assigned">{{ __('FAKE "Job was Assigned" notification') }}</option>
                     </select>
@@ -102,7 +102,7 @@
                     <input name="user_id" type="number" required wire:model="merged_user"
                         wire:keydown.enter="mergeToUser"
                         placeholder="{{ __('Target User ID') }}"
-                        class="rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500"/>
+                        class="rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-slate-900"/>
                     <button type="submit" class="bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 transition">
                         {{ __('Merge Users') }}
                     </button>

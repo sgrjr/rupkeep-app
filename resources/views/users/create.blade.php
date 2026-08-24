@@ -22,7 +22,7 @@
                 <!-- Theme -->
                 <div class="col-span-6 sm:col-span-4">
                     <x-label for="theme" value="{{ __('Theme/Color Scheme') }}" />
-                    <select id="theme" class="mt-1 block w-full" value="{{$user->theme}}"  >
+                    <select id="theme" class="mt-1 block w-full text-slate-900" value="{{$user->theme}}"  >
                         @foreach($themes as $theme)
                         <option value="{{$theme->value}}">{{$theme->title}}</option>
                         @endforeach
@@ -33,7 +33,7 @@
                 <!-- Role -->
                 <div class="col-span-6 sm:col-span-4">
                     <x-label for="organization_role" value="{{ __('Organization Role') }}" />
-                    <select id="organization_role" name="organization_role" class="mt-1 block w-full">
+                    <select id="organization_role" name="organization_role" class="mt-1 block w-full text-slate-900">
                         @foreach($roles as $role)
                         <option value="{{$role['id']}}" @selected($user->organization_role === $role['id'])>
                             {{$role['name']}} ({{$role['short_description']}})

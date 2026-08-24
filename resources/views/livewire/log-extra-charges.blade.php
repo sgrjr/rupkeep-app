@@ -27,7 +27,7 @@
                        id="charge-description-{{ $log->id }}"
                        wire:model="description"
                        placeholder="{{ __('e.g. Equipment rental') }}"
-                       class="block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-orange-400 focus:ring-orange-200">
+                       class="block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-orange-400 focus:ring-orange-200 text-slate-900">
             </div>
 
             <div class="w-28 shrink-0">

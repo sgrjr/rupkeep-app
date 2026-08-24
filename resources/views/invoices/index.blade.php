@@ -22,11 +22,11 @@
                         <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600 mb-1">{{ __('Search') }}</label>
                         <input type="text" name="q" value="{{ $filters['q'] ?? '' }}"
                                placeholder="{{ __('Invoice #, customer, job #') }}"
-                               class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                               class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                     </div>
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600 mb-1">{{ __('Status') }}</label>
-                        <select name="paid" class="w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                        <select name="paid" class="w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                             <option value="">{{ __('Any') }}</option>
                             <option value="yes" @selected(($filters['paid'] ?? '') === 'yes')>{{ __('Paid') }}</option>
                             <option value="no" @selected(($filters['paid'] ?? '') === 'no')>{{ __('Unpaid') }}</option>
@@ -34,7 +34,7 @@
                     </div>
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600 mb-1">{{ __('Type') }}</label>
-                        <select name="type" class="w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                        <select name="type" class="w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                             <option value="">{{ __('All') }}</option>
                             <option value="single" @selected(($filters['type'] ?? '') === 'single')>{{ __('Single') }}</option>
                             <option value="summary" @selected(($filters['type'] ?? '') === 'summary')>{{ __('Summary') }}</option>
@@ -42,17 +42,17 @@
                     </div>
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600 mb-1">{{ __('From') }}</label>
-                        <input type="date" name="from" value="{{ $filters['from'] ?? '' }}" class="w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                        <input type="date" name="from" value="{{ $filters['from'] ?? '' }}" class="w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                     </div>
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600 mb-1">{{ __('To') }}</label>
-                        <input type="date" name="to" value="{{ $filters['to'] ?? '' }}" class="w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                        <input type="date" name="to" value="{{ $filters['to'] ?? '' }}" class="w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                     </div>
 
                     @if($crossOrganization)
                         <div class="md:col-span-2">
                             <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600 mb-1">{{ __('Organization') }}</label>
-                            <select name="organization_id" class="w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                            <select name="organization_id" class="w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                                 <option value="">{{ __('All Organizations') }}</option>
                                 @foreach($organizations as $org)
                                     <option value="{{ $org->id }}" @selected((string) ($filters['organization_id'] ?? '') === (string) $org->id)>{{ $org->name }}</option>

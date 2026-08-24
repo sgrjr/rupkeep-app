@@ -69,15 +69,15 @@
                     <form method="GET" action="{{ route('my.invoices.export.jobs') }}" class="grid gap-4 md:grid-cols-6">
                         <div>
                             <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600 mb-1">{{ __('From Date') }}</label>
-                            <input type="date" name="from" value="{{ request('from') }}" class="w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                            <input type="date" name="from" value="{{ request('from') }}" class="w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                         </div>
                         <div>
                             <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600 mb-1">{{ __('To Date') }}</label>
-                            <input type="date" name="to" value="{{ request('to') }}" class="w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                            <input type="date" name="to" value="{{ request('to') }}" class="w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                         </div>
                         <div>
                             <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600 mb-1">{{ __('Customer') }}</label>
-                            <select name="customer_id" class="w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                            <select name="customer_id" class="w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                                 <option value="">{{ __('All Customers') }}</option>
                                 @foreach(\App\Models\Customer::where('organization_id', auth()->user()->organization_id)->orderBy('name')->get() as $customer)
                                     <option value="{{ $customer->id }}" @selected(request('customer_id') == $customer->id)>{{ $customer->name }}</option>
@@ -86,7 +86,7 @@
                         </div>
                         <div>
                             <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600 mb-1">{{ __('Status') }}</label>
-                            <select name="paid" class="w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                            <select name="paid" class="w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                                 <option value="">{{ __('Any Status') }}</option>
                                 <option value="yes" @selected(request('paid') === 'yes')>{{ __('Paid') }}</option>
                                 <option value="no" @selected(request('paid') === 'no')>{{ __('Unpaid') }}</option>
@@ -127,7 +127,7 @@
                 <form method="GET" action="{{ route('my.jobs.index') }}" id="filterForm" class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                     <div class="md:w-56">
                         <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Filter/Scope') }}</label>
-                        <select name="filter" onchange="document.getElementById('filterForm').submit();" class="mt-2 w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                        <select name="filter" onchange="document.getElementById('filterForm').submit();" class="mt-2 w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                             <option value="">{{ __('All Jobs') }}</option>
                             <option value="recent" @selected(request('filter') === 'recent')>{{ __('Recent (Newest First)') }}</option>
                             <option value="is_active" @selected(request('filter') === 'is_active')>{{ __('Pending / Active Jobs') }}</option>
@@ -140,11 +140,11 @@
                     </div>
                     <div class="flex-1">
                         <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Search Jobs') }}</label>
-                        <input type="text" name="search_value" value="{{ request('search_value') }}" placeholder="{{ __('Search by keyword') }}" class="mt-2 w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200" />
+                        <input type="text" name="search_value" value="{{ request('search_value') }}" placeholder="{{ __('Search by keyword') }}" class="mt-2 w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900" />
                     </div>
                     <div class="md:w-56">
                         <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Field') }}</label>
-                        <select name="search_field" class="mt-2 w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                        <select name="search_field" class="mt-2 w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                             <option value="has_customer_name" @selected(request('search_field') === 'has_customer_name')>{{ __('Customer Name') }}</option>
                             <option value="job_no" @selected(request('search_field') === 'job_no')>{{ __('Job #') }}</option>
                             <option value="load_no" @selected(request('search_field') === 'load_no')>{{ __('Load #') }}</option>

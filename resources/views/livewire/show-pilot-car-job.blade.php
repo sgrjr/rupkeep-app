@@ -781,7 +781,7 @@
                             <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Assign driver & vehicle') }}</label>
                             <div class="w-full sm:flex-1">
                                 <select wire:model="assignment.car_driver_id"
-                                        class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                        class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                                     <option value="">{{ __('Select Driver') }}</option>
                                     @foreach($drivers as $driver)
                                         @if($driver['value'])
@@ -793,7 +793,7 @@
                             </div>
                             <div class="w-full sm:flex-1">
                                 <select wire:model="assignment.vehicle_id" 
-                                        class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                        class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                                     <option value="">{{ __('Select Vehicle') }}</option>
                                     @foreach($vehicles as $vehicle)
                                         @if($vehicle['value'])
@@ -805,7 +805,7 @@
                             </div>
                             <div class="w-full sm:flex-1">
                                 <select wire:model="assignment.vehicle_position" 
-                                        class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                        class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                                     <option value="">{{ __('Select Position') }}</option>
                                     @foreach($vehicle_positions as $position)
                                         @if($position['value'])

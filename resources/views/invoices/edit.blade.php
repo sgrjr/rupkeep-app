@@ -468,27 +468,27 @@
                         <input id="values_logo" name="values[logo]" type="text"
                                value="{{ old('values.logo', data_get($values, 'logo')) }}"
                                placeholder="https://example.com/logo.png"
-                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200" />
+                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900" />
                         </div>
                     <div>
                         <label for="values_title" class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Document Title') }}</label>
                         <input id="values_title" name="values[title]" type="text"
                                value="{{ old('values.title', data_get($values, 'title')) }}"
                                placeholder="INVOICE"
-                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200" />
+                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900" />
                         </div>
                         </div>
                 <div>
                     <label for="values_footer" class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Invoice Footer Message') }}</label>
                     <textarea id="values_footer" name="values[footer]" rows="3"
-                              class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                              class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900"
                               placeholder="{{ __('Thank your customers or provide payment instructions.') }}">{{ old('values.footer', data_get($values, 'footer')) }}</textarea>
                 </div>
                 <div class="md:col-span-2">
                     <label for="values_notes" class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Invoice Notes (Public Memo Override)') }}</label>
                     <div class="mt-2 space-y-2">
                         <textarea id="values_notes" name="values[notes]" rows="4"
-                                  class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                                  class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900"
                                   placeholder="{{ $job && $job->public_memo ? $job->public_memo : __('Leave empty to use the job-level public memo') }}">{{ old('values.notes', data_get($values, 'notes')) }}</textarea>
                         @if($job && $job->public_memo)
                             <p class="text-xs text-slate-400">
@@ -522,38 +522,38 @@
                                 <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Company') }}</label>
                                 <input type="text" name="values[bill_from][company]"
                                        value="{{ old('values.bill_from.company', data_get($values, 'bill_from.company')) }}"
-                                       class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200" />
+                                       class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900" />
                             </div>
                             <div>
                                 <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Attention') }}</label>
                                 <input type="text" name="values[bill_from][attention]"
                                        value="{{ old('values.bill_from.attention', data_get($values, 'bill_from.attention')) }}"
-                                       class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200" />
+                                       class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900" />
                             </div>
                             <div>
                                 <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Street') }}</label>
                                 <input type="text" name="values[bill_from][street]"
                                        value="{{ old('values.bill_from.street', data_get($values, 'bill_from.street')) }}"
-                                       class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200" />
+                                       class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900" />
                             </div>
                             <div class="grid gap-3 sm:grid-cols-3">
                                 <div>
                                     <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('City') }}</label>
                                     <input type="text" name="values[bill_from][city]"
                                            value="{{ old('values.bill_from.city', data_get($values, 'bill_from.city')) }}"
-                                           class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200" />
+                                           class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900" />
                                 </div>
                                 <div>
                                     <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('State') }}</label>
                                     <input type="text" name="values[bill_from][state]"
                                            value="{{ old('values.bill_from.state', data_get($values, 'bill_from.state')) }}"
-                                           class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200" />
+                                           class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900" />
                                 </div>
                                 <div>
                                     <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Zip') }}</label>
                                     <input type="text" name="values[bill_from][zip]"
                                            value="{{ old('values.bill_from.zip', data_get($values, 'bill_from.zip')) }}"
-                                           class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200" />
+                                           class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900" />
                                 </div>
                             </div>
                         </div>
@@ -565,38 +565,38 @@
                                 <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Company') }}</label>
                                 <input type="text" name="values[bill_to][company]"
                                        value="{{ old('values.bill_to.company', data_get($values, 'bill_to.company')) }}"
-                                       class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200" />
+                                       class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900" />
                             </div>
                             <div>
                                 <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Attention') }}</label>
                                 <input type="text" name="values[bill_to][attention]"
                                        value="{{ old('values.bill_to.attention', data_get($values, 'bill_to.attention')) }}"
-                                       class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200" />
+                                       class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900" />
                             </div>
                             <div>
                                 <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Street') }}</label>
                                 <input type="text" name="values[bill_to][street]"
                                        value="{{ old('values.bill_to.street', data_get($values, 'bill_to.street')) }}"
-                                       class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200" />
+                                       class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900" />
                             </div>
                             <div class="grid gap-3 sm:grid-cols-3">
                                 <div>
                                     <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('City') }}</label>
                                     <input type="text" name="values[bill_to][city]"
                                            value="{{ old('values.bill_to.city', data_get($values, 'bill_to.city')) }}"
-                                           class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200" />
+                                           class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900" />
                                 </div>
                                 <div>
                                     <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('State') }}</label>
                                     <input type="text" name="values[bill_to][state]"
                                            value="{{ old('values.bill_to.state', data_get($values, 'bill_to.state')) }}"
-                                           class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200" />
+                                           class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900" />
                                 </div>
                                 <div>
                                     <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Zip') }}</label>
                                     <input type="text" name="values[bill_to][zip]"
                                            value="{{ old('values.bill_to.zip', data_get($values, 'bill_to.zip')) }}"
-                                           class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200" />
+                                           class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900" />
                                 </div>
                             </div>
                         </div>
@@ -618,54 +618,54 @@
                     <div>
                         <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Pickup Address') }}</label>
                         <textarea name="values[pickup_address]" rows="3"
-                                  class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200">{{ old('values.pickup_address', data_get($values, 'pickup_address')) }}</textarea>
+                                  class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">{{ old('values.pickup_address', data_get($values, 'pickup_address')) }}</textarea>
                     </div>
                     <div>
                         <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Delivery Address') }}</label>
                         <textarea name="values[delivery_address]" rows="3"
-                                  class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200">{{ old('values.delivery_address', data_get($values, 'delivery_address')) }}</textarea>
+                                  class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">{{ old('values.delivery_address', data_get($values, 'delivery_address')) }}</textarea>
                     </div>
                 </div>
                 <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     <div>
                         <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Load Number') }}</label>
                         <input type="text" name="values[load_no]" value="{{ old('values.load_no', data_get($values, 'load_no')) }}"
-                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200" />
+                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900" />
                     </div>
                     <div>
                         <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Check Number') }}</label>
                         <input type="text" name="values[check_no]" value="{{ old('values.check_no', data_get($values, 'check_no')) }}"
-                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200" />
+                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900" />
                     </div>
                     <div>
                         <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Truck Driver') }}</label>
                         <input type="text" name="values[truck_driver_name]" value="{{ old('values.truck_driver_name', data_get($values, 'truck_driver_name')) }}"
-                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200" />
+                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900" />
                     </div>
                     <div>
                         <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Truck Number') }}</label>
                         <input type="text" name="values[truck_number]" value="{{ old('values.truck_number', data_get($values, 'truck_number')) }}"
-                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200" />
+                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900" />
                     </div>
                     <div>
                         <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Trailer Number') }}</label>
                         <input type="text" name="values[trailer_number]" value="{{ old('values.trailer_number', data_get($values, 'trailer_number')) }}"
-                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200" />
+                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900" />
                     </div>
                     <div>
                         <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Truck Notes') }}</label>
                         <input type="text" name="values[truck_notes]" value="{{ old('values.truck_notes', data_get($values, 'truck_notes')) }}"
-                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200" />
+                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900" />
                     </div>
                     <div>
                         <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Wait Time (hours)') }}</label>
                         <input type="number" step="0.25" name="values[wait_time_hours]" value="{{ old('values.wait_time_hours', data_get($values, 'wait_time_hours')) }}"
-                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200" />
+                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900" />
                     </div>
                     <div>
                         <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Extra Load Stops') }}</label>
                         <input type="number" step="1" min="0" name="values[extra_load_stops_count]" value="{{ old('values.extra_load_stops_count', data_get($values, 'extra_load_stops_count')) }}"
-                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200" />
+                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900" />
                     </div>
                 </div>
             </section>
@@ -685,23 +685,23 @@
                     <div>
                         <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Rate Code') }}</label>
                         <input type="text" name="values[rate_code]" value="{{ old('values.rate_code', data_get($values, 'rate_code')) }}"
-                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200" />
+                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900" />
                     </div>
                     <div>
                         <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Rate Value') }}</label>
                         <input type="number" step="0.01" name="values[rate_value]" value="{{ old('values.rate_value', data_get($values, 'rate_value')) }}"
-                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200" />
+                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900" />
                     </div>
                     <div>
                         <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Effective Rate Code') }}</label>
                         <input type="text" name="values[effective_rate_code]" value="{{ old('values.effective_rate_code', data_get($values, 'effective_rate_code')) }}"
-                               class="mt-2 block w-full rounded-xl border border-slate-200	bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200" />
+                               class="mt-2 block w-full rounded-xl border border-slate-200	bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900" />
                     </div>
                     <div>
                         <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Effective Rate Value') }}</label>
                         <input type="number" step="0.01" name="values[effective_rate_value]"
                                value="{{ old('values.effective_rate_value', data_get($values, 'effective_rate_value')) }}"
-                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200" />
+                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900" />
                     </div>
                     @endif
                     {{-- Billable miles and the total are the two figures a summary
@@ -709,18 +709,13 @@
                     <div>
                         <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Billable Miles') }}</label>
                         <input type="number" step="0.1" name="values[billable_miles]" value="{{ old('values.billable_miles', data_get($values, 'billable_miles')) }}"
-                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200" />
+                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900" />
                     </div>
                     @if(! $invoice->isSummary())
                     <div>
                         <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Non-billable Miles') }}</label>
                         <input type="number" step="0.1" name="values[nonbillable_miles]" value="{{ old('values.nonbillable_miles', data_get($values, 'nonbillable_miles')) }}"
-                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200" />
-                    </div>
-                    <div>
-                        <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Deadhead Legs') }}</label>
-                        <input type="number" min="0" step="1" name="values[dead_head]" value="{{ old('values.dead_head', data_get($values, 'dead_head')) }}"
-                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200" />
+                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900" />
                     </div>
                     {{-- Driven is the ledger figure and prices nothing; billed is what the
                          charge is calculated from (TASK-354). Both are editable here so a
@@ -728,29 +723,29 @@
                     <div>
                         <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Deadhead Miles Driven') }}</label>
                         <input type="number" min="0" step="0.1" name="values[dead_head_driven]" value="{{ old('values.dead_head_driven', data_get($values, 'dead_head_driven')) }}"
-                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200" />
+                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900" />
                         <p class="mt-1 text-xs text-slate-400">{{ __('Tracked for the record. Not billed.') }}</p>
                     </div>
                     <div>
                         <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Deadhead Miles Billed') }}</label>
                         <input type="number" min="0" step="0.1" name="values[dead_head_billed]" value="{{ old('values.dead_head_billed', data_get($values, 'dead_head_billed')) }}"
-                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200" />
+                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900" />
                         <p class="mt-1 text-xs text-slate-400">{{ __('What the deadhead charge is calculated from.') }}</p>
                     </div>
                     <div>
                         <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Escort Vehicles') }}</label>
                         <input type="number" min="0" step="1" name="values[cars_count]" value="{{ old('values.cars_count', data_get($values, 'cars_count')) }}"
-                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200" />
+                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900" />
                     </div>
                     <div>
                         <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Tolls') }}</label>
                         <input type="number" step="0.01" name="values[tolls]" value="{{ old('values.tolls', data_get($values, 'tolls')) }}"
-                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200" />
+                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900" />
                     </div>
                     <div>
                         <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Hotel') }}</label>
                         <input type="number" step="0.01" name="values[hotel]" value="{{ old('values.hotel', data_get($values, 'hotel')) }}"
-                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200" />
+                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900" />
                     </div>
                     <div>
                         <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Extra Charges') }}</label>
@@ -761,7 +756,7 @@
                     <div>
                         <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Total Due Override') }}</label>
                         <input type="number" step="0.01" name="values[total]" value="{{ old('values.total', data_get($values, 'total')) }}"
-                               class="mt-2 block w-full rounded-xl border border-slate-200	bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200" />
+                               class="mt-2 block w-full rounded-xl border border-slate-200	bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900" />
                     </div>
                 </div>
             </section>

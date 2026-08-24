@@ -149,24 +149,24 @@
                             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                                 <div class="flex flex-col">
                                     <label class="text-xs font-semibold uppercase tracking-wide text-slate-600" for="nc_name{{$contact->id}}">{{ __('Name') }}</label>
-                                    <input id="nc_name{{$contact->id}}" name="name" value="{{$contact->name}}" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"/>
+                                    <input id="nc_name{{$contact->id}}" name="name" value="{{$contact->name}}" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900"/>
                                 </div>
                                 <div class="flex flex-col">
                                     <label class="text-xs font-semibold uppercase tracking-wide text-slate-600" for="nc_phone{{$contact->id}}">{{ __('Phone') }}</label>
-                                    <input id="nc_phone{{$contact->id}}" name="phone" value="{{$contact->phone}}" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"/>
+                                    <input id="nc_phone{{$contact->id}}" name="phone" value="{{$contact->phone}}" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900"/>
                                 </div>
                                 <div class="flex flex-col">
                                     <label class="text-xs font-semibold uppercase tracking-wide text-slate-600" for="nc_email{{$contact->id}}">{{ __('Email') }}</label>
-                                    <input id="nc_email{{$contact->id}}" name="email" value="{{$contact->email}}" type="email" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"/>
+                                    <input id="nc_email{{$contact->id}}" name="email" value="{{$contact->email}}" type="email" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900"/>
                                 </div>
                                 <div class="flex flex-col">
                                     <label class="text-xs font-semibold uppercase tracking-wide text-slate-600" for="nc_memo{{$contact->id}}">{{ __('Memo') }}</label>
-                                    <input id="nc_memo{{$contact->id}}" name="memo" value="{{$contact->memo}}" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"/>
+                                    <input id="nc_memo{{$contact->id}}" name="memo" value="{{$contact->memo}}" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900"/>
                                 </div>
                             </div>
                             <div class="mt-4">
                                 <label class="text-xs font-semibold uppercase tracking-wide text-slate-600" for="nc_notification_address{{$contact->id}}">{{ __('Notification Address (SMS Gateway)') }}</label>
-                                <input id="nc_notification_address{{$contact->id}}" name="notification_address" value="{{$contact->notification_address}}" placeholder="2074168659@mms.uscc.net" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"/>
+                                <input id="nc_notification_address{{$contact->id}}" name="notification_address" value="{{$contact->notification_address}}" placeholder="2074168659@mms.uscc.net" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900"/>
                                 <div class="mt-1 text-xs text-slate-500">
                                     <p class="mb-2">{{ __('For SMS notifications, use format: phone@gateway. Leave blank to use email address.') }}</p>
                                     <details class="mt-2">

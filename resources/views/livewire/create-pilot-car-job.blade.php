@@ -28,7 +28,7 @@
             <div class="grid gap-4 md:grid-cols-2">
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Customer') }}</label>
-                    <select wire:model.live="form.customer_id" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                    <select wire:model.live="form.customer_id" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                         @foreach($customers as $customer)
                             <option value="{{ $customer['value'] }}">{{ $customer['name'] }}</option>
                         @endforeach
@@ -41,21 +41,21 @@
                     <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('New Customer Name') }}</label>
                     <input type="text" id="new_customer_name" wire:model.blur="form.new_customer_name"
                            @disabled($form->customer_id !== \App\Livewire\CreatePilotCarJob::NEW_CUSTOMER)
-                           placeholder="{{ $form->customer_id === \App\Livewire\CreatePilotCarJob::NEW_CUSTOMER ? __('Name of the new customer') : __('Pick "+ Create a new customer" above to use this') }}" class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                           placeholder="{{ $form->customer_id === \App\Livewire\CreatePilotCarJob::NEW_CUSTOMER ? __('Name of the new customer') : __('Pick "+ Create a new customer" above to use this') }}" class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                     @error('form.new_customer_name')
                         <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p>
                     @enderror
                 </div>
                 <div>
                     <label for="job_no" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Job Number') }}</label>
-                    <input type="text" id="job_no" wire:model="form.job_no" placeholder="JOB-2025-001" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                    <input type="text" id="job_no" wire:model="form.job_no" placeholder="JOB-2025-001" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                     @error('form.job_no')
                         <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p>
                     @enderror
                 </div>
                 <div>
                     <label for="load_no" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Load Number') }}</label>
-                    <input type="text" id="load_no" wire:model="form.load_no" placeholder="LOAD-845" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                    <input type="text" id="load_no" wire:model="form.load_no" placeholder="LOAD-845" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                     @error('form.load_no')
                         <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p>
                     @enderror
@@ -72,35 +72,35 @@
             <div class="grid gap-4 md:grid-cols-2">
                 <div>
                     <label for="scheduled_pickup_at" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Pickup Date & Time') }}</label>
-                    <input type="text" id="scheduled_pickup_at" wire:model="form.scheduled_pickup_at" placeholder="{{ __('Select date + time') }}" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                    <input type="text" id="scheduled_pickup_at" wire:model="form.scheduled_pickup_at" placeholder="{{ __('Select date + time') }}" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                     @error('form.scheduled_pickup_at')
                         <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p>
                     @enderror
                 </div>
                 <div>
                     <label for="scheduled_delivery_at" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Delivery Date & Time') }}</label>
-                    <input type="text" id="scheduled_delivery_at" wire:model="form.scheduled_delivery_at" placeholder="{{ __('Select date + time') }}" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                    <input type="text" id="scheduled_delivery_at" wire:model="form.scheduled_delivery_at" placeholder="{{ __('Select date + time') }}" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                     @error('form.scheduled_delivery_at')
                         <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p>
                     @enderror
                 </div>
                 <div class="md:col-span-2">
                     <label for="pickup_address" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Pickup Address') }}</label>
-                    <textarea id="pickup_address" wire:model="form.pickup_address" rows="3" placeholder="{{ __('Enter pickup street, city, state') }}" class="mt-2 block w-full rounded-2xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"></textarea>
+                    <textarea id="pickup_address" wire:model="form.pickup_address" rows="3" placeholder="{{ __('Enter pickup street, city, state') }}" class="mt-2 block w-full rounded-2xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900"></textarea>
                     @error('form.pickup_address')
                         <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p>
                     @enderror
                 </div>
                 <div class="md:col-span-2">
                     <label for="delivery_address" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Delivery Address') }}</label>
-                    <textarea id="delivery_address" wire:model="form.delivery_address" rows="3" placeholder="{{ __('Enter delivery street, city, state') }}" class="mt-2 block w-full rounded-2xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"></textarea>
+                    <textarea id="delivery_address" wire:model="form.delivery_address" rows="3" placeholder="{{ __('Enter delivery street, city, state') }}" class="mt-2 block w-full rounded-2xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900"></textarea>
                     @error('form.delivery_address')
                         <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p>
                     @enderror
                 </div>
                 <div class="md:col-span-2">
                     <label for="memo" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Internal Memo') }}</label>
-                    <textarea id="memo" wire:model="form.memo" rows="4" placeholder="{{ __('Optional notes for staff reference') }}" class="mt-2 block w-full rounded-2xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"></textarea>
+                    <textarea id="memo" wire:model="form.memo" rows="4" placeholder="{{ __('Optional notes for staff reference') }}" class="mt-2 block w-full rounded-2xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900"></textarea>
                     <p class="mt-1 text-xs text-slate-400">{{ __('Internal notes for organization users only. Not displayed on invoices.') }}</p>
                     @error('form.memo')
                         <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p>
@@ -108,7 +108,7 @@
                 </div>
                 <div class="md:col-span-2">
                     <label for="public_memo" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Public Memo / Invoice Notes') }}</label>
-                    <textarea id="public_memo" wire:model="form.public_memo" rows="4" placeholder="{{ __('Notes that will appear on invoices sent to customers') }}" class="mt-2 block w-full rounded-2xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"></textarea>
+                    <textarea id="public_memo" wire:model="form.public_memo" rows="4" placeholder="{{ __('Notes that will appear on invoices sent to customers') }}" class="mt-2 block w-full rounded-2xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900"></textarea>
                     <p class="mt-1 text-xs text-slate-400">{{ __('This memo will be displayed on invoices sent to customers. For internal notes, use the internal memo field above.') }}</p>
                     @error('form.public_memo')
                         <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p>
@@ -126,7 +126,7 @@
             <div class="grid gap-4 md:grid-cols-2">
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Default Driver') }}</label>
-                    <select wire:model="form.default_driver_id" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                    <select wire:model="form.default_driver_id" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                         @foreach($drivers as $driver)
                             <option value="{{ $driver['value'] }}">{{ $driver['name'] }}</option>
                         @endforeach
@@ -137,7 +137,7 @@
                 </div>
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Default Truck Driver Contact') }}</label>
-                    <select wire:model="form.default_truck_driver_id" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                    <select wire:model="form.default_truck_driver_id" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                         @foreach($truckDrivers as $contact)
                             <option value="{{ $contact['value'] }}">{{ $contact['name'] }}</option>
                         @endforeach
@@ -154,12 +154,12 @@
                     <div class="mt-3 space-y-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-3">
                         <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{{ __('Or add a new truck driver') }}</p>
                         <input type="text" wire:model.blur="form.new_truck_driver_name" placeholder="{{ __('Driver name') }}"
-                               class="block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                               class="block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                         @error('form.new_truck_driver_name')
                             <p class="text-xs font-semibold text-red-500">{{ $message }}</p>
                         @enderror
                         <input type="text" wire:model.blur="form.new_truck_driver_phone" placeholder="{{ __('Phone (optional)') }}"
-                               class="block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                               class="block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                         @error('form.new_truck_driver_phone')
                             <p class="text-xs font-semibold text-red-500">{{ $message }}</p>
                         @enderror
@@ -178,7 +178,7 @@
             <div class="grid gap-4 md:grid-cols-2">
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Rate Code') }}</label>
-                    <select wire:model="form.rate_code" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                    <select wire:model="form.rate_code" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                         @foreach($rates as $rate)
                             <option value="{{ $rate->value }}">{{ $rate->title }}</option>
                         @endforeach
@@ -189,7 +189,7 @@
                 </div>
                 <div>
                     <label for="rate_value" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Rate Value / Override') }}</label>
-                    <input type="text" id="rate_value" wire:model="form.rate_value" placeholder="2.25" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                    <input type="text" id="rate_value" wire:model="form.rate_value" placeholder="2.25" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                     <p class="mt-2 text-xs text-slate-400">{{ __('Leave blank to use the default value for the selected rate.') }}</p>
                     @error('form.rate_value')
                         <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p>
@@ -197,7 +197,7 @@
                 </div>
                 <div>
                     <label for="mini_addon_amount" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Mini Add-On') }}</label>
-                    <input type="text" id="mini_addon_amount" wire:model="form.mini_addon_amount" placeholder="100.00" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                    <input type="text" id="mini_addon_amount" wire:model="form.mini_addon_amount" placeholder="100.00" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                     <p class="mt-2 text-xs text-slate-400">{{ __('Optional flat amount added on top of the rate above (stacks with flat-rate jobs). Leave blank for none.') }}</p>
                     @error('form.mini_addon_amount')
                         <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p>

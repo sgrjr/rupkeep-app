@@ -18,12 +18,12 @@
                 <div>
                     <label for="start_date" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Start Date') }}</label>
                     <input type="date" id="start_date" name="start_date" value="{{ $startDate }}" 
-                           class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                           class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                 </div>
                 <div>
                     <label for="end_date" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('End Date') }}</label>
                     <input type="date" id="end_date" name="end_date" value="{{ $endDate }}" 
-                           class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                           class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                 </div>
                 <div class="flex items-end">
                     <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-orange-600">

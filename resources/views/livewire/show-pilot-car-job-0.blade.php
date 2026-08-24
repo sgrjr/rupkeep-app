@@ -121,21 +121,21 @@
 
     <form wire:submit="assignJob" class="flex border p-2">
         <label class="input-label">Driver: </label>
-        <select wire:model.blur="assignment.car_driver_id" class="bg-gray-100" required>
+        <select wire:model.blur="assignment.car_driver_id" class="bg-gray-100 text-slate-900" required>
             @foreach($drivers as $driver)
             <option value="{{$driver['value']}}">{{$driver['name']}}</option>
             @endforeach
         </select>
 
         <label class="input-label">Vehicle: </label>
-        <select wire:model.blur="assignment.vehicle_id" class="bg-gray-100">
+        <select wire:model.blur="assignment.vehicle_id" class="bg-gray-100 text-slate-900">
             @foreach($vehicles as $vehicle)
             <option value="{{$vehicle['value']}}">{{$vehicle['name']}}</option>
             @endforeach
         </select>
 
         <label class="input-label">Vehicle Position: </label>
-        <select wire:model.blur="assignment.vehicle_position" class="bg-gray-100">
+        <select wire:model.blur="assignment.vehicle_position" class="bg-gray-100 text-slate-900">
             @foreach($vehicle_positions as $position)
             <option value="{{$position['value']}}">{{$position['name']}}</option>
             @endforeach

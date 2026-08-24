@@ -28,7 +28,6 @@
     $charges = $charges ?? [
         __('Billable Miles') => $billableMiles ? number_format((float) $billableMiles, 2) : null,
         __('Rate Applied') => $rateValue ? '$' . number_format((float) $rateValue, 2) : null,
-        __('Deadhead Trips') => $values['dead_head'] ?? null,
         __('Tolls') => isset($values['tolls']) ? '$' . number_format((float) str_replace(',', '', (string) $values['tolls']), 2) : null,
         __('Hotel') => isset($values['hotel']) ? '$' . number_format((float) str_replace(',', '', (string) $values['hotel']), 2) : null,
         __('Extra Charges') => isset($values['extra_charge']) ? '$' . number_format((float) str_replace(',', '', (string) $values['extra_charge']), 2) : null,

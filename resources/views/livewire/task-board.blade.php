@@ -8,19 +8,19 @@
     <section class="rounded-3xl border border-slate-200 bg-white/90 p-3 shadow-sm sm:p-4">
         <div class="flex flex-wrap items-center gap-3 text-xs">
             <label class="font-semibold uppercase tracking-wide text-slate-600">{{ __('Type') }}
-                <select wire:model.live="typeFilter" class="ml-1 rounded-lg border border-slate-400 bg-white px-2 py-1 text-xs focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                <select wire:model.live="typeFilter" class="ml-1 rounded-lg border border-slate-400 bg-white px-2 py-1 text-xs focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                     <option value="">{{ __('Any') }}</option>
                     @foreach ($types as $t) <option value="{{ $t }}">{{ $t }}</option> @endforeach
                 </select>
             </label>
             <label class="font-semibold uppercase tracking-wide text-slate-600">{{ __('Priority') }}
-                <select wire:model.live="priorityFilter" class="ml-1 rounded-lg border border-slate-400 bg-white px-2 py-1 text-xs focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                <select wire:model.live="priorityFilter" class="ml-1 rounded-lg border border-slate-400 bg-white px-2 py-1 text-xs focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                     <option value="">{{ __('Any') }}</option>
                     @foreach ($priorities as $p) <option value="{{ $p }}">{{ $p }}</option> @endforeach
                 </select>
             </label>
             <label class="font-semibold uppercase tracking-wide text-slate-600">{{ __('Label') }}
-                <select wire:model.live="labelFilter" class="ml-1 rounded-lg border border-slate-400 bg-white px-2 py-1 text-xs focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                <select wire:model.live="labelFilter" class="ml-1 rounded-lg border border-slate-400 bg-white px-2 py-1 text-xs focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                     <option value="">{{ __('Any') }}</option>
                     @foreach ($labels as $l) <option value="{{ $l->name }}">{{ $l->name }}</option> @endforeach
                 </select>

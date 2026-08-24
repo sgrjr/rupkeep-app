@@ -50,7 +50,7 @@
                                 <div class="relative">
                                     <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
                                     <input type="number" step="0.01" min="0.01" wire:model="paymentAmount" 
-                                           class="w-full rounded-xl border border-slate-200 bg-white pl-8 pr-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                                           class="w-full rounded-xl border border-slate-200 bg-white pl-8 pr-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900"
                                            placeholder="0.00">
                                 </div>
                                 @error('paymentAmount') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
@@ -61,7 +61,7 @@
                                     {{ __('Payment Date') }}
                                 </label>
                                 <input type="date" wire:model="paymentDate" 
-                                       class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                       class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                                 @error('paymentDate') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                             </div>
 
@@ -70,7 +70,7 @@
                                     {{ __('Payment Method') }}
                                 </label>
                                 <select wire:model="paymentMethod" 
-                                        class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                        class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                                     <option value="">{{ __('Select method') }}</option>
                                     <option value="check">{{ __('Check') }}</option>
                                     <option value="cash">{{ __('Cash') }}</option>
@@ -87,7 +87,7 @@
                                     {{ __('Check Number') }}
                                 </label>
                                 <input type="text" wire:model="checkNumber" 
-                                       class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                                       class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900"
                                        placeholder="{{ __('If applicable') }}">
                                 @error('checkNumber') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                             </div>
@@ -114,7 +114,7 @@
                                         <div class="relative">
                                             <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
                                             <input type="number" step="0.01" min="0" max="{{ $availableCredit }}" wire:model="creditAmount" 
-                                                   class="w-full rounded-xl border border-slate-200 bg-white pl-8 pr-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                                                   class="w-full rounded-xl border border-slate-200 bg-white pl-8 pr-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900"
                                                    placeholder="0.00">
                                         </div>
                                         @error('creditAmount') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
@@ -128,7 +128,7 @@
                                 {{ __('Notes') }}
                             </label>
                             <textarea wire:model="notes" rows="3" 
-                                      class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                                      class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900"
                                       placeholder="{{ __('Optional payment notes') }}"></textarea>
                             @error('notes') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                         </div>

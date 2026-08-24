@@ -1880,6 +1880,12 @@ class PilotCarJob extends Model
      * are being charged deadhead on this job. Approaches that were driven but
      * given away for free do not appear, because nothing is being billed for
      * them.
+     *
+     * No longer shown to anyone (TASK-420): the invoice line states the miles
+     * driven, the miles billed and the rate, which is everything a leg count
+     * was standing in for back when no distance was recorded. It is kept
+     * because InvoiceLineItems falls back to it as a quantity for snapshots
+     * taken before dead_head_billed existed.
      */
     public function getTotalDeadHead($logs = false){
         if(!$logs) $logs = $this->logs;

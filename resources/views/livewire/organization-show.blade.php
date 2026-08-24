@@ -226,7 +226,7 @@
 
                                             <div class="mt-4">
                                                 <x-label for="role" value="{{ __('Organization Role') }}" />
-                                                <select id="role" class="block mt-1 w-full" name="role"  wire:model="form.role">
+                                                <select id="role" class="block mt-1 w-full text-slate-900" name="role"  wire:model="form.role">
                                                     @foreach($roles as $role)
                                                     <option value="{{$role['id']}}">{{$role['name']}} ({{$role['short_description']}})</option>
                                                     @endforeach

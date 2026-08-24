@@ -10,32 +10,32 @@
             <div class="space-y-4 text-left">
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Title') }}</label>
-                    <input type="text" wire:model.blur="title" maxlength="255" class="mt-1 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                    <input type="text" wire:model.blur="title" maxlength="255" class="mt-1 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                     @error('title') <p class="mt-1 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Description (Markdown)') }}</label>
-                    <textarea wire:model.blur="description" rows="5" class="mt-1 block w-full rounded-2xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200" placeholder="{{ __('Optional. Markdown supported.') }}"></textarea>
+                    <textarea wire:model.blur="description" rows="5" class="mt-1 block w-full rounded-2xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900" placeholder="{{ __('Optional. Markdown supported.') }}"></textarea>
                     @error('description') <p class="mt-1 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                 </div>
 
                 <div class="grid gap-3 sm:grid-cols-3">
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Type') }}</label>
-                        <select wire:model="type" class="mt-1 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                        <select wire:model="type" class="mt-1 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                             @foreach ($types as $t) <option value="{{ $t }}">{{ $t }}</option> @endforeach
                         </select>
                     </div>
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Priority') }}</label>
-                        <select wire:model="priority" class="mt-1 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                        <select wire:model="priority" class="mt-1 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                             @foreach ($priorities as $p) <option value="{{ $p }}">{{ $p }}</option> @endforeach
                         </select>
                     </div>
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Status') }}</label>
-                        <select wire:model="status" class="mt-1 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                        <select wire:model="status" class="mt-1 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                             @foreach ($statuses as $s) <option value="{{ $s }}">{{ str_replace('_',' ',$s) }}</option> @endforeach
                         </select>
                     </div>
