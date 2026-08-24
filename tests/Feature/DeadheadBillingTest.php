@@ -111,6 +111,94 @@ class DeadheadBillingTest extends TestCase
     }
 
     // ---------------------------------------------------------------
+    // Live derived values (TASK-397, TASK-398)
+    // ---------------------------------------------------------------
+
+    /**
+     * TASK-397: the calculated figure was assigned once in mount(), so a log
+     * that was empty at page load read 0.0 forever no matter what was typed.
+     * It must track the form, not the state the page opened in.
+     */
+    public function test_billable_miles_tracks_the_form_before_any_save(): void
+    {
+        $log = $this->log(); // empty at page load, exactly as an assignment creates it
+
+        $this->editComponent($log)
+            ->set('form.start_mileage', 10000)
+            ->set('form.end_mileage', 10600)
+            ->set('form.start_job_mileage', 10279)
+            ->set('form.end_job_mileage', 10479)
+            ->assertSee('Billable: 200')
+            ->assertDontSee('Billable: 0');
+    }
+
+    /**
+     * TASK-398: entering the odometer offers the approach immediately. Before,
+     * the suggestion was seeded once in mount() and a freshly assigned log --
+     * which never has readings yet -- was left blank forever.
+     */
+    public function test_entering_mileage_offers_the_deadhead_figure(): void
+    {
+        $log = $this->log();
+
+        $this->editComponent($log)
+            ->set('form.start_mileage', 10000)
+            ->set('form.start_job_mileage', 10279)
+            ->assertSet('form.dead_head_driven', 279.0);
+    }
+
+    /**
+     * A figure someone typed outranks the odometer and must survive further
+     * mileage edits.
+     */
+    public function test_a_typed_deadhead_figure_is_never_overwritten(): void
+    {
+        $log = $this->log();
+
+        $this->editComponent($log)
+            ->set('form.dead_head_driven', 85)
+            ->set('form.start_mileage', 10000)
+            ->set('form.start_job_mileage', 10279)
+            ->assertSet('form.dead_head_driven', 85);
+    }
+
+    /**
+     * The panel must not tell someone their value disagrees with the odometer
+     * when they have not entered one. Blank is not zero.
+     */
+    public function test_a_blank_deadhead_field_is_not_a_mismatch(): void
+    {
+        $log = $this->log([
+            'start_mileage' => 10000,
+            'start_job_mileage' => 10279,
+            'end_job_mileage' => 10479,
+            'end_mileage' => 10600,
+        ]);
+
+        $this->editComponent($log)
+            ->set('form.dead_head_driven', null)
+            ->assertDontSee('does not match');
+    }
+
+    /**
+     * A figure that genuinely disagrees still warns -- the check was made
+     * quieter, not removed.
+     */
+    public function test_a_conflicting_deadhead_figure_still_warns(): void
+    {
+        $log = $this->log([
+            'start_mileage' => 10000,
+            'start_job_mileage' => 10279,
+            'end_job_mileage' => 10479,
+            'end_mileage' => 10600,
+        ]);
+
+        $this->editComponent($log)
+            ->set('form.dead_head_driven', 12)
+            ->assertSee('does not match');
+    }
+
+    // ---------------------------------------------------------------
     // The published allowance is a ceiling
     // ---------------------------------------------------------------
 

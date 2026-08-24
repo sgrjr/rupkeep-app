@@ -37,7 +37,7 @@
                         {{ __('Billable Miles') }}
                         <p class="mt-1 text-sm font-medium normal-case text-white">
                             @php
-                                $calculatedBillable = $calculatedBillableMiles ?? ($log->total_billable_miles ?? 0);
+                                $calculatedBillable = $this->calculatedBillableMiles;
                                 $overrideValue = $form->billable_miles ?? $log->billable_miles;
                                 $displayValue = ($overrideValue !== null && $overrideValue !== '' && (float)$overrideValue != (float)$calculatedBillable) 
                                     ? number_format((float)$overrideValue, 1) . ' (override)'
@@ -243,7 +243,7 @@
             </div>
 
             <section class="rounded-3xl border border-slate-200 bg-white/90 p-5 shadow-sm sm:p-6">
-                <details {{ $isDriverVehicleOpen ? 'open' : '' }} class="group space-y-5">
+                <details {{ $isDriverVehicleOpen ? 'open' : '' }} x-on:toggle="$wire.set('isDriverVehicleOpen', $event.target.open, false)" class="group space-y-5">
                     @php
                         $driverName = $log->user?->name ?? __('Unassigned');
                         $vehicleName = $log->vehicle?->name ?? __('No vehicle');
@@ -262,14 +262,14 @@
                             $tripTimingParts[] = __('Clock') . ': ' . $fmtTs($log->clock_in) . ' → ' . $fmtTs($log->clock_out);
                         }
                         $tripTimingSummary = implode(' • ', $tripTimingParts);
-                        $mileageSummary = __('Miles') . ': ' . ($log->total_miles ?? '—') . ' • ' . __('Billable') . ': ' . ($log->billable_miles ?? '—');
+                        $mileageSummary = __('Miles') . ': ' . rtrim(rtrim(number_format($this->totalMilesFromForm, 1), '0'), '.') . ' • ' . __('Billable') . ': ' . rtrim(rtrim(number_format($this->calculatedBillableMiles, 1), '0'), '.');
                         $expenseSummary = __('Tolls') . ': ' . ($log->tolls ?? 0) . ' • ' . __('Hotel') . ': ' . ($log->hotel ?? 0);
                         $loadSummary = __('Truck') . ': ' . ($log->truck_no ?? '—') . ' • ' . __('Trailer') . ': ' . ($log->trailer_no ?? '—');
                         $attachmentsCount = $log->attachments?->count() ?? 0;
                         // Permits and route sheets live on the JOB, not the log (TASK-363).
                         $jobDocuments = $log->job?->attachments ?? collect();
                     @endphp
-                    <summary wire:click="$toggle('isDriverVehicleOpen')" class="flex flex-wrap cursor-pointer items-center justify-between gap-3 border-b border-slate-100 pb-3 text-lg font-semibold text-slate-900 sm:flex-nowrap">
+                    <summary class="flex flex-wrap cursor-pointer items-center justify-between gap-3 border-b border-slate-100 pb-3 text-lg font-semibold text-slate-900 sm:flex-nowrap">
                         <span>{{ $driverVehicleSummary }}</span>
                         <svg class="h-4 w-4 transition group-open:rotate-180" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>
                     </summary>
@@ -315,8 +315,8 @@
             </section>
 
             <section class="rounded-3xl border border-slate-200 bg-white/90 p-5 shadow-sm sm:p-6">
-                <details {{ $isTripTimingOpen ? 'open' : '' }} class="group space-y-5">
-                    <summary wire:click="$toggle('isTripTimingOpen')" class="flex cursor-pointer items-center justify-between gap-4 border-b border-slate-100 pb-3 text-lg font-semibold text-slate-900">
+                <details {{ $isTripTimingOpen ? 'open' : '' }} x-on:toggle="$wire.set('isTripTimingOpen', $event.target.open, false)" class="group space-y-5">
+                    <summary class="flex cursor-pointer items-center justify-between gap-4 border-b border-slate-100 pb-3 text-lg font-semibold text-slate-900">
                         <span>{{ __('Trip Timing') }} @if($tripTimingSummary) <span class="text-sm font-normal text-slate-500">— {{ $tripTimingSummary }}</span> @endif</span>
                         <svg class="h-4 w-4 transition group-open:rotate-180" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>
                     </summary>
@@ -346,8 +346,8 @@
             </section>
 
             <section class="rounded-3xl border border-slate-200 bg-white/90 p-5 shadow-sm sm:p-6">
-                <details {{ $isJobDetailsOpen ? 'open' : '' }} class="group space-y-5">
-                    <summary wire:click="$toggle('isJobDetailsOpen')" class="flex cursor-pointer items-center justify-between gap-4 border-b border-slate-100 pb-3 text-lg font-semibold text-slate-900">
+                <details {{ $isJobDetailsOpen ? 'open' : '' }} x-on:toggle="$wire.set('isJobDetailsOpen', $event.target.open, false)" class="group space-y-5">
+                    <summary class="flex cursor-pointer items-center justify-between gap-4 border-b border-slate-100 pb-3 text-lg font-semibold text-slate-900">
                         <span>{{ __('Job Details') }} <span class="text-sm font-normal text-slate-500">— {{ $mileageSummary }}</span></span>
                         <svg class="h-4 w-4 transition group-open:rotate-180" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>
                     </summary>
@@ -376,7 +376,7 @@
                             <label for="billable_miles" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Billable Miles') }}</label>
                             <div class="mt-2 space-y-2">
                                 @php
-                                    $calculatedBillable = $calculatedBillableMiles ?? ($log->total_billable_miles ?? 0);
+                                    $calculatedBillable = $this->calculatedBillableMiles;
                                     $overrideValue = $form->billable_miles ?? $log->billable_miles;
                                     $hasOverride = $overrideValue !== null && $overrideValue !== '' && (float)$overrideValue != (float)$calculatedBillable;
                                     $overrideDiff = $hasOverride ? ((float)$overrideValue - (float)$calculatedBillable) : 0;
@@ -428,11 +428,15 @@
                         <div class="sm:col-span-2 lg:col-span-4">
                             @php
                                 $dhNum = fn ($v) => rtrim(rtrim(number_format((float) $v, 2), '0'), '.');
+                                // Blank and zero are different answers (TASK-398): one means the
+                                // driver drove straight there, the other means nobody has said
+                                // yet. Only an entered value can disagree with anything.
+                                $dhEntered = $form->dead_head_driven !== null && $form->dead_head_driven !== '';
                                 $dhDriven = (float) ($form->dead_head_driven ?? 0);
                                 $dhFree = $log->deadHeadFreeMiles();
                                 $dhCeiling = $this->deadHeadCeiling();
-                                $dhApproach = $log->approach_miles;
-                                $dhDrift = $dhApproach !== null && abs($dhApproach - $dhDriven) > 0.5;
+                                $dhApproach = $this->approachMilesFromForm();
+                                $dhDrift = $dhEntered && $dhApproach !== null && abs($dhApproach - $dhDriven) > 0.5;
                             @endphp
                             <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                                 <p class="text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Deadhead') }}</p>
@@ -446,13 +450,22 @@
                                         <label for="dead_head_driven" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Miles Driven') }}</label>
                                         <input type="number" id="dead_head_driven" wire:model.live.blur="form.dead_head_driven" step="0.1" min="0"
                                                class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
-                                        @if($dhApproach !== null)
-                                            <p class="mt-1 text-xs {{ $dhDrift ? 'text-amber-600' : 'text-slate-400' }}">
-                                                {{ __('Odometer shows :n mi from clock-on to job start.', ['n' => $dhNum($dhApproach)]) }}
-                                                @if($dhDrift) <span class="font-semibold">{{ __('That does not match the value entered.') }}</span> @endif
+                                        @if($dhApproach === null)
+                                            <p class="mt-1 text-xs text-slate-400">{{ __('Enter the trip mileage above and this can be read straight off the odometer.') }}</p>
+                                        @elseif(! $dhEntered)
+                                            <p class="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                                                <span>{{ __('Odometer shows :n mi to the pickup.', ['n' => $dhNum($dhApproach)]) }}</span>
+                                                <button type="button" wire:click="$set('form.dead_head_driven', {{ $dhApproach }})"
+                                                        class="rounded-lg border border-slate-300 bg-white px-2 py-0.5 text-xs font-semibold text-slate-600 transition hover:border-orange-400 hover:text-orange-600">
+                                                    {{ __('Use :n', ['n' => $dhNum($dhApproach)]) }}
+                                                </button>
+                                            </p>
+                                        @elseif($dhDrift)
+                                            <p class="mt-1 text-xs text-amber-600">
+                                                {{ __('Odometer shows :n mi to the pickup, which does not match this.', ['n' => $dhNum($dhApproach)]) }}
                                             </p>
                                         @else
-                                            <p class="mt-1 text-xs text-slate-400">{{ __('Mileage readings are incomplete, so this cannot be cross-checked against the odometer.') }}</p>
+                                            <p class="mt-1 text-xs text-slate-400">{{ __('Matches the odometer.') }}</p>
                                         @endif
                                         @error('form.dead_head_driven') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                                     </div>
@@ -463,7 +476,13 @@
                                                placeholder="{{ __('0 - not billed') }}"
                                                class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
                                         <p class="mt-1 text-xs text-slate-500">
-                                            {{ __(':driven driven, first :free free per the price list, so up to :max can be billed.', ['driven' => $dhNum($dhDriven), 'free' => $dhNum($dhFree), 'max' => $dhNum($dhCeiling)]) }}
+                                            @if(! $dhEntered)
+                                                {{ __('Enter the miles driven first.') }}
+                                            @elseif($dhCeiling <= 0)
+                                                {{ __(':driven driven, inside the first :free free per the price list, so none of it is billable.', ['driven' => $dhNum($dhDriven), 'free' => $dhNum($dhFree)]) }}
+                                            @else
+                                                {{ __(':driven driven, first :free free per the price list, so up to :max can be billed.', ['driven' => $dhNum($dhDriven), 'free' => $dhNum($dhFree), 'max' => $dhNum($dhCeiling)]) }}
+                                            @endif
                                         </p>
                                         @if($dhCeiling > 0)
                                             <div class="mt-2 flex gap-2">
@@ -492,8 +511,8 @@
             </section>
 
             <section class="rounded-3xl border border-slate-200 bg-white/90 p-5 shadow-sm sm:p-6">
-                <details {{ $isExpenseDetailsOpen ? 'open' : '' }} class="group space-y-5">
-                    <summary wire:click="$toggle('isExpenseDetailsOpen')" class="flex cursor-pointer items-center justify-between gap-4 border-b border-slate-100 pb-3 text-lg font-semibold text-slate-900">
+                <details {{ $isExpenseDetailsOpen ? 'open' : '' }} x-on:toggle="$wire.set('isExpenseDetailsOpen', $event.target.open, false)" class="group space-y-5">
+                    <summary class="flex cursor-pointer items-center justify-between gap-4 border-b border-slate-100 pb-3 text-lg font-semibold text-slate-900">
                         <span>{{ __('Expenses') }} <span class="text-sm font-normal text-slate-500">— {{ $expenseSummary }}</span></span>
                         <svg class="h-4 w-4 transition group-open:rotate-180" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>
                     </summary>
@@ -526,8 +545,8 @@
             </section>
 
             <section class="rounded-3xl border border-slate-200 bg-white/90 p-5 shadow-sm sm:p-6">
-                <details {{ $isLoadInformationOpen ? 'open' : '' }} class="group space-y-5">
-                    <summary wire:click="$toggle('isLoadInformationOpen')" class="flex cursor-pointer items-center justify-between gap-4 border-b border-slate-100 pb-3 text-lg font-semibold text-slate-900">
+                <details {{ $isLoadInformationOpen ? 'open' : '' }} x-on:toggle="$wire.set('isLoadInformationOpen', $event.target.open, false)" class="group space-y-5">
+                    <summary class="flex cursor-pointer items-center justify-between gap-4 border-b border-slate-100 pb-3 text-lg font-semibold text-slate-900">
                         <span>{{ __('Load Information') }} <span class="text-sm font-normal text-slate-500">— {{ $loadSummary }}</span></span>
                         <svg class="h-4 w-4 transition group-open:rotate-180" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>
                     </summary>
@@ -585,8 +604,8 @@
             </section>
 
             <section class="rounded-3xl border border-slate-200 bg-white/90 p-5 shadow-sm sm:p-6">
-                <details {{ $isAttachmentsOpen ? 'open' : '' }} class="group space-y-5">
-                    <summary wire:click="$toggle('isAttachmentsOpen')" class="flex cursor-pointer items-center justify-between gap-4 border-b border-slate-100 pb-3 text-lg font-semibold text-slate-900">
+                <details {{ $isAttachmentsOpen ? 'open' : '' }} x-on:toggle="$wire.set('isAttachmentsOpen', $event.target.open, false)" class="group space-y-5">
+                    <summary class="flex cursor-pointer items-center justify-between gap-4 border-b border-slate-100 pb-3 text-lg font-semibold text-slate-900">
                         <span>{{ __('Attachments & Proof') }} <span class="text-sm font-normal text-slate-500">— {{ trans_choice(':count attachment|:count attachments', $attachmentsCount) }}@if($jobDocuments->isNotEmpty()), {{ trans_choice(':count job document|:count job documents', $jobDocuments->count()) }}@endif</span></span>
                         <svg class="h-4 w-4 transition group-open:rotate-180" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>
                     </summary>

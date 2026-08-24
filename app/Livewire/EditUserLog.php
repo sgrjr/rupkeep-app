@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use Livewire\Component;
 use Livewire\Form;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\Validate;
 use App\Events\LogCompleted;
 use App\Models\User;
@@ -121,7 +122,6 @@ class EditUserLog extends Component
     public $isLoadInformationOpen = false;
     public $isAttachmentsOpen = false;
 
-    public $calculatedBillableMiles = 0;
 
     protected $listeners = [
         'saved' => '$refresh',
@@ -318,8 +318,6 @@ class EditUserLog extends Component
             'new_truck_driver_memo' => null,
         ]);
         
-        // Calculate and store the calculated billable miles for display
-        $this->calculatedBillableMiles = $this->log->total_billable_miles ?? 0.0;
     }
 
     public function render()
@@ -460,8 +458,102 @@ class EditUserLog extends Component
     }
 
     /**
-     * The most this log may bill for deadhead, recomputed from whatever is
-     * currently typed in the driven field so the form can show the ceiling
+     * Billable miles as they stand right now, derived from what is typed in
+     * the form rather than from the saved model (TASK-397).
+     *
+     * This used to be a property assigned once in mount(), so it displayed the
+     * state at page load forever -- a log that was empty when opened read
+     * 0.0 no matter what was entered or saved. The blade's `??` fallback to the
+     * live accessor could never rescue it either, because the property was
+     * initialised to 0 and so was never null.
+     *
+     * Mirrors the precedence in UserLog::getTotalBillableMilesAttribute() so
+     * the figure on screen and the figure on the invoice cannot disagree.
+     */
+    #[Computed]
+    public function calculatedBillableMiles(): float
+    {
+        $jobSpan = $this->spanFromForm('start_job_mileage', 'end_job_mileage');
+
+        if ($jobSpan !== null) {
+            return $jobSpan;
+        }
+
+        return $this->spanFromForm('start_mileage', 'end_mileage') ?? 0.0;
+    }
+
+    /**
+     * Total miles as typed, for the section summary line.
+     */
+    #[Computed]
+    public function totalMilesFromForm(): float
+    {
+        return $this->spanFromForm('start_mileage', 'end_mileage') ?? 0.0;
+    }
+
+    /**
+     * The approach leg described by the odometer values currently in the form.
+     *
+     * Deliberately reads the form, not the saved log: a driver entering their
+     * mileage for the first time needs the suggestion immediately, not after a
+     * save and reload (TASK-398).
+     */
+    public function approachMilesFromForm(): ?float
+    {
+        $approach = $this->spanFromForm('start_mileage', 'start_job_mileage');
+
+        if ($approach === null || $approach <= 0 || $approach > UserLog::MAX_PLAUSIBLE_APPROACH) {
+            return null;
+        }
+
+        return $approach;
+    }
+
+    /**
+     * A forward span between two odometer fields, or null when the pair cannot
+     * describe one.
+     */
+    private function spanFromForm(string $from, string $to): ?float
+    {
+        $start = $this->form->{$from};
+        $end = $this->form->{$to};
+
+        if (! is_numeric($start) || ! is_numeric($end)) {
+            return null;
+        }
+
+        $span = (float) $end - (float) $start;
+
+        return $span >= 0 ? $span : null;
+    }
+
+    /**
+     * Offer the odometer's approach the moment the readings describe one, but
+     * never overwrite a figure a person has already put in the field
+     * (TASK-398). Without this the suggestion only ever appeared on a log that
+     * already had mileage when the page loaded, which a freshly assigned log
+     * never does.
+     */
+    public function updated(string $property): void
+    {
+        $odometerFields = [
+            'form.start_mileage',
+            'form.start_job_mileage',
+            'form.end_job_mileage',
+            'form.end_mileage',
+        ];
+
+        if (! in_array($property, $odometerFields, true)) {
+            return;
+        }
+
+        if ($this->form->dead_head_driven === null || $this->form->dead_head_driven === '') {
+            $this->form->dead_head_driven = $this->approachMilesFromForm();
+        }
+    }
+
+    /**
+     * The most this log may bill for deadhead, recomputed from whatever is     * currently typed in the driven field so the form can show the ceiling
      * live rather than only rejecting an over-entry after the fact.
      */
     public function deadHeadCeiling(): float
