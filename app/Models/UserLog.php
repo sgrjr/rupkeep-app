@@ -195,6 +195,58 @@ class UserLog extends Model
     }
 
     /**
+     * One plain sentence describing this log's deadhead, for every read-only
+     * surface that shows a log (TASK-354).
+     *
+     * Deadhead is now two numbers with a policy between them, which is easy to
+     * misread from raw figures: 17 miles driven and nothing billed looks
+     * identical to 100 driven and nothing billed, but the first had nothing
+     * billable in it and the second was a decision someone made. The sentence
+     * says which, so no reader has to do the subtraction themselves.
+     */
+    public function deadHeadSummary(): string
+    {
+        $driven = (float) ($this->dead_head_driven ?? 0);
+
+        if ($driven <= 0) {
+            return __('No deadhead miles recorded.');
+        }
+
+        $billed = (float) ($this->dead_head_billed ?? 0);
+        $free = $this->deadHeadFreeMiles();
+        $ceiling = $this->deadHeadBillingCeiling();
+        $n = fn ($value) => rtrim(rtrim(number_format((float) $value, 2), '0'), '.');
+
+        if ($billed <= 0) {
+            // Nothing billed for two very different reasons. Say which one.
+            return $ceiling <= 0
+                ? __(':driven deadhead miles driven, none billable (within the first :free free).', [
+                    'driven' => $n($driven),
+                    'free' => $n($free),
+                ])
+                : __(':driven deadhead miles driven, none billed (up to :ceiling could have been).', [
+                    'driven' => $n($driven),
+                    'ceiling' => $n($ceiling),
+                ]);
+        }
+
+        $forgiven = $ceiling - $billed;
+
+        return $forgiven > 0
+            ? __(':driven deadhead miles driven, :billed billed (first :free free, :forgiven more not charged).', [
+                'driven' => $n($driven),
+                'billed' => $n($billed),
+                'free' => $n($free),
+                'forgiven' => $n($forgiven),
+            ])
+            : __(':driven deadhead miles driven, :billed billed (first :free free).', [
+                'driven' => $n($driven),
+                'billed' => $n($billed),
+                'free' => $n($free),
+            ]);
+    }
+
+    /**
      * The organization's published free-miles allowance, falling back to the
      * config default. This is the same lookup the public pricing page renders
      * from, so the price sheet and the invoice cannot advertise different

@@ -437,6 +437,9 @@
                             <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                                 <p class="text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Deadhead') }}</p>
                                 <p class="mt-1 text-xs text-slate-500">{{ __('Log every mile driven to the pickup. Whether any of it gets billed is a separate decision.') }}</p>
+                                {{-- Reads back what is actually saved, so the driver can confirm the
+                                     record without decoding two numbers and a policy. --}}
+                                <p class="mt-2 rounded-lg bg-white px-3 py-2 text-xs font-medium text-slate-700">{{ $log->deadHeadSummary() }}</p>
 
                                 <div class="mt-3 grid gap-4 sm:grid-cols-2">
                                     <div>

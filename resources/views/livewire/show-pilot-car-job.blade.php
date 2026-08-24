@@ -892,8 +892,12 @@
                                         <p><span class="font-semibold text-slate-900">{{ __('Billable Override') }}:</span> {{ $log->billable_miles ?? '—' }}</p>
                                     </div>
                                     <div class="space-y-1 text-sm text-slate-600">
-                                        <p><span class="font-semibold text-slate-900">{{ __('Deadhead') }}:</span> {{ $log->dead_head_times ?? '—' }}</p>
-                                        <p><span class="font-semibold text-slate-900">{{ __('Extra Stops') }}:</span> {{ $log->extra_load_stops ?? '—' }}</p>
+                                        {{-- `dead_head_times` and `extra_load_stops` were never attributes on
+                                             UserLog, so both of these rendered an em dash on every log ever
+                                             shown here. Deadhead now reads as one sentence covering all of
+                                             its states, and extra stops points at the real column. --}}
+                                        <p><span class="font-semibold text-slate-900">{{ __('Deadhead') }}:</span> {{ $log->deadHeadSummary() }}</p>
+                                        <p><span class="font-semibold text-slate-900">{{ __('Extra Stops') }}:</span> {{ $log->extra_load_stops_count ?? '—' }}</p>
                                         <p><span class="font-semibold text-slate-900">{{ __('Tolls') }}:</span> {{ $log->tolls ? '$'.number_format($log->tolls, 2) : '—' }}</p>
                                         <p><span class="font-semibold text-slate-900">{{ __('Hotel') }}:</span> {{ $log->hotel ? '$'.number_format($log->hotel, 2) : '—' }}</p>
                                     </div>
@@ -986,6 +990,7 @@
                                     <p><span class="font-semibold text-slate-900">{{ __('Total Miles') }}:</span> {{ $log->total_miles ?? '—' }}</p>
                                 </div>
                                 <div class="space-y-1 text-sm text-slate-600">
+                                    <p><span class="font-semibold text-slate-900">{{ __('Deadhead') }}:</span> {{ $log->deadHeadSummary() }}</p>
                                     <p><span class="font-semibold text-slate-900">{{ __('Tolls') }}:</span> {{ $log->tolls ? '$'.number_format($log->tolls, 2) : '—' }}</p>
                                     <p><span class="font-semibold text-slate-900">{{ __('Hotel') }}:</span> {{ $log->hotel ? '$'.number_format($log->hotel, 2) : '—' }}</p>
                                 </div>

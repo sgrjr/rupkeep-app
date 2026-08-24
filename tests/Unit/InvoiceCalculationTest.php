@@ -494,6 +494,69 @@ class InvoiceCalculationTest extends TestCase
     }
 
     // ---------------------------------------------------------------
+    // The read-only summary sentence
+    // ---------------------------------------------------------------
+
+    public function test_summary_says_nothing_was_recorded(): void
+    {
+        $this->assertSame(
+            'No deadhead miles recorded.',
+            (new UserLog())->deadHeadSummary()
+        );
+    }
+
+    /**
+     * The distinction this sentence exists for: a short approach had nothing
+     * billable in it, while a long one that billed nothing was somebody
+     * choosing to forgive it. The raw numbers look the same; the reasons do
+     * not, and only one of them is a decision worth reviewing.
+     */
+    public function test_summary_separates_no_charge_from_forgiven(): void
+    {
+        $this->assertSame(
+            '17 deadhead miles driven, none billable (within the first 75 free).',
+            (new UserLog(['dead_head_driven' => 17]))->deadHeadSummary()
+        );
+
+        $this->assertSame(
+            '100 deadhead miles driven, none billed (up to 25 could have been).',
+            (new UserLog(['dead_head_driven' => 100]))->deadHeadSummary()
+        );
+    }
+
+    public function test_summary_reports_a_full_charge_and_the_free_allowance(): void
+    {
+        $this->assertSame(
+            '100 deadhead miles driven, 25 billed (first 75 free).',
+            (new UserLog(['dead_head_driven' => 100, 'dead_head_billed' => 25]))->deadHeadSummary()
+        );
+    }
+
+    /**
+     * Extra grace beyond the published allowance is called out separately, so
+     * a concession the office chose to make does not read as policy.
+     */
+    public function test_summary_calls_out_grace_beyond_the_allowance(): void
+    {
+        $this->assertSame(
+            '279 deadhead miles driven, 200 billed (first 75 free, 4 more not charged).',
+            (new UserLog(['dead_head_driven' => 279, 'dead_head_billed' => 200]))->deadHeadSummary()
+        );
+    }
+
+    /**
+     * An approach landing exactly on the allowance has a ceiling of zero, so
+     * it reads as "nothing billable", never as a forgiven decision.
+     */
+    public function test_summary_treats_an_exact_allowance_as_not_billable(): void
+    {
+        $this->assertSame(
+            '75 deadhead miles driven, none billable (within the first 75 free).',
+            (new UserLog(['dead_head_driven' => 75]))->deadHeadSummary()
+        );
+    }
+
+    // ---------------------------------------------------------------
     // Mileage aggregation
     // ---------------------------------------------------------------
 
