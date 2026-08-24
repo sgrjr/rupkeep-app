@@ -2102,17 +2102,34 @@ class PilotCarJob extends Model
         return $values;
     }
 
+    /**
+     * The job's mileage broken down by category, for the summary panel.
+     *
+     * `total` used to sum UserLog::total_miles alone, which is the odometer
+     * span and returns 0 when start or end mileage was never recorded. A job
+     * with job mileage but no odometer therefore reported 0 miles travelled
+     * beside 292 billable -- a total below its own parts. Whatever else is
+     * unknown, at least the billed and deadhead miles were driven, so the
+     * total is floored at the sum of what is actually known (TASK-412).
+     */
     public function getMilesAttribute(){
         $miles = (Object)[
             'total' => 0.0,
             'personal' => 0.0,
-            'billable' => 0.0
+            'billable' => 0.0,
+            'deadhead_driven' => 0.0,
+            'deadhead_billed' => 0.0,
         ];
 
         foreach($this->logs as $log){
-            $miles->billable += $log->total_billable_miles ?? 0.0;
-            $miles->total += $log->total_miles ?? 0.0;
-            $miles->personal += $log->personal_miles ?? 0.0;
+            $billable = (float) ($log->total_billable_miles ?? 0.0);
+            $driven = (float) ($log->dead_head_driven ?? 0.0);
+
+            $miles->billable += $billable;
+            $miles->personal += (float) ($log->personal_miles ?? 0.0);
+            $miles->deadhead_driven += $driven;
+            $miles->deadhead_billed += (float) ($log->dead_head_billed ?? 0.0);
+            $miles->total += max((float) ($log->total_miles ?? 0.0), $billable + $driven);
         }
 
         return $miles;

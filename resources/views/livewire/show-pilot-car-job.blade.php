@@ -182,6 +182,9 @@
             $totalMiles = (float) (optional($job->miles)->total ?? 0);
             $billableMiles = (float) (optional($job->miles)->billable ?? 0);
             $personalMiles = (float) (optional($job->miles)->personal ?? 0);
+            $deadheadDriven = (float) (optional($job->miles)->deadhead_driven ?? 0);
+            $deadheadBilled = (float) (optional($job->miles)->deadhead_billed ?? 0);
+            $logsWithBadReadings = $job->logs->reject(fn ($l) => $l->hasOrderedMileageReadings());
             $mileageRateComparison = $job->getRateComparison();
             // Determine colors based on rate comparison outcome
             if ($mileageRateComparison && $mileageRateComparison['is_mini_better'] && $job->rate_code !== 'mini_flat_rate') {
@@ -205,7 +208,7 @@
             }
         @endphp
 
-        @if($totalMiles > 0 || $billableMiles > 0 || $personalMiles > 0)
+        @if($totalMiles > 0 || $billableMiles > 0 || $personalMiles > 0 || $deadheadDriven > 0)
         <section class="rounded-3xl border border-orange-200 bg-gradient-to-br from-orange-50 to-orange-100/50 p-6 shadow-lg">
             <header class="mb-6 flex flex-wrap items-center justify-between gap-3">
                 <div>
@@ -213,7 +216,12 @@
                     <p class="text-sm text-slate-600">{{ __('Total distance traveled for this job') }}</p>
                 </div>
             </header>
-            <div class="grid gap-4 sm:grid-cols-3">
+            @if($logsWithBadReadings->isNotEmpty())
+                <p class="mb-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-xs font-medium text-amber-800">
+                    {{ trans_choice('{1} :count log has odometer readings that do not describe a trip, so its distances are incomplete.|[2,*] :count logs have odometer readings that do not describe a trip, so their distances are incomplete.', $logsWithBadReadings->count(), ['count' => $logsWithBadReadings->count()]) }}
+                </p>
+            @endif
+            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <div class="rounded-2xl border border-white/60 bg-white/80 p-5 shadow-sm backdrop-blur">
                     <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">{{ __('Total Miles') }}</p>
                     <p class="mt-2 text-3xl font-bold text-slate-900">{{ number_format($totalMiles, 1) }}</p>
@@ -228,6 +236,17 @@
                     <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">{{ __('Personal Miles') }}</p>
                     <p class="mt-2 text-3xl font-bold text-slate-700">{{ number_format($personalMiles, 1) }}</p>
                     <p class="mt-1 text-xs text-slate-500">{{ __('Non-billable distance') }}</p>
+                </div>
+                <div class="rounded-2xl border {{ $deadheadBilled > 0 ? 'border-amber-300 bg-amber-50' : 'border-slate-200 bg-white/80' }} p-5 shadow-sm backdrop-blur">
+                    <p class="text-xs font-semibold uppercase tracking-wider {{ $deadheadBilled > 0 ? 'text-amber-600' : 'text-slate-500' }}">{{ __('Deadhead Miles') }}</p>
+                    <p class="mt-2 text-3xl font-bold {{ $deadheadBilled > 0 ? 'text-amber-700' : 'text-slate-700' }}">{{ number_format($deadheadDriven, 1) }}</p>
+                    <p class="mt-1 text-xs {{ $deadheadBilled > 0 ? 'text-amber-600' : 'text-slate-500' }}">
+                        @if($deadheadBilled > 0)
+                            {{ __(':n billed to customer', ['n' => number_format($deadheadBilled, 1)]) }}
+                        @else
+                            {{ __('Driven, none billed') }}
+                        @endif
+                    </p>
                 </div>
             </div>
         </section>
