@@ -1,8 +1,8 @@
 <div>
     @if($showModal)
-        <div class="fixed inset-0 z-50 overflow-y-auto" x-data="{ show: @entangle('showModal') }" x-show="show" x-cloak>
+        <div class="fixed inset-0 z-50 overflow-y-auto">
             <div class="flex min-h-screen items-center justify-center p-4">
-                <div class="fixed inset-0 bg-black/50 transition-opacity" x-on:click="show = false"></div>
+                <div class="fixed inset-0 bg-black/50 transition-opacity" wire:click="closeModal"></div>
                 
                 <div class="relative w-full max-w-lg rounded-3xl border border-slate-200 bg-white shadow-xl">
                     <div class="border-b border-slate-200 px-6 py-4">

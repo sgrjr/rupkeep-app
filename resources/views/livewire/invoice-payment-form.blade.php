@@ -8,7 +8,7 @@
     </button>
 
     @if($showModal)
-        <div class="fixed inset-0 z-50 overflow-y-auto" x-data="{ show: @entangle('showModal') }" x-show="show" x-transition style="display: none;" x-cloak>
+        <div class="fixed inset-0 z-50 overflow-y-auto" style="display: none;" x-cloak>
             <div class="flex min-h-screen items-center justify-center p-4">
                 <div class="fixed inset-0 bg-black/50 transition-opacity" @click="$wire.closeModal()"></div>
                 

@@ -2,10 +2,7 @@
     <!-- Modal -->
     @if($showModal)
         <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" 
-             wire:click="closeModal" 
-             x-data="{ show: @entangle('showModal') }" 
-             x-show="show" 
-             x-transition>
+             wire:click="closeModal">
             <div class="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl border border-slate-200 bg-white shadow-xl" @click.stop>
                 <div class="sticky top-0 z-10 border-b border-slate-200 bg-gradient-to-r from-orange-500 via-orange-400 to-orange-300 px-6 py-4">
                     <div class="flex items-center justify-between">

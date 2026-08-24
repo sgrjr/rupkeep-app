@@ -47,8 +47,16 @@ class MyReportsController extends Controller
             // Get all logs for this vehicle in the date range
             $logs = UserLog::where('vehicle_id', $vehicle->id)
                 ->where('organization_id', $organizationId)
-                ->whereBetween('started_at', [$start, $end])
-                ->orderBy('started_at')
+                ->where(function ($query) use ($start, $end) {
+                    $query->where(function ($q) use ($start, $end) {
+                        $q->whereNotNull('started_at')
+                          ->whereBetween('started_at', [$start, $end]);
+                    })->orWhere(function ($q) use ($start, $end) {
+                        $q->whereNull('started_at')
+                          ->whereBetween('created_at', [$start, $end]);
+                    });
+                })
+                ->orderByRaw('COALESCE(started_at, created_at)')
                 ->get();
 
             if ($logs->isEmpty()) {
