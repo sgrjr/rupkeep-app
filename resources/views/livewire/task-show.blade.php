@@ -55,25 +55,25 @@
             <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Status') }}</label>
-                    <select wire:model="status" class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                    <select wire:model="status" class="mt-1 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
                         @foreach ($statuses as $s) <option value="{{ $s }}">{{ str_replace('_',' ',$s) }}</option> @endforeach
                     </select>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Type') }}</label>
-                    <select wire:model="type" class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                    <select wire:model="type" class="mt-1 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
                         @foreach ($types as $t) <option value="{{ $t }}">{{ $t }}</option> @endforeach
                     </select>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Priority') }}</label>
-                    <select wire:model="priority" class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                    <select wire:model="priority" class="mt-1 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
                         @foreach ($priorities as $p) <option value="{{ $p }}">{{ $p }}</option> @endforeach
                     </select>
                 </div>
                 <div class="sm:col-span-2">
                     <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Assignee') }}</label>
-                    <select wire:model="assignee_user_id" class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                    <select wire:model="assignee_user_id" class="mt-1 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
                         <option value="">{{ __('Unassigned') }}</option>
                         @foreach ($assigneeOptions as $u)
                             <option value="{{ $u->id }}">{{ $u->name }} ({{ $u->email }})</option>

@@ -155,6 +155,16 @@
                             </x-nav-link>
                         @endif
 
+                        {{-- Reports shipped with no inbound link anywhere, so the whole
+                             section was reachable only by typing its URL (TASK-407).
+                             Gated on isEmployee() to match the `staff` middleware on
+                             both report routes. --}}
+                        @if(auth()->user()->isEmployee())
+                            <x-nav-link href="{{ route('my.reports.index') }}" :active="request()->routeIs('my.reports.*')">
+                                {{ __('Reports') }}
+                            </x-nav-link>
+                        @endif
+
                         @can('viewAny', \App\Models\Task::class)
                             <x-dropdown :active="request()->routeIs('tasks.*') || request()->routeIs('documentation.roadmap')" dropdownClasses="bg-white/95 text-slate-700 ring-1 ring-slate-900/10 shadow-xl max-h-96 overflow-y-auto" contentClasses="py-2 space-y-1">
                                 <x-slot name="trigger">
@@ -298,6 +308,12 @@
                 @if(auth()->user()->can('createJob', auth()->user()->organization))
                     <x-responsive-nav-link href="{{ route('my.pricing.index') }}" :active="request()->routeIs('my.pricing.*')">
                         {{ __('Pricing') }}
+                    </x-responsive-nav-link>
+                @endif
+
+                @if(auth()->user()->isEmployee())
+                    <x-responsive-nav-link href="{{ route('my.reports.index') }}" :active="request()->routeIs('my.reports.*')">
+                        {{ __('Reports') }}
                     </x-responsive-nav-link>
                 @endif
 

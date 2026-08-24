@@ -24,13 +24,13 @@
                 <div class="grid gap-4 md:grid-cols-2">
                     <div>
                         <label for="name" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Vehicle Name') }}</label>
-                        <input id="name" name="name" value="{{ old('name') }}" required placeholder="{{ __('E.g. Chevy Tahoe #2') }}" class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                        <input id="name" name="name" value="{{ old('name') }}" required placeholder="{{ __('E.g. Chevy Tahoe #2') }}" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
                         <x-input-error for="name" class="mt-2 text-xs font-semibold text-red-500" />
                     </div>
 
                     <div>
                         <label for="odometer" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Current Odometer (mi)') }}</label>
-                        <input id="odometer" name="odometer" type="number" min="0" value="{{ old('odometer') }}" placeholder="0" class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                        <input id="odometer" name="odometer" type="number" min="0" value="{{ old('odometer') }}" placeholder="0" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
                         <x-input-error for="odometer" class="mt-2 text-xs font-semibold text-red-500" />
                     </div>
                 </div>

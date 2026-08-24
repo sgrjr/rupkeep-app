@@ -58,7 +58,7 @@
                         <form wire:submit="submit" class="space-y-4">
                             <div>
                                 <label for="severity" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Type') }}</label>
-                                <select id="severity" wire:model="severity" class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                <select id="severity" wire:model="severity" class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
                                     <option value="info">{{ __('Informational') }} - {{ __('Suggestion, general feedback') }}</option>
                                     <option value="error">{{ __('Critical') }} - {{ __('Bug, error, fix this, need this now') }}</option>
                                 </select>
@@ -119,7 +119,7 @@
             <form wire:submit="submit" class="space-y-4">
                 <div>
                     <label for="severity_modal" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Type') }}</label>
-                    <select id="severity_modal" wire:model="severity" class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                    <select id="severity_modal" wire:model="severity" class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
                         <option value="info">{{ __('Informational') }} - {{ __('Suggestion, general feedback') }}</option>
                         <option value="error">{{ __('Critical') }} - {{ __('Bug, error, fix this, need this now') }}</option>
                     </select>
@@ -174,7 +174,7 @@
                 <form wire:submit="submit" class="space-y-4">
                     <div>
                         <label for="severity_inline" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Type') }}</label>
-                        <select id="severity_inline" wire:model="severity" class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                        <select id="severity_inline" wire:model="severity" class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
                             <option value="info">{{ __('Informational') }} - {{ __('Suggestion, general feedback') }}</option>
                             <option value="error">{{ __('Critical') }} - {{ __('Bug, error, fix this, need this now') }}</option>
                         </select>

@@ -57,7 +57,7 @@
                         <div class="grid gap-4 sm:grid-cols-3">
                             <div>
                                 <label for="status" class="block text-xs font-semibold uppercase tracking-wide text-slate-600 mb-2">{{ __('Payment Status') }}</label>
-                                <select id="status" name="status" class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                <select id="status" name="status" class="block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
                                     <option value="">{{ __('All invoices') }}</option>
                                     <option value="paid" @selected(request('status') === 'paid')>{{ __('Paid') }}</option>
                                     <option value="unpaid" @selected(request('status') === 'unpaid')>{{ __('Unpaid') }}</option>
@@ -65,11 +65,11 @@
                             </div>
                             <div>
                                 <label for="date_from" class="block text-xs font-semibold uppercase tracking-wide text-slate-600 mb-2">{{ __('From Date') }}</label>
-                                <input type="date" id="date_from" name="date_from" value="{{ request('date_from') }}" class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                <input type="date" id="date_from" name="date_from" value="{{ request('date_from') }}" class="block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
                             </div>
                             <div>
                                 <label for="date_to" class="block text-xs font-semibold uppercase tracking-wide text-slate-600 mb-2">{{ __('To Date') }}</label>
-                                <input type="date" id="date_to" name="date_to" value="{{ request('date_to') }}" class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                <input type="date" id="date_to" name="date_to" value="{{ request('date_to') }}" class="block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
                             </div>
                         </div>
                         <div class="flex items-center gap-3">

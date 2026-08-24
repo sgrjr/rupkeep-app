@@ -171,7 +171,7 @@
             <form method="GET" action="{{ route('user-events.index') }}" class="flex flex-wrap items-center gap-4">
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Severity') }}</label>
-                    <select name="severity" class="mt-2 block rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                    <select name="severity" class="mt-2 block rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
                         <option value="">{{ __('All') }}</option>
                         <option value="error" {{ request('severity') === 'error' ? 'selected' : '' }}>{{ __('Error') }}</option>
                         <option value="warning" {{ request('severity') === 'warning' ? 'selected' : '' }}>{{ __('Warning') }}</option>
@@ -180,7 +180,7 @@
                 </div>
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Type') }}</label>
-                    <select name="type" class="mt-2 block rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                    <select name="type" class="mt-2 block rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
                         <option value="">{{ __('All') }}</option>
                         <option value="error" {{ request('type') === 'error' ? 'selected' : '' }}>{{ __('Error') }}</option>
                         <option value="warning" {{ request('type') === 'warning' ? 'selected' : '' }}>{{ __('Warning') }}</option>
@@ -273,7 +273,7 @@
                     @csrf
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600 mb-2">{{ __('Keep Last (Days)') }}</label>
-                        <select name="keep_days" class="block rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200" required>
+                        <select name="keep_days" class="block rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200" required>
                             <option value="30" selected>30 {{ __('days') }}</option>
                             <option value="60">60 {{ __('days') }}</option>
                             <option value="90">90 {{ __('days') }}</option>

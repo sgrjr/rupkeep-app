@@ -22,7 +22,7 @@
                             <div>
                                 <label class="block text-sm font-semibold text-slate-700">{{ __('Cancellation Type') }}</label>
                                 <p class="mt-1 text-xs text-slate-500">{{ __('Choose how to handle billing for this cancellation.') }}</p>
-                                <select wire:model="cancellationType" class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                <select wire:model="cancellationType" class="mt-2 w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
                                     @foreach($this->getCancellationTypeOptions() as $value => $label)
                                         <option value="{{ $value }}">{{ $label }}</option>
                                     @endforeach
@@ -34,7 +34,7 @@
 
                             <div>
                                 <label class="block text-sm font-semibold text-slate-700">{{ __('Reason') }} <span class="text-red-500">*</span></label>
-                                <select wire:model="cancellationReason" class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                <select wire:model="cancellationReason" class="mt-2 w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
                                     <option value="">{{ __('Select a reason') }}</option>
                                     @foreach($this->getCancellationReasons() as $key => $label)
                                         <option value="{{ $label }}">{{ $label }}</option>
@@ -47,7 +47,7 @@
 
                             <div>
                                 <label class="block text-sm font-semibold text-slate-700">{{ __('Additional Details') }} <span class="text-xs font-normal text-slate-500">({{ __('Optional') }})</span></label>
-                                <textarea wire:model="customReason" rows="3" placeholder="{{ __('Add any additional details about the cancellation...') }}" class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"></textarea>
+                                <textarea wire:model="customReason" rows="3" placeholder="{{ __('Add any additional details about the cancellation...') }}" class="mt-2 w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"></textarea>
                                 @error('customReason')
                                     <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
                                 @enderror

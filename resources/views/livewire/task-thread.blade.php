@@ -48,7 +48,7 @@
     @can('comment', $task)
         <div class="mt-5 space-y-2">
             <label for="task-comment-body" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Add a comment') }}</label>
-            <textarea id="task-comment-body" wire:model.blur="body" rows="3" class="block w-full rounded-2xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200" placeholder="{{ __('Markdown supported.') }}"></textarea>
+            <textarea id="task-comment-body" wire:model.blur="body" rows="3" class="block w-full rounded-2xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200" placeholder="{{ __('Markdown supported.') }}"></textarea>
             @error('body') <p class="text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
             <div class="flex flex-wrap items-center justify-between gap-2">
                 @if ($canCommentInternal)

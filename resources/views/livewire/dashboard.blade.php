@@ -615,7 +615,7 @@
         @endif
 
         @if($jobs && count($jobs) > 0)
-        <section class="space-y-4 rounded-3xl border border-slate-100 bg-white/80 p-6 shadow-sm px-4 sm:px-6 lg:px-8">
+        <section class="mx-4 sm:mx-6 lg:mx-8 space-y-4 rounded-3xl border border-slate-100 bg-white/80 p-6 shadow-sm">
             <header class="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
                 <div>
                     <h2 class="text-xl font-bold text-slate-900">{{ __('My Assigned Jobs') }}</h2>

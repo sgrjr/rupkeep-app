@@ -60,12 +60,12 @@
         $logMemos = $invoice->job->logs()->whereNotNull('memo')->where('memo', '!=', '')->get();
     @endphp
     @if($logMemos->count() > 0)
-        <div class="no-print" style="max-width: 920px; margin: 2rem auto; padding: 1.5rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;">
+        <div class="no-print" style="max-width: 920px; margin: 2rem auto; padding: 1.5rem; background: #f8fafc; border: 1px solid var(--invoice-border); border-radius: 12px;">
             <h3 style="margin: 0 0 1rem; font-size: 1rem; font-weight: 700; color: #172232;">{{ __('Internal Log Memos (Not Printed on Invoice)') }}</h3>
             <p style="margin: 0 0 1rem; font-size: 0.85rem; color: #6b7280;">{{ __('Internal memos - not printed on invoice. To include information on the invoice, add it to the job-level public memo.') }}</p>
             <div style="space-y: 0.75rem;">
                 @foreach($logMemos as $log)
-                    <div style="margin-bottom: 0.75rem; padding: 1rem; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px;">
+                    <div style="margin-bottom: 0.75rem; padding: 1rem; background: #ffffff; border: 1px solid var(--invoice-border); border-radius: 8px;">
                         <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; font-size: 0.8rem; color: #6b7280;">
                             <span style="font-weight: 600;">{{ LocalTime::format($log->started_at, 'M j, Y', '—') }}</span>
                             @if($log->user)

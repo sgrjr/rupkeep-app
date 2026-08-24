@@ -33,11 +33,24 @@
         color-scheme: light;
         font-family: "Segoe UI", Arial, sans-serif;
         --invoice-accent: #f9b104;
-        --invoice-border: #d4d4d4;
+        /*
+         * Print-legible, not just screen-legible (TASK-406). At #d4d4d4 the
+         * rules between line items were about 1.5:1 on white -- barely there
+         * on a backlit screen and gone entirely on paper, where many printers
+         * drop very light fills. This is the document of record in a billing
+         * dispute, so its structure has to survive being printed.
+         */
+        --invoice-border: #9ca3af;
         --invoice-text: #172232;
         --invoice-muted: #6b7280;
         --invoice-card-bg: #ffffff;
-        --invoice-background: #f8fafc;
+        /*
+         * The page ground behind the invoice card. At #f8fafc this sat about
+         * 1.02:1 against the white card -- the same colour for practical
+         * purposes -- so the whole document read as one flat sheet with
+         * floating text and no card edge at all.
+         */
+        --invoice-background: #e8ecf1;
     }
 
     .invoice-doc {
