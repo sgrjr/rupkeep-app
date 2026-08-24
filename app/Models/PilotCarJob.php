@@ -1375,6 +1375,16 @@ class PilotCarJob extends Model
         return PricingSetting::getValueForOrganization($this->organization_id, $key, $default);
     }
 
+    /**
+     * What a job is priced at when nobody chooses otherwise.
+     *
+     * Must be a code from `pricing.rates` rather than `pricing.legacy_rates`:
+     * only the former is read back through the organisation's price sheet, so
+     * a legacy default silently ignores whatever Mary publishes at /my/pricing
+     * (TASK-415).
+     */
+    public const DEFAULT_RATE_CODE = 'lead_chase_per_mile';
+
     public static function rates(?int $organizationId = null)
     {
         // If organization ID provided, use organization-scoped pricing

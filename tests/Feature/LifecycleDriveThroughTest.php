@@ -63,6 +63,35 @@ class LifecycleDriveThroughTest extends TestCase
         $this->assertSame(75, (int) config('pricing.charges.dead_head.free_miles'));
         $this->assertSame(2.00, (float) config('pricing.rates.lead_chase_per_mile.rate_per_mile'));
 
+        // A new job must default to a price-list code, never a legacy one:
+        // only the former is read back through the organisation's published
+        // rate, so a legacy default silently ignores /my/pricing (TASK-415).
+        $this->assertArrayHasKey(
+            PilotCarJob::DEFAULT_RATE_CODE,
+            config('pricing.rates'),
+            'the default rate code must come from the price list'
+        );
+        $this->assertArrayNotHasKey(PilotCarJob::DEFAULT_RATE_CODE, config('pricing.legacy_rates'));
+
+        // Raising the published rate must reach a job created with the default.
+        \App\Models\PricingSetting::create([
+            'organization_id' => $this->org->id,
+            'setting_key' => 'rates.lead_chase_per_mile.rate_per_mile',
+            'setting_value' => '2.25',
+            'setting_type' => 'float',
+        ]);
+
+        $priced = (new PilotCarJob(['organization_id' => $this->org->id]))->calculateTotalDue([
+            'organization_id' => $this->org->id, 'tolls' => 0, 'hotel' => 0, 'extra_charge' => 0,
+            'extra_load_stops_count' => 0, 'wait_time_hours' => 0, 'dead_head_billed' => 0,
+            'billable_miles' => 100, 'mini_addon_amount' => 0,
+            'rate_code' => PilotCarJob::DEFAULT_RATE_CODE, 'rate_value' => null,
+        ]);
+
+        $this->assertSame(225.0, (float) $priced['total'], 'the published rate must reach the default code');
+
+        \App\Models\PricingSetting::query()->delete();
+
         // ---------------------------------------------------------------
         // 02. Create the job, inventing the customer in the same submission
         // ---------------------------------------------------------------
@@ -133,6 +162,15 @@ class LifecycleDriveThroughTest extends TestCase
 
         // The odometer describes the approach, so the panel offers it (TASK-398).
         $lead->assertSet('form.dead_head_driven', 279.0);
+
+        // Editing anything surfaces the save control; an untouched form says so
+        // instead of offering a button with nothing behind it (TASK-417).
+        $lead->assertSet('formTouched', true)->assertSee('Save Changes');
+
+        Livewire::actingAs($this->lead)->test(EditUserLog::class, ['log' => $leadLog])
+            ->assertSet('formTouched', false)
+            ->assertSee('All changes saved')
+            ->assertDontSee('Save Changes');
 
         // Billable tracks the form before any save (TASK-397).
         $lead->assertSee('Billable: 200');

@@ -122,6 +122,16 @@ class EditUserLog extends Component
     public $isLoadInformationOpen = false;
     public $isAttachmentsOpen = false;
 
+    /**
+     * Whether the form has been edited since it was last saved (TASK-417).
+     *
+     * Deliberately not Livewire's `wire:dirty`, which tracks what has not yet
+     * been sent to the server. These fields use wire:model.blur, so blurring
+     * syncs the value and clears that state while the change is still nowhere
+     * near the database -- exactly the wrong signal for a save button.
+     */
+    public bool $formTouched = false;
+
 
     protected $listeners = [
         'saved' => '$refresh',
@@ -437,6 +447,8 @@ class EditUserLog extends Component
                 $this->log->job->update(['public_memo' => $this->form->job_public_memo]);
             }
 
+            $this->formTouched = false;
+
             $this->dispatch('saved');
 
             return true;
@@ -536,6 +548,10 @@ class EditUserLog extends Component
      */
     public function updated(string $property): void
     {
+        if (str_starts_with($property, 'form.')) {
+            $this->formTouched = true;
+        }
+
         $odometerFields = [
             'form.start_mileage',
             'form.start_job_mileage',

@@ -136,7 +136,7 @@ class CreatePilotCarJob extends Component
        }
 
        if (empty($this->form->rate_code)) {
-           $this->form->rate_code = 'per_mile_rate_2_00';
+           $this->form->rate_code = PilotCarJob::DEFAULT_RATE_CODE;
        }
 
        $this->form->rate_value = $this->form->rate_value ?? PilotCarJob::defaultRateValue($this->form->rate_code, $user->organization_id);
@@ -189,7 +189,7 @@ class CreatePilotCarJob extends Component
 
         // Ensure rate_code is set (default if empty)
         if (empty($form['rate_code']) || empty($this->form->rate_code)) {
-            $form['rate_code'] = $this->form->rate_code ?? 'per_mile_rate_2_00';
+            $form['rate_code'] = $this->form->rate_code ?? PilotCarJob::DEFAULT_RATE_CODE;
         } else {
             $form['rate_code'] = $this->form->rate_code;
         }
@@ -263,7 +263,7 @@ class CreatePilotCarJob extends Component
         $user = Auth::user();
         $job = $user->organization->jobs()->create($form);
         $this->form->reset();
-        $this->form->rate_code = 'per_mile_rate_2_00';
+        $this->form->rate_code = PilotCarJob::DEFAULT_RATE_CODE;
         $this->form->rate_value = PilotCarJob::defaultRateValue($this->form->rate_code, $user->organization_id);
         $this->dispatch('saved');
         return redirect()->route('my.jobs.show', ['job'=>$job->id]);

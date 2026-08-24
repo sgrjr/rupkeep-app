@@ -167,7 +167,7 @@ class EditPilotCarJob extends Component
         unset($form['new_truck_driver_name'], $form['new_truck_driver_phone']);
 
         // Ensure rate_code is explicitly set
-        $form['rate_code'] = $this->form->rate_code ?? $this->job->rate_code ?? 'per_mile_rate_2_00';
+        $form['rate_code'] = $this->form->rate_code ?? $this->job->rate_code ?? PilotCarJob::DEFAULT_RATE_CODE;
         
         // Sanitize and set rate_value explicitly
         $form['rate_value'] = $this->sanitizeRateValue($this->form->rate_value, $form['rate_code']);
