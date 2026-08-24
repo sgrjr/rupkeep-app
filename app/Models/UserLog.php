@@ -184,6 +184,33 @@ class UserLog extends Model
     }
 
     /**
+     * Approach legs longer than this are odometer typos, not driving. One
+     * production row implies a 190,065-mile drive to the pickup; seeding that
+     * as a suggested figure would put a six-figure charge in front of someone.
+     */
+    public const MAX_PLAUSIBLE_APPROACH = 1000;
+
+    /**
+     * What to offer as this log's deadhead miles when nothing is recorded yet:
+     * the odometer's own approach leg, but only when it is believable.
+     *
+     * Kept separate from `approach_miles`, which stays pure arithmetic so the
+     * form can still show a wild reading as a cross-check. This one is the
+     * number we are willing to put in a field on someone's behalf, so it
+     * refuses to guess from readings that describe no real trip.
+     */
+    public function suggestedDeadHeadMiles(): ?float
+    {
+        $approach = $this->approach_miles;
+
+        if ($approach === null || $approach <= 0 || $approach > self::MAX_PLAUSIBLE_APPROACH) {
+            return null;
+        }
+
+        return $approach;
+    }
+
+    /**
      * The most this log's deadhead may be billed for: everything driven
      * beyond the free allowance the organization publishes. Billing is
      * opt-in, so this caps a human's decision - it is never an amount that

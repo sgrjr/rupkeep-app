@@ -81,6 +81,37 @@ and promotes nobody. `super:create` is what mints the super user, from
 unset the command now fails loudly** rather than leaving the install with no
 super user and every admin tool unreachable.
 
+## Deadhead miles (TASK-354)
+
+`user_logs` carries two deadhead figures: `dead_head_driven` (what the vehicle
+drove to reach the pickup — tracked always) and `dead_head_billed` (what the
+customer is charged — opt-in, and capped at driven minus the published
+`free_miles`). Nothing bills until a human enters a number.
+
+The migration that added them **only adds columns**. Seeding `dead_head_driven`
+from the odometer is a separate, re-runnable command:
+
+```bash
+php artisan deadhead:backfill-driven            # dry run — reports what it would fill
+php artisan deadhead:backfill-driven --write    # apply
+```
+
+It fills only logs where the field is NULL, so re-running is safe and a figure
+someone entered by hand is never overwritten. It never touches
+`dead_head_billed`.
+
+**Run it after any bulk data load** — a CSV import, a restored dump, or real
+history arriving on a database that was carrying test data when the schema
+changed. A migration runs exactly once, so logs that land afterwards would
+otherwise sit blank with their deadhead miles visible in the odometer the whole
+time. (The CSV importer seeds new rows on its own; the command is the catch-up
+for anything that bypassed it.)
+
+Logs whose four odometer readings are missing, out of order, or imply an
+approach over 1,000 miles are left NULL on purpose — "we don't know" has to stay
+distinguishable from "drove straight there", and production holds a row implying
+a 190,065-mile drive to the pickup.
+
 ## Build & cache invalidation
 
 After deploy:

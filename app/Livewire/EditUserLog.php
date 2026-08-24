@@ -283,7 +283,7 @@ class EditUserLog extends Component
             // nothing is stored yet: start_mileage -> start_job_mileage IS the
             // drive to the pickup, so the number is already known and the
             // driver only has to correct it when the readings are off.
-            'dead_head_driven' => $this->log->dead_head_driven ?? $this->log->approach_miles,
+            'dead_head_driven' => $this->log->dead_head_driven ?? $this->log->suggestedDeadHeadMiles(),
             'dead_head_billed' => $this->log->dead_head_billed,
             'extra_load_stops_count' => $this->log->extra_load_stops_count,
             'wait_time_hours' => $this->log->wait_time_hours,

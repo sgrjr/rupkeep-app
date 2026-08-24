@@ -1328,6 +1328,15 @@ class PilotCarJob extends Model
                         'ended_at'=> $job_ended?->toDateTimeString(),
                         'organization_id' => $organization_id
                     ]);
+                    // Seed the deadhead ledger from the readings this row just
+                    // supplied (TASK-354). Without this, imported history lands
+                    // blank even where the odometer already describes the drive to
+                    // the pickup -- and the migration that backfills cannot help,
+                    // having run long before this import.
+                    if (($suggestedDeadHead = $log->suggestedDeadHeadMiles()) !== null) {
+                        $log->update(['dead_head_driven' => $suggestedDeadHead]);
+                    }
+
                     $logCreated = true;
                     Log::info('Import: Created new log', ['log_id' => $log->id, 'job_id' => $job->id, 'job_no' => $values['job_no']]);
                 } catch (\Exception $e) {

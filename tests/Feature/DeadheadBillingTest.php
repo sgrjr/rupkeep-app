@@ -284,6 +284,120 @@ class DeadheadBillingTest extends TestCase
         $this->assertStringContainsString('79', $line['description']);
     }
 
+    // ---------------------------------------------------------------
+    // The re-runnable backfill
+    // ---------------------------------------------------------------
+
+    /**
+     * The reason this is a command and not a step inside the migration: a
+     * migration runs once. Logs that arrive afterwards -- an import, a
+     * restored dump, real history landing on a database that held test data
+     * when the schema changed -- still need seeding, and this can be re-run
+     * for them.
+     */
+    public function test_backfill_seeds_from_the_odometer_approach(): void
+    {
+        $log = $this->log([
+            'start_mileage' => 1000,
+            'start_job_mileage' => 1069,
+            'end_job_mileage' => 1198,
+            'end_mileage' => 1337,
+        ]);
+
+        $this->artisan('deadhead:backfill-driven --write')->assertSuccessful();
+
+        $this->assertSame(69.0, (float) $log->refresh()->dead_head_driven);
+    }
+
+    public function test_backfill_dry_run_writes_nothing(): void
+    {
+        $log = $this->log([
+            'start_mileage' => 1000,
+            'start_job_mileage' => 1069,
+            'end_job_mileage' => 1198,
+            'end_mileage' => 1337,
+        ]);
+
+        $this->artisan('deadhead:backfill-driven')->assertSuccessful();
+
+        $this->assertNull($log->refresh()->dead_head_driven);
+    }
+
+    /**
+     * Idempotent: a figure a human entered or corrected outranks the odometer
+     * and must survive any number of re-runs.
+     */
+    public function test_backfill_never_overwrites_a_recorded_value(): void
+    {
+        $log = $this->log([
+            'start_mileage' => 1000,
+            'start_job_mileage' => 1069,
+            'end_job_mileage' => 1198,
+            'end_mileage' => 1337,
+            'dead_head_driven' => 85,
+        ]);
+
+        $this->artisan('deadhead:backfill-driven --write')->assertSuccessful();
+        $this->artisan('deadhead:backfill-driven --write')->assertSuccessful();
+
+        $this->assertSame(85.0, (float) $log->refresh()->dead_head_driven);
+    }
+
+    /**
+     * Production holds a log implying a 190,065-mile drive to the pickup.
+     * Seeding that would put a six-figure suggested charge in front of
+     * someone, so an unbelievable reading stays blank.
+     */
+    public function test_backfill_skips_an_implausible_approach(): void
+    {
+        $log = $this->log([
+            'start_mileage' => 1000,
+            'start_job_mileage' => 195000,
+            'end_job_mileage' => 195100,
+            'end_mileage' => 195200,
+        ]);
+
+        $this->artisan('deadhead:backfill-driven --write')->assertSuccessful();
+
+        $this->assertNull($log->refresh()->dead_head_driven);
+        $this->assertNull($log->suggestedDeadHeadMiles());
+    }
+
+    public function test_backfill_skips_readings_that_are_out_of_order(): void
+    {
+        $log = $this->log([
+            'start_mileage' => 1000,
+            'start_job_mileage' => 900,
+            'end_job_mileage' => 1198,
+            'end_mileage' => 1337,
+        ]);
+
+        $this->artisan('deadhead:backfill-driven --write')->assertSuccessful();
+
+        $this->assertNull($log->refresh()->dead_head_driven);
+    }
+
+    /**
+     * The backfill is a ledger operation. Inferring a charge from mileage is
+     * precisely what this whole change exists to stop.
+     */
+    public function test_backfill_never_touches_billed_miles(): void
+    {
+        $log = $this->log([
+            'start_mileage' => 1000,
+            'start_job_mileage' => 1200,
+            'end_job_mileage' => 1300,
+            'end_mileage' => 1400,
+        ]);
+
+        $this->artisan('deadhead:backfill-driven --write')->assertSuccessful();
+
+        $log->refresh();
+
+        $this->assertSame(200.0, (float) $log->dead_head_driven);
+        $this->assertNull($log->dead_head_billed);
+    }
+
     /**
      * Historical invoices stored `dead_head` as a count of flagged logs and
      * carried no mileage at all. Re-rendering one must not invent a charge --
