@@ -1506,6 +1506,8 @@ class PilotCarJob extends Model
             'wait_time_hours' =>$this->totalWaitTimeHours($logs),
             'extra_load_stops_count' =>$this->totalExtraLoadStops($logs),
             'dead_head' =>$this->getTotalDeadHead($logs),
+            'dead_head_driven' =>$this->getTotalDeadHeadDriven($logs),
+            'dead_head_billed' =>$this->getTotalDeadHeadBilled($logs),
             'tolls' =>$this->getTotalTolls($logs),
             'hotel' =>$this->getTotalHotel($logs),
             'extra_charge' =>$this->getExtraCharges($logs),
@@ -1543,6 +1545,8 @@ class PilotCarJob extends Model
         // (the template multiplies it by extra_load_stops_count); the others
         // are total amounts.
         $values['cost_of_extra_stop'] = (float) ($computed['extra_stop_rate'] ?? 0);
+        $values['dead_head_charge'] = (float) ($computed['dead_head_charge'] ?? 0);
+        $values['dead_head_rate'] = (float) ($computed['dead_head_rate'] ?? 0);
         $values['cost_of_wait_time'] = (float) ($computed['wait_time'] ?? 0);
         $values['cost_for_mileage'] = (float) ($computed['miles_charge'] ?? 0);
         $values['wait_time_rate'] = (float) ($computed['wait_time_rate'] ?? 0);
@@ -1889,16 +1893,59 @@ class PilotCarJob extends Model
         return $miles;
     }
 
+    /**
+     * How many of this job's logs were actually charged for deadhead.
+     *
+     * This used to count the `is_deadhead` flag, which said only that someone
+     * ticked a box - it could not say how far the driver went, and it quietly
+     * doubled as the decision to bill. Now that both quantities are explicit
+     * (TASK-354), the flag is gone and the trip count means the one thing a
+     * customer reading an invoice would expect it to mean: how many escorts
+     * are being charged deadhead on this job. Approaches that were driven but
+     * given away for free do not appear, because nothing is being billed for
+     * them.
+     */
     public function getTotalDeadHead($logs = false){
         if(!$logs) $logs = $this->logs;
-        $deadhead = 0;
+        $trips = 0;
 
         foreach($logs as $log){
-            if($log->is_deadhead && !empty($log->is_deadhead) && (Int)$log->is_deadhead === 1){
-                $deadhead += 1;
+            if((float) ($log->dead_head_billed ?? 0) > 0){
+                $trips += 1;
             }
         }
-        return $deadhead;
+        return $trips;
+    }
+
+    /**
+     * Every deadhead mile this job's vehicles actually drove, billed or not.
+     * This is ledger data: it is reported and reconciled, never priced.
+     */
+    public function getTotalDeadHeadDriven($logs = false){
+        if(!$logs) $logs = $this->logs;
+        $driven = 0.0;
+
+        foreach($logs as $log){
+            $driven += (float) ($log->dead_head_driven ?? 0);
+        }
+        return $driven;
+    }
+
+    /**
+     * The deadhead miles a human decided to charge for. Opt-in: a log bills
+     * nothing until someone puts a number here, and each log caps its own
+     * value at driven minus the published free allowance, so the allowance is
+     * honoured per escort. A two-car job can therefore bill one car's approach
+     * and forgive the other's simply by what is entered on each log.
+     */
+    public function getTotalDeadHeadBilled($logs = false){
+        if(!$logs) $logs = $this->logs;
+        $billed = 0.0;
+
+        foreach($logs as $log){
+            $billed += (float) ($log->dead_head_billed ?? 0);
+        }
+        return $billed;
     }
 
     public function calculateTotalDue(Array $totals){
@@ -1951,18 +1998,34 @@ class PilotCarJob extends Model
 
         $values['wait_time'] = $billableWaitHours * $waitTimeRate;
 
+        // Dead head, billed per mile (TASK-354). The money comes from what a
+        // human chose to bill on each log, NOT from what was driven: the charge
+        // is opt-in, and the price sheet gives away the first `free_miles` of
+        // every approach. Each log caps its own billed value at
+        // driven - free_miles, so this sum can never contain a mile that was
+        // published as free, and the invoice line can always say so honestly.
+        $deadHeadRate = (float) ($organizationId
+            ? PricingSetting::getValueForOrganization($organizationId, 'charges.dead_head.rate_per_mile', config('pricing.charges.dead_head.rate_per_mile', 1.00))
+            : config('pricing.charges.dead_head.rate_per_mile', 1.00));
+
+        $billedDeadHeadMiles = max(0.0, (float) str_replace(',', '', (string) ($totals['dead_head_billed'] ?? 0)));
+
+        $values['dead_head_charge'] = $billedDeadHeadMiles * $deadHeadRate;
+
         // Sum the expense buckets by name. The previous implementation summed
         // every element of $values blindly, which made the total silently wrong
         // the moment any non-money key was added to the breakdown.
         $expenses = 0.00;
 
-        foreach(['tolls','hotel','extra','load_stops','wait_time'] as $expenseKey){
+        foreach(['tolls','hotel','extra','load_stops','wait_time','dead_head_charge'] as $expenseKey){
             $expenses += (float) $values[$expenseKey];
         }
 
         // Itemization metadata (TASK-365). Assigned AFTER $expenses is summed
         // so these descriptive keys can never be mistaken for money buckets.
         $values['extra_stop_rate'] = $extraStopRate;
+        $values['dead_head_rate'] = $deadHeadRate;
+        $values['dead_head_billed_miles'] = $billedDeadHeadMiles;
         $values['wait_time_rate'] = $waitTimeRate;
         $values['wait_time_free_hours'] = $waitFreeHours;
         $values['wait_time_billable_hours'] = $billableWaitHours;

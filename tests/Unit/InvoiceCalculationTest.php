@@ -33,6 +33,8 @@ class InvoiceCalculationTest extends TestCase
             'extra_load_stops_count' => 0,
             'wait_time_hours' => 0,
             'dead_head' => 0,
+            'dead_head_driven' => 0,
+            'dead_head_billed' => 0,
             'rate_code' => 'lead_chase_per_mile',
             'rate_value' => null,
             'billable_miles' => 0,
@@ -227,15 +229,106 @@ class InvoiceCalculationTest extends TestCase
         $this->assertSame(435.75, $result['total']);
     }
 
-    public function test_deadhead_count_flows_through_but_adds_no_charge(): void
+    // ---------------------------------------------------------------
+    // Deadhead (TASK-354)
+    // ---------------------------------------------------------------
+
+    /**
+     * Historical invoices were snapshotted before deadhead had any miles on
+     * it: their values blob carries `dead_head` as a COUNT of flagged logs and
+     * nothing else. Re-costing one of those must still produce no deadhead
+     * charge, or every old invoice would silently gain money the customer was
+     * never quoted. This is the regression guard for the pre-TASK-354 world,
+     * which is why it asserts on a count and sets no mileage at all.
+     */
+    public function test_legacy_deadhead_count_alone_adds_no_charge(): void
     {
-        // Documents current behavior: config/pricing.php defines a dead_head
-        // charge ($1/mi after 75 free) but calculateTotalDue never applies it;
-        // 'dead_head' in totals is a log count used for invoice display only.
-        $with = $this->job()->calculateTotalDue($this->totals(['dead_head' => 3]));
+        $totals = $this->totals(['dead_head' => 3]);
+        unset($totals['dead_head_driven'], $totals['dead_head_billed']);
+
+        $with = $this->job()->calculateTotalDue($totals);
         $without = $this->job()->calculateTotalDue($this->totals(['dead_head' => 0]));
 
         $this->assertSame($without['total'], $with['total']);
+        $this->assertSame(0.0, $with['dead_head_charge']);
+    }
+
+    /**
+     * Driving deadhead is not the same as charging for it. The ledger figure
+     * prices nothing on its own; a human has to decide to bill it.
+     */
+    public function test_deadhead_driven_alone_adds_no_charge(): void
+    {
+        $result = $this->job()->calculateTotalDue($this->totals([
+            'dead_head_driven' => 279,
+            'dead_head_billed' => 0,
+        ]));
+
+        $this->assertSame(0.0, $result['dead_head_charge']);
+        $this->assertSame(0.0, $result['total']);
+    }
+
+    public function test_billed_deadhead_miles_charge_at_the_config_rate(): void
+    {
+        $result = $this->job()->calculateTotalDue($this->totals([
+            'billable_miles' => 100,
+            'dead_head_driven' => 279,
+            'dead_head_billed' => 204,
+        ]));
+
+        // 100 mi at $2.00 escort, plus 204 mi at $1.00 deadhead
+        $this->assertSame(404.0, $result['total']);
+        $this->assertSame(204.0, $result['dead_head_charge']);
+        $this->assertSame(1.00, $result['dead_head_rate']);
+    }
+
+    /**
+     * The charge follows what was BILLED, not what was driven, so an ad-hoc
+     * decision to forgive more than the published allowance carries through to
+     * the total untouched.
+     */
+    public function test_partial_billing_charges_only_what_was_billed(): void
+    {
+        $result = $this->job()->calculateTotalDue($this->totals([
+            'dead_head_driven' => 279,
+            'dead_head_billed' => 200,
+        ]));
+
+        $this->assertSame(200.0, $result['dead_head_charge']);
+    }
+
+    /**
+     * Deadhead is an expense bucket, so a flat-rate job that excludes expenses
+     * excludes it too, on the same branch that already drops tolls and hotel.
+     */
+    public function test_deadhead_is_excluded_from_flat_rate_excluding_expenses(): void
+    {
+        $result = $this->job()->calculateTotalDue($this->totals([
+            'rate_code' => 'flat_rate_excludes_expenses',
+            'rate_value' => 500,
+            'dead_head_driven' => 279,
+            'dead_head_billed' => 204,
+        ]));
+
+        $this->assertSame(500.0, $result['total']);
+    }
+
+    /**
+     * A show-but-no-go still moved a vehicle to the pickup. Job miles are zero
+     * and the flat fee stands, but the approach was real and is billable if
+     * someone says so. That is the whole point of keeping the tracking lever
+     * and the billing lever separate.
+     */
+    public function test_deadhead_bills_on_a_show_no_go(): void
+    {
+        $result = $this->job()->calculateTotalDue($this->totals([
+            'rate_code' => 'show_no_go',
+            'billable_miles' => 0,
+            'dead_head_driven' => 150,
+            'dead_head_billed' => 75,
+        ]));
+
+        $this->assertSame(300.0, $result['total']); // $225 flat plus 75 mi
     }
 
     // ---------------------------------------------------------------
@@ -310,15 +403,94 @@ class InvoiceCalculationTest extends TestCase
         $this->assertSame('1500.75', $job->getExtraCharges($logs));
     }
 
-    public function test_deadhead_counts_flagged_logs_only(): void
+    /**
+     * The trip count now means "escorts actually charged deadhead", not "logs
+     * with a box ticked". A log that drove an approach and had it forgiven is
+     * not a billed leg and must not appear on the invoice as one.
+     */
+    public function test_deadhead_trip_count_counts_billed_logs_only(): void
     {
         $logs = collect([
-            new UserLog(['is_deadhead' => true]),
-            new UserLog(['is_deadhead' => false]),
-            new UserLog(['is_deadhead' => true]),
+            new UserLog(['dead_head_driven' => 120, 'dead_head_billed' => 45]),
+            new UserLog(['dead_head_driven' => 90, 'dead_head_billed' => 0]),
+            new UserLog(['dead_head_driven' => 200, 'dead_head_billed' => 125]),
         ]);
 
         $this->assertSame(2, $this->job()->getTotalDeadHead($logs));
+    }
+
+    /**
+     * Doctrine: every deadhead mile is tracked whether or not it is billed, so
+     * the driven total counts the forgiven log too.
+     */
+    public function test_driven_deadhead_totals_every_log_billed_or_not(): void
+    {
+        $logs = collect([
+            new UserLog(['dead_head_driven' => 120, 'dead_head_billed' => 45]),
+            new UserLog(['dead_head_driven' => 90, 'dead_head_billed' => 0]),
+            new UserLog(['dead_head_driven' => 200, 'dead_head_billed' => 125]),
+        ]);
+
+        $this->assertSame(410.0, $this->job()->getTotalDeadHeadDriven($logs));
+        $this->assertSame(170.0, $this->job()->getTotalDeadHeadBilled($logs));
+    }
+
+    /**
+     * The approach leg is what the odometer already describes: clock-on to job
+     * start. Release miles are the tail after the job let the driver go, and
+     * are tracked but never billed.
+     */
+    public function test_odometer_readings_split_into_approach_and_release(): void
+    {
+        $log = new UserLog([
+            'start_mileage' => 1000,
+            'start_job_mileage' => 1069,
+            'end_job_mileage' => 1198,
+            'end_mileage' => 1337,
+        ]);
+
+        $this->assertTrue($log->hasOrderedMileageReadings());
+        $this->assertSame(69.0, $log->approach_miles);
+        $this->assertSame(139.0, $log->release_miles);
+    }
+
+    /**
+     * Production holds logs whose readings cannot describe a trip at all (one
+     * implies a 190,065-mile approach). Those must report "unknown" rather
+     * than a confident wrong number that would seed a suggested charge.
+     */
+    public function test_out_of_order_readings_yield_no_approach(): void
+    {
+        $log = new UserLog([
+            'start_mileage' => 1000,
+            'start_job_mileage' => 900,
+            'end_job_mileage' => 1198,
+            'end_mileage' => 1337,
+        ]);
+
+        $this->assertFalse($log->hasOrderedMileageReadings());
+        $this->assertNull($log->approach_miles);
+        $this->assertNull($log->release_miles);
+    }
+
+    /**
+     * The published free allowance is a ceiling on what may be billed. It is
+     * per log, so a two-car job gives each escort its own allowance and the
+     * office can still bill one car and forgive the other by what it enters.
+     */
+    public function test_billing_ceiling_is_driven_less_the_free_allowance(): void
+    {
+        $log = new UserLog(['dead_head_driven' => 279]);
+
+        $this->assertSame(75.0, $log->deadHeadFreeMiles());
+        $this->assertSame(204.0, $log->deadHeadBillingCeiling());
+    }
+
+    public function test_billing_ceiling_is_zero_inside_the_free_allowance(): void
+    {
+        $log = new UserLog(['dead_head_driven' => 69]);
+
+        $this->assertSame(0.0, $log->deadHeadBillingCeiling());
     }
 
     // ---------------------------------------------------------------

@@ -112,12 +112,32 @@ class InvoiceLineItems
             'amount' => $extraStopsAmount,
         ];
 
-        // Dead (Deadhead)
-        $deadQty = isset($values['dead_head']) ? (float) $values['dead_head'] : 0;
-        $deadRate = $deadQty > 0 ? ($deadAmount / $deadQty) : 0;
+        // Dead Head. Quantity is the miles a human chose to BILL (TASK-354),
+        // never the miles driven: the price sheet gives away the first
+        // `free_miles` of every approach, and more than that can be forgiven
+        // on any individual log. The description carries the driven figure so
+        // the customer sees the whole approach and exactly how much of it went
+        // uncharged - the concession is stated on the invoice, not silent.
+        //
+        // Historical invoices predate both quantities and stored only a count
+        // of deadhead-flagged logs under `dead_head`, so an old snapshot falls
+        // back to it and renders the way it always did.
+        $deadDrivenMiles = isset($values['dead_head_driven']) ? (float) $values['dead_head_driven'] : 0;
+        $deadQty = isset($values['dead_head_billed'])
+            ? (float) $values['dead_head_billed']
+            : (isset($values['dead_head']) ? (float) $values['dead_head'] : 0);
+        $deadRate = isset($values['dead_head_rate']) && (float) $values['dead_head_rate'] > 0
+            ? (float) $values['dead_head_rate']
+            : ($deadQty > 0 ? ($deadAmount / $deadQty) : 0);
+        $deadNotBilled = max(0, $deadDrivenMiles - $deadQty);
         $lineItems[] = [
             'key' => 'dead_head',
-            'description' => __('Dead Head Miles'),
+            'description' => $deadNotBilled > 0
+                ? __('Dead Head Miles (:driven mi driven, :free not billed)', [
+                    'driven' => rtrim(rtrim(number_format($deadDrivenMiles, 2), '0'), '.'),
+                    'free' => rtrim(rtrim(number_format($deadNotBilled, 2), '0'), '.'),
+                ])
+                : __('Dead Head Miles'),
             'quantity' => $deadQty,
             'rate' => $deadRate,
             'amount' => $deadAmount,

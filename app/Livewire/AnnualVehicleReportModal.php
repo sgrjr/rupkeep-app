@@ -160,10 +160,13 @@ class AnnualVehicleReportModal extends Component
                 if ($logMiles > 0) {
                     $totalMiles += $logMiles;
 
-                    // Deadhead miles
-                    if ($log->is_deadhead) {
-                        $deadheadMiles += $logMiles;
-                    }
+                    // Deadhead miles, as recorded on the log (TASK-354). This used
+                    // to add the log's ENTIRE odometer span whenever the is_deadhead
+                    // flag was ticked, which counted miles spent escorting the load
+                    // as deadhead and inflated the figure badly - a 318-mile log with
+                    // 129 miles under load reported all 318 as deadhead. Deadhead is
+                    // a subset of the miles driven, so it stays inside this block.
+                    $deadheadMiles += (float) ($log->dead_head_driven ?? 0);
 
                     // Personal miles calculation
                     if ($previousLog && $previousLog->vehicle_id === $log->vehicle_id) {

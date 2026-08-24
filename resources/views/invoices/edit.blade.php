@@ -719,6 +719,21 @@
                         <input type="number" min="0" step="1" name="values[dead_head]" value="{{ old('values.dead_head', data_get($values, 'dead_head')) }}"
                                class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200" />
                     </div>
+                    {{-- Driven is the ledger figure and prices nothing; billed is what the
+                         charge is calculated from (TASK-354). Both are editable here so a
+                         correction can be made on the invoice without reopening the logs. --}}
+                    <div>
+                        <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Deadhead Miles Driven') }}</label>
+                        <input type="number" min="0" step="0.1" name="values[dead_head_driven]" value="{{ old('values.dead_head_driven', data_get($values, 'dead_head_driven')) }}"
+                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200" />
+                        <p class="mt-1 text-xs text-slate-400">{{ __('Tracked for the record. Not billed.') }}</p>
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Deadhead Miles Billed') }}</label>
+                        <input type="number" min="0" step="0.1" name="values[dead_head_billed]" value="{{ old('values.dead_head_billed', data_get($values, 'dead_head_billed')) }}"
+                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200" />
+                        <p class="mt-1 text-xs text-slate-400">{{ __('What the deadhead charge is calculated from.') }}</p>
+                    </div>
                     <div>
                         <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Escort Vehicles') }}</label>
                         <input type="number" min="0" step="1" name="values[cars_count]" value="{{ old('values.cars_count', data_get($values, 'cars_count')) }}"

@@ -20,7 +20,7 @@ class UserLog extends Model
     use HasFactory, SoftDeletes;
     public $timestamps = true;
     public $fillable = [
-        'job_id','car_driver_id','truck_driver_id','vehicle_id','vehicle_position','pretrip_check', 'truck_no','trailer_no','start_mileage','end_mileage','start_job_mileage','end_job_mileage','load_canceled','extra_charge','is_deadhead','extra_load_stops_count','wait_time_hours','tolls','gas','hotel','memo','maintenance_memo', 'started_at','ended_at','organization_id','billable_miles','approval_status','approved_at','approved_by_id','clock_in','clock_out','completed_at','completed_by_id'
+        'job_id','car_driver_id','truck_driver_id','vehicle_id','vehicle_position','pretrip_check', 'truck_no','trailer_no','start_mileage','end_mileage','start_job_mileage','end_job_mileage','load_canceled','extra_charge','is_deadhead','extra_load_stops_count','wait_time_hours','tolls','gas','hotel','memo','maintenance_memo', 'started_at','ended_at','organization_id','billable_miles','dead_head_driven','dead_head_billed','approval_status','approved_at','approved_by_id','clock_in','clock_out','completed_at','completed_by_id'
     ];
 
     protected $casts = [
@@ -128,6 +128,91 @@ class UserLog extends Model
             return $total_miles  - $billable_miles;
         }
         return 0.0;
+    }
+
+    /**
+     * The drive to the pickup, as the odometer describes it: everything
+     * between clocking on and the job's own start reading. This is what
+     * `dead_head_driven` is seeded from, and it stays available as an
+     * accessor so the log form can offer it as a suggestion and so a stored
+     * value that has drifted from the odometer can be spotted (TASK-354).
+     *
+     * Null - not zero - when the readings cannot describe an approach, so
+     * "we do not know" stays distinguishable from "drove straight there".
+     */
+    public function getApproachMilesAttribute(): ?float
+    {
+        if (! $this->hasOrderedMileageReadings()) {
+            return null;
+        }
+
+        return (float) $this->start_job_mileage - (float) $this->start_mileage;
+    }
+
+    /**
+     * Miles driven after the job released the driver. Tracked for the mileage
+     * ledger, never billable: the published price sheet covers deadhead
+     * "to the pickup location only". Where the driver goes next decides what
+     * these become - head home and they stay release miles, head to another
+     * job and that job's own log records them as ITS approach.
+     */
+    public function getReleaseMilesAttribute(): ?float
+    {
+        if (! $this->hasOrderedMileageReadings()) {
+            return null;
+        }
+
+        return (float) $this->end_mileage - (float) $this->end_job_mileage;
+    }
+
+    /**
+     * Do the four odometer readings describe a coherent trip
+     * (clock on -> job start -> job end -> clock off)? Production holds rows
+     * where they do not, so every derived segment has to ask first.
+     */
+    public function hasOrderedMileageReadings(): bool
+    {
+        foreach (['start_mileage', 'start_job_mileage', 'end_job_mileage', 'end_mileage'] as $reading) {
+            if ($this->{$reading} === null || $this->{$reading} === '' || ! is_numeric($this->{$reading})) {
+                return false;
+            }
+        }
+
+        return (float) $this->start_mileage <= (float) $this->start_job_mileage
+            && (float) $this->start_job_mileage <= (float) $this->end_job_mileage
+            && (float) $this->end_job_mileage <= (float) $this->end_mileage;
+    }
+
+    /**
+     * The most this log's deadhead may be billed for: everything driven
+     * beyond the free allowance the organization publishes. Billing is
+     * opt-in, so this caps a human's decision - it is never an amount that
+     * bills on its own (TASK-354).
+     */
+    public function deadHeadBillingCeiling(): float
+    {
+        return max(0.0, (float) ($this->dead_head_driven ?? 0) - $this->deadHeadFreeMiles());
+    }
+
+    /**
+     * The organization's published free-miles allowance, falling back to the
+     * config default. This is the same lookup the public pricing page renders
+     * from, so the price sheet and the invoice cannot advertise different
+     * numbers.
+     */
+    public function deadHeadFreeMiles(): float
+    {
+        $default = (float) config('pricing.charges.dead_head.free_miles', 75);
+
+        if (! $this->organization_id) {
+            return $default;
+        }
+
+        return (float) PricingSetting::getValueForOrganization(
+            $this->organization_id,
+            'charges.dead_head.free_miles',
+            $default
+        );
     }
 
     public function organization()

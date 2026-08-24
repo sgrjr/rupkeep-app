@@ -108,6 +108,14 @@ return [
             'name' => 'Dead Head Miles',
             'description' => 'To the pickup location only',
             'rate_per_mile' => 1.00,
+            // Free miles are a CEILING on what may be billed, not a discount
+            // applied to whatever a driver logged (TASK-354). Every deadhead
+            // mile is recorded on the log either way; a human then decides how
+            // much of it to charge, and may charge anywhere from nothing up to
+            // driven minus this allowance. Unlike wait_time's minimum_hours,
+            // this one is NOT safe to zero without a conversation: the public
+            // pricing page renders it from here as a promise to customers, so
+            // changing it changes what the price sheet advertises.
             'free_miles' => 75,
         ],
         'overnight_hotel' => [

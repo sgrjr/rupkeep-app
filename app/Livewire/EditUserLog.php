@@ -53,8 +53,16 @@ class EditLogForm extends Form
 
     public $extra_charge = null;
 
-    #[Validate('nullable|boolean')]
-    public $is_deadhead = false;
+    // Deadhead, as two explicit quantities rather than the old is_deadhead
+    // boolean (TASK-354). `driven` is measurement and is recorded whether or
+    // not a cent of it is charged; `billed` is the money decision, opt-in and
+    // capped by published policy. The ceiling is enforced in saveLog(), not
+    // here, because it depends on the organization's own free-miles setting.
+    #[Validate('nullable|numeric|min:0')]
+    public $dead_head_driven = null;
+
+    #[Validate('nullable|numeric|min:0')]
+    public $dead_head_billed = null;
 
     public $extra_load_stops_count = null;
 
@@ -271,7 +279,12 @@ class EditUserLog extends Component
             'billable_miles' => $this->log->billable_miles,
             'load_canceled' => (bool)$this->log->load_canceled,
             'extra_charge' => $this->log->extra_charge,
-            'is_deadhead' => (bool)$this->log->is_deadhead,
+            // Seed the driven miles from the odometer's own approach leg when
+            // nothing is stored yet: start_mileage -> start_job_mileage IS the
+            // drive to the pickup, so the number is already known and the
+            // driver only has to correct it when the readings are off.
+            'dead_head_driven' => $this->log->dead_head_driven ?? $this->log->approach_miles,
+            'dead_head_billed' => $this->log->dead_head_billed,
             'extra_load_stops_count' => $this->log->extra_load_stops_count,
             'wait_time_hours' => $this->log->wait_time_hours,
             'tolls' => $this->log->tolls,
@@ -330,6 +343,20 @@ class EditUserLog extends Component
         try {
             $this->form->validate();
 
+            // The published free allowance is a ceiling, not a suggestion
+            // (TASK-354). Billing beyond driven - free_miles would charge for
+            // miles the price sheet promises are free, which would make the
+            // invoice contradict the quote the customer was given.
+            if ((float) ($this->form->dead_head_billed ?? 0) > $this->deadHeadCeiling() + 0.001) {
+                $this->addError('form.dead_head_billed', __('At most :max deadhead miles can be billed here: :driven driven, less the first :free free.', [
+                    'max' => rtrim(rtrim(number_format($this->deadHeadCeiling(), 2), '0'), '.'),
+                    'driven' => rtrim(rtrim(number_format((float) ($this->form->dead_head_driven ?? 0), 2), '0'), '.'),
+                    'free' => rtrim(rtrim(number_format($this->log->deadHeadFreeMiles(), 2), '0'), '.'),
+                ]));
+
+                return;
+            }
+
             if (!empty($this->form->new_truck_driver_name)) {
                 $truck_driver_data = [
                     'name' => $this->form->new_truck_driver_name,
@@ -374,7 +401,6 @@ class EditUserLog extends Component
             ]);
 
             $updateData['load_canceled'] = $this->form->load_canceled ? 1 : 0;
-            $updateData['is_deadhead'] = $this->form->is_deadhead ? 1 : 0;
             $updateData['pretrip_check'] = $this->form->pretrip_check ? 1 : 0;
 
             // extra_load_stops_count is a NOT NULL integer (default 0); an empty
@@ -382,8 +408,10 @@ class EditUserLog extends Component
             // aborting the whole save (TASK-318). A missing count means zero.
             $updateData['extra_load_stops_count'] = (int) ($this->form->extra_load_stops_count ?? 0);
 
-            if (array_key_exists('billable_miles', $updateData)) {
-                $updateData['billable_miles'] = $this->normalizeMiles($updateData['billable_miles']);
+            foreach (['billable_miles', 'dead_head_driven', 'dead_head_billed'] as $mileField) {
+                if (array_key_exists($mileField, $updateData)) {
+                    $updateData[$mileField] = $this->normalizeMiles($updateData[$mileField]);
+                }
             }
 
             $this->log->update($updateData);
@@ -409,6 +437,16 @@ class EditUserLog extends Component
             ]);
             session()->flash('error', 'An unexpected error occurred while saving: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * The most this log may bill for deadhead, recomputed from whatever is
+     * currently typed in the driven field so the form can show the ceiling
+     * live rather than only rejecting an over-entry after the fact.
+     */
+    public function deadHeadCeiling(): float
+    {
+        return max(0.0, (float) ($this->form->dead_head_driven ?? 0) - $this->log->deadHeadFreeMiles());
     }
 
     protected function normalizeMiles($value): ?string

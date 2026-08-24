@@ -720,8 +720,36 @@
                 @endif
             </header>
 
+            {{-- Deadhead standing on this job, surfaced where the office reviews
+                 before invoicing (TASK-354). Purely informational: it reports
+                 what the logs say and prices nothing. Miles that were driven and
+                 not billed are called out on purpose, because that gap is a
+                 decision someone made and should be visible before an invoice
+                 goes out rather than discovered afterwards. --}}
+            @php
+                $dhDrivenTotal = $job->getTotalDeadHeadDriven();
+                $dhBilledTotal = $job->getTotalDeadHeadBilled();
+                $dhForgiven = max(0, $dhDrivenTotal - $dhBilledTotal);
+                $dhNum = fn ($v) => rtrim(rtrim(number_format((float) $v, 2), '0'), '.');
+            @endphp
+            @if($dhDrivenTotal > 0)
+                <div class="mt-4 rounded-2xl border {{ $dhBilledTotal > 0 ? 'border-orange-200 bg-orange-50' : 'border-slate-200 bg-slate-50' }} px-4 py-3">
+                    <p class="text-xs font-semibold uppercase tracking-wide {{ $dhBilledTotal > 0 ? 'text-orange-700' : 'text-slate-600' }}">{{ __('Deadhead') }}</p>
+                    <p class="mt-1 text-sm {{ $dhBilledTotal > 0 ? 'text-orange-800' : 'text-slate-600' }}">
+                        @if($dhBilledTotal > 0)
+                            {{ __(':driven mi driven across this job, :billed mi billed.', ['driven' => $dhNum($dhDrivenTotal), 'billed' => $dhNum($dhBilledTotal)]) }}
+                        @else
+                            {{ __(':driven mi driven across this job. None of it is being billed.', ['driven' => $dhNum($dhDrivenTotal)]) }}
+                        @endif
+                        @if($dhForgiven > 0)
+                            <span class="text-slate-500">{{ __(':n mi not charged.', ['n' => $dhNum($dhForgiven)]) }}</span>
+                        @endif
+                    </p>
+                </div>
+            @endif
+
             <div class="mt-6 space-y-6">
-                <form wire:submit="assignJob" 
+                <form wire:submit="assignJob"
                       class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 shadow-sm">
                         <div class="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center">
                             <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Assign driver & vehicle') }}</label>

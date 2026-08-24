@@ -184,7 +184,11 @@ class JobCsvExportController extends Controller
             'gas' => (float) ($expenses['gas'] ?? $values['gas'] ?? 0),
             'wait_time' => (float) ($expenses['wait_time'] ?? $values['wait_time_hours'] ?? 0),
             'extra_charge' => (float) ($expenses['extra_charge'] ?? $values['extra_charge'] ?? 0),
-            'deadhead_count' => (int) ($values['deadhead_count'] ?? $totals['deadhead_count'] ?? ($job && $job->is_deadhead ? 1 : 0)),
+            // `deadhead_count` is not a key invoiceValues() has ever emitted, and
+            // the last fallback read is_deadhead off a JOB, where that column has
+            // never existed - so this column exported 0 for every row. The trip
+            // count actually lives under `dead_head` (TASK-354).
+            'deadhead_count' => (int) ($values['dead_head'] ?? $values['deadhead_count'] ?? $totals['deadhead_count'] ?? 0),
             'deadhead' => (float) ($totals['deadhead'] ?? $values['dead_head_charge'] ?? 0),
             'mini' => (float) ($totals['mini'] ?? $values['mini_addon_amount'] ?? $values['mini_cost'] ?? 0),
         ];

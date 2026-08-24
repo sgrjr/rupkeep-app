@@ -183,6 +183,8 @@ class MyInvoicesController extends Controller
             'wait_time_hours',
             'extra_load_stops_count',
             'dead_head',
+            'dead_head_driven',
+            'dead_head_billed',
             'tolls',
             'hotel',
             'cars_count',

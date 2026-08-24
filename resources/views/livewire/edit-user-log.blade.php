@@ -421,13 +421,63 @@
                             </p>
                             @error('form.billable_miles') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                         </div>
-                        <div>
-                            <label for="is_deadhead" class="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2">
-                                <input type="checkbox" id="is_deadhead" wire:model.blur="form.is_deadhead" class="h-4 w-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500">
-                                <span class="text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Deadhead Run') }}</span>
-                            </label>
-                            <p class="mt-1 text-xs text-slate-400">{{ __('Check if this is a deadhead (empty return) trip. Each deadhead log counts as one deadhead leg.') }}</p>
-                            @error('form.is_deadhead') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
+                        {{-- Deadhead, as two explicit numbers instead of the old yes/no
+                             checkbox (TASK-354). Driven is the measurement and is logged
+                             whether or not any of it is charged; billed is the money
+                             decision, opt-in and capped by the published free allowance. --}}
+                        <div class="sm:col-span-2 lg:col-span-4">
+                            @php
+                                $dhNum = fn ($v) => rtrim(rtrim(number_format((float) $v, 2), '0'), '.');
+                                $dhDriven = (float) ($form->dead_head_driven ?? 0);
+                                $dhFree = $log->deadHeadFreeMiles();
+                                $dhCeiling = $this->deadHeadCeiling();
+                                $dhApproach = $log->approach_miles;
+                                $dhDrift = $dhApproach !== null && abs($dhApproach - $dhDriven) > 0.5;
+                            @endphp
+                            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Deadhead') }}</p>
+                                <p class="mt-1 text-xs text-slate-500">{{ __('Log every mile driven to the pickup. Whether any of it gets billed is a separate decision.') }}</p>
+
+                                <div class="mt-3 grid gap-4 sm:grid-cols-2">
+                                    <div>
+                                        <label for="dead_head_driven" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Miles Driven') }}</label>
+                                        <input type="number" id="dead_head_driven" wire:model.live.blur="form.dead_head_driven" step="0.1" min="0"
+                                               class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                        @if($dhApproach !== null)
+                                            <p class="mt-1 text-xs {{ $dhDrift ? 'text-amber-600' : 'text-slate-400' }}">
+                                                {{ __('Odometer shows :n mi from clock-on to job start.', ['n' => $dhNum($dhApproach)]) }}
+                                                @if($dhDrift) <span class="font-semibold">{{ __('That does not match the value entered.') }}</span> @endif
+                                            </p>
+                                        @else
+                                            <p class="mt-1 text-xs text-slate-400">{{ __('Mileage readings are incomplete, so this cannot be cross-checked against the odometer.') }}</p>
+                                        @endif
+                                        @error('form.dead_head_driven') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
+                                    </div>
+
+                                    <div>
+                                        <label for="dead_head_billed" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Miles Billed') }}</label>
+                                        <input type="number" id="dead_head_billed" wire:model.live.blur="form.dead_head_billed" step="0.1" min="0" max="{{ $dhCeiling }}"
+                                               placeholder="{{ __('0 - not billed') }}"
+                                               class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                        <p class="mt-1 text-xs text-slate-500">
+                                            {{ __(':driven driven, first :free free per the price list, so up to :max can be billed.', ['driven' => $dhNum($dhDriven), 'free' => $dhNum($dhFree), 'max' => $dhNum($dhCeiling)]) }}
+                                        </p>
+                                        @if($dhCeiling > 0)
+                                            <div class="mt-2 flex gap-2">
+                                                <button type="button" wire:click="$set('form.dead_head_billed', {{ $dhCeiling }})"
+                                                        class="rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-600 transition hover:border-orange-400 hover:text-orange-600">
+                                                    {{ __('Bill :max', ['max' => $dhNum($dhCeiling)]) }}
+                                                </button>
+                                                <button type="button" wire:click="$set('form.dead_head_billed', 0)"
+                                                        class="rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-600 transition hover:border-orange-400 hover:text-orange-600">
+                                                    {{ __('Do not bill') }}
+                                                </button>
+                                            </div>
+                                        @endif
+                                        @error('form.dead_head_billed') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div>
                             <label for="extra_load_stops_count" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Extra Load Stops') }}</label>
