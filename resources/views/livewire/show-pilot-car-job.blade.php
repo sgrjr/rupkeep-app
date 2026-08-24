@@ -181,7 +181,7 @@
         @php
             $totalMiles = (float) (optional($job->miles)->total ?? 0);
             $billableMiles = (float) (optional($job->miles)->billable ?? 0);
-            $personalMiles = (float) (optional($job->miles)->personal ?? 0);
+            $releaseMiles = (float) (optional($job->miles)->release ?? 0);
             $deadheadDriven = (float) (optional($job->miles)->deadhead_driven ?? 0);
             $deadheadBilled = (float) (optional($job->miles)->deadhead_billed ?? 0);
             $logsWithBadReadings = $job->logs->reject(fn ($l) => $l->hasOrderedMileageReadings());
@@ -208,12 +208,17 @@
             }
         @endphp
 
-        @if($totalMiles > 0 || $billableMiles > 0 || $personalMiles > 0 || $deadheadDriven > 0)
+        @if($totalMiles > 0 || $billableMiles > 0 || $releaseMiles > 0 || $deadheadDriven > 0)
         <section class="rounded-3xl border border-orange-200 bg-gradient-to-br from-orange-50 to-orange-100/50 p-6 shadow-lg">
             <header class="mb-6 flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <h2 class="text-xl font-bold text-slate-900">{{ __('Mileage Summary') }}</h2>
-                    <p class="text-sm text-slate-600">{{ __('Total distance traveled for this job') }}</p>
+                    <p class="text-sm text-slate-600">
+                        {{ __('Escort miles, deadhead and release add up to the total distance traveled.') }}
+                        @if($billableMiles + $deadheadBilled > 0)
+                            <span class="font-semibold text-slate-800">{{ __(':n mi charged in total.', ['n' => number_format($billableMiles + $deadheadBilled, 1)]) }}</span>
+                        @endif
+                    </p>
                 </div>
             </header>
             @if($logsWithBadReadings->isNotEmpty())
@@ -228,14 +233,14 @@
                     <p class="mt-1 text-xs text-slate-500">{{ __('All distance traveled') }}</p>
                 </div>
                 <div class="rounded-2xl border {{ $billableMilesBorder }} {{ $billableMilesBg }} p-5 shadow-sm backdrop-blur">
-                    <p class="text-xs font-semibold uppercase tracking-wider {{ $billableMilesLabel }}">{{ __('Billable Miles') }}</p>
+                    <p class="text-xs font-semibold uppercase tracking-wider {{ $billableMilesLabel }}">{{ __('Escort Miles') }}</p>
                     <p class="mt-2 text-3xl font-bold {{ $billableMilesText }}">{{ number_format($billableMiles, 1) }}</p>
-                    <p class="mt-1 text-xs {{ $billableMilesLabel }}">{{ __('Charged to customer') }}</p>
+                    <p class="mt-1 text-xs {{ $billableMilesLabel }}">{{ __('Billed at the mileage rate') }}</p>
                 </div>
                 <div class="rounded-2xl border border-slate-200 bg-slate-50/80 p-5 shadow-sm backdrop-blur">
-                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">{{ __('Personal Miles') }}</p>
-                    <p class="mt-2 text-3xl font-bold text-slate-700">{{ number_format($personalMiles, 1) }}</p>
-                    <p class="mt-1 text-xs text-slate-500">{{ __('Non-billable distance') }}</p>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">{{ __('Release Miles') }}</p>
+                    <p class="mt-2 text-3xl font-bold text-slate-700">{{ number_format($releaseMiles, 1) }}</p>
+                    <p class="mt-1 text-xs text-slate-500">{{ __('Driven after release. Never billed.') }}</p>
                 </div>
                 <div class="rounded-2xl border {{ $deadheadBilled > 0 ? 'border-amber-300 bg-amber-50' : 'border-slate-200 bg-white/80' }} p-5 shadow-sm backdrop-blur">
                     <p class="text-xs font-semibold uppercase tracking-wider {{ $deadheadBilled > 0 ? 'text-amber-600' : 'text-slate-500' }}">{{ __('Deadhead Miles') }}</p>

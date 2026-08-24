@@ -243,6 +243,18 @@ class LifecycleDriveThroughTest extends TestCase
         $this->assertSame(469.0, (float) $miles->deadhead_driven);
         $this->assertSame(204.0, (float) $miles->deadhead_billed);
 
+        // Every segment is named, so the categories account for the whole trip
+        // instead of one of them absorbing the remainder (TASK-418). The old
+        // "Personal" figure was total minus billable, which swept the deadhead
+        // in and then showed it a second time in its own tile.
+        $this->assertEqualsWithDelta(
+            $miles->total,
+            $miles->billable + $miles->deadhead_driven + $miles->release,
+            0.01,
+            'escort + deadhead + release must account for every mile'
+        );
+        $this->assertSame(231.0, (float) $miles->release, '1100 total less 400 escort and 469 deadhead');
+
         // Cross-vehicle mileage keys are gone (TASK-404).
         $this->assertArrayNotHasKey('start_job_mileage', $values);
         $this->assertArrayNotHasKey('end_job_mileage', $values);

@@ -2125,10 +2125,10 @@ class PilotCarJob extends Model
     public function getMilesAttribute(){
         $miles = (Object)[
             'total' => 0.0,
-            'personal' => 0.0,
             'billable' => 0.0,
             'deadhead_driven' => 0.0,
             'deadhead_billed' => 0.0,
+            'release' => 0.0,
         ];
 
         foreach($this->logs as $log){
@@ -2136,10 +2136,16 @@ class PilotCarJob extends Model
             $driven = (float) ($log->dead_head_driven ?? 0.0);
 
             $miles->billable += $billable;
-            $miles->personal += (float) ($log->personal_miles ?? 0.0);
             $miles->deadhead_driven += $driven;
             $miles->deadhead_billed += (float) ($log->dead_head_billed ?? 0.0);
-            $miles->total += max((float) ($log->total_miles ?? 0.0), $billable + $driven);
+            $span = max((float) ($log->total_miles ?? 0.0), $billable + $driven);
+
+            $miles->total += $span;
+
+            // Whatever the trip covered beyond escorting the load and driving to
+            // reach it. Tracked, never billed -- the price sheet covers deadhead
+            // "to the pickup location only".
+            $miles->release += max(0.0, $span - $billable - $driven);
         }
 
         return $miles;
