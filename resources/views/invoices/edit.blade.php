@@ -95,31 +95,39 @@
                                 {{ Money::currency(data_get($values, 'total', 0), 'USD') }}
                             </dd>
                         </div>
-                        @if($lateFees['is_past_due'] && $lateFees['late_fee_amount'] > 0)
+                        @if($lateFees['late_fee_amount'] > 0)
+                            {{-- The fee sits beside the subtotal and is added on top; it is never
+                                 inside values.total (TASK-443). "Applied" is the locked part, the
+                                 button offers only what has accrued since. --}}
                             <div>
                                 <dt class="font-semibold uppercase tracking-wide text-red-600">{{ __('Late Fee') }} ({{ $lateFees['late_fee_periods'] }} {{ trans_choice('period|periods', $lateFees['late_fee_periods']) }})</dt>
                                 <dd class="mt-1 text-base font-semibold text-red-600">
                                     {{ Money::currency($lateFees['late_fee_amount'], 'USD') }}
-                                    @php
-                                        $lateFeesApplied = data_get($values, 'late_fees.applied_at');
-                                        $lateFeesInTotal = abs((float)data_get($values, 'total', 0) - (float)data_get($values, 'late_fees.original_total', data_get($values, 'total', 0))) > 0.01;
-                                    @endphp
-                                    @if(!$lateFeesApplied && !$lateFeesInTotal)
+                                    @if($lateFees['late_fees_applied'])
+                                        <span class="ml-2 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700"
+                                              title="{{ __('Applied :date', ['date' => \Carbon\Carbon::parse($lateFees['applied_at'])->format('M j, Y')]) }}">
+                                            {{ __('Applied') }}
+                                            @if($lateFees['additional_late_fee_amount'] > 0)
+                                                {{ Money::currency($lateFees['applied_late_fee_amount'], 'USD') }}
+                                            @endif
+                                        </span>
+                                    @endif
+                                    @if($lateFees['additional_late_fee_amount'] > 0 && !$invoice->paid_in_full)
                                         <form method="POST" action="{{ route('my.invoices.apply-late-fees', ['invoice' => $invoice->id]) }}" class="mt-2">
                                             @csrf
-                                            <button type="submit" 
-                                                    onclick="return confirm('{{ __('Apply late fees to this invoice? The invoice total will be updated to include the late fee amount.') }}')"
+                                            <button type="submit"
+                                                    onclick="return confirm('{{ __('Record a late fee of :amount on this invoice? The subtotal does not change; the fee is added on top of it.', ['amount' => Money::currency($lateFees['additional_late_fee_amount'], 'USD')]) }}')"
                                                     class="inline-flex items-center gap-1 rounded-full border border-red-200 bg-white px-2.5 py-1 text-[10px] font-semibold text-red-600 transition hover:bg-red-50">
                                                 <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
                                                 </svg>
-                                                {{ __('Apply to Invoice') }}
+                                                @if($lateFees['late_fees_applied'])
+                                                    {{ __('Apply :count new :periods', ['count' => $lateFees['additional_late_fee_periods'], 'periods' => trans_choice('period|periods', $lateFees['additional_late_fee_periods'])]) }}
+                                                @else
+                                                    {{ __('Apply to Invoice') }}
+                                                @endif
                                             </button>
                                         </form>
-                                    @elseif($lateFeesApplied)
-                                        <span class="ml-2 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
-                                            {{ __('Applied') }}
-                                        </span>
                                     @endif
                                 </dd>
                             </div>

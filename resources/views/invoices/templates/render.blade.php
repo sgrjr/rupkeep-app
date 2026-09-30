@@ -293,7 +293,7 @@
                     <span>{{ __('Subtotal') }}</span>
                     <span>${{ $totalDue }}</span>
                 </p>
-                @if($lateFees['is_past_due'] && $lateFees['late_fee_amount'] > 0)
+                @if($lateFees['late_fee_amount'] > 0)
                     <p>
                         <span>{{ __('Late Fee') }} ({{ $lateFees['late_fee_periods'] }} {{ trans_choice('period|periods', $lateFees['late_fee_periods']) }})</span>
                         <span style="color: #dc2626;">${{ number_format($lateFees['late_fee_amount'], 2) }}</span>

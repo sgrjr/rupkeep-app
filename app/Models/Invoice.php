@@ -135,91 +135,115 @@ class Invoice extends Model
     }
 
     /**
-     * Calculate late fees based on payment terms
-     * 
-     * @return array ['is_past_due' => bool, 'days_overdue' => int, 'late_fee_periods' => int, 'late_fee_amount' => float, 'total_with_late_fees' => float]
+     * A payment-terms setting for this invoice's organization, falling back to
+     * the config default when the invoice has no organization (unit tests,
+     * imported rows).
+     */
+    private function paymentTermsSetting(string $key, mixed $default): mixed
+    {
+        $configured = config('pricing.payment_terms.' . $key, $default);
+
+        return $this->organization_id
+            ? PricingSetting::getValueForOrganization($this->organization_id, 'payment_terms.' . $key, $configured)
+            : $configured;
+    }
+
+    /**
+     * The late-fee position of this invoice.
+     *
+     * `values.total` is always the invoice amount BEFORE any late fee. An
+     * applied fee lives beside it in `values.late_fees` and is added on top at
+     * read time; it is never folded into `total`. applyLateFees() used to write
+     * total = total + fee, so every later read (Total Due, remaining balance,
+     * the print and PDF templates, the paid-in-full test) added the saved fee a
+     * second time, and re-applying compounded it (TASK-443).
+     *
+     * The fee shown is made of two parts:
+     *  - the APPLIED fee: locked onto the invoice by "Apply to Invoice", with
+     *    the number of periods it covered. Fixed from then on, whatever later
+     *    happens to the rate settings or the invoice total.
+     *  - the ADDITIONAL fee: what has accrued in periods the applied fee does
+     *    not cover (before any apply, everything accrued so far). Due, but not
+     *    yet locked; "Apply" folds it into the applied fee.
+     *
+     * A child rolled into a summary invoice accrues nothing of its own -- the
+     * summary is the document the customer pays and it accrues on its own
+     * date. A paid invoice accrues nothing more either. In both cases a fee
+     * that was already applied is still honoured, so Total Due keeps agreeing
+     * with what was billed and paid.
+     *
+     * @return array{
+     *   is_past_due: bool, days_overdue: int, due_date: \Carbon\Carbon,
+     *   late_fee_periods: int, late_fee_amount: float, total_with_late_fees: float,
+     *   late_fees_applied: bool, applied_at: ?string,
+     *   applied_late_fee_amount: float, applied_late_fee_periods: int,
+     *   additional_late_fee_amount: float, additional_late_fee_periods: int,
+     *   late_fee_base: float, late_fee_percentage: float
+     * }
      */
     public function calculateLateFees(): array
     {
-        $invoiceDate = $this->created_at;
-        $organizationId = $this->organization_id;
-        $gracePeriod = $organizationId
-            ? PricingSetting::getValueForOrganization($organizationId, 'payment_terms.grace_period_days', config('pricing.payment_terms.grace_period_days', 30))
-            : config('pricing.payment_terms.grace_period_days', 30);
-        
-        if ($this->paid_in_full) {
-            return [
+        $invoiceDate = $this->created_at ?? now();
+        $gracePeriod = (int) $this->paymentTermsSetting('grace_period_days', 30);
+        $lateFeePercentage = (float) $this->paymentTermsSetting('late_fee_percentage', 10.0);
+        $lateFeePeriodDays = max(1, (int) $this->paymentTermsSetting('late_fee_period_days', 30));
+
+        $values = $this->values ?? [];
+        $total = (float) ($values['total'] ?? 0);
+
+        $applied = is_array($values['late_fees'] ?? null) ? $values['late_fees'] : [];
+        $appliedAt = $applied['applied_at'] ?? null;
+        $appliedAmount = $appliedAt ? round((float) ($applied['late_fee_amount'] ?? 0), 2) : 0.0;
+        $appliedPeriods = $appliedAt ? (int) ($applied['late_fee_periods'] ?? 0) : 0;
+
+        $result = [
+            'due_date' => $invoiceDate->copy()->addDays($gracePeriod),
+            'late_fees_applied' => (bool) $appliedAt,
+            'applied_at' => $appliedAt,
+            'applied_late_fee_amount' => $appliedAmount,
+            'applied_late_fee_periods' => $appliedPeriods,
+            'late_fee_base' => $total,
+            'late_fee_percentage' => $lateFeePercentage,
+        ];
+
+        // Settled, or billed through a summary: nothing more accrues. What was
+        // applied stays on the invoice so the figures the customer saw and
+        // paid still add up.
+        if ($this->paid_in_full || $this->parent_invoice_id) {
+            return $result + [
                 'is_past_due' => false,
                 'days_overdue' => 0,
-                'late_fee_periods' => 0,
-                'late_fee_amount' => 0.0,
-                'total_with_late_fees' => (float) ($this->values['total'] ?? 0),
-                'due_date' => $invoiceDate->copy()->addDays($gracePeriod),
-                'late_fees_applied' => false,
+                'late_fee_periods' => $appliedPeriods,
+                'late_fee_amount' => $appliedAmount,
+                'additional_late_fee_amount' => 0.0,
+                'additional_late_fee_periods' => 0,
+                'total_with_late_fees' => round($total + $appliedAmount, 2),
             ];
         }
 
-        $now = now();
         // Carbon 3 returns a float here where Carbon 2 returned an int, so the
         // fractional time-of-day leaked all the way to the screen as
         // "60.000032710208 days overdue". Floor rather than round: never
         // overstate how late a customer is.
-        $daysSinceInvoice = (int) floor($invoiceDate->diffInDays($now));
-        $lateFeePercentage = $organizationId
-            ? PricingSetting::getValueForOrganization($organizationId, 'payment_terms.late_fee_percentage', config('pricing.payment_terms.late_fee_percentage', 10.0))
-            : config('pricing.payment_terms.late_fee_percentage', 10.0);
-        $lateFeePeriodDays = $organizationId
-            ? PricingSetting::getValueForOrganization($organizationId, 'payment_terms.late_fee_period_days', config('pricing.payment_terms.late_fee_period_days', 30))
-            : config('pricing.payment_terms.late_fee_period_days', 30);
-        
+        $daysSinceInvoice = (int) floor($invoiceDate->diffInDays(now()));
         $isPastDue = $daysSinceInvoice > $gracePeriod;
         $daysOverdue = max(0, $daysSinceInvoice - $gracePeriod);
-        
-        // Calculate number of 30-day periods overdue
-        $lateFeePeriods = $isPastDue ? (int) floor($daysOverdue / $lateFeePeriodDays) : 0;
-        
-        // Check if late fees have already been applied to the invoice total
-        $lateFeesApplied = data_get($this->values, 'late_fees.applied_at');
-        $originalTotal = (float) data_get($this->values, 'late_fees.original_total', 0);
-        $currentTotal = (float) ($this->values['total'] ?? 0);
-        
-        // Use original total if late fees were already applied, otherwise use current total
-        $baseTotal = $lateFeesApplied && $originalTotal > 0 ? $originalTotal : $currentTotal;
-        
-        $lateFeeAmount = 0.0;
-        
-        if ($lateFeePeriods > 0) {
-            if ($lateFeesApplied && $originalTotal > 0) {
-                // Late fees already applied - calculate additional fees if more time has passed
-                $savedLateFeeAmount = (float) data_get($this->values, 'late_fees.late_fee_amount', 0);
-                $savedPeriods = (int) data_get($this->values, 'late_fees.late_fee_periods', 0);
-                
-                // Calculate what the late fee should be now based on current periods
-                $currentLateFeeAmount = $originalTotal * (($lateFeePercentage / 100) * $lateFeePeriods);
-                
-                // Show additional fees if more periods have passed
-                if ($lateFeePeriods > $savedPeriods) {
-                    $lateFeeAmount = $currentLateFeeAmount - $savedLateFeeAmount; // Additional fees due
-                } else {
-                    $lateFeeAmount = $savedLateFeeAmount; // Use saved amount
-                }
-            } else {
-                // Calculate new late fees based on base total
-                $lateFeeAmount = $baseTotal * (($lateFeePercentage / 100) * $lateFeePeriods);
-            }
-        }
-        
-        // Total with late fees: current total + additional late fees (if any)
-        $totalWithLateFees = $lateFeesApplied ? ($currentTotal + $lateFeeAmount) : ($baseTotal + $lateFeeAmount);
-        
-        return [
+        $accruedPeriods = $isPastDue ? intdiv($daysOverdue, $lateFeePeriodDays) : 0;
+
+        // Only periods the applied fee does not already cover are charged
+        // again -- this is what stops a re-apply from compounding.
+        $additionalPeriods = max(0, $accruedPeriods - $appliedPeriods);
+        $additionalAmount = round($total * ($lateFeePercentage / 100) * $additionalPeriods, 2);
+        $lateFeeAmount = round($appliedAmount + $additionalAmount, 2);
+
+        return $result + [
             'is_past_due' => $isPastDue,
             'days_overdue' => $daysOverdue,
-            'late_fee_periods' => $lateFeePeriods,
-            'late_fee_amount' => round($lateFeeAmount, 2),
-            'total_with_late_fees' => round($totalWithLateFees, 2),
-            'due_date' => $invoiceDate->copy()->addDays($gracePeriod),
-            'late_fees_applied' => (bool) $lateFeesApplied,
+            'late_fee_periods' => $appliedPeriods + $additionalPeriods,
+            'late_fee_amount' => $lateFeeAmount,
+            'additional_late_fee_amount' => $additionalAmount,
+            'additional_late_fee_periods' => $additionalPeriods,
+            'total_with_late_fees' => round($total + $lateFeeAmount, 2),
         ];
     }
 

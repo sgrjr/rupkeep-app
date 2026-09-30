@@ -285,6 +285,14 @@ class MyInvoicesController extends Controller
             return redirect()->route('my.invoices.edit', ['invoice' => $invoice->id]);
         }
 
+        // A child of a summary is billed through the summary, which accrues
+        // its own fee on its own date. Letting both carry one billed the
+        // customer twice for the same lateness (TASK-443).
+        if ($invoice->parent_invoice_id) {
+            session()->flash('error', __('This invoice is billed through a summary invoice. Apply late fees on the summary instead.'));
+            return redirect()->route('my.invoices.edit', ['invoice' => $invoice->id]);
+        }
+
         $lateFees = $invoice->calculateLateFees();
 
         if (!$lateFees['is_past_due'] || $lateFees['late_fee_amount'] <= 0) {
@@ -292,28 +300,43 @@ class MyInvoicesController extends Controller
             return redirect()->route('my.invoices.edit', ['invoice' => $invoice->id]);
         }
 
+        // Re-applying with nothing new accrued is a no-op, not a second fee.
+        if ($lateFees['additional_late_fee_amount'] <= 0) {
+            session()->flash('info', __('Late fees are already applied to this invoice. Nothing new has accrued since :date.', [
+                'date' => \Carbon\Carbon::parse($lateFees['applied_at'])->format('M j, Y'),
+            ]));
+            return redirect()->route('my.invoices.edit', ['invoice' => $invoice->id]);
+        }
+
         $values = $invoice->values ?? [];
-        
-        // Save late fee information to invoice values
+        $previous = is_array($values['late_fees'] ?? null) ? $values['late_fees'] : null;
+
+        // The fee is recorded BESIDE the total, never folded into it: `total`
+        // stays the invoice amount and calculateLateFees() adds the fee on top
+        // at read time. Writing total = total + fee here is what made every
+        // later read (Total Due, balance, print, PDF) add the fee twice.
         $values['late_fees'] = [
             'applied_at' => now()->toDateTimeString(),
             'applied_by' => $request->user()->id,
-            'is_past_due' => $lateFees['is_past_due'],
             'days_overdue' => $lateFees['days_overdue'],
             'late_fee_periods' => $lateFees['late_fee_periods'],
             'late_fee_amount' => $lateFees['late_fee_amount'],
+            'late_fee_percentage' => $lateFees['late_fee_percentage'],
+            // The base the fee was computed on, for the record. Never read back
+            // into the arithmetic.
             'original_total' => (float) ($values['total'] ?? 0),
-            'total_with_late_fees' => $lateFees['total_with_late_fees'],
+            'history' => array_values(array_filter(array_merge(
+                $previous['history'] ?? [],
+                $previous ? [Arr::except($previous, 'history')] : []
+            ))),
         ];
 
-        // Update the total to include late fees
-        $values['total'] = $lateFees['total_with_late_fees'];
-        
         $invoice->values = $values;
         $invoice->save();
 
-        session()->flash('success', __('Late fees applied. Invoice total updated to $:amount.', [
-            'amount' => number_format($lateFees['total_with_late_fees'], 2)
+        session()->flash('success', __('Late fee of $:fee applied. Total due is now $:amount.', [
+            'fee' => number_format($lateFees['late_fee_amount'], 2),
+            'amount' => number_format($lateFees['total_with_late_fees'], 2),
         ]));
 
         return redirect()->route('my.invoices.edit', ['invoice' => $invoice->id]);
