@@ -1,6 +1,6 @@
 # Rupkeep — Roadmap
 
-Strategic / phased view of the work. Task IDs link back to [`TASKS.md`](../TASKS.md), which is the source of truth for status. This doc explains **why** and **what order**; `TASKS.md` tracks **what's next**.
+Strategic / phased view of the work. Task IDs refer to Dispatch (`/admin/tasks`), which is the source of truth for status. This doc explains **why** and **what order**; Dispatch tracks **what's next**.
 
 > Older planning artifacts (the original `SHIPPING_PLAN.md` w/ Nov 2025 ship target, `DAILY_SCHEDULE.md`, `CUSTOMER_INTERVIEW_ACTION_PLAN.md`, `IMPLEMENTATION_SUMMARY.md`) live in [`docs/archive/`](archive/). They reflect the state and decisions at the time and are preserved for context.
 
@@ -107,6 +107,30 @@ Hardest unscheduled work. Blockers on launch:
 - TASK-105 User docs / training walkthrough
 
 Dev environment is Windows IIS at `C:\inetpub\wwwroot\rupkeep-app`. Production target was originally Nov 21, 2025; revised target TBD — track here when set.
+
+---
+
+## Go-live plan (audit of 2026-09-30)
+
+Eight read-only audits (jobs/logs, invoices, auth/tenancy, notifications, ops, secondary CRUD, view layer, and a verification pass over the 39 `verifying` tasks) produced 56 new tasks, **TASK-424 through TASK-479**, all labelled `epic:go-live` plus a `wave:N` label. Filter: `/admin/tasks?label=epic:go-live` or `php artisan dispatch:queue --label=wave:1 --n=30`.
+
+The waves are ordered by risk, and each wave is a deployable unit. Do not start a wave before the previous one is deployed, except wave 5 items that are human checks.
+
+| Wave | Theme | Tasks | Exit check |
+|------|-------|-------|------------|
+| 0 | Production hygiene: public `/setup` wipe route, `phpinfo`, unpinned dependencies with CVEs, `.env` checklist, backups (TASK-103) | 424-427, 103 | `/info.php` is 404, `SETUP_CONSOLE_ENABLED=false`, `composer.lock` committed, nightly dump exists |
+| 1 | Authorization lockdown: role-blind policies, unguarded Livewire actions, mass assignment, XSS, open redirect | 428-442, 391 | PoC tests in `tests/Audit/2026-09-30-authz-poc/` all fail; regression tests pass |
+| 2 | Money correctness: late fees, memo leak, cancel/flat mispricing, summary refresh, duplicate invoices, payments, exports, letterhead, pricing validation | 443-452, 385 | Late fee shown once; portal shows no memos; exports reconcile to invoice totals |
+| 3 | Daily path: mobile Mark Complete, driver uploads, payment modal, log dead ends, restore, silent results, unconfirmed deletes, contrast | 453-463, 423, 419, 394, 063, 064, 082 | A driver completes and uploads from a phone; every action shows a result |
+| 4 | Robustness: UTC times, mail retry, maintenance due dates, push, SMS, queue alerting, deploy workflow, cascades, dashboard totals, onboarding, dead code, docs | 464-476, 041, 393 | `queue:health` alerts on a dead worker; deploy runs composer/npm/queue:restart |
+| 5 | Verification and go-live: reconcile task states, Mary's three decisions, drive-through 003 | 477-479, 104, 207, 209, 211, 339 | Drive 003 completes with zero HIGH+ defects, run as Mary and as a driver on a phone |
+
+Two patterns explain most of waves 1-3 and should be checked on every future change:
+
+- **A Livewire action is its own endpoint.** `mount()` authorizing `view` protects nothing that a public method does later. Every mutating method needs its own `authorize()`.
+- **Same organization is not the same role.** Customer-portal users carry the company's `organization_id`. Any policy that checks only the org admits customers to staff data.
+
+Decisions that need Mary, not code (TASK-478): the 7-entry rate picker (TASK-416), whether invoices get draft/sent/void instead of delete-and-recreate, and whether customers can ever be deleted while jobs exist.
 
 ---
 
