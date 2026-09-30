@@ -68,6 +68,10 @@ return [
             'description' => 'No charge',
             'flat_amount' => 0.00,
             'type' => 'flat',
+            // "No charge" means no charge: tolls, hotel, wait time, stops,
+            // deadhead and the mini add-on are all left off the invoice
+            // (TASK-445). Every other flat code bills its expenses on top.
+            'bills_expenses' => false,
         ],
         'day_downtime' => [
             'name' => 'Day Downtime',

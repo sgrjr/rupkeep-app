@@ -1405,9 +1405,11 @@ class PilotCarJob extends Model
             if (isset($config['rate_per_mile'])) {
                 $rates[$code] = '$' . number_format($config['rate_per_mile'], 2) . ' Per Mile';
             } elseif ($code === 'flat_rate') {
-                $rates[$code] = 'Flat Price (includes expenses)';
+                // Say what the math does: expenses are added ON TOP of the
+                // flat price, not folded inside it (TASK-445).
+                $rates[$code] = 'Flat Price (expenses billed on top)';
             } elseif ($code === 'flat_rate_excludes_expenses') {
-                $rates[$code] = 'Flat Price (excludes expenses)';
+                $rates[$code] = 'Flat Price only (expenses not billed)';
             }
         }
         
@@ -1567,6 +1569,29 @@ class PilotCarJob extends Model
         $values['cost_for_mileage'] = (float) ($computed['miles_charge'] ?? 0);
         $values['wait_time_rate'] = (float) ($computed['wait_time_rate'] ?? 0);
         $values['wait_time_billable_hours'] = (float) ($computed['wait_time_billable_hours'] ?? 0);
+
+        // The rate's expense policy (TASK-445). When the rate bills no
+        // expenses, the snapshot must not itemize them either: InvoiceLineItems
+        // defines Pilot Car Service as total minus every itemized charge, so
+        // leaving tolls and hotel on a flat-only snapshot printed a flat price
+        // that was short by exactly the charges the customer was not billed.
+        // The logged figures stay under expenses_not_billed for staff.
+        $values['bills_expenses'] = (bool) ($computed['bills_expenses'] ?? true);
+        $values['expenses_not_billed'] = $computed['expenses_not_billed'] ?? [];
+
+        if (! $values['bills_expenses']) {
+            if (! empty($values['extra_charges'])) {
+                $values['expenses_not_billed']['extra_charges'] = $values['extra_charges'];
+            }
+            $values['tolls'] = 0.0;
+            $values['hotel'] = 0.0;
+            $values['extra_charge'] = 0.0;
+            $values['extra_charges'] = [];
+        }
+
+        if (array_key_exists('rate_code_unrecognized', $computed)) {
+            $values['rate_code_unrecognized'] = $computed['rate_code_unrecognized'];
+        }
 
         // Check if job is marked as paid (from CSV import or manual update)
         $paidInFull = (bool)($this->invoice_paid ?? false);
@@ -2021,10 +2046,69 @@ class PilotCarJob extends Model
             ? static::getRatesForOrganization($organizationId)
             : config('pricing.rates', []);
 
+        // Whether this rate bills expenses at all (TASK-445).
+        //
+        //  - A no-charge outcome -- a price-list flat code whose flat_amount is
+        //    0, or one marked bills_expenses => false -- bills NOTHING: not the
+        //    flat, not tolls, hotel, wait, stops or deadhead, nor the mini
+        //    add-on. It used to fall into the ordinary flat branch, so a
+        //    "Cancel Without Billing" job with tolls and a hotel invoiced them.
+        //  - flat_rate_excludes_expenses bills the flat price only. The total
+        //    already said so, but the buckets stayed on the snapshot and were
+        //    itemized, so the printed Pilot Car Service line became the flat
+        //    MINUS charges the customer was never billed for.
+        //  - Every other code bills its expenses on top of the rate. That is
+        //    deliberate for the paid cancellation outcomes too: a show-but-no-go
+        //    still drove to the pickup, and that approach is billable if a
+        //    human says so (test_deadhead_bills_on_a_show_no_go).
+        //
+        // The unbilled figures are kept under expenses_not_billed so staff can
+        // still see what the drivers logged.
+        $expenseBuckets = ['tolls', 'hotel', 'extra', 'load_stops', 'wait_time', 'dead_head_charge'];
+        $listedRate = $pricingConfig[$rateCode] ?? null;
+        $noCharge = $listedRate !== null
+            && ($listedRate['type'] ?? null) === 'flat'
+            && ((float) ($listedRate['flat_amount'] ?? 0) <= 0 || ($listedRate['bills_expenses'] ?? true) === false);
+        $billsExpenses = ! $noCharge && $rateCode !== 'flat_rate_excludes_expenses';
+
+        $values['bills_expenses'] = $billsExpenses;
+        $values['expenses_not_billed'] = [];
+
+        if (! $billsExpenses) {
+            foreach ($expenseBuckets as $bucket) {
+                if ((float) $values[$bucket] > 0) {
+                    $values['expenses_not_billed'][$bucket] = round((float) $values[$bucket], 2);
+                }
+                $values[$bucket] = 0.00;
+            }
+            $values['dead_head_billed_miles'] = 0.0;
+            $values['wait_time_billable_hours'] = 0.0;
+            $expenses = 0.00;
+        }
+
+        if ($noCharge) {
+            $miniAddonAmount = 0.0;
+        }
+
+        // The organization's published Lead / Chase rate: what a job is billed
+        // at when its code gives us nothing to price from. Never a hardcoded
+        // $2.00 -- that hid data problems inside customer invoices.
+        $publishedLeadChase = (float) ($pricingConfig['lead_chase_per_mile']['rate_per_mile']
+            ?? config('pricing.rates.lead_chase_per_mile.rate_per_mile', 2.00));
+        $priceAtPublishedRate = function () use (&$values, $publishedLeadChase, $billableMiles, $expenses, $rateCode) {
+            $values['miles_charge'] = $billableMiles * $publishedLeadChase;
+            $values['effective_rate_code'] = 'lead_chase_per_mile';
+            $values['effective_rate_value'] = $publishedLeadChase;
+            // Flag the snapshot so the edit screen and jobs:audit can point at
+            // the job instead of the price quietly passing as intended.
+            $values['rate_code_unrecognized'] = (string) $rateCode;
+            $values['total'] = $values['miles_charge'] + $expenses;
+        };
+
         // Check if using new pricing structure
-        if (isset($pricingConfig[$rateCode])) {
-            $rateConfig = $pricingConfig[$rateCode];
-            
+        if ($listedRate !== null) {
+            $rateConfig = $listedRate;
+
             if ($rateConfig['type'] === 'per_mile') {
                 // Per mile rate (Lead/Chase)
                 $ratePerMile = $rateConfig['rate_per_mile'] ?? $normalizedRateValue;
@@ -2059,35 +2143,36 @@ class PilotCarJob extends Model
                 }
             }
         } elseif (str_starts_with($rateCode, 'per_mile_rate') || $rateCode === 'new_per_mile_rate') {
-            // Legacy per-mile rates or custom per-mile
-            $value = $normalizedRateValue > 0 ? round($normalizedRateValue, 2) : 2.00; // Default to $2.00
-            $values['miles_charge'] = $billableMiles * $value;
-            $values['effective_rate_code'] = 'per_mile_rate';
-            $values['effective_rate_value'] = $value;
-            $values['total'] = ($values['miles_charge'] ?? 0) + $expenses;
-        } elseif (str_starts_with($rateCode, 'flat_rate') || $rateCode === 'custom_flat_rate') {
-            // Legacy flat rates or custom flat
-            $values['miles_charge'] = 0.00;
-            $flatAmount = $normalizedRateValue > 0 ? $normalizedRateValue : 0;
-            
-            if ($rateCode === 'flat_rate_excludes_expenses') {
-                $values['effective_rate_code'] = 'flat_rate_excludes_expenses';
-                $values['effective_rate_value'] = $flatAmount;
-                $values['total'] = number_format($flatAmount, 2);
+            // Legacy per-mile codes carry their price in the code itself
+            // (per_mile_rate_2_50). A blank rate_value used to fall back to a
+            // hardcoded $2.00 whatever the code said (TASK-445); now the code
+            // is parsed, as defaultRateValue() already did for the form.
+            $value = $normalizedRateValue > 0
+                ? round($normalizedRateValue, 2)
+                : (float) (static::defaultRateValue($rateCode, $organizationId) ?? 0);
+
+            if ($value > 0) {
+                $values['miles_charge'] = $billableMiles * $value;
+                $values['effective_rate_code'] = 'per_mile_rate';
+                $values['effective_rate_value'] = $value;
+                $values['total'] = ($values['miles_charge'] ?? 0) + $expenses;
             } else {
-                $values['effective_rate_code'] = 'flat_rate';
-                $values['effective_rate_value'] = $flatAmount;
-                $values['total'] = number_format($flatAmount + $expenses, 2);
+                // A custom per-mile rate with no figure entered: nothing to
+                // price from.
+                $priceAtPublishedRate();
             }
+        } elseif (str_starts_with($rateCode, 'flat_rate') || $rateCode === 'custom_flat_rate') {
+            // Legacy flat rates or custom flat. $expenses is already zero for
+            // flat_rate_excludes_expenses (see the policy block above), so both
+            // flavours price the same way and the snapshot agrees with the total.
+            $flatAmount = $normalizedRateValue > 0 ? $normalizedRateValue : 0;
+            $values['miles_charge'] = 0.00;
+            $values['effective_rate_code'] = $rateCode === 'flat_rate_excludes_expenses' ? 'flat_rate_excludes_expenses' : 'flat_rate';
+            $values['effective_rate_value'] = $flatAmount;
+            $values['total'] = $flatAmount + $expenses;
         } else {
-            // Fallback: default per-mile rate
-            $defaultRate = $organizationId
-                ? PricingSetting::getValueForOrganization($organizationId, 'rates.lead_chase_per_mile.rate_per_mile', 2.00)
-                : 2.00;
-            $values['miles_charge'] = $billableMiles * $defaultRate;
-            $values['effective_rate_code'] = 'per_mile_rate';
-            $values['effective_rate_value'] = $defaultRate;
-            $values['total'] = ($values['miles_charge'] ?? 0) + $expenses;
+            // Unknown or blank code.
+            $priceAtPublishedRate();
         }
         
         // Ensure total is always a float (handle both string and numeric inputs)
@@ -2356,7 +2441,7 @@ class PilotCarJob extends Model
             'per_mile_rate' => 'Per Mile Rate',
             'lead_chase_per_mile' => 'Lead/Chase Per Mile',
             'flat_rate' => 'Flat Rate',
-            'flat_rate_excludes_expenses' => 'Flat Rate (Excludes Expenses)',
+            'flat_rate_excludes_expenses' => 'Flat Rate only (expenses not billed)',
             'mini_flat_rate' => 'Mini-Run Rate',
             'custom_flat_rate' => 'Custom Flat Rate',
         ];

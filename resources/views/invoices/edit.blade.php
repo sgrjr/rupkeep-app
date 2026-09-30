@@ -85,6 +85,30 @@
                             {{ data_get($values, 'bill_to.state') }} {{ data_get($values, 'bill_to.zip') }}
                         </p>
                     </div>
+                    @if(array_key_exists('rate_code_unrecognized', $values ?? []))
+                        <div class="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-800">
+                            <p class="font-semibold">{{ __('Check the rate before sending this invoice.') }}</p>
+                            <p class="mt-1">
+                                {{ __('The job rate code ":code" is not on the price list, so this invoice was priced at the published Lead / Chase rate. Set a rate on the job and regenerate if that is wrong.', ['code' => $values['rate_code_unrecognized'] !== '' ? $values['rate_code_unrecognized'] : __('blank')]) }}
+                            </p>
+                        </div>
+                    @endif
+                    @php
+                        $expensesNotBilled = array_filter(
+                            (array) data_get($values ?? [], 'expenses_not_billed', []),
+                            fn ($v) => is_numeric($v) && (float) $v > 0
+                        );
+                    @endphp
+                    @if(!data_get($values ?? [], 'bills_expenses', true) && $expensesNotBilled)
+                        <div class="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
+                            <p class="font-semibold">{{ __('Logged expenses not billed under this rate') }}</p>
+                            <p class="mt-1">
+                                @foreach($expensesNotBilled as $bucket => $amount)
+                                    {{ __(ucwords(str_replace('_', ' ', $bucket))) }} {{ Money::currency($amount, 'USD') }}@if(!$loop->last), @endif
+                                @endforeach
+                            </p>
+                        </div>
+                    @endif
                     <dl class="grid gap-4 sm:grid-cols-2 md:grid-cols-3 text-xs text-slate-600">
                         @php
                             $lateFees = $invoice->calculateLateFees();

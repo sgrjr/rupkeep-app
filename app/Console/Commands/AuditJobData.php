@@ -179,6 +179,17 @@ class AuditJobData extends Command
                         ));
                     }
 
+                    // A code the price list does not know was billed at the
+                    // published Lead / Chase rate rather than a hardcoded $2.00
+                    // (TASK-445). That is a guess, and a guess on an invoice is
+                    // an error until a human confirms the rate.
+                    if (array_key_exists('rate_code_unrecognized', $values)) {
+                        $this->error_($subject, sprintf(
+                            "Rate code '%s' is not recognized; billed at the published Lead / Chase rate",
+                            $values['rate_code_unrecognized'] !== '' ? $values['rate_code_unrecognized'] : '(blank)'
+                        ));
+                    }
+
                     // Drift is not automatically wrong -- an invoice is a
                     // snapshot and the job may have moved since -- but it is
                     // always worth knowing before sending it.

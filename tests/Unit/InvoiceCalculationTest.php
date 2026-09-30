@@ -80,15 +80,76 @@ class InvoiceCalculationTest extends TestCase
         $this->assertSame(100.0, $result['total']);
     }
 
-    public function test_unknown_rate_code_falls_back_to_default_per_mile(): void
+    /**
+     * An unknown code is priced at the PUBLISHED Lead / Chase rate and the
+     * result is flagged, never a silent hardcoded $2.00 (TASK-445).
+     */
+    public function test_unknown_rate_code_falls_back_to_the_published_rate_and_is_flagged(): void
     {
         $result = $this->job()->calculateTotalDue($this->totals([
             'rate_code' => 'definitely_not_a_rate',
             'billable_miles' => 10,
         ]));
 
-        $this->assertSame(20.0, $result['total']); // fallback $2.00/mi
-        $this->assertSame('per_mile_rate', $result['effective_rate_code']);
+        $this->assertSame(20.0, $result['total']); // 10 mi x published $2.00
+        $this->assertSame('lead_chase_per_mile', $result['effective_rate_code']);
+        $this->assertSame('definitely_not_a_rate', $result['rate_code_unrecognized']);
+    }
+
+    /** A blank rate_value on a legacy code prices from the code, not from $2.00. */
+    public function test_legacy_per_mile_code_with_blank_rate_value_prices_from_the_code(): void
+    {
+        $result = $this->job()->calculateTotalDue($this->totals([
+            'rate_code' => 'per_mile_rate_3_50',
+            'rate_value' => null,
+            'billable_miles' => 10,
+        ]));
+
+        $this->assertSame(35.0, $result['total']);
+        $this->assertSame(3.5, $result['effective_rate_value']);
+        $this->assertArrayNotHasKey('rate_code_unrecognized', $result);
+    }
+
+    /** "No charge" is no charge: not the flat, not the expenses, not the add-on. */
+    public function test_cancel_without_billing_bills_nothing_at_all(): void
+    {
+        $result = $this->job()->calculateTotalDue($this->totals([
+            'rate_code' => 'cancel_without_billing',
+            'tolls' => '20.00',
+            'hotel' => '100.00',
+            'wait_time_hours' => 2,
+            'dead_head_driven' => 100,
+            'dead_head_billed' => 25,
+            'mini_addon_amount' => 75,
+        ]));
+
+        $this->assertSame(0.0, $result['total']);
+        $this->assertFalse($result['bills_expenses']);
+        $this->assertSame(0.0, $result['mini_addon_amount']);
+        $this->assertSame(0.0, $result['tolls']);
+        $this->assertSame(0.0, $result['wait_time']);
+        $this->assertSame(0.0, $result['dead_head_charge']);
+        $this->assertSame(
+            ['tolls' => 20.0, 'hotel' => 100.0, 'wait_time' => 60.0, 'dead_head_charge' => 25.0],
+            $result['expenses_not_billed']
+        );
+    }
+
+    /** The flat-only code zeroes the buckets it does not bill so the snapshot agrees with the total. */
+    public function test_flat_rate_excludes_expenses_zeroes_the_buckets_it_does_not_bill(): void
+    {
+        $result = $this->job()->calculateTotalDue($this->totals([
+            'rate_code' => 'flat_rate_excludes_expenses',
+            'rate_value' => 500,
+            'tolls' => '100.00',
+            'hotel' => '50.00',
+        ]));
+
+        $this->assertSame(500.0, $result['total']);
+        $this->assertFalse($result['bills_expenses']);
+        $this->assertSame(0.0, $result['tolls']);
+        $this->assertSame(0.0, $result['hotel']);
+        $this->assertSame(['tolls' => 100.0, 'hotel' => 50.0], $result['expenses_not_billed']);
     }
 
     public function test_mini_flat_rate_applies_at_or_under_max_miles(): void
