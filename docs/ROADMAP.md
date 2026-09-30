@@ -130,7 +130,7 @@ Two patterns explain most of waves 1-3 and should be checked on every future cha
 - **A Livewire action is its own endpoint.** `mount()` authorizing `view` protects nothing that a public method does later. Every mutating method needs its own `authorize()`.
 - **Same organization is not the same role.** Customer-portal users carry the company's `organization_id`. Any policy that checks only the org admits customers to staff data.
 
-Decisions that need Mary, not code (TASK-478): the 7-entry rate picker (TASK-416), whether invoices get draft/sent/void instead of delete-and-recreate, and whether customers can ever be deleted while jobs exist.
+Decisions taken 2026-09-30 (TASK-478): the rate picker shrinks to 7 entries (TASK-416); invoices get Draft / Sent / Paid / Void with the customer notified only on Send, and Void replaces Delete; deleting a customer stays a hard delete but first writes an archive JSON artifact to private storage and the confirmation states that there is no automatic restore (TASK-461).
 
 ---
 
