@@ -120,6 +120,8 @@ Route::middleware([
     Route::get('/my/customers/{customer}/edit', [MyCustomersController::class, 'edit'])->name('my.customers.edit')->middleware('staff');
     Route::put('/my/customers/{customer}', [MyCustomersController::class, 'update'])->name('my.customers.update')->middleware('staff');
     Route::delete('/my/customers/{customer}', [MyCustomersController::class, 'destroy'])->name('my.customers.destroy')->middleware('staff');
+    // The JSON archive written before a customer is deleted (TASK-461).
+    Route::get('/my/customers/archives/{file}', [MyCustomersController::class, 'downloadArchive'])->name('my.customers.archives.download')->middleware('staff');
     
     // Users routes - explicitly defined to ensure all routes are registered
     Route::get('/my/users', [MyUsersController::class, 'index'])->name('my.users.index')->middleware('staff');

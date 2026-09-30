@@ -142,13 +142,20 @@ class MassAssignmentBoundaryTest extends TestCase
         $this->actingAs($driver)->put($url, ['name' => 'Changed'])->assertForbidden();
         $this->assertSame('Main', $contact->fresh()->name);
 
-        $this->actingAs($manager)->put($url, ['delete' => 'on'])->assertForbidden();
+        // Deleting has its own route and confirmation since TASK-461; Save
+        // no longer deletes whatever the request carries.
+        $destroy = route('customers.contacts.destroy', ['customer' => $this->customerA->id, 'contact' => $contact->id]);
+
+        $this->actingAs($manager)->delete($destroy, ['confirmed' => 1])->assertForbidden();
         $this->assertNotNull(CustomerContact::find($contact->id));
 
         $this->actingAs($manager)->put($url, ['name' => 'Changed'])->assertRedirect();
         $this->assertSame('Changed', $contact->fresh()->name);
 
-        $this->actingAs($this->adminA)->put($url, ['delete' => 'on'])->assertRedirect();
+        $this->actingAs($this->adminA)->put($url, ['name' => 'Changed', 'delete' => 'on'])->assertRedirect();
+        $this->assertNotNull(CustomerContact::find($contact->id));
+
+        $this->actingAs($this->adminA)->delete($destroy, ['confirmed' => 1])->assertRedirect();
         $this->assertNull(CustomerContact::find($contact->id));
     }
 

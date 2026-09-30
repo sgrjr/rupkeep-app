@@ -21,6 +21,22 @@
     </x-slot>
 
     <div class="mx-auto max-w-6xl space-y-8 px-4 py-6 sm:px-6 lg:px-8">
+        @if(session('customer_archive'))
+            {{-- The one way back after a customer delete (TASK-461): the archive
+                 file, offered here and kept on the server. --}}
+            <section data-test="customer-archive" class="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
+                <div class="space-y-1">
+                    <p class="text-sm font-semibold text-amber-900">{{ __(':name has been deleted, with every contact, job and driver log it owned.', ['name' => session('customer_archive')['name']]) }}</p>
+                    <p class="text-xs text-amber-800">{{ __('There is no undo. Everything is in the archive file, which also stays on the server under storage/app/private/archives/customers and is part of the backup.') }}</p>
+                </div>
+                <a href="{{ route('my.customers.archives.download', ['file' => session('customer_archive')['file']]) }}"
+                   class="inline-flex items-center gap-2 rounded-full border border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-amber-800 shadow-sm transition hover:bg-amber-100">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+                    {{ __('Download archive') }}
+                </a>
+            </section>
+        @endif
+
         <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div class="rounded-3xl border border-orange-100 bg-white/90 p-4 shadow-sm">
                 <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Total customers') }}</p>
@@ -77,14 +93,11 @@
                                 <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-4.536a2.5 2.5 0 11-3.536 3.536L4.5 16.5V19.5H7.5l8.5-8.5"/></svg>
                                 {{ __('Edit') }}
                             </a>
-                            <form action="{{ route('my.customers.destroy', ['customer' => $customer->id]) }}" method="post" class="inline">
-                                @csrf
-                                @method('delete')
-                                <button type="submit" class="inline-flex items-center gap-1 rounded-full border border-red-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-red-600 transition hover:border-red-300 hover:text-red-700">
-                                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
-                                    {{ __('Delete') }}
-                                </button>
-                            </form>
+                            <x-delete-form action="{{ route('my.customers.destroy', ['customer' => $customer->id]) }}"
+                                           title="{{ __('Delete') }}"
+                                           :message="__('Deletes :name with every contact, job and driver log. There is no undo; an archive file is saved on the server and offered for download.', ['name' => $customer->name])"
+                                           :confirm-label="__('Yes, archive and delete')"
+                                           button-class="inline-flex items-center gap-1 rounded-full border border-red-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-red-600 transition hover:border-red-300 hover:text-red-700" />
                         </div>
                     </div>
                 @endforeach
@@ -133,14 +146,11 @@
                                             <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-4.536a2.5 2.5 0 11-3.536 3.536L4.5 16.5V19.5H7.5l8.5-8.5"/></svg>
                                             {{ __('Edit') }}
                                         </a>
-                                        <form action="{{ route('my.customers.destroy', ['customer' => $customer->id]) }}" method="post" class="inline">
-                                            @csrf
-                                            @method('delete')
-                                            <button type="submit" class="inline-flex items-center gap-1 rounded-full border border-red-200 bg-white px-3 py-1 text-[11px] font-semibold text-red-600 transition hover:border-red-300 hover:text-red-700">
-                                                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
-                                                {{ __('Delete') }}
-                                            </button>
-                                        </form>
+                                        <x-delete-form action="{{ route('my.customers.destroy', ['customer' => $customer->id]) }}"
+                                           title="{{ __('Delete') }}"
+                                           :message="__('Deletes :name with every contact, job and driver log. There is no undo; an archive file is saved on the server and offered for download.', ['name' => $customer->name])"
+                                           :confirm-label="__('Yes, archive and delete')"
+                                           button-class="inline-flex items-center gap-1 rounded-full border border-red-200 bg-white px-3 py-1 text-[11px] font-semibold text-red-600 transition hover:border-red-300 hover:text-red-700" />
                                     </div>
                                 </td>
                             </tr>
@@ -190,14 +200,11 @@
                                 <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-4.536a2.5 2.5 0 11-3.536 3.536L4.5 16.5V19.5H7.5l8.5-8.5"/></svg>
                                 {{ __('Edit') }}
                             </a>
-                            <form action="{{ route('my.customers.destroy', ['customer' => $customer->id]) }}" method="post" class="inline">
-                                @csrf
-                                @method('delete')
-                                <button type="submit" class="inline-flex items-center gap-1 rounded-full border border-red-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-red-600 transition hover:border-red-300 hover:text-red-700">
-                                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
-                                    {{ __('Delete') }}
-                                </button>
-                            </form>
+                            <x-delete-form action="{{ route('my.customers.destroy', ['customer' => $customer->id]) }}"
+                                           title="{{ __('Delete') }}"
+                                           :message="__('Deletes :name with every contact, job and driver log. There is no undo; an archive file is saved on the server and offered for download.', ['name' => $customer->name])"
+                                           :confirm-label="__('Yes, archive and delete')"
+                                           button-class="inline-flex items-center gap-1 rounded-full border border-red-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-red-600 transition hover:border-red-300 hover:text-red-700" />
                         </div>
                     </div>
                 @empty
@@ -250,14 +257,11 @@
                                             <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-4.536a2.5 2.5 0 11-3.536 3.536L4.5 16.5V19.5H7.5l8.5-8.5"/></svg>
                                             {{ __('Edit') }}
                                         </a>
-                                        <form action="{{ route('my.customers.destroy', ['customer' => $customer->id]) }}" method="post" class="inline">
-                                            @csrf
-                                            @method('delete')
-                                            <button type="submit" class="inline-flex items-center gap-1 rounded-full border border-red-200 bg-white px-3 py-1 text-[11px] font-semibold text-red-600 transition hover:border-red-300 hover:text-red-700">
-                                                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
-                                                {{ __('Delete') }}
-                                            </button>
-                                        </form>
+                                        <x-delete-form action="{{ route('my.customers.destroy', ['customer' => $customer->id]) }}"
+                                           title="{{ __('Delete') }}"
+                                           :message="__('Deletes :name with every contact, job and driver log. There is no undo; an archive file is saved on the server and offered for download.', ['name' => $customer->name])"
+                                           :confirm-label="__('Yes, archive and delete')"
+                                           button-class="inline-flex items-center gap-1 rounded-full border border-red-200 bg-white px-3 py-1 text-[11px] font-semibold text-red-600 transition hover:border-red-300 hover:text-red-700" />
                                     </div>
                                 </td>
                             </tr>

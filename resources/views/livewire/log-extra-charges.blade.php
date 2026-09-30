@@ -8,11 +8,20 @@
             <span class="shrink-0 text-sm font-semibold text-slate-900">${{ number_format($charge->amount, 2) }}</span>
 
             @if($canEdit)
-                <button type="button"
-                        wire:click="removeCharge({{ $charge->id }})"
-                        class="shrink-0 text-xs font-medium text-red-600 hover:text-red-700">
-                    {{ __('Remove') }}
-                </button>
+                {{-- Two clicks to remove money from the invoice (TASK-461). --}}
+                <span class="shrink-0" x-data="{ confirming: false }">
+                    <button type="button" x-show="! confirming" x-on:click="confirming = true"
+                            class="text-xs font-medium text-red-600 hover:text-red-700">
+                        {{ __('Remove') }}
+                    </button>
+                    <span x-show="confirming" x-cloak class="inline-flex items-center gap-2 text-xs">
+                        <span class="text-red-700">{{ __('Remove this charge?') }}</span>
+                        <button type="button" wire:click="removeCharge({{ $charge->id }})" x-on:click="confirming = false"
+                                class="rounded-full bg-red-600 px-2 py-0.5 font-semibold text-white hover:bg-red-700">{{ __('Yes') }}</button>
+                        <button type="button" x-on:click="confirming = false"
+                                class="rounded-full border border-slate-300 bg-white px-2 py-0.5 font-semibold text-slate-600 hover:bg-slate-50">{{ __('No') }}</button>
+                    </span>
+                </span>
             @endif
         </div>
     @empty

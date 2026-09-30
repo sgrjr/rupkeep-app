@@ -196,13 +196,17 @@
                             </div>
 
                             <div class="mt-6 flex items-center justify-end gap-3">
-                                <label class="flex items-center gap-2">
-                                    <span class="text-sm font-medium text-red-600">{{ __('Delete?') }}</span>
-                                    <input id="nc_delete{{$contact->id}}" name="delete" type="checkbox" class="rounded border-slate-300 text-red-600 focus:ring-red-500"/>
-                                </label>
                                 <button class="rounded-full border border-orange-200 bg-orange-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-600">{{ __('Save') }}</button>
                             </div>
                         </form>
+                        {{-- Its own form and its own confirmation (TASK-461). This used to be a
+                             "Delete?" checkbox fired by the Save button above. --}}
+                        <div class="mt-3 flex justify-end">
+                            <x-delete-form action="{{ route('customers.contacts.destroy', ['customer' => $customer->id, 'contact' => $contact->id]) }}"
+                                           title="{{ __('Delete contact') }}"
+                                           :message="__('Removes :name from this customer.', ['name' => $contact->name])"
+                                           button-class="inline-flex items-center gap-1 rounded-full border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:border-red-300 hover:text-red-700" />
+                        </div>
                     </div>
                 </details>
             @endforeach

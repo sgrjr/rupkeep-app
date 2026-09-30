@@ -191,7 +191,8 @@ class ActionFeedbackTest extends TestCase
         $this->flushSession();
 
         // The list's delete button posts to the other customer controller.
-        $this->actingAs($admin)->delete(route('my.customers.destroy', $customer->id))
+        \Illuminate\Support\Facades\Storage::fake(\App\Services\CustomerArchive::DISK);
+        $this->actingAs($admin)->delete(route('my.customers.destroy', $customer->id), ['confirmed' => 1])
             ->assertRedirect(route('customers.index'));
         $this->actingAs($admin)->get(route('customers.index'))->assertSee('Granite State Hauling deleted.');
     }

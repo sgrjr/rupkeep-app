@@ -120,12 +120,13 @@ class MyUsersController extends Controller
         //christina@cascobaypilotcar.com
         $user = User::find($id);
 
-        if(auth()->user()->can('delete', $user)){
+        if ($user && auth()->user()->can('delete', $user)) {
             $user->delete();
+
+            return back()->with('success', __(':name deleted.', ['name' => $user->name]));
         }
 
-        return back();
-        
+        return back()->with('error', __('That user could not be deleted.'));
     }
 
     public function delete(string $id)

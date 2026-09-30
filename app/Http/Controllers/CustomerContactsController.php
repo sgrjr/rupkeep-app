@@ -90,15 +90,9 @@ class CustomerContactsController extends Controller
         }
         
         $this->authorize('update', $customer_contact);
-        
-        if($request->has('delete') && $request->get('delete') === 'on'){
-            // Deleting is its own permission (admin), not a flavour of editing.
-            $this->authorize('delete', $customer_contact);
 
-            $customer_contact->delete();
-            return back()->with('success', __('Contact deleted.'));
-        }
-        
+        // Deleting moved to destroy() with its own button and confirmation
+        // (TASK-461); it used to ride along on Save as a checkbox.
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:50'],
@@ -118,8 +112,24 @@ class CustomerContactsController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Request $request, string $customer_id, int $id)
     {
-        //
+        $customer_contact = CustomerContact::where('id', $id)->where('customer_id', $customer_id)->first();
+
+        if (! $customer_contact) {
+            abort(404);
+        }
+
+        // Deleting is its own permission (admin), not a flavour of editing.
+        $this->authorize('delete', $customer_contact);
+
+        if (! $request->boolean('confirmed')) {
+            return back()->with('error', __('Deleting :name needs confirmation. Nothing was deleted.', ['name' => $customer_contact->name]));
+        }
+
+        $name = $customer_contact->name;
+        $customer_contact->delete();
+
+        return back()->with('success', __(':name deleted.', ['name' => $name]));
     }
 }

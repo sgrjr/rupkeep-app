@@ -10,6 +10,8 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class CustomersController extends Controller
 {
+    use \App\Http\Controllers\Concerns\DeletesCustomers;
+
 
     use AuthorizesRequests;
 
@@ -82,21 +84,10 @@ class CustomersController extends Controller
             ->with('success', __(':name updated.', ['name' => $customer->name]));
     }
 
-    public function destroy(Request $request, $customer){
+    public function destroy(Request $request, $customer, \App\Services\CustomerArchive $archive){
 
-        $customer = Customer::find($customer);
-
-        if (! $customer) {
-            return redirect()->route('customers.index')
-                ->with('error', __('That customer no longer exists.'));
-        }
-
-        $this->authorize('delete', $customer);
-        $name = $customer->name;
-        $customer->delete();
-
-        return redirect()->route('customers.index')
-            ->with('success', __(':name deleted.', ['name' => $name]));
+        // Archive first, then hard delete; see DeletesCustomers (TASK-461).
+        return $this->destroyCustomer($request, $customer, $archive);
     }
 
     public function createContact(Request $request, $customer){
