@@ -332,6 +332,12 @@ class ShowPilotCarJob extends Component
         $this->authorize('update', $this->job);
         $this->authorize('create', Invoice::class);
 
+        // Nothing to bill: every log is denied, or there are none. A canceled
+        // job is the exception -- its cancellation charge needs no log
+        // (TASK-447). The blade hides the button in this case; this is the
+        // server-side half of that.
+        $nothingToBill = $this->job->invoiceReadiness()['billable'] === 0 && ! $this->job->canceled_at;
+
         // One live invoice per job (TASK-447). This button used to create a
         // second invoice every time it was clicked, which the customer then
         // saw twice in the portal and the exports counted twice.
@@ -346,6 +352,12 @@ class ShowPilotCarJob extends Component
             }
 
             if ($existing->isDraft()) {
+                if ($nothingToBill) {
+                    session()->flash('error', __('This job has no log to bill. Confirm a log first, or void the draft.'));
+
+                    return;
+                }
+
                 $existing->regenerateFromJob();
                 $this->recentInvoiceId = $existing->id;
                 $this->loadJobRelations();
@@ -362,6 +374,12 @@ class ShowPilotCarJob extends Component
                 'number' => $existing->invoice_number,
                 'status' => strtolower($existing->statusLabel()),
             ]));
+
+            return;
+        }
+
+        if ($nothingToBill) {
+            session()->flash('error', __('This job has no log to bill yet. An invoice is built from confirmed driver logs.'));
 
             return;
         }

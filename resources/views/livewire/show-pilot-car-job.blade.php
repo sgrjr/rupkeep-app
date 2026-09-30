@@ -312,6 +312,20 @@
                     // One live invoice per job (TASK-447): the button rebuilds a
                     // draft, and steps aside once the invoice has been sent.
                     $liveInvoice = $job->liveInvoice();
+
+                    // What the invoice would be built from. No billable log and
+                    // not a cancellation: nothing to invoice, so no button. A
+                    // pending or unfinished log still bills, but only after the
+                    // user has been told so (TASK-447).
+                    $readiness = $job->invoiceReadiness();
+                    $nothingToBill = $readiness['billable'] === 0 && ! $job->canceled_at;
+                    $readinessWarnings = array_filter([
+                        $readiness['pending'] > 0 ? trans_choice(':count log is still pending the driver\'s confirmation|:count logs are still pending the drivers\' confirmation', $readiness['pending']) : null,
+                        $readiness['incomplete'] > 0 ? trans_choice(':count log has not been marked complete|:count logs have not been marked complete', $readiness['incomplete']) : null,
+                    ]);
+                    $confirmMessage = $readinessWarnings
+                        ? implode(' ', $readinessWarnings) . '. ' . __('Their figures will be billed as they stand now. Build the invoice anyway?')
+                        : null;
                 @endphp
                 <form wire:submit="generateInvoice" class="space-y-3">
                     <div class="flex items-center justify-between">
@@ -331,11 +345,31 @@
                                 ? __('This job is billed on a summary invoice.')
                                 : __('Invoice #:number has been :status. Open it to regenerate or void it.', ['number' => $liveInvoice->invoice_number, 'status' => strtolower($liveInvoice->statusLabel())]) }}
                         </p>
+                    @elseif($nothingToBill)
+                        <p data-test="nothing-to-bill" class="text-xs text-slate-500">
+                            {{ $readiness['denied'] > 0
+                                ? __('Every log on this job was denied, so there is nothing to invoice.')
+                                : __('No driver log yet. An invoice is built from confirmed driver logs.') }}
+                        </p>
                     @else
-                        <x-button type="submit">
-                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M4 11h16M10 15h10M6 19h8"/></svg>
-                            {{ $liveInvoice ? __('Rebuild Draft from Logs') : __('Create Draft Invoice') }}
-                        </x-button>
+                        {{-- A directive cannot sit inside a component tag's attributes, hence two tags. --}}
+                        @if($confirmMessage)
+                            <x-button type="submit" wire:confirm="{{ $confirmMessage }}">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M4 11h16M10 15h10M6 19h8"/></svg>
+                                {{ $liveInvoice ? __('Rebuild Draft from Logs') : __('Create Draft Invoice') }}
+                            </x-button>
+                        @else
+                            <x-button type="submit">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M4 11h16M10 15h10M6 19h8"/></svg>
+                                {{ $liveInvoice ? __('Rebuild Draft from Logs') : __('Create Draft Invoice') }}
+                            </x-button>
+                        @endif
+                        @if($readiness['denied'] > 0)
+                            <p class="text-xs text-slate-500">{{ trans_choice(':count denied log is left out.|:count denied logs are left out.', $readiness['denied']) }}</p>
+                        @endif
+                        @foreach($readinessWarnings as $warning)
+                            <p class="text-xs font-semibold text-amber-600">{{ $warning }}.</p>
+                        @endforeach
                         <p class="text-xs text-slate-500">{{ __('The customer is not notified until the invoice is sent from its page.') }}</p>
                     @endif
                 </form>

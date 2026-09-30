@@ -89,6 +89,35 @@ class PilotCarJob extends Model
         return $this->hasMany(UserLog::class, 'job_id');
     }
 
+    /**
+     * The logs an invoice is built from: everything but a denied one. A
+     * denied log is a rejected assignment, and its miles, tolls, hotel and
+     * wait used to be billed to the customer anyway, and it counted as a
+     * car (TASK-447).
+     */
+    public function billableLogs()
+    {
+        return $this->logs->reject(fn (UserLog $log) => $log->approval_status === 'denied')->values();
+    }
+
+    /**
+     * What the invoice would be built from, for the button that builds it:
+     * how many logs bill, how many are left out, and how many the driver
+     * has not confirmed or has not marked complete yet.
+     */
+    public function invoiceReadiness(): array
+    {
+        $logs = $this->logs;
+        $billable = $this->billableLogs();
+
+        return [
+            'billable' => $billable->count(),
+            'denied' => $logs->count() - $billable->count(),
+            'pending' => $billable->where('approval_status', 'pending')->count(),
+            'incomplete' => $billable->filter(fn (UserLog $log) => $log->approval_status !== 'pending' && ! $log->isComplete())->count(),
+        ];
+    }
+
     public function defaultDriver(){
         return $this->belongsTo(User::class, 'default_driver_id');
     }
@@ -1521,7 +1550,9 @@ class PilotCarJob extends Model
 
     public function invoiceValues(){
 
-        $logs = $this->logs;
+        // Denied logs are left out (TASK-447); every helper below takes this
+        // collection rather than reading $this->logs itself.
+        $logs = $this->billableLogs();
         $miles = $this->getTotalMiles($logs);
 
         $values = [
