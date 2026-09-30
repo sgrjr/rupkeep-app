@@ -32,7 +32,11 @@ class PrimaryNavigationMenu extends Component
 
         // Fetch organizations to pass to the view.
         // This prevents direct database calls within the Blade template.
-        $this->organizations = Organization::select('id', 'name')->get();
+        // Only super users get the organization switcher; loading every
+        // organization's name for every role leaked the tenant list (TASK-434).
+        $this->organizations = auth()->user()?->can('viewAny', Organization::class)
+            ? Organization::select('id', 'name')->get()
+            : collect();
     }
 
     /**

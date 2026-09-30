@@ -21,7 +21,10 @@ class CustomerPolicy
      */
     public function view(User $user, Customer $customer): bool
     {
-        return $user->organization_id === $customer->organization_id || $user->isSuper();
+        // Staff of the organization. Customer-portal accounts share the
+        // organization_id, so the org check alone let them in (TASK-434).
+        return $user->isSuper()
+            || ($user->organization_id === $customer->organization_id && $user->isEmployee());
     }
 
     /**

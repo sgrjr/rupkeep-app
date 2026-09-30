@@ -50,7 +50,9 @@ class OrganizationAuthorizationTest extends TestCase
         $admin = $this->user($this->orgA, User::ROLE_ADMIN);
         $super = User::factory()->superUser()->create(['organization_id' => $this->orgA->id]);
 
-        $this->actingAs($customer)->get(route('organizations.create'))->assertForbidden();
+        // The staff middleware bounces customers to their portal (TASK-434);
+        // staff without the permission get a plain 403.
+        $this->actingAs($customer)->get(route('organizations.create'))->assertRedirect(route('customer.invoices.index'));
         $this->actingAs($admin)->get(route('organizations.create'))->assertForbidden();
         $this->actingAs($super)->get(route('organizations.create'))->assertOk();
     }
@@ -60,11 +62,12 @@ class OrganizationAuthorizationTest extends TestCase
         $customer = $this->user($this->orgA, User::ROLE_CUSTOMER);
         $admin = $this->user($this->orgA, User::ROLE_ADMIN);
 
-        foreach ([$customer, $admin] as $user) {
-            $this->actingAs($user)
-                ->post(route('organizations.store'), ['name' => 'Rogue', 'user_id' => $user->id])
-                ->assertForbidden();
-        }
+        $this->actingAs($customer)
+            ->post(route('organizations.store'), ['name' => 'Rogue', 'user_id' => $customer->id])
+            ->assertRedirect(route('customer.invoices.index'));
+        $this->actingAs($admin)
+            ->post(route('organizations.store'), ['name' => 'Rogue', 'user_id' => $admin->id])
+            ->assertForbidden();
 
         $this->assertDatabaseMissing('organizations', ['name' => 'Rogue']);
 
@@ -159,10 +162,10 @@ class OrganizationAuthorizationTest extends TestCase
     {
         $customer = $this->user($this->orgA, User::ROLE_CUSTOMER);
 
-        $this->actingAs($customer)->get(route('organizations.edit', $this->orgA))->assertForbidden();
+        $this->actingAs($customer)->get(route('organizations.edit', $this->orgA))->assertRedirect(route('customer.invoices.index'));
         $this->actingAs($customer)
             ->patch(route('organizations.update', $this->orgA), ['name' => 'Hijacked'])
-            ->assertForbidden();
+            ->assertRedirect(route('customer.invoices.index'));
 
         $this->assertSame('A', $this->orgA->fresh()->name);
     }

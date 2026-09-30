@@ -34,7 +34,10 @@ class PilotCarJobPolicy
      */
     public function view(User $user, Job $model): bool
     {
-        return $user->organization_id === $model->organization_id || $user->isSuper();
+        // Staff of the organization. Customer-portal accounts share the
+        // organization_id, so the org check alone let them in (TASK-434).
+        return $user->isSuper()
+            || ($user->organization_id === $model->organization_id && $user->isEmployee());
     }
 
     /**

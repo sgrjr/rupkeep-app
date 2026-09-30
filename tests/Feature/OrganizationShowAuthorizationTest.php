@@ -38,8 +38,10 @@ class OrganizationShowAuthorizationTest extends TestCase
         $a = $this->createOrganization('A');
         $customer = $this->createUserForOrganization($a, User::ROLE_CUSTOMER);
 
+        // HTTP first: a 403 inside a Livewire mount leaves Livewire's redirector
+        // bound in the test app, which then breaks the middleware's redirect().
+        $this->actingAs($customer)->get(route('organizations.show', $a))->assertRedirect(route('customer.invoices.index'));
         $this->open($customer, $a->id)->assertForbidden();
-        $this->actingAs($customer)->get(route('organizations.show', $a))->assertForbidden();
     }
 
     public function test_staff_of_another_organization_cannot_open_the_page(): void

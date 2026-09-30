@@ -12,7 +12,9 @@ class InvoicePolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->isSuper() || $user->isAdmin() || $user->isManager() || $user->isCustomer();
+        // The staff list at /my/invoices. Customers have their own portal
+        // index; admitting them here listed the whole organization (TASK-434).
+        return $user->isSuper() || $user->isAdmin() || $user->isManager();
     }
 
     /**

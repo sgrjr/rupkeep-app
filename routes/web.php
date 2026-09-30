@@ -85,14 +85,14 @@ Route::middleware([
     Route::get('/admin/tasks/{task:code}',      [TaskController::class, 'show'])->name('tasks.show');
 
     Route::get('/organizations', OrganizationsIndex::class)->name('organizations.index');
-    Route::get('/organizations/create', OrganizationCreate::class)->name('organizations.create');
+    Route::get('/organizations/create', OrganizationCreate::class)->name('organizations.create')->middleware('staff');
     Route::get('/organizations/onboard', \App\Livewire\OnboardingWizard::class)->name('organizations.onboard');
-    Route::get('/organizations/{organization}', OrganizationShow::class)->name('organizations.show');
-    Route::delete('/organizations/{organization}',[OrganizationsController::class, 'delete'])->name('organizations.delete');
-    Route::post('/organizations/{organization}/user',[OrganizationsController::class, 'createUser'])->name('organization.user.create');
-    Route::get('/organizations/{organization}/edit', OrganizationEdit::class)->name('organizations.edit');
-    Route::post('/organization', [OrganizationsController::class, 'store'])->name('organizations.store');
-    Route::patch('/organization/{organization}', [OrganizationsController::class, 'update'])->name('organizations.update');
+    Route::get('/organizations/{organization}', OrganizationShow::class)->name('organizations.show')->middleware('staff');
+    Route::delete('/organizations/{organization}',[OrganizationsController::class, 'delete'])->name('organizations.delete')->middleware('staff');
+    Route::post('/organizations/{organization}/user',[OrganizationsController::class, 'createUser'])->name('organization.user.create')->middleware('staff');
+    Route::get('/organizations/{organization}/edit', OrganizationEdit::class)->name('organizations.edit')->middleware('staff');
+    Route::post('/organization', [OrganizationsController::class, 'store'])->name('organizations.store')->middleware('staff');
+    Route::patch('/organization/{organization}', [OrganizationsController::class, 'update'])->name('organizations.update')->middleware('staff');
     Route::get('/users/{user}/profile', UserProfile::class)->name('user.profile');
     Route::post('/users/{user}/restore', [UsersController::class, 'restore'])->name('user.restore');
     Route::delete('/users/{user}', [UsersController::class, 'delete'])->name('user.delete');
@@ -109,45 +109,45 @@ Route::middleware([
         'edit' => 'customers.contacts.edit',
         'update' => 'customers.contacts.update',
         'destroy' => 'customers.contacts.destroy',
-    ]);
+    ])->middleware('staff');
 
     // Customers routes - explicitly defined to ensure all routes are registered
     Route::get('/my/customers', [MyCustomersController::class, 'index'])->name('my.customers.index')->middleware('staff');
-    Route::get('/my/customers/create', [MyCustomersController::class, 'create'])->name('my.customers.create');
-    Route::post('/my/customers', [MyCustomersController::class, 'store'])->name('my.customers.store');
-    Route::get('/my/customers/{customer}', [MyCustomersController::class, 'show'])->name('my.customers.show');
-    Route::post('/my/customers/{customer}/invite', [MyCustomersController::class, 'invite'])->name('my.customers.invite');
-    Route::get('/my/customers/{customer}/edit', [MyCustomersController::class, 'edit'])->name('my.customers.edit');
-    Route::put('/my/customers/{customer}', [MyCustomersController::class, 'update'])->name('my.customers.update');
-    Route::delete('/my/customers/{customer}', [MyCustomersController::class, 'destroy'])->name('my.customers.destroy');
+    Route::get('/my/customers/create', [MyCustomersController::class, 'create'])->name('my.customers.create')->middleware('staff');
+    Route::post('/my/customers', [MyCustomersController::class, 'store'])->name('my.customers.store')->middleware('staff');
+    Route::get('/my/customers/{customer}', [MyCustomersController::class, 'show'])->name('my.customers.show')->middleware('staff');
+    Route::post('/my/customers/{customer}/invite', [MyCustomersController::class, 'invite'])->name('my.customers.invite')->middleware('staff');
+    Route::get('/my/customers/{customer}/edit', [MyCustomersController::class, 'edit'])->name('my.customers.edit')->middleware('staff');
+    Route::put('/my/customers/{customer}', [MyCustomersController::class, 'update'])->name('my.customers.update')->middleware('staff');
+    Route::delete('/my/customers/{customer}', [MyCustomersController::class, 'destroy'])->name('my.customers.destroy')->middleware('staff');
     
     // Users routes - explicitly defined to ensure all routes are registered
     Route::get('/my/users', [MyUsersController::class, 'index'])->name('my.users.index')->middleware('staff');
-    Route::get('/my/users/create', [MyUsersController::class, 'create'])->name('my.users.create');
-    Route::post('/my/users', [MyUsersController::class, 'store'])->name('my.users.store');
-    Route::get('/my/users/{user}', [MyUsersController::class, 'show'])->name('my.users.show');
-    Route::get('/my/users/{user}/edit', [MyUsersController::class, 'edit'])->name('my.users.edit');
-    Route::put('/my/users/{user}', [MyUsersController::class, 'update'])->name('my.users.update');
-    Route::delete('/my/users/{user}', [MyUsersController::class, 'destroy'])->name('my.users.destroy');
+    Route::get('/my/users/create', [MyUsersController::class, 'create'])->name('my.users.create')->middleware('staff');
+    Route::post('/my/users', [MyUsersController::class, 'store'])->name('my.users.store')->middleware('staff');
+    Route::get('/my/users/{user}', [MyUsersController::class, 'show'])->name('my.users.show')->middleware('staff');
+    Route::get('/my/users/{user}/edit', [MyUsersController::class, 'edit'])->name('my.users.edit')->middleware('staff');
+    Route::put('/my/users/{user}', [MyUsersController::class, 'update'])->name('my.users.update')->middleware('staff');
+    Route::delete('/my/users/{user}', [MyUsersController::class, 'destroy'])->name('my.users.destroy')->middleware('staff');
     
     // Vehicles routes - explicitly defined to ensure all routes are registered
     Route::get('/my/vehicles', [MyVehiclesController::class, 'index'])->name('my.vehicles.index')->middleware('staff');
-    Route::get('/my/vehicles/create', [MyVehiclesController::class, 'create'])->name('my.vehicles.create');
-    Route::post('/my/vehicles', [MyVehiclesController::class, 'store'])->name('my.vehicles.store');
-    Route::get('/my/vehicles/{vehicle}', [MyVehiclesController::class, 'show'])->name('my.vehicles.show');
-    Route::get('/my/vehicles/{vehicle}/edit', [MyVehiclesController::class, 'edit'])->name('my.vehicles.edit');
-    Route::put('/my/vehicles/{vehicle}', [MyVehiclesController::class, 'update'])->name('my.vehicles.update');
-    Route::delete('/my/vehicles/{vehicle}', [MyVehiclesController::class, 'destroy'])->name('my.vehicles.destroy');
-    Route::put('/my/vehicles/{vehicle}/restore', [MyVehiclesController::class, 'restore'])->name('my.vehicles.restore');
-    Route::delete('/my/vehicles/{vehicle}/force', [MyVehiclesController::class, 'forceDestroy'])->name('my.vehicles.force-destroy');
-    Route::post('/my/vehicles/{vehicle}/maintenance', [VehicleMaintenanceController::class, 'store'])->name('my.vehicles.maintenance.store');
+    Route::get('/my/vehicles/create', [MyVehiclesController::class, 'create'])->name('my.vehicles.create')->middleware('staff');
+    Route::post('/my/vehicles', [MyVehiclesController::class, 'store'])->name('my.vehicles.store')->middleware('staff');
+    Route::get('/my/vehicles/{vehicle}', [MyVehiclesController::class, 'show'])->name('my.vehicles.show')->middleware('staff');
+    Route::get('/my/vehicles/{vehicle}/edit', [MyVehiclesController::class, 'edit'])->name('my.vehicles.edit')->middleware('staff');
+    Route::put('/my/vehicles/{vehicle}', [MyVehiclesController::class, 'update'])->name('my.vehicles.update')->middleware('staff');
+    Route::delete('/my/vehicles/{vehicle}', [MyVehiclesController::class, 'destroy'])->name('my.vehicles.destroy')->middleware('staff');
+    Route::put('/my/vehicles/{vehicle}/restore', [MyVehiclesController::class, 'restore'])->name('my.vehicles.restore')->middleware('staff');
+    Route::delete('/my/vehicles/{vehicle}/force', [MyVehiclesController::class, 'forceDestroy'])->name('my.vehicles.force-destroy')->middleware('staff');
+    Route::post('/my/vehicles/{vehicle}/maintenance', [VehicleMaintenanceController::class, 'store'])->name('my.vehicles.maintenance.store')->middleware('staff');
     
     // Jobs routes - using resource for index, store, update, destroy, but Livewire components for create, show, edit
     Route::get('/my/jobs', [MyJobsController::class, 'index'])->name('my.jobs.index')->middleware('staff');
-    Route::post('/my/jobs', [MyJobsController::class, 'store'])->name('my.jobs.store');
-    Route::put('/my/jobs/{job}', [MyJobsController::class, 'update'])->name('my.jobs.update');
-    Route::delete('/my/jobs/{job}', [MyJobsController::class, 'destroy'])->name('my.jobs.destroy');
-    Route::put('/my/jobs/{job}/restore', [MyJobsController::class, 'restore'])->name('my.jobs.restore');
+    Route::post('/my/jobs', [MyJobsController::class, 'store'])->name('my.jobs.store')->middleware('staff');
+    Route::put('/my/jobs/{job}', [MyJobsController::class, 'update'])->name('my.jobs.update')->middleware('staff');
+    Route::delete('/my/jobs/{job}', [MyJobsController::class, 'destroy'])->name('my.jobs.destroy')->middleware('staff');
+    Route::put('/my/jobs/{job}/restore', [MyJobsController::class, 'restore'])->name('my.jobs.restore')->middleware('staff');
     // Staff only (TASK-433): customer-portal accounts share the organization_id.
     Route::get('/my/jobs/create', CreatePilotCarJob::class)->name('my.jobs.create')->middleware('staff');
     Route::get('/my/jobs/{job}', ShowPilotCarJob::class)->name('my.jobs.show')->middleware('staff');
