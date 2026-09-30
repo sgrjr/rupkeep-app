@@ -93,6 +93,11 @@ class AdminToolsController extends Controller
                 'command' => 'queue:health',
                 'description' => 'Check queue worker health and status',
             ],
+            'artisan_env_check' => [
+                'type' => 'artisan',
+                'command' => 'env:check',
+                'description' => 'Check the production .env against the go-live checklist (never prints secrets)',
+            ],
         ];
     }
 

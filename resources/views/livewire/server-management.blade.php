@@ -117,6 +117,15 @@
                         <span wire:loading wire:target="executeCommand('artisan_queue_health')" class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent"></span>
                         {{ __('Queue Health Check') }}
                     </button>
+                    <button wire:click="executeCommand('artisan_env_check')" 
+                            wire:loading.attr="disabled"
+                            class="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-600 transition hover:bg-emerald-500 hover:text-white disabled:opacity-50">
+                        <svg wire:loading.remove wire:target="executeCommand('artisan_env_check')" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <span wire:loading wire:target="executeCommand('artisan_env_check')" class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent"></span>
+                        {{ __('Check .env') }}
+                    </button>
                 </div>
             </div>
 

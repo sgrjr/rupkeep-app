@@ -90,13 +90,10 @@ php artisan key:generate
 nano .env
 ```
 
-Required `.env` settings:
-- `APP_ENV=production`
-- `APP_DEBUG=false`
-- `APP_URL` (your domain)
-- Database credentials
-- Mail configuration
-- Any other service credentials
+`.env.example` is production-shaped, so most values are already right. Fill in
+every blank marked REQUIRED, then run `php artisan env:check` to confirm. The
+full list with reasons is the "Required on production" table in
+[DEPLOYMENT.md](DEPLOYMENT.md#required-on-production-env-checklist-task-427).
 
 ## Step 6: Run Database Migrations
 

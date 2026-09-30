@@ -22,7 +22,7 @@ return [
     | defaults will be used.
     |
     */
-    'default_organization_id' => null,
+    'default_organization_id' => env('PRICING_DEFAULT_ORGANIZATION_ID') ?: null,
 
     'rates' => [
         // Per mile rates

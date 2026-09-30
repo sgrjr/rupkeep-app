@@ -12,9 +12,38 @@ Operational reference for running and updating Rupkeep. Task-tracked deployment 
 | Production | `/var/www/rupkeep-app` (Linux, PHP-FPM behind nginx/Apache) | MySQL, queue worker required, GMP extension installed |
 | Public URL | `https://pilotcar.io` (SSL) | |
 
-**Stack:** Laravel 11.9, PHP 8.2+, Livewire 3, Tailwind 3, Vite, SQLite (dev) / MySQL (prod).
+**Stack:** Laravel 12, PHP 8.2+, Livewire 3, Tailwind 3, Vite, SQLite (dev) / MySQL (prod).
 
 > Note: local dev runs on Windows PowerShell; production is Linux. Commands below are labelled where the platform matters.
+
+## Required on production (`.env` checklist, TASK-427)
+
+`.env.example` is production-shaped: copy it and fill the blanks. This is the
+same list as a checklist. Check the live file with `php artisan env:check`
+(super users can run it from **Server Management**, "Check .env"); it reads
+the real values and never prints a secret.
+
+| Key | Must be | Why |
+|-----|---------|-----|
+| `APP_ENV` | `production` | Enables production guards (`db:reset` refuses, auto-capture allowed) |
+| `APP_DEBUG` | `false` | `true` shows config and stack traces to visitors |
+| `APP_URL` | `https://pilotcar.io` | Signed URLs, login links and emails are built from it |
+| `APP_KEY` | set | Encrypts sessions and cookies |
+| `SESSION_SECURE_COOKIE` | `true` | Session cookie never travels over plain http |
+| `LOG_STACK` | `daily` | One log file cannot grow forever |
+| `DB_CONNECTION` | `mysql` + credentials | SQLite is dev only |
+| `MAIL_MAILER` | `brevo` + `MAIL_USERNAME` / `MAIL_PASSWORD` | Real mail goes over Brevo's SMTP relay |
+| `MAIL_FROM_ADDRESS` | a Brevo-verified sender | Brevo rejects mail from unverified senders |
+| `BREVO_API_KEY` | set | SMS-gateway notifications |
+| `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | set | Push library throws without them |
+| `APP_DISPLAY_TIMEZONE` | `America/New_York` | Times shown to users |
+| `DISPATCH_AUTO_CAPTURE` | `true` | Uncaught 500s open a triage bug task |
+| `SETUP_CONSOLE_ENABLED` | `false` or unset | `/setup` can wipe the database |
+| `SETUP_PASSWORD` | unset | Same |
+| `DISPATCH_REMOTE_URL` / `DISPATCH_REMOTE_TOKEN` | unset | Dev-machine keys; the host must not hold a super token |
+| `SUPER_EMAIL` / `SUPER_NAME` / `SUPER_PASSWORD` | set | `super:create` needs them on a fresh install |
+| `PRICING_DEFAULT_ORGANIZATION_ID` | set (or blank) | Blank falls back to the org named "Casco Bay Pilot Car" |
+| `QUEUE_CONNECTION` | `database` + a running worker | Notifications and mail are queued |
 
 ---
 
