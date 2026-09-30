@@ -125,6 +125,17 @@ class UserLogPolicy
     }
 
     /**
+     * Send a denied assignment back to pending so the driver can answer it
+     * again (TASK-456). A driver's accidental tap on Deny used to freeze the
+     * log for good; the only remedy was delete and re-assign. Office only:
+     * the driver already had their say.
+     */
+    public function resetApproval(User $user, UserLog $model): bool
+    {
+        return $this->manage($user, $model);
+    }
+
+    /**
      * Determine whether the user can mark the log complete (TASK-364).
      *
      * The assigned driver is the primary actor — completing is their way of

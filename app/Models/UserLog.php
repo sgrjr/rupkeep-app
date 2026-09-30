@@ -64,6 +64,38 @@ class UserLog extends Model
         return $this->completed_at !== null;
     }
 
+    public function isDenied(): bool
+    {
+        return $this->approval_status === 'denied';
+    }
+
+    public function isPendingApproval(): bool
+    {
+        return $this->approval_status === 'pending';
+    }
+
+    /**
+     * Whether the log's fields are read-only for this person (TASK-456).
+     *
+     * Three states close the form: the assignment is still pending and the
+     * viewer is the driver who has to answer it; the assignment was denied;
+     * or the driver has handed the log to the office and is not the office.
+     * The editor used to render every input live in all three, and the save
+     * that followed was refused with a message nobody could see.
+     */
+    public function isLockedFor(User $user): bool
+    {
+        if ($this->isDenied()) {
+            return true;
+        }
+
+        if ($this->isPendingApproval()) {
+            return $this->car_driver_id === $user->id && ! $user->can('manage', $this);
+        }
+
+        return $this->isComplete() && ! $user->can('reopen', $this);
+    }
+
     public function completedBy()
     {
         return $this->belongsTo(User::class, 'completed_by_id');

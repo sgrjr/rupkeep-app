@@ -46,6 +46,7 @@ class LogExtraCharges extends Component
     public function addCharge(): void
     {
         $this->authorize('update', $this->log);
+        $this->refuseIfLocked();
 
         $validated = $this->validate([
             'description' => ['required', 'string', 'max:255'],
@@ -73,12 +74,24 @@ class LogExtraCharges extends Component
     public function removeCharge(int $chargeId): void
     {
         $this->authorize('update', $this->log);
+        $this->refuseIfLocked();
 
         // Scoped through the relation so a charge id from another log -- or
         // another organization -- cannot be deleted by guessing.
         $this->log->extraCharges()->whereKey($chargeId)->delete();
 
         $this->afterChange();
+    }
+
+    /**
+     * A completed or denied log is closed to the driver here as well as in
+     * the editor's own fields (TASK-456); a charge is money on the invoice.
+     */
+    protected function refuseIfLocked(): void
+    {
+        if ($this->log->isLockedFor(auth()->user())) {
+            abort(403, __('This log is closed to changes.'));
+        }
     }
 
     /**
@@ -135,7 +148,8 @@ class LogExtraCharges extends Component
     {
         return view('livewire.log-extra-charges', [
             'charges' => $this->log->extraCharges,
-            'canEdit' => auth()->user()?->can('update', $this->log) ?? false,
+            'canEdit' => (auth()->user()?->can('update', $this->log) ?? false)
+                && ! $this->log->isLockedFor(auth()->user()),
         ]);
     }
 }

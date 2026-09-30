@@ -146,6 +146,14 @@ class EditUserLog extends Component
      */
     public bool $formTouched = false;
 
+    /**
+     * The job's customer-facing memo as it was when the page loaded
+     * (TASK-456). Every save used to write the form's copy back to the job,
+     * so a manager's edit was reverted by any driver's later save of an
+     * unrelated field. Now the job is only written when this changed.
+     */
+    public ?string $jobPublicMemoLoaded = null;
+
 
     protected $listeners = [
         'saved' => '$refresh',
@@ -174,7 +182,14 @@ class EditUserLog extends Component
     public function confirmLog()
     {
         $this->authorize('confirm', $this->log);
-        
+
+        // Its own endpoint, so the state check lives here, not in the blade
+        // that hides the button (TASK-456).
+        if (! $this->log->isPendingApproval()) {
+            session()->flash('error', __('This log is no longer awaiting confirmation.'));
+            return;
+        }
+
         $this->log->update([
             'approval_status' => 'confirmed',
             'approved_at' => now(),
@@ -189,7 +204,12 @@ class EditUserLog extends Component
     public function denyLog()
     {
         $this->authorize('deny', $this->log);
-        
+
+        if (! $this->log->isPendingApproval()) {
+            session()->flash('error', __('Only a pending assignment can be denied.'));
+            return;
+        }
+
         $this->log->update([
             'approval_status' => 'denied',
             'approved_at' => now(),
@@ -198,6 +218,30 @@ class EditUserLog extends Component
         
         $this->log->refresh();
         session()->flash('success', __('Log denied.'));
+        $this->dispatch('updated');
+    }
+
+    /**
+     * Undo a denial: back to pending, so the driver sees the confirm/deny
+     * prompt again (TASK-456). Managers only - see UserLogPolicy::resetApproval().
+     */
+    public function resetToPending()
+    {
+        $this->authorize('resetApproval', $this->log);
+
+        if (! $this->log->isDenied()) {
+            session()->flash('error', __('Only a denied log can be reset.'));
+            return;
+        }
+
+        $this->log->update([
+            'approval_status' => 'pending',
+            'approved_at' => null,
+            'approved_by_id' => null,
+        ]);
+
+        $this->log->refresh();
+        session()->flash('success', __('Log reset to pending. The driver can confirm or deny it again.'));
         $this->dispatch('updated');
     }
 
@@ -217,6 +261,16 @@ class EditUserLog extends Component
 
         if ($this->log->isComplete()) {
             return; // Already handed off - don't re-notify the office.
+        }
+
+        // A log with no odometer readings is not finished, it is empty
+        // (TASK-456). Completing it notified the office and locked the driver
+        // out of the very fields they had skipped. A canceled load is the one
+        // case with nothing to measure.
+        if (! $this->odometerIsRecorded()) {
+            $this->isTripTimingOpen = true;
+            session()->flash('error', __('Enter the start and end mileage before marking the log complete.'));
+            return;
         }
 
         // Save before handing off (TASK-399). This used to write only the
@@ -261,6 +315,7 @@ class EditUserLog extends Component
     public function mount(UserLog $log)
     {
         $this->log = $log->load('organization', 'job', 'job.customer', 'job.attachments', 'attachments', 'approvedBy', 'completedBy');
+        $this->jobPublicMemoLoaded = $this->log->job?->public_memo;
 
         // Check if log requires approval before editing
         if ($this->log->approval_status === 'pending' && $this->log->car_driver_id && auth()->user()->id === $this->log->car_driver_id) {
@@ -346,7 +401,49 @@ class EditUserLog extends Component
 
     public function render()
     {
-        return view('livewire.edit-user-log');
+        return view('livewire.edit-user-log', [
+            'locked' => $this->log->isLockedFor(auth()->user()),
+        ]);
+    }
+
+    /**
+     * Both trip odometer readings are present and describe a forward span.
+     * Read from the form, not the saved log: Mark Complete saves first.
+     */
+    protected function odometerIsRecorded(): bool
+    {
+        if ($this->form->load_canceled) {
+            return true;
+        }
+
+        $start = $this->form->start_mileage;
+        $end = $this->form->end_mileage;
+
+        $missing = [];
+        if (! is_numeric($start)) {
+            $missing['form.start_mileage'] = __('Start mileage is required to complete the log.');
+        }
+        if (! is_numeric($end)) {
+            $missing['form.end_mileage'] = __('End mileage is required to complete the log.');
+        }
+        if (! $missing && (float) $end < (float) $start) {
+            $missing['form.end_mileage'] = __('End mileage must not be less than start mileage.');
+        }
+
+        foreach ($missing as $field => $message) {
+            $this->addError($field, $message);
+        }
+
+        return $missing === [];
+    }
+
+    /**
+     * Whether the customer-facing job memo in the form differs from what
+     * was loaded. Blank and null are the same answer.
+     */
+    protected function jobPublicMemoChanged(): bool
+    {
+        return trim((string) $this->form->job_public_memo) !== trim((string) $this->jobPublicMemoLoaded);
     }
 
     /**
@@ -398,6 +495,16 @@ class EditUserLog extends Component
             if ($reassigned || $overridden) {
                 return false;
             }
+        }
+
+        // The customer-facing memo belongs to the job, and the job is the
+        // office's (TASK-456). Any driver could rewrite what the customer
+        // reads on the invoice; now the field is read-only below manager and
+        // a value that arrives anyway is refused.
+        $memoChanged = $this->jobPublicMemoChanged();
+        if ($memoChanged && ! ($this->log->job && auth()->user()->can('update', $this->log->job))) {
+            $this->addError('form.job_public_memo', __('Only a manager can change the customer-facing job memo.'));
+            return false;
         }
 
         try {
@@ -477,10 +584,12 @@ class EditUserLog extends Component
             $this->log->update($updateData);
 
             // TASK-091: the Job's customer-facing memo is edited here but lives
-            // on the related PilotCarJob, not the UserLog — guard for a log
-            // whose job was deleted/detached.
-            if ($this->log->job) {
+            // on the related PilotCarJob, not the UserLog. Written only when
+            // this form changed it (TASK-456): writing the page-load snapshot
+            // on every save reverted whatever the office had put there since.
+            if ($memoChanged && $this->log->job) {
                 $this->log->job->update(['public_memo' => $this->form->job_public_memo]);
+                $this->jobPublicMemoLoaded = $this->form->job_public_memo;
             }
 
             $this->formTouched = false;
