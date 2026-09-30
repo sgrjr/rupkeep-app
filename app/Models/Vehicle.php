@@ -80,15 +80,35 @@ class Vehicle extends Model
         return (bool) $this->current_user_id;
     }
 
+    /** How far ahead "due soon" looks. */
+    public const DUE_SOON_DAYS = 7;
+
+    /**
+     * Overdue means the due date has gone by: before today, in the display
+     * timezone. Due today is due soon, not overdue (TASK-466); the page lists
+     * and the badges now agree on that. Calendar dates are compared, not
+     * instants: a `date` cast is midnight UTC while today is Eastern.
+     */
+    protected static function isOverdue(?\Carbon\CarbonInterface $due): bool
+    {
+        return $due !== null && $due->toDateString() < \App\Support\LocalTime::today()->toDateString();
+    }
+
+    protected static function isDueSoon(?\Carbon\CarbonInterface $due): bool
+    {
+        if ($due === null || static::isOverdue($due)) {
+            return false;
+        }
+
+        return $due->toDateString() <= \App\Support\LocalTime::today()->addDays(self::DUE_SOON_DAYS)->toDateString();
+    }
+
     /**
      * Check if oil change is overdue
      */
     public function isOilChangeOverdue(): bool
     {
-        if (!$this->next_oil_change_due_at) {
-            return false;
-        }
-        return $this->next_oil_change_due_at->isPast();
+        return static::isOverdue($this->next_oil_change_due_at);
     }
 
     /**
@@ -96,11 +116,7 @@ class Vehicle extends Model
      */
     public function isOilChangeDueSoon(): bool
     {
-        if (!$this->next_oil_change_due_at) {
-            return false;
-        }
-        return $this->next_oil_change_due_at->isFuture() && 
-               $this->next_oil_change_due_at->lte(now()->addDays(7));
+        return static::isDueSoon($this->next_oil_change_due_at);
     }
 
     /**
@@ -108,10 +124,7 @@ class Vehicle extends Model
      */
     public function isInspectionOverdue(): bool
     {
-        if (!$this->next_inspection_due_at) {
-            return false;
-        }
-        return $this->next_inspection_due_at->isPast();
+        return static::isOverdue($this->next_inspection_due_at);
     }
 
     /**
@@ -119,11 +132,65 @@ class Vehicle extends Model
      */
     public function isInspectionDueSoon(): bool
     {
-        if (!$this->next_inspection_due_at) {
-            return false;
+        return static::isDueSoon($this->next_inspection_due_at);
+    }
+
+    /**
+     * The vehicle columns a maintenance record of each type feeds.
+     *
+     * @return array<string, array{last: string, next: string}>
+     */
+    public static function maintenanceDateColumns(): array
+    {
+        return [
+            VehicleMaintenanceRecord::TYPE_OIL_CHANGE => ['last' => 'last_oil_change_at', 'next' => 'next_oil_change_due_at'],
+            VehicleMaintenanceRecord::TYPE_INSPECTION => ['last' => 'last_inspection_at', 'next' => 'next_inspection_due_at'],
+        ];
+    }
+
+    /**
+     * The newest performed record of a type: what "last service" means.
+     */
+    public function latestMaintenanceRecord(string $type): ?VehicleMaintenanceRecord
+    {
+        return $this->maintenanceRecords()
+            ->where('type', $type)
+            ->whereNotNull('performed_at')
+            ->orderByDesc('performed_at')
+            ->orderByDesc('id')
+            ->first();
+    }
+
+    /**
+     * Bring last_*_at / next_*_due_at in line with the maintenance records
+     * (TASK-466). Logging an oil change used to change nothing: the badges
+     * and the reminder digest read these columns, and only the vehicle form
+     * wrote them, so every logged service left the vehicle "overdue" forever.
+     *
+     * A record without a next-due date sets the last-service date and leaves
+     * the vehicle's next-due alone, so a driver logging "done" cannot erase
+     * the schedule the office set. With no performed record of a type, the
+     * columns stay whatever the form last said.
+     */
+    public function syncMaintenanceDatesFromRecords(): void
+    {
+        foreach (static::maintenanceDateColumns() as $type => $columns) {
+            $latest = $this->latestMaintenanceRecord($type);
+
+            if (! $latest) {
+                continue;
+            }
+
+            $this->{$columns['last']} = $latest->performed_at;
+
+            if ($latest->next_due_at) {
+                $this->{$columns['next']} = $latest->next_due_at;
+            }
         }
-        return $this->next_inspection_due_at->isFuture() && 
-               $this->next_inspection_due_at->lte(now()->addDays(7));
+
+        if ($this->isDirty()) {
+            $this->save();
+        }
     }
 
     /**

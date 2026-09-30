@@ -37,6 +37,30 @@ class VehicleMaintenanceRecord extends Model
         'cost' => 'decimal:2',
     ];
 
+    /**
+     * Whether records of this type drive the vehicle's last/next dates.
+     */
+    public function feedsVehicleDates(): bool
+    {
+        return array_key_exists($this->type, Vehicle::maintenanceDateColumns());
+    }
+
+    protected static function booted(): void
+    {
+        // A saved or removed oil change / inspection updates the vehicle's own
+        // last/next dates, which the badges and the reminder digest read
+        // (TASK-466).
+        $sync = function (self $record): void {
+            if ($record->feedsVehicleDates() && $record->vehicle) {
+                $record->vehicle->syncMaintenanceDatesFromRecords();
+            }
+        };
+
+        static::saved($sync);
+        static::deleted($sync);
+        static::restored($sync);
+    }
+
     public static function types(): array
     {
         return [

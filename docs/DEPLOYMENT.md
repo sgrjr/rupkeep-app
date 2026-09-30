@@ -263,8 +263,9 @@ cron invokes Laravel's scheduler every minute:
 * * * * * cd /var/www/rupkeep-app && php artisan schedule:run >> /dev/null 2>&1
 ```
 
-**This cron entry is not yet installed on production** — until it is, scheduled
-commands never fire. Verify what's due with:
+**Until this cron entry exists on the host, the maintenance digest never
+runs** (TASK-466 confirmed it had not, as of 2026-09-30). Install it once as the
+web/app user, then verify what's due with:
 
 ```bash
 php artisan schedule:list

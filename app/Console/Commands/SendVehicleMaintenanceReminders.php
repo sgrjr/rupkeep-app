@@ -96,15 +96,29 @@ class SendVehicleMaintenanceReminders extends Command
                 route('my.vehicles.index')
             );
 
+            $sent = 0;
             foreach ($recipients as $address) {
-                $this->mailSafely($address, new UserNotification($message, $subject, 'mail.maintenance-due', [
+                if ($this->mailSafely($address, new UserNotification($message, $subject, 'mail.maintenance-due', [
                     'items' => $lines->all(),
                     'orgName' => $orgName,
-                ], $orgName));
+                ], $orgName))) {
+                    $sent++;
+                }
             }
 
-            // Stamp only after a delivery attempt so an org that couldn't be
-            // notified isn't silently marked as reminded.
+            // Stamp only when somebody actually received it (TASK-466). The
+            // stamp used to follow the attempt, so a mail outage silenced the
+            // digest for REMIND_EVERY_DAYS on top of losing that day's send.
+            if ($sent === 0) {
+                Log::warning('Maintenance reminder not delivered to anyone; leaving vehicles unstamped so it is retried tomorrow', [
+                    'organization_id' => $organizationId,
+                    'recipients' => $recipients->count(),
+                ]);
+                $this->warn(sprintf('%s: no recipient could be reached; will retry tomorrow.', $orgName));
+
+                continue;
+            }
+
             Vehicle::whereIn('id', $orgVehicles->pluck('id'))
                 ->update(['maintenance_reminder_sent_at' => now()]);
         }

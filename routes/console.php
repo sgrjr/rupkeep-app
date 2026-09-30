@@ -1,12 +1,9 @@
 <?php
 
-use Illuminate\Foundation\Inspiring;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
 
-Artisan::command('inspire', function () {
-    $this->comment(Inspiring::quote());
-})->purpose('Display an inspiring quote')->hourly();
+// The default hourly `inspire` quote is gone (TASK-466): it was the only
+// other scheduled entry and ran nowhere useful.
 
 // Daily maintenance-due digest to org admins/managers; the command itself
 // re-reminds at most weekly per vehicle (TASK-041). Requires the host cron to

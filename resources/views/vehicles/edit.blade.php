@@ -295,26 +295,29 @@
         </div>
 
         @php
-            $now = now();
-            $upcomingMaintenance = $vehicle->maintenanceRecords()
-                ->where(function($q) use ($now) {
-                    $q->where('next_due_at', '>=', $now)
-                      ->orWhereNull('next_due_at');
-                })
-                ->whereNotNull('performed_at')
-                ->orderBy('next_due_at', 'asc')
-                ->get();
-            
-            $pastMaintenance = $vehicle->maintenanceRecords()
-                ->where('performed_at', '<', $now)
-                ->orderBy('performed_at', 'desc')
-                ->get();
-            
-            $overdueMaintenance = $vehicle->maintenanceRecords()
-                ->where('next_due_at', '<', $now)
-                ->whereNotNull('next_due_at')
-                ->orderBy('next_due_at', 'asc')
-                ->get();
+            // Only the newest record of each type can be overdue or upcoming
+            // (TASK-466): an oil change logged in March is history once the
+            // one from September exists, not an item that is still overdue.
+            // A record with no next-due date is history, not "upcoming".
+            $today = \App\Support\LocalTime::today()->toDateString();
+            $allRecords = $vehicle->maintenanceRecords
+                ->sortByDesc(fn ($record) => sprintf('%s-%010d', optional($record->performed_at)->format('Y-m-d') ?? '0000-00-00', $record->id))
+                ->values();
+            $latestPerType = $allRecords->filter(fn ($record) => $record->performed_at)->unique('type');
+
+            $overdueMaintenance = $latestPerType
+                ->filter(fn ($record) => $record->next_due_at && $record->next_due_at->toDateString() < $today)
+                ->sortBy('next_due_at')
+                ->values();
+
+            $upcomingMaintenance = $latestPerType
+                ->filter(fn ($record) => $record->next_due_at && $record->next_due_at->toDateString() >= $today)
+                ->sortBy('next_due_at')
+                ->values();
+
+            $pastMaintenance = $allRecords
+                ->filter(fn ($record) => $record->performed_at && $record->performed_at->toDateString() <= $today)
+                ->values();
         @endphp
 
         <section class="rounded-3xl border border-slate-100 bg-white/90 shadow-sm">
