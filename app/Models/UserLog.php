@@ -328,7 +328,10 @@ class UserLog extends Model
 
     public function job()
     {
-        return $this->belongsTo(PilotCarJob::class, 'job_id');
+        // An archived (soft-deleted) job is still this log's job: the log
+        // page and the driver's list read $log->job->..., and without this
+        // every one of them threw once the job was archived (TASK-457).
+        return $this->belongsTo(PilotCarJob::class, 'job_id')->withTrashed();
     }
 
     public function vehicle()

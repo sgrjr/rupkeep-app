@@ -105,7 +105,8 @@ class EditPilotCarJob extends Component
            ->get()
            ->each(fn($user) => $this->drivers[] = ['name' => $user->name, 'value' => $user->id]);
        
-       $jobModel = PilotCarJob::find($job);
+       // A missing id is a 404, not a policy call on null (a 500) (TASK-457).
+       $jobModel = PilotCarJob::findOrFail($job);
 
         if($this->authorize('update', $jobModel)){
             $this->job = $jobModel;

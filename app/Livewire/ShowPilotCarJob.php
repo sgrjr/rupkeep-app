@@ -83,6 +83,31 @@ class ShowPilotCarJob extends Component
             'summaryInvoices' => fn ($query) => $query->with('children')->latest(),
         ]);
 
+        // The "Deleted Job Logs" section used to be fed only by restoreLog(),
+        // so it never rendered on load and nothing could be restored from the
+        // UI (TASK-457).
+        $this->trashedLogs = UserLog::onlyTrashed()
+            ->where('job_id', $this->job->id)
+            ->with(['vehicle', 'truck_driver', 'user', 'attachments'])
+            ->orderBy('deleted_at', 'desc')
+            ->get();
+    }
+
+    /**
+     * An archived job is read-only until it is restored: no assigning,
+     * invoicing, uploading or un-cancelling while the banner says it is
+     * archived (TASK-457). Returns true when the action must stop.
+     */
+    protected function refuseIfArchived(): bool
+    {
+        if (! $this->job->trashed()) {
+            return false;
+        }
+
+        session()->flash('error', __('This job is archived. Restore it before making changes.'));
+
+        return true;
+
         $this->job->append('invoices_count');
     }
 
@@ -160,16 +185,8 @@ class ShowPilotCarJob extends Component
         $log->restore();
         $this->job->refresh();
         $this->loadJobRelations();
-        
-        // Reload trashed logs
-        $this->trashedLogs = UserLog::withTrashed()
-            ->where('job_id', $this->job->id)
-            ->whereNotNull('deleted_at')
-            ->with(['vehicle', 'truck_driver', 'user', 'attachments'])
-            ->orderBy('deleted_at', 'desc')
-            ->get();
-        
-        session()->flash('message', 'Log restored successfully.');
+
+        session()->flash('success', __('Log restored.'));
     }
 
     public function render()
@@ -247,6 +264,10 @@ class ShowPilotCarJob extends Component
     public function assignJob(){
         $this->authorize('update', $this->job);
 
+        if ($this->refuseIfArchived()) {
+            return;
+        }
+
         try {
             // Validate the form - this will throw ValidationException if it fails
             $this->assignment->validate();
@@ -306,6 +327,10 @@ class ShowPilotCarJob extends Component
         $this->authorize('view', $this->job);
         abort_unless(auth()->user()->isSuper() || auth()->user()->isEmployee(), 403);
 
+        if ($this->refuseIfArchived()) {
+            return;
+        }
+
         $this->validate([
             'file' => Attachment::uploadRules(),
         ]);
@@ -331,6 +356,10 @@ class ShowPilotCarJob extends Component
     public function generateInvoice(){
         $this->authorize('update', $this->job);
         $this->authorize('create', Invoice::class);
+
+        if ($this->refuseIfArchived()) {
+            return;
+        }
 
         // Nothing to bill: every log is denied, or there are none. A canceled
         // job is the exception -- its cancellation charge needs no log
@@ -491,6 +520,10 @@ class ShowPilotCarJob extends Component
     public function uncancelJob(): void
     {
         $this->authorize('update', $this->job);
+
+        if ($this->refuseIfArchived()) {
+            return;
+        }
 
         if (!$this->job->canceled_at) {
             session()->flash('error', __('This job is not canceled.'));

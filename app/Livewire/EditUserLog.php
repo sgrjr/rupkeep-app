@@ -291,7 +291,7 @@ class EditUserLog extends Component
         });
 
         $this->customer_contacts = [['name' => '(none selected)', 'value' => null]];
-        CustomerContact::where('customer_id', $this->log->job->customer_id)->get()->each(function ($c) {
+        CustomerContact::where('customer_id', $this->log->job?->customer_id)->get()->each(function ($c) {
             $this->customer_contacts[] = ['name' => $c->name . ' (' . $c->phone . ')', 'value' => $c->id];
         });
 
@@ -443,7 +443,7 @@ class EditUserLog extends Component
                 }
 
                 $this->customer_contacts = [['name' => '(none selected)', 'value' => null]];
-                CustomerContact::where('customer_id', $this->log->job->customer_id)->get()->each(function ($c) {
+                CustomerContact::where('customer_id', $this->log->job?->customer_id)->get()->each(function ($c) {
                     $this->customer_contacts[] = ['name' => $c->name . ' (' . $c->phone . ')', 'value' => $c->id];
                 });
 
