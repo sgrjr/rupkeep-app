@@ -2,15 +2,33 @@
 
 namespace App\Livewire;
 
+use App\Models\User;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 use Laravel\Fortify\Contracts\UpdatesUserProfileInformation;
 use Livewire\Component;
 use Livewire\WithFileUploads;
-use App\Models\User;
 
+/**
+ * Profile editor, mounted at /my/profile for everyone and, via
+ * <livewire:profile.update-profile-information-form :profile="$user">, by an
+ * admin editing someone else.
+ *
+ * TASK-428: this used to do User::find($state['id'])->update($state), with
+ * $state a client-writable array and password / organization_id /
+ * organization_role all fillable. Any signed-in user could rewrite any
+ * account. Now the target is the mounted $user (part of the signed Livewire
+ * snapshot, so the client cannot swap it), every action authorizes against
+ * UserPolicy, and only whitelisted fields are ever written.
+ */
 class UpdateProfileInformationForm extends Component
 {
+    use AuthorizesRequests;
     use WithFileUploads;
+
+    /** The editable fields. Nothing else in $state is ever written. */
+    private const EDITABLE = ['name', 'email', 'theme', 'notification_address'];
 
     /**
      * The component's state.
@@ -18,6 +36,7 @@ class UpdateProfileInformationForm extends Component
      * @var array
      */
     public array $state = [];
+
     public array $themes = [];
 
     /**
@@ -35,6 +54,7 @@ class UpdateProfileInformationForm extends Component
     public bool $verificationLinkSent = false;
 
     public User $user;
+
     public array $roles = [];
 
     /**
@@ -44,15 +64,17 @@ class UpdateProfileInformationForm extends Component
      */
     public function mount($profile = null)
     {
-        if($profile){
-            $this->user = $profile;
-        }else{
-            $this->user = Auth::user();
-        }
-        
-        $this->state = array_merge([
+        $this->user = $profile ?: Auth::user();
+
+        $this->authorize('update', $this->user);
+
+        $this->state = [
+            'name' => $this->user->name,
             'email' => $this->user->email,
-        ], $this->user->withoutRelations()->toArray());
+            'theme' => $this->user->theme,
+            'notification_address' => $this->user->notification_address,
+            'organization_role' => $this->user->organization_role,
+        ];
 
         $this->themes = User::themes();
         $this->roles = User::roles();
@@ -66,23 +88,21 @@ class UpdateProfileInformationForm extends Component
      */
     public function updateProfileInformation(UpdatesUserProfileInformation $updater)
     {
+        $this->authorize('update', $this->user);
 
         $this->resetErrorBag();
-        $user = User::find($this->state['id']);
-        
-        //I commented this out because it wont save changes to organization_role
-        /*$updater->update(
-            $user,
-            $this->photo
-                ? array_merge($this->state, ['photo' => $this->photo])
-                : $this->state
-        );*/
 
-        $user->update(
-            $this->photo
-                ? array_merge($this->state, ['photo' => $this->photo])
-                : $this->state
-        );
+        $input = array_intersect_key($this->state, array_flip(self::EDITABLE));
+
+        if ($this->photo) {
+            $input['photo'] = $this->photo;
+        }
+
+        // Validates name / email / theme / notification_address / photo and
+        // handles re-verification on an email change.
+        $updater->update($this->user, $input);
+
+        $this->updateRole();
 
         if (isset($this->photo)) {
             return redirect()->route('my.profile');
@@ -94,12 +114,40 @@ class UpdateProfileInformationForm extends Component
     }
 
     /**
+     * The role is the one field with its own policy. Only an org admin (same
+     * organization) or a super user may change it, and only to a known role.
+     * Anyone else's submitted value is dropped, not applied.
+     */
+    private function updateRole(): void
+    {
+        $role = $this->state['organization_role'] ?? null;
+
+        if ($role === null || $role === $this->user->organization_role) {
+            return;
+        }
+
+        if (! Auth::user()->can('updateRole', $this->user)) {
+            $this->state['organization_role'] = $this->user->organization_role;
+
+            return;
+        }
+
+        $this->validate([
+            'state.organization_role' => ['required', Rule::in(array_column(User::roles(), 'id'))],
+        ]);
+
+        $this->user->forceFill(['organization_role' => $role])->save();
+    }
+
+    /**
      * Delete user's profile photo.
      *
      * @return void
      */
     public function deleteProfilePhoto()
     {
+        $this->authorize('update', $this->user);
+
         $this->user->deleteProfilePhoto();
 
         $this->dispatch('refresh-navigation-menu');
@@ -112,6 +160,8 @@ class UpdateProfileInformationForm extends Component
      */
     public function sendEmailVerification()
     {
+        $this->authorize('update', $this->user);
+
         $this->user->sendEmailVerificationNotification();
 
         $this->verificationLinkSent = true;
@@ -133,7 +183,7 @@ class UpdateProfileInformationForm extends Component
      * @return \Illuminate\View\View
      */
     public function render()
-    {   
+    {
         return view('profile.update-profile-information-form', [
             'themes' => $this->themes,
             'roles' => $this->roles,

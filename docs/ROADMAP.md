@@ -118,7 +118,7 @@ The waves are ordered by risk, and each wave is a deployable unit. Do not start 
 
 | Wave | Theme | Tasks | Exit check |
 |------|-------|-------|------------|
-| 0 | Production hygiene: public `/setup` wipe route, `phpinfo`, unpinned dependencies with CVEs, `.env` checklist, backups (TASK-103) | 424-427, 103 | `/info.php` is 404, `SETUP_CONSOLE_ENABLED=false`, `composer.lock` committed, nightly dump exists |
+| 0 | **Deployed 2026-09-30.** Production hygiene: public `/setup` wipe route, `phpinfo`, unpinned dependencies with CVEs, `.env` checklist, backups (TASK-103) | 424-427 done, 103 open | `/info.php` is 404, `SETUP_CONSOLE_ENABLED=false`, `composer.lock` committed (Laravel 12), `env:check` passes; nightly dump still open (TASK-103) |
 | 1 | Authorization lockdown: role-blind policies, unguarded Livewire actions, mass assignment, XSS, open redirect | 428-442, 391 | PoC tests in `tests/Audit/2026-09-30-authz-poc/` all fail; regression tests pass |
 | 2 | Money correctness: late fees, memo leak, cancel/flat mispricing, summary refresh, duplicate invoices, payments, exports, letterhead, pricing validation | 443-452, 385 | Late fee shown once; portal shows no memos; exports reconcile to invoice totals |
 | 3 | Daily path: mobile Mark Complete, driver uploads, payment modal, log dead ends, restore, silent results, unconfirmed deletes, contrast | 453-463, 423, 419, 394, 063, 064, 082 | A driver completes and uploads from a phone; every action shows a result |

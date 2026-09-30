@@ -123,7 +123,7 @@
                 <option value="{{$role['id']}}">{{$role['name']}} ({{$role['short_description']}})</option>
                 @endforeach
             </select>
-            <x-input-error for="name" class="mt-2" />
+            <x-input-error for="state.organization_role" class="mt-2" />
         </div>
         @endcan
 
