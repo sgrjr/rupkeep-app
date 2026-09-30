@@ -277,23 +277,23 @@
                                 <div class="grid grid-cols-6 gap-6">
                                     <form class="w-full" wire:submit="deleteJobs">
                                         @csrf
-                                        <button>Delete all Jobs ({{$jobs_count}})</button>
+                                        <button type="submit" wire:confirm="Permanently delete all {{ $jobs_count }} job(s) for {{ $organization->name }}? This cannot be undone.">Delete all Jobs ({{$jobs_count}})</button>
                                     </form>
                                     <form class="w-full" wire:submit="deleteInvoices">
                                         @csrf
-                                        <button wire:confirm="Permanently delete all {{ $invoices_count }} invoice(s) for {{ $organization->name }}? This cannot be undone.">Delete all Invoices ({{$invoices_count}})</button>
+                                        <button type="submit" wire:confirm="Permanently delete all {{ $invoices_count }} invoice(s) for {{ $organization->name }}? This cannot be undone.">Delete all Invoices ({{$invoices_count}})</button>
                                     </form>
                                     <form class="w-full" wire:submit="deleteCustomers">
                                         @csrf
-                                        <button>Delete all Customers ({{$customers_count}})</button>
+                                        <button type="submit" wire:confirm="Permanently delete all {{ $customers_count }} customer(s), their contacts and their jobs for {{ $organization->name }}? This cannot be undone.">Delete all Customers ({{$customers_count}})</button>
                                     </form>
                                     <form class="w-full" wire:submit="deleteUsers">
                                         @csrf
-                                        <button>Delete all Users ({{$users_count}})</button>
+                                        <button type="submit" wire:confirm="Permanently delete all {{ $users_count }} non-admin user(s) for {{ $organization->name }}? This cannot be undone.">Delete all Users ({{$users_count}})</button>
                                     </form>
                                     <form class="w-full" wire:submit="deleteVehicles">
                                         @csrf
-                                        <button>Delete all Vehicles ({{$vehicles_count}})</button>
+                                        <button type="submit" wire:confirm="Permanently delete all {{ $vehicles_count }} vehicle(s) for {{ $organization->name }}? This cannot be undone.">Delete all Vehicles ({{$vehicles_count}})</button>
                                     </form>
                                 </div>
                             </div>

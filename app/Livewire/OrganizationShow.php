@@ -55,9 +55,13 @@ class OrganizationShow extends Component
     public function mount(Int $organization){
         $organization = Organization::with('users','owner')->findOrFail($organization);
 
-        if($this->authorize('view', $organization)){
-            $this->organization = $organization;
-        }
+        // Staff only (TASK-429). Customer-portal users carry the company's
+        // organization_id, so the `view` policy alone would admit them to the
+        // staff list, the importer and the reset buttons.
+        $this->authorize('view', $organization);
+        abort_unless(auth()->user()->isSuper() || auth()->user()->isEmployee(), 403);
+
+        $this->organization = $organization;
 
         if(auth()->user()->can('restoreAny', new User)){
             $this->deleted_users = User::withTrashed()->where('organization_id', $organization->id)->whereNotNull('deleted_at')->get();
@@ -77,7 +81,14 @@ class OrganizationShow extends Component
         ]);
     }
 
+    /**
+     * Every public method below is its own callable endpoint (TASK-429): the
+     * authorize() in mount() protects none of them, so each one checks.
+     */
     public function createUser(){
+        $this->authorize('createUser', $this->organization);
+        $this->form->validate();
+
         $this->organization->createUser($this->form->all());
         $this->form->reset();
         $this->dispatch('saved');
@@ -85,7 +96,23 @@ class OrganizationShow extends Component
     }
 
     
+    /**
+     * The reset actions: a super user may empty any organization, an admin
+     * their own. Same rule as deleteInvoices() and the dashboard reset.
+     */
+    private function authorizeReset(): void
+    {
+        $user = auth()->user();
+
+        abort_unless(
+            $user->isSuper() || ($user->isAdmin() && $user->organization_id === $this->organization->id),
+            403
+        );
+    }
+
     public function deleteJobs(){
+        $this->authorizeReset();
+
         $this->organization->jobs()->withTrashed()->get()->map(function($job){
             $job->logs()->delete(); //logs do not have softdeletes trait
             $job->forceDelete();
@@ -108,12 +135,7 @@ class OrganizationShow extends Component
      * the check has to live here.
      */
     public function deleteInvoices(){
-        $user = auth()->user();
-
-        abort_unless(
-            $user->isSuper() || ($user->isAdmin() && $user->organization_id === $this->organization->id),
-            403
-        );
+        $this->authorizeReset();
 
         $invoiceIds = Invoice::withTrashed()
             ->where('organization_id', $this->organization->id)
@@ -139,6 +161,8 @@ class OrganizationShow extends Component
     }
 
     public function deleteUsers(){
+        $this->authorizeReset();
+
         $this->organization->users()
             ->withTrashed()
             ->where('organization_role', '!=', User::ROLE_ADMIN)
@@ -147,11 +171,15 @@ class OrganizationShow extends Component
     }
 
     public function deleteVehicles(){
+        $this->authorizeReset();
+
         $this->organization->vehicles()->withTrashed()->forceDelete();
         return back();
     }
 
     public function deleteCustomers(){
+        $this->authorizeReset();
+
         $this->organization->customers->map(function($customer){ //customers do not have softdeletes trait
             $customer->contacts()->forceDelete(); //contacts does not have softdeletes trait
             
@@ -185,6 +213,8 @@ class OrganizationShow extends Component
     
     public function previewHeaders()
     {
+        $this->authorize('createJob', $this->organization);
+
         if (!$this->file) {
             $this->addError('file', __('Please select a file before previewing.'));
             return;
@@ -273,6 +303,8 @@ class OrganizationShow extends Component
 
     public function confirmImport()
     {
+        $this->authorize('createJob', $this->organization);
+
         $this->resetErrorBag();
         session()->forget(['error', 'success']);
         $this->showPreview = false;
@@ -283,6 +315,8 @@ class OrganizationShow extends Component
 
     public function uploadFile()
     {
+        $this->authorize('createJob', $this->organization);
+
         if (!$this->file) {
             $this->addError('file', __('Please select a file before uploading.'));
             return;
