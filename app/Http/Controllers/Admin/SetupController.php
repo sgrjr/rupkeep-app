@@ -71,6 +71,10 @@ class SetupController extends Controller
 
     public function run(Request $request): RedirectResponse
     {
+        if (! config('setup-console.enabled')) {
+            abort(404);
+        }
+
         if (! Session::get('setup_console.authorized')) {
             abort(403);
         }

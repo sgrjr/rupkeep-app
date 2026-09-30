@@ -81,6 +81,24 @@ and promotes nobody. `super:create` is what mints the super user, from
 unset the command now fails loudly** rather than leaving the install with no
 super user and every admin tool unreachable.
 
+## Fresh install and the setup console (TASK-424)
+
+`php artisan db:reset` is `migrate:fresh --force` → `super:create` →
+`db:seed --force`. **It refuses to run when `APP_ENV=production`** unless you
+pass `--force-production`:
+
+```bash
+php artisan db:reset                      # refused on production
+php artisan db:reset --force-production   # wipes and reseeds; you asked for it
+```
+
+The `/setup` web console runs the same command and never passes the flag, so it
+cannot wipe production. It is also off by default (`SETUP_CONSOLE_ENABLED`),
+and when on it requires a signed-in super user plus `SETUP_PASSWORD`. See
+[`FEATURE_FLAGS.md`](FEATURE_FLAGS.md#setup-console-task-424). On the
+production host, leave `SETUP_CONSOLE_ENABLED` unset (or `false`) and
+`SETUP_PASSWORD` unset.
+
 ## Deadhead miles (TASK-354)
 
 `user_logs` carries two deadhead figures: `dead_head_driven` (what the vehicle

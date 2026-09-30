@@ -231,9 +231,13 @@ Route::middleware([
         Route::get('tasks/{task:code}',     [TaskController::class, 'portalShow'])->name('portal.tasks.show');
     });
 
-    Route::prefix('setup')->group(function () {
+    // Setup console (TASK-424). It can wipe the database, so it is gated three
+    // ways: SETUP_CONSOLE_ENABLED (off by default), a signed-in super user, and
+    // the shared SETUP_PASSWORD. The password step is throttled so the
+    // well-known username cannot be brute-forced.
+    Route::prefix('setup')->middleware(['auth', 'super'])->group(function () {
         Route::get('/', [\App\Http\Controllers\Admin\SetupController::class, 'index'])->name('setup.index');
-        Route::post('/login', [\App\Http\Controllers\Admin\SetupController::class, 'login'])->name('setup.login');
+        Route::post('/login', [\App\Http\Controllers\Admin\SetupController::class, 'login'])->middleware('throttle:setup-login')->name('setup.login');
         Route::post('/run', [\App\Http\Controllers\Admin\SetupController::class, 'run'])->name('setup.run');
         Route::post('/logout', [\App\Http\Controllers\Admin\SetupController::class, 'logout'])->name('setup.logout');
     });

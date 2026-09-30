@@ -2,10 +2,10 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Organization;
+use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
-use App\Models\User;
-use App\Models\Organization;
 
 class DBReset extends Command
 {
@@ -14,40 +14,57 @@ class DBReset extends Command
      *
      * @var string
      */
-    protected $signature = 'db:reset';
+    protected $signature = 'db:reset {--force-production : Allow the reset to run when APP_ENV=production}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Results database to default.';
+    protected $description = 'Reset the database to a fresh install: migrate:fresh, super:create, db:seed.';
 
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(): int
     {
-        
-      echo 'Fresh Migration. ' . PHP_EOL;
-      Artisan::call('migrate:fresh --force');
+        // This is migrate:fresh in disguise. Production refuses it unless the
+        // operator says so explicitly on the command line (TASK-424) - the web
+        // setup console never passes the flag, so it cannot wipe production.
+        if (app()->isProduction() && ! $this->option('force-production')) {
+            $this->error('db:reset refused: APP_ENV is production. Re-run with --force-production if you really mean to wipe it.');
 
-      echo  PHP_EOL . 'Create Super User.';
-      Artisan::call('super:create');
+            return self::FAILURE;
+        }
 
-      echo  PHP_EOL . 'Fresh Seeding of Database';
-      Artisan::call('db:seed --force');
+        $this->info('Fresh migration.');
+        Artisan::call('migrate:fresh --force', [], $this->output);
 
-      echo  PHP_EOL . 'Make Mary Owner.';
+        $this->info('Create super user.');
+        if (Artisan::call('super:create', [], $this->output) !== self::SUCCESS) {
+            $this->error('super:create failed; stopping before seeding.');
 
-      $user = User::where('email', config('setup.cbpc_users')[0]['email'])->first();
+            return self::FAILURE;
+        }
 
-      Organization::where('id', $user->organization_id)->update([
-        'user_id' => $user->id,
-        'primary_contact' => $user->email
-      ]);
+        $this->info('Fresh seeding of database.');
+        Artisan::call('db:seed --force', [], $this->output);
 
-      echo  PHP_EOL . 'done.';
-      return 1;
+        $this->info('Make the first configured user the organization owner.');
+        $ownerEmail = config('setup.cbpc_users.0.email');
+        $owner = $ownerEmail ? User::where('email', $ownerEmail)->first() : null;
+
+        if ($owner === null) {
+            $this->warn('No user found for setup.cbpc_users[0] (u1_email); organization owner left unchanged.');
+        } else {
+            Organization::where('id', $owner->organization_id)->update([
+                'user_id' => $owner->id,
+                'primary_contact' => $owner->email,
+            ]);
+        }
+
+        $this->info('done.');
+
+        return self::SUCCESS;
     }
 }

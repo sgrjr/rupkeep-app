@@ -67,5 +67,11 @@ class FortifyServiceProvider extends ServiceProvider
         RateLimiter::for('login-link', function (Request $request) {
             return Limit::perMinute(10)->by($request->ip());
         });
+
+        // The /setup console password (TASK-424). Its username is well known,
+        // so the shared secret is the only thing left to guess.
+        RateLimiter::for('setup-login', function (Request $request) {
+            return Limit::perMinute(5)->by($request->ip());
+        });
     }
 }

@@ -109,3 +109,40 @@ Defined in `config/dispatch.php`:
     'label' => 'source:exception',
 ],
 ```
+
+## Setup Console (TASK-424)
+
+**Config Key**: `setup-console.enabled`  
+**Environment Variable**: `SETUP_CONSOLE_ENABLED`  
+**Default**: `false` (disabled)
+
+### Description
+
+`/setup` is a web page that runs `php artisan db:reset`, which is
+`migrate:fresh --force` plus a reseed. Off, every `setup/*` route is a 404.
+On, it is still gated twice more:
+
+- the routes sit behind `auth` + `super`, so only a signed-in super user can
+  even see the password form (everyone else gets 403);
+- the shared `SETUP_USERNAME` / `SETUP_PASSWORD` must match, and the password
+  step is throttled to 5 attempts per minute per IP.
+
+Independently of the console, `db:reset` refuses to run when
+`APP_ENV=production` unless `--force-production` is passed on the command line.
+The console never passes it, so it cannot wipe production even if someone
+turns it on there.
+
+### How to Enable
+
+Only on a throwaway environment:
+
+```env
+SETUP_CONSOLE_ENABLED=true
+SETUP_PASSWORD=some-long-random-string
+```
+
+Then `php artisan config:clear`.
+
+### Configuration File
+
+Defined in `config/setup-console.php`.
