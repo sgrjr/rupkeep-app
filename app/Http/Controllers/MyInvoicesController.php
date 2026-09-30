@@ -129,6 +129,9 @@ class MyInvoicesController extends Controller
         $this->authorize('update', $invoice);
 
         if ($request->boolean('delete')) {
+            // Deleting is its own permission, not a flavour of editing.
+            $this->authorize('delete', $invoice);
+
             $jobId = $invoice->pilot_car_job_id ?? $invoice->children()->value('pilot_car_job_id');
             $deleteMode = $request->input('delete_mode', $invoice->isSummary() ? 'release_children' : 'delete_children');
 
@@ -332,6 +335,8 @@ class MyInvoicesController extends Controller
 
     public function store(Request $request){
 
+        $this->authorize('create', Invoice::class);
+
         $jobIds = collect($request->input('invoice_this', []))
             ->filter()
             ->map(fn ($id) => (int) $id)
@@ -342,8 +347,10 @@ class MyInvoicesController extends Controller
             return back()->with('error', __('Please select at least one job to invoice.'));
         }
 
+        // Only this organization's jobs, whatever ids were posted (TASK-431).
         $jobs = PilotCarJob::with('customer', 'organization', 'singleInvoices', 'summaryInvoices')
             ->whereIn('id', $jobIds)
+            ->when(! $request->user()->isSuper(), fn ($q) => $q->where('organization_id', $request->user()->organization_id))
             ->get();
 
         if ($jobs->isEmpty()) {
@@ -445,7 +452,7 @@ class MyInvoicesController extends Controller
      */
     public function createSummaryFromInvoices(Request $request)
     {
-        $this->authorize('create', Invoice::class);
+        $this->authorize('createSummary', Invoice::class);
 
         $invoiceIds = collect($request->input('invoice_ids', []))
             ->filter()
@@ -461,8 +468,10 @@ class MyInvoicesController extends Controller
             return back()->with('error', __('Please select at least two invoices to create a summary.'));
         }
 
+        // Only this organization's invoices, whatever ids were posted (TASK-430).
         $invoices = Invoice::with('customer', 'organization', 'job')
             ->whereIn('id', $invoiceIds)
+            ->when(! $request->user()->isSuper(), fn ($q) => $q->where('organization_id', $request->user()->organization_id))
             ->get();
 
         if ($invoices->isEmpty()) {

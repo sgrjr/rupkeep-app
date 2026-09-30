@@ -378,6 +378,12 @@ class ShowPilotCarJob extends Component
         $invoice = Invoice::findOrFail($invoiceId);
         $this->authorize('delete', $invoice);
 
+        // Only an invoice of THIS job: the id comes from the client and this
+        // used to accept any invoice in the database (TASK-430).
+        $belongsToJob = $invoice->pilot_car_job_id === $this->job->id
+            || $this->job->summaryInvoices()->where('invoices.id', $invoice->id)->exists();
+        abort_unless($belongsToJob, 404);
+
         // If this is a summary invoice, release children first
         if ($invoice->isSummary()) {
             foreach ($invoice->children as $child) {

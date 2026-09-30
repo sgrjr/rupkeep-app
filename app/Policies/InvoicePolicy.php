@@ -37,7 +37,12 @@ class InvoicePolicy
             return $user->organization_id === $model->organization_id || $user->isSuper();
         }
 
-        if ($user->isCustomer() && $user->customer_id === $model->customer_id) {
+        // Same organization AND same customer: a customer id alone is not a
+        // tenancy check (TASK-430).
+        if ($user->isCustomer()
+            && $user->organization_id === $model->organization_id
+            && $user->customer_id !== null
+            && $user->customer_id === $model->customer_id) {
             return true;
         }
 
@@ -56,7 +61,19 @@ class InvoicePolicy
      */
     public function create(User $user, ?Invoice $model = null): bool
     {
-        return $user->isAdmin() || $user->isSuper();
+        // Managers generate invoices from the job page and the invoice list
+        // (the notification tests encode that), so they belong here as they
+        // do in update(). Drivers and customers do not.
+        return $user->isSuper() || $user->isAdmin() || $user->isManager();
+    }
+
+    /**
+     * Grouping invoices into a summary stays an admin decision (TASK-371):
+     * managers may raise single invoices but not restructure billing.
+     */
+    public function createSummary(User $user): bool
+    {
+        return $user->isSuper() || $user->isAdmin();
     }
 
     /**
@@ -64,15 +81,15 @@ class InvoicePolicy
      */
     public function update(User $user, Invoice $model): bool
     {
-        if ($user->isSuper() || $user->isAdmin()) {
+        if ($user->isSuper()) {
             return true;
         }
 
-        if ($user->isManager() && $user->organization_id === $model->organization_id) {
-            return true;
-        }
-
-        return false;
+        // Admins and managers of the invoice's own organization only. This
+        // used to return true for ANY admin, so an org-A admin could edit,
+        // delete and regroup org B's invoices (TASK-430).
+        return ($user->isAdmin() || $user->isManager())
+            && $user->organization_id === $model->organization_id;
     }
 
     /**
@@ -80,7 +97,8 @@ class InvoicePolicy
      */
     public function delete(User $user, Invoice $model): bool
     {
-        return $user->isAdmin() || $user->isSuper();
+        return $user->isSuper()
+            || ($user->isAdmin() && $user->organization_id === $model->organization_id);
     }
 
     /**
