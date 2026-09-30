@@ -7,8 +7,12 @@
         {{ __('Record Payment') }}
     </button>
 
+    {{-- Visibility is Livewire's alone (@if). The inline display:none and
+         x-cloak that used to sit here were left over from the Alpine x-show
+         that d11393e1 removed, and with nothing to clear them the modal
+         rendered but stayed invisible (TASK-455). --}}
     @if($showModal)
-        <div class="fixed inset-0 z-50 overflow-y-auto" style="display: none;" x-cloak>
+        <div data-test="record-payment-modal" class="fixed inset-0 z-50 overflow-y-auto">
             <div class="flex min-h-screen items-center justify-center p-4">
                 <div class="fixed inset-0 bg-black/50 transition-opacity" @click="$wire.closeModal()"></div>
                 
