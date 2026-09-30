@@ -89,7 +89,7 @@
                                                     <a class="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-white px-3 py-1 text-[11px] font-semibold text-blue-600 transition hover:border-blue-300 hover:text-blue-700" href="{{ route('user.profile', ['user'=>$user->id]) }}">{{ __('Profile') }}</a>
                                                     @endif
                                                     @can('impersonate', $user)
-                                                    <a href="{{route('impersonate', ['user'=>$user->id])}}" class="inline-flex items-center gap-1 rounded-full border border-purple-200 bg-white px-3 py-1 text-[11px] font-semibold text-purple-600 transition hover:border-purple-300 hover:text-purple-700">{{ __('Impersonate') }}</a>
+                                                    <form method="POST" action="{{route('impersonate', ['user'=>$user->id])}}" class="inline" onsubmit="return confirm('{{ __('Sign in as this user? Your own session ends until you stop impersonating.') }}')">@csrf<button type="submit" class="inline-flex items-center gap-1 rounded-full border border-purple-200 bg-white px-3 py-1 text-[11px] font-semibold text-purple-600 transition hover:border-purple-300 hover:text-purple-700">{{ __('Impersonate') }}</button></form>
                                                     @endcan
                                                 </div>
                                             </td>
@@ -132,7 +132,7 @@
                                             <a class="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-white px-3 py-1 text-[11px] font-semibold text-blue-600 transition hover:border-blue-300 hover:text-blue-700" href="{{ route('user.profile', ['user'=>$user->id]) }}">{{ __('Profile') }}</a>
                                             @endif
                                             @can('impersonate', $user)
-                                            <a href="{{route('impersonate', ['user'=>$user->id])}}" class="inline-flex items-center gap-1 rounded-full border border-purple-200 bg-white px-3 py-1 text-[11px] font-semibold text-purple-600 transition hover:border-purple-300 hover:text-purple-700">{{ __('Impersonate') }}</a>
+                                            <form method="POST" action="{{route('impersonate', ['user'=>$user->id])}}" class="inline" onsubmit="return confirm('{{ __('Sign in as this user? Your own session ends until you stop impersonating.') }}')">@csrf<button type="submit" class="inline-flex items-center gap-1 rounded-full border border-purple-200 bg-white px-3 py-1 text-[11px] font-semibold text-purple-600 transition hover:border-purple-300 hover:text-purple-700">{{ __('Impersonate') }}</button></form>
                                             @endcan
                                         </div>
                                     </div>

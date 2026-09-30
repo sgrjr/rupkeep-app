@@ -22,7 +22,7 @@ class ImpersonateRouteTest extends TestCase
         $organization = Organization::factory()->create();
         $target = User::factory()->create(['organization_id' => $organization->id]);
 
-        $this->get(route('impersonate', ['user' => $target->id]))
+        $this->post(route('impersonate', ['user' => $target->id]))
             ->assertRedirect(route('login'));
     }
 
@@ -33,7 +33,7 @@ class ImpersonateRouteTest extends TestCase
         $target = User::factory()->create(['organization_id' => $organization->id]);
 
         $this->actingAs($driver)
-            ->get(route('impersonate', ['user' => $target->id]))
+            ->post(route('impersonate', ['user' => $target->id]))
             ->assertRedirect('/');
 
         $this->assertSame($driver->id, auth()->id(), 'The refused user must stay themselves.');
@@ -49,7 +49,7 @@ class ImpersonateRouteTest extends TestCase
         $admin = User::factory()->admin()->create(['organization_id' => $organization->id]);
 
         $this->actingAs($admin)
-            ->get(route('impersonate', ['user' => 999999]))
+            ->post(route('impersonate', ['user' => 999999]))
             ->assertNotFound();
     }
 
@@ -71,7 +71,7 @@ class ImpersonateRouteTest extends TestCase
         $target = User::factory()->create(['organization_id' => $organization->id]);
 
         $this->actingAs($admin)
-            ->get(route('impersonate', ['user' => $target->id]))
+            ->post(route('impersonate', ['user' => $target->id]))
             ->assertRedirect(route('my.profile'));
 
         // Named guard here for the same reason the controller names it: after
@@ -94,7 +94,7 @@ class ImpersonateRouteTest extends TestCase
         $target = User::factory()->create(['organization_id' => $organization->id]);
 
         $this->actingAs($admin)
-            ->get(route('impersonate', ['user' => $target->id]))
+            ->post(route('impersonate', ['user' => $target->id]))
             ->assertSessionHas('impersonate', $admin->id);
     }
 
@@ -126,7 +126,7 @@ class ImpersonateRouteTest extends TestCase
             'password' => bcrypt('a-different-password'),
         ]);
 
-        $this->actingAs($admin)->get(route('impersonate', ['user' => $target->id]));
+        $this->actingAs($admin)->post(route('impersonate', ['user' => $target->id]));
 
         $session = app('session.store')->all();
         $hashKey = 'password_hash_'.auth()->getDefaultDriver();
@@ -169,7 +169,7 @@ class ImpersonateRouteTest extends TestCase
             'email_verified_at' => now(),
         ]);
 
-        $this->actingAs($admin)->get(route('impersonate', ['user' => $target->id]));
+        $this->actingAs($admin)->post(route('impersonate', ['user' => $target->id]));
 
         $session = app('session.store')->all();
 
@@ -208,7 +208,7 @@ class ImpersonateRouteTest extends TestCase
     {
         [$admin, $target] = $this->pair();
 
-        $this->actingAs($admin)->get(route('impersonate', ['user' => $target->id]));
+        $this->actingAs($admin)->post(route('impersonate', ['user' => $target->id]));
 
         $session = $this->sessionFromTheBrowser();
 
@@ -229,7 +229,7 @@ class ImpersonateRouteTest extends TestCase
     {
         [$admin, $target] = $this->pair();
 
-        $this->actingAs($admin)->get(route('impersonate', ['user' => $target->id]));
+        $this->actingAs($admin)->post(route('impersonate', ['user' => $target->id]));
 
         $this->withSession($this->sessionFromTheBrowser())->post(route('impersonate.stop'));
 
@@ -247,7 +247,7 @@ class ImpersonateRouteTest extends TestCase
 
         $this->withoutVite();
 
-        $this->actingAs($admin)->get(route('impersonate', ['user' => $target->id]));
+        $this->actingAs($admin)->post(route('impersonate', ['user' => $target->id]));
 
         $this->withSession($this->sessionFromTheBrowser())
             ->get(route('my.profile'))
@@ -280,7 +280,7 @@ class ImpersonateRouteTest extends TestCase
     {
         [$admin, $target] = $this->pair();
 
-        $this->actingAs($admin)->get(route('impersonate', ['user' => $target->id]));
+        $this->actingAs($admin)->post(route('impersonate', ['user' => $target->id]));
 
         $session = $this->sessionFromTheBrowser();
 

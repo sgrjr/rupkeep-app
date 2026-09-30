@@ -194,7 +194,9 @@ Route::middleware([
     // Impersonation lived outside this group, so an anonymous hit reached a
     // controller that calls auth()->user()->can(...) on null and 500d instead of
     // bouncing to login (TASK-373).
-    Route::get('/impersonate/{user}', [MyUsersController::class, 'impersonate'])->name('impersonate');
+    // POST, not GET (TASK-436): a state change must not be triggered by a
+    // link or an <img>, and every use is recorded in user_events.
+    Route::post('/impersonate/{user}', [MyUsersController::class, 'impersonate'])->whereNumber('user')->name('impersonate');
     // POST, not GET: this changes who you are signed in as. Distinct verb also
     // keeps it from being swallowed by the {user} wildcard above.
     Route::post('/impersonate/stop', [MyUsersController::class, 'stopImpersonating'])->name('impersonate.stop');

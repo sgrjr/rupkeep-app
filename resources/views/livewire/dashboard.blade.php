@@ -211,7 +211,7 @@
                                                         <span class="font-medium text-slate-600">{{ Str::limit($user->name, 12) }}</span>
                                                         <span class="flex items-center gap-1">
                                                             <a class="rounded-full bg-white px-1.5 py-0.5 text-[10px] font-semibold text-orange-600 shadow-sm hover:bg-orange-50" href="{{ route('user.profile',['user'=> $user->id]) }}">{{ __('Profile') }}</a>
-                                                            <a class="rounded-full bg-orange-500 px-1.5 py-0.5 text-[10px] font-semibold text-white shadow-sm hover:bg-orange-600" href="{{ route('impersonate',['user'=> $user->id]) }}">{{ __('Impersonate') }}</a>
+                                                            <form method="POST" action="{{ route('impersonate',['user'=> $user->id]) }}" class="inline" onsubmit="return confirm('{{ __('Sign in as this user? Your own session ends until you stop impersonating.') }}')">@csrf<button type="submit" class="rounded-full bg-orange-500 px-1.5 py-0.5 text-[10px] font-semibold text-white shadow-sm hover:bg-orange-600">{{ __('Impersonate') }}</button></form>
                                                         </span>
                                                     </div>
                                 @endforeach

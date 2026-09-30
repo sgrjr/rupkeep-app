@@ -133,7 +133,7 @@
 
         @if($this->user->id != auth()->user()->id)
         @can('impersonate', $this->user)
-        <a class="border p-2 rounded inline-block mr-8 hover:bg-gray-800 hover:text-white" href="/impersonate/{{$this->user->id}}" class="underline">impersonate</a>
+        <form method="POST" action="/impersonate/{{$this->user->id}}" class="inline" onsubmit="return confirm('{{ __('Sign in as this user? Your own session ends until you stop impersonating.') }}')">@csrf<button type="submit" class="border p-2 rounded inline-block mr-8 hover:bg-gray-800 hover:text-white">impersonate</button></form>
         @endcan
         @endif
 

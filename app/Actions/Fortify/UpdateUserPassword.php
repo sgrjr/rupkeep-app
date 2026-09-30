@@ -23,6 +23,12 @@ class UpdateUserPassword implements UpdatesUserPasswords
         // Determine if this is a self-update or admin-initiated update
         $isSelfUpdate = $authenticatedUser->id === $user->id;
 
+        // Changing someone else's password is governed by UserPolicy::update,
+        // which excludes super-user targets for org admins (TASK-436).
+        if (! $isSelfUpdate && ! $authenticatedUser->can('update', $user)) {
+            abort(403);
+        }
+
         // Build validation rules based on context
         $rules = [
             'password' => $this->passwordRules(),

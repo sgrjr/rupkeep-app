@@ -142,6 +142,15 @@ class MyUsersController extends Controller
         }
 
         if(auth()->user()->can('impersonate', $user)){
+            // Audit row first: becomeUser() flushes the session, so the actor
+            // is passed explicitly rather than read back from Auth.
+            \App\Services\ExperienceTrackerService::trackAction('impersonate', [
+                'impersonator_id' => $impersonator->id,
+                'impersonator_email' => $impersonator->email,
+                'target_user_id' => $user->id,
+                'target_email' => $user->email,
+            ], userId: $impersonator->id);
+
             $this->becomeUser($user);
 
             session()->flash('message','Success. Logged in as ' . $user->name);
