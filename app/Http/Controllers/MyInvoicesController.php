@@ -10,7 +10,9 @@ use App\Models\InvoiceComment;
 use App\Models\PilotCarJob;
 use App\Models\JobInvoice;
 use App\Models\UserLog;
+use App\Services\InvoiceRepricer;
 use App\Services\SummaryInvoiceValues;
+use App\Support\Money;
 use App\Http\Controllers\Concerns\BuildsInvoiceIndex;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Arr;
@@ -227,6 +229,13 @@ class MyInvoicesController extends Controller
             }
         }
 
+        // A changed quantity or rate re-prices the invoice, and a changed total
+        // becomes an explicit adjustment line (TASK-448). Before this, only the
+        // quantity moved and the residual Pilot Car Service line absorbed the
+        // difference.
+        $repriced = InvoiceRepricer::apply($invoice, $valuesBefore, $values);
+        $values = $repriced['values'];
+
         $invoice->values = $values;
 
         // On a summary, a total that does not match what the children sum to is
@@ -251,7 +260,21 @@ class MyInvoicesController extends Controller
             $this->recordRevision($invoice, $valuesBefore, $invoice->values ?? [], $request->user()->id);
         }
 
-        session()->flash('success', __('Invoice updated.'));
+        if ($repriced['repriced']) {
+            $message = __('Invoice updated. Total recalculated to :total.', [
+                'total' => Money::currency((float) ($values['total'] ?? 0)),
+            ]);
+
+            if ($repriced['adjustment'] != 0) {
+                $message .= ' ' . ($repriced['adjustment'] < 0
+                    ? __('A discount of :amount is shown as its own line.', ['amount' => Money::currency(abs($repriced['adjustment']))])
+                    : __('An adjustment of :amount is shown as its own line.', ['amount' => Money::currency($repriced['adjustment'])]));
+            }
+
+            session()->flash('success', $message);
+        } else {
+            session()->flash('success', __('Invoice updated.'));
+        }
 
         return redirect()->route('my.invoices.edit', ['invoice' => $invoice->id]);
     }

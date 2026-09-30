@@ -1,11 +1,15 @@
 @php
     use Illuminate\Support\Number;
     use App\Support\LocalTime;
+    use App\Support\Money;
 
     $values = $values ?? (is_array($invoice->values) ? $invoice->values : []);
     $billFrom = $billFrom ?? ($values['bill_from'] ?? []);
     $billTo = $billTo ?? ($values['bill_to'] ?? []);
-    $totalDue = $totalDue ?? number_format((float) ($values['total'] ?? 0), 2);
+    // The subtotal as a number; every place that prints it goes through
+    // Money::currency (TASK-448) so this file and the app agree on format.
+    $totalDueAmount = round((float) str_replace(',', '', (string) ($values['total'] ?? 0)), 2);
+    $totalDue = Money::currency($totalDueAmount);
     $billableMiles = $billableMiles ?? ($values['billable_miles'] ?? null);
     $rateValue = $rateValue ?? ($values['rate_value'] ?? null);
     // Use override if set, otherwise job-level public memo, otherwise empty
@@ -27,13 +31,13 @@
 
     $charges = $charges ?? [
         __('Billable Miles') => $billableMiles ? number_format((float) $billableMiles, 2) : null,
-        __('Rate Applied') => $rateValue ? '$' . number_format((float) $rateValue, 2) : null,
-        __('Tolls') => isset($values['tolls']) ? '$' . number_format((float) str_replace(',', '', (string) $values['tolls']), 2) : null,
-        __('Hotel') => isset($values['hotel']) ? '$' . number_format((float) str_replace(',', '', (string) $values['hotel']), 2) : null,
-        __('Extra Charges') => isset($values['extra_charge']) ? '$' . number_format((float) str_replace(',', '', (string) $values['extra_charge']), 2) : null,
+        __('Rate Applied') => $rateValue ? Money::currency($rateValue) : null,
+        __('Tolls') => isset($values['tolls']) ? Money::currency(str_replace(',', '', (string) $values['tolls'])) : null,
+        __('Hotel') => isset($values['hotel']) ? Money::currency(str_replace(',', '', (string) $values['hotel'])) : null,
+        __('Extra Charges') => isset($values['extra_charge']) ? Money::currency(str_replace(',', '', (string) $values['extra_charge'])) : null,
         __('Extra Load Stops') => $values['extra_load_stops_count'] ?? null,
         __('Wait Time (hrs)') => $values['wait_time_hours'] ?? null,
-        __('Mini Add-On') => (isset($values['mini_addon_amount']) && (float) $values['mini_addon_amount'] > 0) ? '$' . number_format((float) $values['mini_addon_amount'], 2) : null,
+        __('Mini Add-On') => (isset($values['mini_addon_amount']) && (float) $values['mini_addon_amount'] > 0) ? Money::currency($values['mini_addon_amount']) : null,
     ];
 
     // Job-detail fields shown in the invoice body. Sourced from the invoice
@@ -255,27 +259,27 @@
                             </td>
                             <td>{{ $item['job_no'] ?? '—' }}</td>
                             <td>{{ $item['load_no'] ?? '—' }}</td>
-                            <td class="amount-due">{{ isset($item['total']) ? '$' . number_format((float) $item['total'], 2) : '—' }}</td>
+                            <td class="amount-due">{{ isset($item['total']) ? Money::currency($item['total']) : '—' }}</td>
                         </tr>
                     @endforeach
                     {{-- Total Due row as the last row in tbody for summary invoices --}}
                     <tr class="total-due-row">
                         <td colspan="5" class="total-due-label">{{ __('Total Due') }}</td>
-                        <td class="total-due-amount">${{ $totalDue }}</td>
+                        <td class="total-due-amount">{{ $totalDue }}</td>
                     </tr>
                 @else
                     @foreach($lineItems as $item)
                         <tr>
                             <td>{{ $item['description'] }}</td>
                             <td class="text-right">{{ floor($item['quantity']) == $item['quantity'] ? number_format($item['quantity'], 0) : rtrim(rtrim(number_format($item['quantity'], 2), '0'), '.') }}</td>
-                            <td class="text-right">${{ number_format($item['rate'], 2) }}</td>
-                            <td class="text-right">${{ number_format($item['amount'], 2) }}</td>
+                            <td class="text-right">{{ Money::currency($item['rate']) }}</td>
+                            <td class="text-right">{{ Money::currency($item['amount']) }}</td>
                         </tr>
                     @endforeach
                     {{-- Total Due row as the last row in tbody for single invoices --}}
                     <tr class="total-due-row">
                         <td colspan="3" class="total-due-label">{{ __('Total Due') }}</td>
-                        <td class="total-due-amount">${{ $totalDue }}</td>
+                        <td class="total-due-amount">{{ $totalDue }}</td>
                     </tr>
                 @endif
             </tbody>
@@ -291,18 +295,18 @@
                         'days_overdue' => 0,
                         'late_fee_periods' => 0,
                         'late_fee_amount' => 0.0,
-                        'total_with_late_fees' => (float) $totalDue,
+                        'total_with_late_fees' => $totalDueAmount,
                         'due_date' => $invoice->created_at->copy()->addDays(30),
                     ];
                 @endphp
                 <p>
                     <span>{{ __('Subtotal') }}</span>
-                    <span>${{ $totalDue }}</span>
+                    <span>{{ $totalDue }}</span>
                 </p>
                 @if($lateFees['late_fee_amount'] > 0)
                     <p>
                         <span>{{ __('Late Fee') }} ({{ $lateFees['late_fee_periods'] }} {{ trans_choice('period|periods', $lateFees['late_fee_periods']) }})</span>
-                        <span style="color: #dc2626;">${{ number_format($lateFees['late_fee_amount'], 2) }}</span>
+                        <span style="color: #dc2626;">{{ Money::currency($lateFees['late_fee_amount']) }}</span>
                     </p>
                 @endif
                 <p>
@@ -323,7 +327,7 @@
                 </p>
                 <p>
                     <span>{{ __('Total Due') }}</span>
-                    <span style="font-weight: 700;">${{ number_format($lateFees['total_with_late_fees'], 2) }}</span>
+                    <span style="font-weight: 700;">{{ Money::currency($lateFees['total_with_late_fees']) }}</span>
                 </p>
             </section>
 

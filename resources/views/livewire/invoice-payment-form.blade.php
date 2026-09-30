@@ -31,16 +31,16 @@
                             <div class="grid grid-cols-3 gap-4 text-sm">
                                 <div>
                                     <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Total Due') }}</p>
-                                    <p class="mt-1 text-lg font-semibold text-slate-900">${{ number_format($totalDue, 2) }}</p>
+                                    <p class="mt-1 text-lg font-semibold text-slate-900">{{ \App\Support\Money::currency($totalDue) }}</p>
                                 </div>
                                 <div>
                                     <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Total Paid') }}</p>
-                                    <p class="mt-1 text-lg font-semibold text-emerald-600">${{ number_format($totalPaid, 2) }}</p>
+                                    <p class="mt-1 text-lg font-semibold text-emerald-600">{{ \App\Support\Money::currency($totalPaid) }}</p>
                                 </div>
                                 <div>
                                     <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Remaining') }}</p>
                                     <p class="mt-1 text-lg font-semibold {{ $remainingBalance > 0 ? 'text-amber-600' : 'text-emerald-600' }}">
-                                        ${{ number_format($remainingBalance, 2) }}
+                                        {{ \App\Support\Money::currency($remainingBalance) }}
                                     </p>
                                 </div>
                             </div>
@@ -105,7 +105,7 @@
                                     <div class="flex-1">
                                         <p class="text-sm font-semibold text-emerald-900">{{ __('Apply Account Credit') }}</p>
                                         <p class="text-xs text-emerald-700">
-                                            {{ __('Available credit: $:amount', ['amount' => number_format($availableCredit, 2)]) }}
+                                            {{ __('Available credit: :amount', ['amount' => \App\Support\Money::currency($availableCredit)]) }}
                                         </p>
                                     </div>
                                 </label>

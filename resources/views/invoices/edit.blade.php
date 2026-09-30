@@ -157,6 +157,17 @@
                                 {{ Money::currency(data_get($values, 'total', 0), 'USD') }}
                             </dd>
                         </div>
+                        @if((float) data_get($values, 'adjustment', 0) != 0.0)
+                            {{-- A hand-set total, kept as the gap to the computed one and printed
+                                 as its own line (TASK-448). --}}
+                            <div>
+                                <dt class="font-semibold uppercase tracking-wide text-slate-500">{{ (float) data_get($values, 'adjustment') < 0 ? __('Discount') : __('Adjustment') }}</dt>
+                                <dd class="mt-1 text-base font-semibold text-slate-900">
+                                    {{ Money::currency(data_get($values, 'adjustment'), 'USD') }}
+                                    <span class="ml-1 text-xs font-normal text-slate-500">{{ __('included in the subtotal, shown as its own line') }}</span>
+                                </dd>
+                            </div>
+                        @endif
                         @if($lateFees['late_fee_amount'] > 0)
                             {{-- The fee sits beside the subtotal and is added on top; it is never
                                  inside values.total (TASK-443). "Applied" is the locked part, the
@@ -466,15 +477,15 @@
                                                 {{ LocalTime::format($payment['payment_date'] ?? null, 'M j, Y', '—') }}
                                             </td>
                                             <td class="px-4 py-2 font-semibold text-slate-900">
-                                                ${{ number_format($payment['amount'] ?? 0, 2) }}
+                                                {{ Money::currency($payment['amount'] ?? 0) }}
                                                 @if(isset($payment['used_credit']) && $payment['used_credit'] && isset($payment['credit_amount']))
                                                     <span class="ml-1 text-[10px] text-emerald-600">
-                                                        (${{ number_format($payment['credit_amount'], 2) }} {{ __('credit') }})
+                                                        ({{ Money::currency($payment['credit_amount']) }} {{ __('credit') }})
                                                     </span>
                                                 @endif
                                                 @if(isset($payment['overpayment']) && $payment['overpayment'] > 0)
                                                     <span class="ml-1 text-[10px] text-blue-600">
-                                                        (${{ number_format($payment['overpayment'], 2) }} {{ __('overpayment') }})
+                                                        ({{ Money::currency($payment['overpayment']) }} {{ __('overpayment') }})
                                                     </span>
                                                 @endif
                                             </td>
@@ -493,12 +504,12 @@
                                 <tfoot class="bg-slate-50">
                                     <tr>
                                         <td colspan="4" class="px-4 py-2 text-right font-semibold text-slate-700">{{ __('Total Paid') }}:</td>
-                                        <td class="px-4 py-2 font-semibold text-emerald-700">${{ number_format($totalPaid, 2) }}</td>
+                                        <td class="px-4 py-2 font-semibold text-emerald-700">{{ Money::currency($totalPaid) }}</td>
                                     </tr>
                                     <tr>
                                         <td colspan="4" class="px-4 py-2 text-right font-semibold text-slate-700">{{ __('Remaining Balance') }}:</td>
                                         <td class="px-4 py-2 font-semibold {{ $remainingBalance > 0 ? 'text-amber-700' : 'text-emerald-700' }}">
-                                            ${{ number_format($remainingBalance, 2) }}
+                                            {{ Money::currency($remainingBalance) }}
                                         </td>
                                     </tr>
                                 </tfoot>
@@ -779,16 +790,16 @@
                         <input type="number" step="0.01" name="values[rate_value]" value="{{ old('values.rate_value', data_get($values, 'rate_value')) }}"
                                class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900" />
                     </div>
+                    {{-- Derived from the rate code and value on save (TASK-448); typing
+                         here changed nothing the math read, so they are shown, not edited. --}}
                     <div>
                         <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Effective Rate Code') }}</label>
-                        <input type="text" name="values[effective_rate_code]" value="{{ old('values.effective_rate_code', data_get($values, 'effective_rate_code')) }}"
-                               class="mt-2 block w-full rounded-xl border border-slate-200	bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900" />
+                        <p class="mt-2 block w-full rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm text-slate-700">{{ data_get($values, 'effective_rate_code') ?: '—' }}</p>
                     </div>
                     <div>
                         <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Effective Rate Value') }}</label>
-                        <input type="number" step="0.01" name="values[effective_rate_value]"
-                               value="{{ old('values.effective_rate_value', data_get($values, 'effective_rate_value')) }}"
-                               class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900" />
+                        <p class="mt-2 block w-full rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm text-slate-700">{{ data_get($values, 'effective_rate_value') !== null ? Money::currency(data_get($values, 'effective_rate_value')) : '—' }}</p>
+                        <p class="mt-1 text-xs text-slate-400">{{ __('Worked out from the rate code and value when you save.') }}</p>
                     </div>
                     @endif
                     {{-- Billable miles and the total are the two figures a summary
@@ -836,14 +847,19 @@
                     </div>
                     <div>
                         <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Extra Charges') }}</label>
-                        <p class="mt-2 text-sm font-semibold text-slate-900">${{ number_format((float) str_replace(',', '', (string) data_get($values, 'extra_charge', 0)), 2) }}</p>
+                        <p class="mt-2 text-sm font-semibold text-slate-900">{{ Money::currency(str_replace(',', '', (string) data_get($values, 'extra_charge', 0))) }}</p>
                         <p class="mt-1 text-xs text-slate-500">{{ __('Itemized below.') }}</p>
                     </div>
                     @endif
                     <div>
-                        <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Total Due Override') }}</label>
+                        <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ $invoice->isSummary() ? __('Total Due Override') : __('Total Due') }}</label>
                         <input type="number" step="0.01" name="values[total]" value="{{ old('values.total', data_get($values, 'total')) }}"
                                class="mt-2 block w-full rounded-xl border border-slate-200	bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900" />
+                        @unless($invoice->isSummary())
+                            {{-- TASK-448: the total follows the figures above. A typed total is
+                                 kept, and the gap to the computed one becomes its own line. --}}
+                            <p class="mt-1 text-xs text-slate-400">{{ __('Recalculated from the figures above when you save. Enter a different amount to record the difference as a discount or adjustment line.') }}</p>
+                        @endunless
                     </div>
                 </div>
             </section>
@@ -918,7 +934,7 @@
                                             </div>
                                             <div>
                                                 <span class="font-semibold text-slate-500">{{ __('Total') }}:</span>
-                                                <span class="ml-1">{{ isset($item['total']) && $item['total'] > 0 ? '$' . number_format($item['total'], 2) : '—' }}</span>
+                                                <span class="ml-1">{{ isset($item['total']) && $item['total'] > 0 ? Money::currency($item['total']) : '—' }}</span>
                                             </div>
                                             <div>
                                                 <span class="font-semibold text-slate-500">{{ __('Miles') }}:</span>
@@ -945,7 +961,7 @@
                                         <tr>
                                             <td class="px-4 py-2 font-semibold text-slate-800">{{ $item['invoice_number'] ?? '—' }}</td>
                                             <td class="px-4 py-2">{{ $item['job_no'] ?? __('Job') }}</td>
-                                            <td class="px-4 py-2">{{ isset($item['total']) && $item['total'] > 0 ? '$' . number_format($item['total'], 2) : '—' }}</td>
+                                            <td class="px-4 py-2">{{ isset($item['total']) && $item['total'] > 0 ? Money::currency($item['total']) : '—' }}</td>
                                             <td class="px-4 py-2">{{ isset($item['billable_miles']) && $item['billable_miles'] > 0 ? number_format($item['billable_miles'], 1) : '—' }}</td>
                                             <td class="px-4 py-2 text-right">
                                                 @isset($item['invoice_id'])

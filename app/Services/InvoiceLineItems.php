@@ -54,10 +54,15 @@ class InvoiceLineItems
         // while showing "Pilot Car Service $700" and no hotel anywhere.
         $hotelAmount = isset($values['hotel']) ? $money($values['hotel']) : 0;
         $extraChargeAmount = isset($values['extra_charge']) ? $money($values['extra_charge']) : 0;
+        // A hand-set total is recorded as the gap between it and the computed
+        // total (TASK-448, App\Services\InvoiceRepricer). It gets its own line
+        // below; taking it out here keeps Pilot Car Service equal to the rate
+        // charge instead of silently shrinking it by the discount.
+        $adjustmentAmount = isset($values['adjustment']) ? $money($values['adjustment']) : 0;
 
         $otherChargesTotal = $waitTimeAmount + $extraStopsAmount + $deadAmount + $tollsAmount
-            + $totalMileageAmount + $miniAddonAmount + $hotelAmount + $extraChargeAmount;
-        $pilotCarServiceAmount = (float) ($values['total'] ?? 0) - $otherChargesTotal;
+            + $totalMileageAmount + $miniAddonAmount + $hotelAmount + $extraChargeAmount + $adjustmentAmount;
+        $pilotCarServiceAmount = round((float) ($values['total'] ?? 0) - $otherChargesTotal, 2);
 
         $lineItems = [];
 
@@ -212,6 +217,17 @@ class InvoiceLineItems
             'quantity' => $miniAddonAmount > 0 ? 1 : 0,
             'rate' => $miniAddonAmount,
             'amount' => $miniAddonAmount,
+        ];
+
+        // The hand-set difference from the computed total (TASK-448). Almost
+        // always a discount, so it is named one when it is negative; the
+        // QuickBooks export maps the key to its Adjustment item either way.
+        $lineItems[] = [
+            'key' => 'adjustment',
+            'description' => $adjustmentAmount < 0 ? __('Discount') : __('Adjustment'),
+            'quantity' => $adjustmentAmount != 0 ? 1 : 0,
+            'rate' => $adjustmentAmount,
+            'amount' => $adjustmentAmount,
         ];
 
         // Only bill what was actually charged (TASK-367). The zero rows were

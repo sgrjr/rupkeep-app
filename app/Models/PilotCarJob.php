@@ -1608,6 +1608,43 @@ class PilotCarJob extends Model
             'end_job_time' => $this->getEndJobTime($logs),
         ];
 
+        $values = $this->priceValues($values);
+
+        // Check if job is marked as paid (from CSV import or manual update)
+        $paidInFull = (bool)($this->invoice_paid ?? false);
+        
+        return [
+            'paid_in_full' => $paidInFull,
+            'values' => $values,
+            'organization_id' => $values['organization_id'],
+            'customer_id' => $values['customer_id'],
+            'pilot_car_job_id' => $values['pilot_car_job_id']
+        ];
+    }
+
+    /**
+     * Price a snapshot: run the inputs through calculateTotalDue() and write
+     * every derived figure back beside them.
+     *
+     * The inputs are the quantities (miles, hours, stops, billed deadhead,
+     * tolls, hotel, extra charges, mini add-on) and the rate; the outputs are
+     * the total, the effective rate, and the per-charge dollar amounts that
+     * InvoiceLineItems itemizes. This used to live inline in invoiceValues(),
+     * which meant it ran exactly once, when the invoice was cut. Editing a
+     * quantity on the invoice afterwards changed only the quantity; the total
+     * and the cost lines kept their old figures, so the difference landed in
+     * the residual "Pilot Car Service" line (TASK-448). The edit form now
+     * calls this on every save that touches a pricing input.
+     *
+     * `adjustment` is not part of the math: it is the hand-set difference the
+     * edit form records when someone overrides the total, and the caller adds
+     * it back after this returns (see App\Services\InvoiceRepricer).
+     *
+     * @param array<string, mixed> $values
+     * @return array<string, mixed>
+     */
+    public function priceValues(array $values): array
+    {
         $computed = $this->calculateTotalDue($values);
         $values['effective_rate_code'] = $computed['effective_rate_code'];
         $values['effective_rate_value'] = $computed['effective_rate_value'];
@@ -1651,20 +1688,14 @@ class PilotCarJob extends Model
             $values['extra_charges'] = [];
         }
 
+        // Set when the code was not on the price list; cleared when a re-price
+        // with a corrected code resolves it.
+        unset($values['rate_code_unrecognized']);
         if (array_key_exists('rate_code_unrecognized', $computed)) {
             $values['rate_code_unrecognized'] = $computed['rate_code_unrecognized'];
         }
 
-        // Check if job is marked as paid (from CSV import or manual update)
-        $paidInFull = (bool)($this->invoice_paid ?? false);
-        
-        return [
-            'paid_in_full' => $paidInFull,
-            'values' => $values,
-            'organization_id' => $values['organization_id'],
-            'customer_id' => $values['customer_id'],
-            'pilot_car_job_id' => $values['pilot_car_job_id']
-        ];
+        return $values;
     }
 
     public function getPilotCarDrivers($logs = false)
@@ -2048,7 +2079,7 @@ class PilotCarJob extends Model
             ? PricingSetting::getValueForOrganization($organizationId, 'charges.extra_stop.rate_per_stop', config('pricing.charges.extra_stop.rate_per_stop', 30.00))
             : config('pricing.charges.extra_stop.rate_per_stop', 30.00));
         if($totals['extra_load_stops_count'] > 0){
-            $values['load_stops'] = $totals['extra_load_stops_count'] * $extraStopRate;
+            $values['load_stops'] = round($totals['extra_load_stops_count'] * $extraStopRate, 2);
         }
 
         // Wait time, billed per hour beyond the free minimum. `minimum_hours`
@@ -2065,7 +2096,10 @@ class PilotCarJob extends Model
 
         $billableWaitHours = max(0.0, (float) ($totals['wait_time_hours'] ?? 0) - $waitFreeHours);
 
-        $values['wait_time'] = $billableWaitHours * $waitTimeRate;
+        // Every money component is rounded to cents where it is computed
+        // (TASK-448), so the itemized lines sum to the total exactly rather
+        // than to within a floating-point hair of it.
+        $values['wait_time'] = round($billableWaitHours * $waitTimeRate, 2);
 
         // Dead head, billed per mile (TASK-354). The money comes from what a
         // human chose to bill on each log, NOT from what was driven: the charge
@@ -2079,7 +2113,7 @@ class PilotCarJob extends Model
 
         $billedDeadHeadMiles = max(0.0, (float) str_replace(',', '', (string) ($totals['dead_head_billed'] ?? 0)));
 
-        $values['dead_head_charge'] = $billedDeadHeadMiles * $deadHeadRate;
+        $values['dead_head_charge'] = round($billedDeadHeadMiles * $deadHeadRate, 2);
 
         // Sum the expense buckets by name. The previous implementation summed
         // every element of $values blindly, which made the total silently wrong
@@ -2158,7 +2192,7 @@ class PilotCarJob extends Model
         $publishedLeadChase = (float) ($pricingConfig['lead_chase_per_mile']['rate_per_mile']
             ?? config('pricing.rates.lead_chase_per_mile.rate_per_mile', 2.00));
         $priceAtPublishedRate = function () use (&$values, $publishedLeadChase, $billableMiles, $expenses, $rateCode) {
-            $values['miles_charge'] = $billableMiles * $publishedLeadChase;
+            $values['miles_charge'] = round($billableMiles * $publishedLeadChase, 2);
             $values['effective_rate_code'] = 'lead_chase_per_mile';
             $values['effective_rate_value'] = $publishedLeadChase;
             // Flag the snapshot so the edit screen and jobs:audit can point at
@@ -2174,7 +2208,7 @@ class PilotCarJob extends Model
             if ($rateConfig['type'] === 'per_mile') {
                 // Per mile rate (Lead/Chase)
                 $ratePerMile = $rateConfig['rate_per_mile'] ?? $normalizedRateValue;
-                $values['miles_charge'] = $billableMiles * $ratePerMile;
+                $values['miles_charge'] = round($billableMiles * $ratePerMile, 2);
                 $values['effective_rate_code'] = $rateCode;
                 $values['effective_rate_value'] = $ratePerMile;
                 $values['total'] = ($values['miles_charge'] ?? 0) + $expenses;
@@ -2192,7 +2226,7 @@ class PilotCarJob extends Model
                         $fallbackRate = $organizationId
                             ? PricingSetting::getValueForOrganization($organizationId, 'rates.lead_chase_per_mile.rate_per_mile', config('pricing.rates.lead_chase_per_mile.rate_per_mile', 2.00))
                             : config('pricing.rates.lead_chase_per_mile.rate_per_mile', 2.00);
-                        $values['miles_charge'] = $billableMiles * $fallbackRate;
+                        $values['miles_charge'] = round($billableMiles * $fallbackRate, 2);
                         $values['effective_rate_code'] = 'lead_chase_per_mile';
                         $values['effective_rate_value'] = $fallbackRate;
                         $values['total'] = ($values['miles_charge'] ?? 0) + $expenses;
@@ -2214,7 +2248,7 @@ class PilotCarJob extends Model
                 : (float) (static::defaultRateValue($rateCode, $organizationId) ?? 0);
 
             if ($value > 0) {
-                $values['miles_charge'] = $billableMiles * $value;
+                $values['miles_charge'] = round($billableMiles * $value, 2);
                 $values['effective_rate_code'] = 'per_mile_rate';
                 $values['effective_rate_value'] = $value;
                 $values['total'] = ($values['miles_charge'] ?? 0) + $expenses;
@@ -2259,8 +2293,8 @@ class PilotCarJob extends Model
         // distinct, itemized component. Applied last so every OTHER rate_code
         // path (per-mile, flat, legacy flat, flat_rate_excludes_expenses,
         // fallback) picks it up identically; mini_flat_rate is excluded above.
-        $values['mini_addon_amount'] = $miniAddonAmount;
-        $values['total'] += $miniAddonAmount;
+        $values['mini_addon_amount'] = round($miniAddonAmount, 2);
+        $values['total'] = round($values['total'] + $values['mini_addon_amount'], 2);
 
         return $values;
     }
