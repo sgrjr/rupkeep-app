@@ -38,6 +38,7 @@ class CustomerRoleBoundaryTest extends TestCase
         parent::setUp();
 
         $this->withoutVite();
+        \Illuminate\Support\Facades\Storage::fake(Attachment::DISK);
 
         $this->org = $this->createOrganization('A');
         $this->ownCustomer = $this->createCustomerForOrganization($this->org);
@@ -111,13 +112,15 @@ class CustomerRoleBoundaryTest extends TestCase
 
     private function attachment(object $attachable, bool $public): Attachment
     {
-        $path = tempnam(sys_get_temp_dir(), 'att');
-        file_put_contents($path, 'contents');
+        // A relative path on the private disk, as every row is now (TASK-454).
+        $path = 'jobs/attachments_' . $attachable->id . '/' . uniqid('att') . '.pdf';
+        Attachment::disk()->put($path, 'contents');
 
         return Attachment::create([
             'attachable_id' => $attachable->id,
             'attachable_type' => get_class($attachable),
             'location' => $path,
+            'file_name' => 'permit.pdf',
             'organization_id' => $this->org->id,
             'is_public' => $public,
         ]);

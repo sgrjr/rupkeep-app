@@ -635,30 +635,25 @@ class EditUserLog extends Component
         $this->authorize('update', $this->log);
 
         $this->validate([
-            'file' => 'required|file|max:10240',
+            'file' => Attachment::uploadRules(),
         ]);
 
+        // One private disk, a uuid file name and the original name kept on
+        // the row (TASK-454). This wrote to a disk called `private` that was
+        // never configured, so no driver upload had ever succeeded.
         try {
-            $originalName = $this->file->getClientOriginalName();
-            $path = 'jobs/attachments_' . $this->log->job_id;
-            $this->file->storeAs(path: $path, name: $originalName, disk: 'private');
+            $attachment = Attachment::store($this->file, $this->log, $this->log->organization_id, (bool) $this->isPublicUpload);
 
-            Attachment::create([
-                'attachable_id' => $this->log->id,
-                'attachable_type' => get_class($this->log),
-                'location' => $path . '/' . $originalName,
-                'file_name' => $originalName,
-                'organization_id' => $this->log->organization_id,
-                'is_public' => $this->isPublicUpload,
-            ]);
-
+            $this->file = null;
             $this->isPublicUpload = false;
             $this->dispatch('uploaded');
             $this->log->refresh();
             $this->dispatch('$refresh');
 
-        } catch (\Exception $e) {
-            session()->flash('error', 'Failed to upload file: ' . $e->getMessage());
+            session()->flash('success', __('Uploaded :name.', ['name' => $attachment->file_name]));
+        } catch (\Throwable $e) {
+            report($e);
+            session()->flash('error', __('The file could not be saved. Please try again.'));
         }
     }
 }

@@ -64,6 +64,14 @@ class PilotCarJob extends Model
         'mini_addon_amount' => 'decimal:2',
     ];
 
+    protected static function booted(): void
+    {
+        // A job's files go when the job is finally removed (TASK-454).
+        static::forceDeleting(function (self $job): void {
+            $job->attachments()->withTrashed()->get()->each->forceDelete();
+        });
+    }
+
     public function attachments(): MorphMany
     {
         return $this->morphMany(Attachment::class, 'attachable');

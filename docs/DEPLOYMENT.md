@@ -328,4 +328,4 @@ cd C:\Users\sreynoldsjr\Documents\GitHub\rupkeep-app; php artisan test
 Suggested approach:
 - Nightly `mysqldump` of production DB → off-server storage
 - Periodic restore drill into staging
-- File backups for `storage/app/public/` (attachments)
+- File backups for `storage/app/private/` — job and log attachments live there under `jobs/attachments_{job_id}/{uuid}.{ext}` (TASK-454); the DB row's `location` is relative to that folder, so a restore into any directory works as long as the two are restored together

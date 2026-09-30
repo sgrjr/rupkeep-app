@@ -2,63 +2,41 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Attachment;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Http\Request;
 
 class AttachmentsController extends Controller
 {
-
     use AuthorizesRequests;
 
-    public function download(Request $request, Attachment $attachment){
+    /**
+     * Serve the file from the private disk under the name the user gave it.
+     * `location` used to be read as a raw filesystem path, which was right
+     * for rows the job page wrote and wrong for rows the log page wrote
+     * (TASK-454).
+     */
+    public function download(Request $request, Attachment $attachment)
+    {
+        $this->authorize('download', $attachment);
 
-        if($attachment && $this->authorize('download', $attachment)){
-           
-            $mimeTypes = [
-                'pdf' => 'application/pdf',
-                'txt' => 'text/plain',
-                'html' => 'text/html',
-                'exe' => 'application/octet-stream',
-                'zip' => 'application/zip',
-                'doc' => 'application/msword',
-                'xls' => 'application/vnd.ms-excel',
-                'ppt' => 'application/vnd.ms-powerpoint',
-                'gif' => 'image/gif',
-                'png' => 'image/png',
-                'jpeg' => 'image/jpg',
-                'jpg' => 'image/jpg',
-                'php' => 'text/plain'
-            ];
-            
-            $fileSize = filesize($attachment->location);
-            $fileName = rawurldecode($attachment->file_name);
-            $fileExt = '';
-            
-            // Determine MIME Type
-            $fileExt = strtolower(substr(strrchr($fileName, '.'), 1));
-            
-            if(array_key_exists($fileExt, $mimeTypes)) {
-                $mimeType = $mimeTypes[$fileExt];
-            }
-            else {
-                $mimeType = 'application/force-download';
-            }
+        abort_unless($attachment->fileExists(), 404, __('This file is no longer in storage.'));
 
-           return response()->download($attachment->location, headers:[
-            'Content-Description' => 'File Transfer',
-            'Content-Type' => $mimeType
-           ]);
-        }
-
-        return null;
+        return $attachment->download();
     }
 
-    public function delete(Request $request, Attachment $attachment){
-        if($attachment && auth()->user()->can('delete', $attachment)){
-           $attachment->deleteFile()->delete();
-        }
+    /**
+     * Removing an attachment is final: nothing in the UI restores one, so the
+     * row is force-deleted and the model event takes the file with it.
+     */
+    public function delete(Request $request, Attachment $attachment)
+    {
+        $this->authorize('delete', $attachment);
 
-        return back();
+        $name = $attachment->file_name;
+
+        $attachment->forceDelete();
+
+        return back()->with('success', __(':name deleted.', ['name' => $name]));
     }
 }

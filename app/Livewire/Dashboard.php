@@ -551,6 +551,18 @@ class Dashboard extends Component
 
         $jobIds = (clone $jobs)->pluck('id');
         $invoiceIds = (clone $invoices)->pluck('id');
+        $logIds = (clone $logs)->pluck('id');
+
+        // Mass deletes below fire no model events, so the files on the jobs
+        // and logs being purged are removed here, row by row (TASK-454).
+        \App\Models\Attachment::withTrashed()
+            ->where(function ($q) use ($jobIds, $logIds) {
+                $q->where(fn ($j) => $j->where('attachable_type', PilotCarJob::class)->whereIn('attachable_id', $jobIds))
+                    ->orWhere(fn ($l) => $l->where('attachable_type', UserLog::class)->whereIn('attachable_id', $logIds));
+            })
+            ->get()
+            ->each
+            ->forceDelete();
 
         // The pivot first: it carries no organization of its own, so it has to
         // be reached through the rows being removed rather than scoped directly.

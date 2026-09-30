@@ -49,6 +49,11 @@ class UserLog extends Model
                 }
             }
         });
+
+        // A log's files go when the log is finally removed (TASK-454).
+        static::forceDeleting(function (self $log): void {
+            $log->attachments()->withTrashed()->get()->each->forceDelete();
+        });
     }
 
     /**

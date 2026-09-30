@@ -307,24 +307,25 @@ class ShowPilotCarJob extends Component
         abort_unless(auth()->user()->isSuper() || auth()->user()->isEmployee(), 403);
 
         $this->validate([
-            'file' => 'required|file|max:10240',
+            'file' => Attachment::uploadRules(),
         ]);
 
-        $originalName = $this->file->getClientOriginalName();
-        $this->file->storeAs(path: 'jobs/attachments_'.$this->job->id, name:$originalName);
+        // Relative path on the one private disk, uuid file name (TASK-454).
+        // This stored an absolute storage_path(), which the log page's reader
+        // could not serve and which broke on restore to another directory.
+        try {
+            $attachment = Attachment::store($this->file, $this->job, $this->job->organization_id, (bool) $this->isPublicUpload);
 
-        Attachment::create([
-            'attachable_id' => $this->job->id,
-            'attachable_type' => $this->job::class,
-            'location' => storage_path('app/private/jobs/attachments_'.$this->job->id.'/'.$originalName),
-            'organization_id' => $this->job->organization_id,
-            'is_public' => $this->isPublicUpload,
-        ]);
+            $this->file = null;
+            $this->isPublicUpload = false;
+            $this->loadJobRelations();
+            $this->dispatch('uploaded');
 
-        $this->isPublicUpload = false;
-        $this->dispatch('uploaded');
-        
-        return back();
+            session()->flash('success', __('Uploaded :name.', ['name' => $attachment->file_name]));
+        } catch (\Throwable $e) {
+            report($e);
+            session()->flash('error', __('The file could not be saved. Please try again.'));
+        }
     }
 
     public function generateInvoice(){
