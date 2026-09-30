@@ -165,6 +165,34 @@ class Invoice extends Model
         return $query->where('status', '!=', self::STATUS_VOID);
     }
 
+    /**
+     * The invoices that carry money once: not a summary (its total is its
+     * children's) and not a child of one (billed through the summary). The
+     * dashboard's revenue, unpaid count and outstanding amount all read this
+     * set, so they cannot disagree (TASK-472).
+     */
+    public function scopeSingle($query)
+    {
+        return $query->where('invoice_type', '!=', self::TYPE_SUMMARY_VALUE)->whereNull('parent_invoice_id');
+    }
+
+    /** Value of invoice_type on a summary invoice. */
+    public const TYPE_SUMMARY_VALUE = 'summary';
+
+    /**
+     * SUM of values->total for a query, in the database. The dashboard used
+     * to load every invoice into memory to add them up (TASK-472).
+     */
+    public static function sumTotals($query): float
+    {
+        $grammar = $query->getQuery()->getGrammar();
+        $driver = $query->getQuery()->getConnection()->getDriverName();
+        $total = $grammar->wrap('values->total');
+        $type = $driver === 'sqlite' ? 'REAL' : 'DECIMAL(14,2)';
+
+        return (float) (clone $query)->selectRaw("COALESCE(SUM(CAST({$total} AS {$type})), 0) as aggregate")->value('aggregate');
+    }
+
     public function scopeVisibleToCustomer($query)
     {
         return $query->whereIn('status', self::CUSTOMER_VISIBLE_STATUSES);

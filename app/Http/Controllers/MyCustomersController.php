@@ -18,7 +18,7 @@ class MyCustomersController extends Controller
 
     public function index(Request $request){
         // Always get all customers for metrics and full listing
-        $allCustomers = Customer::with(['contacts', 'jobs'])->where('organization_id', auth()->user()->organization_id)->get();
+        $allCustomers = Customer::with('contacts')->withCount('jobs')->where('organization_id', auth()->user()->organization_id)->get();
         
         // Get filtered customers if filter is applied
         $filteredCustomers = collect();
@@ -32,7 +32,8 @@ class MyCustomersController extends Controller
         }
         
         // Calculate metrics from all customers
-        $totalJobs = $allCustomers->sum(fn ($customer) => $customer->jobs->count());
+        // withCount: every job used to be loaded just to be counted (TASK-472).
+        $totalJobs = $allCustomers->sum('jobs_count');
         $customerCount = $allCustomers->count();
         $averageJobsPerCustomer = $customerCount > 0 ? round($totalJobs / $customerCount, 1) : 0;
         $customersWithCredit = $allCustomers->filter(fn ($customer) => $customer->account_credit > 0)->count();

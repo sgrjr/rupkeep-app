@@ -224,9 +224,15 @@ class Dashboard extends Component
        }
 
        $canManageUsers = auth()->user()->can('createUser', $organization);
+       // Staff only: customer-portal accounts share the organization_id and
+       // were counted as users of the company (TASK-472).
        $cards[] = (object) [
            'title' => 'Users',
-           'count' => $organization->users()->count(),
+           'count' => $organization->users()->whereIn('organization_role', [
+               \App\Models\User::ROLE_ADMIN,
+               \App\Models\User::ROLE_EMPLOYEE_MANAGER,
+               \App\Models\User::ROLE_EMPLOYEE_STANDARD,
+           ])->count(),
            'links' => array_filter([
                ['url' => route('my.users.index'), 'title' => 'View All'],
                $canManageUsers ? ['url' => route('my.users.create'), 'title' => '+Create New'] : null,
@@ -269,110 +275,49 @@ class Dashboard extends Component
         $recentJobs = null;
         $jobsMarkedForAttention = null;
         if(auth()->user()->can('createJob', $organization)){
-            $allJobs = $organization->jobs()->with(['customer', 'singleInvoices', 'summaryInvoices'])->get();
-            
-            // Calculate job statuses
-            $activeJobs = $allJobs->filter(fn($job) => $job->status === 'ACTIVE');
-            $cancelledJobs = $allJobs->filter(fn($job) => in_array($job->status, ['CANCELLED', 'CANCELLED_NO_GO']));
-            $completedJobs = $allJobs->filter(fn($job) => $job->status === 'COMPLETED');
-            $missingJobNo = $allJobs->filter(fn($job) => $job->job_no === null)->count();
-            
-            // Calculate invoice stats
-            // Only count single invoices (non-summary, non-child) for revenue to avoid double-counting
-            // Summary invoices contain totals from their child invoices, so counting both would duplicate amounts
-            // Void invoices are not bills (TASK-480).
-            $allInvoices = \App\Models\Invoice::where('organization_id', $organization->id)->notVoid()->get();
-            $singleInvoices = $allInvoices->filter(fn($inv) => 
-                $inv->invoice_type !== 'summary' && $inv->parent_invoice_id === null
-            );
-            $unpaidInvoices = $allInvoices->filter(fn($inv) => !$inv->paid_in_full);
-            $unpaidSingleInvoices = $singleInvoices->filter(fn($inv) => !$inv->paid_in_full);
-            
-            // Diagnostic: Analyze invoice totals and sources
-            $revenueBreakdown = [
-                'csv_source' => ['count' => 0, 'total' => 0.0],
-                'calculated_source' => ['count' => 0, 'total' => 0.0],
-                'unknown_source' => ['count' => 0, 'total' => 0.0],
-                'zero_totals' => 0,
-                'null_totals' => 0,
-                'invalid_totals' => []
-            ];
-            
-            foreach ($singleInvoices as $inv) {
-                $values = $inv->values ?? [];
-                $total = $values['total'] ?? null;
-                $source = $values['import_source'] ?? 'unknown';
-                
-                if ($total === null) {
-                    $revenueBreakdown['null_totals']++;
-                    $revenueBreakdown['invalid_totals'][] = [
-                        'invoice_id' => $inv->id,
-                        'job_id' => $inv->pilot_car_job_id,
-                        'issue' => 'null_total'
-                    ];
-                } elseif ((float)$total == 0) {
-                    $revenueBreakdown['zero_totals']++;
-                } else {
-                    $totalFloat = (float)$total;
-                    if ($source === 'csv') {
-                        $revenueBreakdown['csv_source']['count']++;
-                        $revenueBreakdown['csv_source']['total'] += $totalFloat;
-                    } elseif ($source === 'calculated') {
-                        $revenueBreakdown['calculated_source']['count']++;
-                        $revenueBreakdown['calculated_source']['total'] += $totalFloat;
-                    } else {
-                        $revenueBreakdown['unknown_source']['count']++;
-                        $revenueBreakdown['unknown_source']['total'] += $totalFloat;
-                    }
-                }
-            }
-            
-            // Total revenue = sum of single invoices with CSV source only (excludes calculated/unknown source invoices)
-            // This ensures revenue matches the CSV import total exactly
-            $totalRevenue = $singleInvoices
-                ->filter(fn($inv) => ($inv->values['import_source'] ?? 'unknown') === 'csv')
-                ->sum(fn($inv) => (float)($inv->values['total'] ?? 0));
-            // Outstanding = sum of unpaid single invoices only
-            $unpaidAmount = $unpaidSingleInvoices->sum(fn($inv) => (float)($inv->values['total'] ?? 0));
-            
-            // Log diagnostic information
-            \Illuminate\Support\Facades\Log::info('Dashboard: Revenue calculation diagnostics', [
-                'organization_id' => $organization->id,
-                'total_single_invoices' => $singleInvoices->count(),
-                'total_revenue' => $totalRevenue,
-                'revenue_breakdown' => $revenueBreakdown,
-                'unpaid_amount' => $unpaidAmount,
-                'unpaid_invoices_count' => $unpaidSingleInvoices->count(),
-                'validation' => [
-                    'has_null_totals' => $revenueBreakdown['null_totals'] > 0,
-                    'has_zero_totals' => $revenueBreakdown['zero_totals'] > 0,
-                    'has_invalid_totals' => count($revenueBreakdown['invalid_totals']) > 0,
-                    'csv_vs_calculated_ratio' => $revenueBreakdown['calculated_source']['total'] > 0 
-                        ? round(($revenueBreakdown['csv_source']['total'] / $revenueBreakdown['calculated_source']['total']) * 100, 2)
-                        : 0
-                ]
-            ]);
-            
-            // Log warnings for issues
-            if ($revenueBreakdown['null_totals'] > 0 || count($revenueBreakdown['invalid_totals']) > 0) {
-                \Illuminate\Support\Facades\Log::warning('Dashboard: Invoices with invalid totals detected', [
-                    'null_totals_count' => $revenueBreakdown['null_totals'],
-                    'invalid_totals' => array_slice($revenueBreakdown['invalid_totals'], 0, 10) // Limit to first 10
-                ]);
-            }
-            
+            // Counted in the database, not by loading every job and invoice into
+            // memory on each render (TASK-472). A job is completed when a
+            // non-void single invoice or a summary invoice bills it, cancelled
+            // when canceled_at is set, active otherwise: the same rule as
+            // PilotCarJob::getStatusAttribute().
+            $jobQuery = fn () => $organization->jobs();
+            $billed = function ($query) {
+                $query->where(function ($q) {
+                    $q->whereHas('singleInvoices', fn ($i) => $i->notVoid())
+                        ->orWhereHas('summaryInvoices');
+                });
+            };
+
+            $totalJobs = $jobQuery()->count();
+            $cancelledJobs = $jobQuery()->whereNotNull('canceled_at')->count();
+            $completedJobs = $jobQuery()->whereNull('canceled_at')->where($billed)->count();
+            $activeJobs = $totalJobs - $cancelledJobs - $completedJobs;
+            $missingJobNo = $jobQuery()->whereNull('job_no')->count();
+
+            // Void invoices are not bills (TASK-480). Revenue, the unpaid count
+            // and the outstanding amount all read the same set of single
+            // invoices, whatever their import source: the old revenue figure
+            // counted CSV imports only, so nothing invoiced in the app ever
+            // moved it, and "Unpaid" counted summaries and children while
+            // "Outstanding" did not (TASK-472).
+            $invoices = fn () => \App\Models\Invoice::where('organization_id', $organization->id)->notVoid();
+            $totalInvoices = $invoices()->count();
+            $totalRevenue = \App\Models\Invoice::sumTotals($invoices()->single());
+            $unpaidInvoices = $invoices()->single()->where('paid_in_full', false)->count();
+            $unpaidAmount = \App\Models\Invoice::sumTotals($invoices()->single()->where('paid_in_full', false));
+
             // Calculate total account credits
             $totalAccountCredits = \App\Models\Customer::where('organization_id', $organization->id)
                 ->sum('account_credit');
-            
+
             $managerStats = (object)[
-                'total_jobs' => $allJobs->count(),
-                'active_jobs' => $activeJobs->count(),
-                'cancelled_jobs' => $cancelledJobs->count(),
-                'completed_jobs' => $completedJobs->count(),
+                'total_jobs' => $totalJobs,
+                'active_jobs' => $activeJobs,
+                'cancelled_jobs' => $cancelledJobs,
+                'completed_jobs' => $completedJobs,
                 'missing_job_no' => $missingJobNo,
-                'total_invoices' => $allInvoices->count(),
-                'unpaid_invoices' => $unpaidInvoices->count(),
+                'total_invoices' => $totalInvoices,
+                'unpaid_invoices' => $unpaidInvoices,
                 'total_revenue' => $totalRevenue,
                 'unpaid_amount' => $unpaidAmount,
                 'total_account_credits' => (float)$totalAccountCredits,
@@ -407,21 +352,23 @@ class Dashboard extends Component
                 ->orderByDesc('scheduled_pickup_at')
                 ->get();
             
-            // Get incomplete jobs first (not completed, not cancelled) - ordered by scheduled_pickup_at newest first
-            $incompleteJobs = $allJobs->filter(function($job) {
-                $status = $job->status;
-                return $status !== 'COMPLETED' && 
-                       $status !== 'CANCELLED' && 
-                       $status !== 'CANCELLED_NO_GO';
-            })
-            ->sortByDesc('scheduled_pickup_at')
-            ->take(10);
-            
-            // If no incomplete jobs, fall back to recent jobs (all jobs ordered by scheduled_pickup_at newest first)
-            if ($incompleteJobs->count() > 0) {
-                $recentJobs = $incompleteJobs;
-            } else {
-                $recentJobs = $allJobs->sortByDesc('scheduled_pickup_at')->take(10);
+            // Ten open jobs, newest pickup first; when there are none, the ten
+            // most recent jobs of any state.
+            $recentJobs = $jobQuery()
+                ->whereNull('canceled_at')
+                ->whereDoesntHave('singleInvoices', fn ($i) => $i->notVoid())
+                ->whereDoesntHave('summaryInvoices')
+                ->with(['customer', 'singleInvoices', 'summaryInvoices', 'logs'])
+                ->orderByDesc('scheduled_pickup_at')
+                ->take(10)
+                ->get();
+
+            if ($recentJobs->isEmpty()) {
+                $recentJobs = $jobQuery()
+                    ->with(['customer', 'singleInvoices', 'summaryInvoices', 'logs'])
+                    ->orderByDesc('scheduled_pickup_at')
+                    ->take(10)
+                    ->get();
             }
         }
 
