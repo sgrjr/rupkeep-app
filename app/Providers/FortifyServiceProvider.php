@@ -55,7 +55,10 @@ class FortifyServiceProvider extends ServiceProvider
         // endpoints are throttled per-IP instead, since they are guessable
         // secrets on unauthenticated routes rather than a send trigger.
         RateLimiter::for('login-code', function (Request $request) {
-            $throttleKey = Str::transliterate(Str::lower((string) $request->input('email')).'|'.$request->ip());
+            // Keyed on the address alone (TASK-441): keyed on email+IP, a
+            // caller rotating addresses could mail-bomb one inbox, and each
+            // request retires the victim's live code.
+            $throttleKey = Str::transliterate(Str::lower((string) $request->input('email')));
 
             return Limit::perHour(3)->by($throttleKey);
         });

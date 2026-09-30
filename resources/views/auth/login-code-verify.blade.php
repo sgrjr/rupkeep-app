@@ -18,6 +18,13 @@
             @endif
 
             <div>
+                <x-label for="email" value="{{ __('Email') }}" />
+                <x-input id="email" class="block mt-1 w-full" type="email" name="email"
+                         :value="old('email')" required autocomplete="email" />
+                <x-input-error for="email" class="mt-2" />
+            </div>
+
+            <div class="mt-4">
                 <x-label for="code" value="{{ __('Login Code') }}" />
                 <x-input id="code" class="block mt-1 w-full tracking-widest uppercase" type="text" name="code"
                          :value="old('code')" required autofocus maxlength="12" autocomplete="one-time-code" />

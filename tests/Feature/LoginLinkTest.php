@@ -165,7 +165,7 @@ class LoginLinkTest extends TestCase
         $user = $this->staff();
         $code = app(LoginCodeService::class)->generate($user);
 
-        $this->post(route('login-code.verify'), ['code' => $code->code]);
+        $this->post(route('login-code.verify'), ['code' => $code->code, 'email' => $code->user->email]);
         $this->assertAuthenticatedAs($user);
         $this->post(route('logout'));
 
@@ -184,7 +184,7 @@ class LoginLinkTest extends TestCase
         $this->post(route('logout'));
 
         $this->from(route('login-code.verify-form'))
-            ->post(route('login-code.verify'), ['code' => $code->code])
+            ->post(route('login-code.verify'), ['code' => $code->code, 'email' => $code->user->email])
             ->assertSessionHasErrors('code');
 
         $this->assertGuest();

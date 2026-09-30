@@ -52,11 +52,14 @@ class LoginCodeService
     /**
      * Attempt to consume a typed code and return the associated user.
      */
-    public function consume(string $code): ?User
+    public function consume(string $code, ?string $email = null): ?User
     {
         /** @var LoginCode|null $loginCode */
         $loginCode = LoginCode::query()
-            ->where('code', strtoupper($code))
+            ->where('code', strtoupper(trim($code)))
+            // Bound to the address it was issued to (TASK-441): a guessed
+            // code is useless without the matching email.
+            ->when($email !== null, fn ($q) => $q->whereHas('user', fn ($u) => $u->where('email', strtolower(trim($email)))))
             ->first();
 
         return $this->redeem($loginCode);
@@ -106,6 +109,12 @@ class LoginCodeService
     protected function redeem(?LoginCode $loginCode): ?User
     {
         if (!$loginCode || $loginCode->isUsed() || $loginCode->isExpired()) {
+            return null;
+        }
+
+        // A soft-deleted account has no user behind its code any more; treat
+        // the code as invalid rather than handing a null to signIn() (TASK-441).
+        if (! $loginCode->user) {
             return null;
         }
 

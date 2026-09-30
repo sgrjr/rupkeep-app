@@ -97,7 +97,7 @@ class LoginCodeTest extends TestCase
         $code = $service->generate($customerUser);
 
         $response = $this->post(route('login-code.verify'), [
-            'code' => $code->code,
+            'code' => $code->code, 'email' => $code->user->email,
         ]);
 
         $response->assertRedirect();
@@ -116,7 +116,7 @@ class LoginCodeTest extends TestCase
 
         $code = app(LoginCodeService::class)->generate($user);
 
-        $this->post(route('login-code.verify'), ['code' => $code->code])
+        $this->post(route('login-code.verify'), ['code' => $code->code, 'email' => $code->user->email])
             ->assertRedirect('/dashboard');
 
         $this->assertAuthenticatedAs($user);
@@ -133,7 +133,7 @@ class LoginCodeTest extends TestCase
         ]);
 
         $response = $this->from(route('login-code.verify-form'))->post(route('login-code.verify'), [
-            'code' => $code->code,
+            'code' => $code->code, 'email' => $code->user->email,
         ]);
 
         $response->assertSessionHasErrors('code');
@@ -151,7 +151,7 @@ class LoginCodeTest extends TestCase
         ]);
 
         $response = $this->from(route('login-code.verify-form'))->post(route('login-code.verify'), [
-            'code' => $code->code,
+            'code' => $code->code, 'email' => $code->user->email,
         ]);
 
         $response->assertSessionHasErrors('code');

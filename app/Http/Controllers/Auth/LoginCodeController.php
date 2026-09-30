@@ -30,9 +30,33 @@ class LoginCodeController extends Controller
     ) {
     }
 
+    /**
+     * Only a path on this site may be a post-login destination (TASK-441).
+     * Anything else (another host, a scheme, a protocol-relative //host) is
+     * dropped and the role's default landing page is used instead.
+     */
+    public static function safeRedirect(?string $redirect): ?string
+    {
+        if ($redirect === null || $redirect === '') {
+            return null;
+        }
+
+        $redirect = trim($redirect);
+
+        if (! str_starts_with($redirect, '/') || str_starts_with($redirect, '//') || str_starts_with($redirect, '/\\')) {
+            return null;
+        }
+
+        if (preg_match('/[\r\n]/', $redirect)) {
+            return null;
+        }
+
+        return $redirect;
+    }
+
     public function create(Request $request)
     {
-        if ($redirect = $request->query('redirect')) {
+        if ($redirect = self::safeRedirect($request->query('redirect'))) {
             $request->session()->put('customer_portal.redirect', $redirect);
         }
 
@@ -48,8 +72,8 @@ class LoginCodeController extends Controller
             'redirect' => ['nullable', 'string'],
         ]);
 
-        if (! empty($data['redirect'])) {
-            $request->session()->put('customer_portal.redirect', $data['redirect']);
+        if ($redirect = self::safeRedirect($data['redirect'] ?? null)) {
+            $request->session()->put('customer_portal.redirect', $redirect);
         }
 
         $user = User::where('email', $data['email'])->first();
@@ -67,7 +91,7 @@ class LoginCodeController extends Controller
 
     public function verifyForm(Request $request)
     {
-        if ($redirect = $request->query('redirect')) {
+        if ($redirect = self::safeRedirect($request->query('redirect'))) {
             $request->session()->put('customer_portal.redirect', $redirect);
         }
 
@@ -79,11 +103,14 @@ class LoginCodeController extends Controller
     public function verify(Request $request)
     {
         $data = $request->validate([
+            'email' => ['required', 'string', 'email'],
             'code' => ['required', 'string', 'min:4', 'max:64'],
             'redirect' => ['nullable', 'string'],
         ]);
 
-        $user = $this->service->consume($data['code']);
+        // The code alone was the whole secret; it is now bound to the
+        // address it was issued to (TASK-441).
+        $user = $this->service->consume($data['code'], $data['email']);
 
         if (!$user) {
             throw ValidationException::withMessages([
@@ -201,7 +228,7 @@ class LoginCodeController extends Controller
 
         $request->session()->regenerate();
 
-        $redirect = $redirect ?? $request->session()->pull('customer_portal.redirect');
+        $redirect = self::safeRedirect($redirect ?? $request->session()->pull('customer_portal.redirect'));
 
         if ($redirect) {
             return redirect()->to($redirect);
