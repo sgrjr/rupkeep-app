@@ -46,6 +46,23 @@ class PricingSetting extends Model
      */
     public function setValueAttribute($value)
     {
+        // A numeric setting has to be a number (TASK-452). (string) 'abc'
+        // used to store as "abc" and read back as 0.0; the pricing page
+        // validates first, this is the backstop for every other writer.
+        if (in_array($this->setting_type, ['number', 'float', 'integer', 'int'], true)) {
+            $clean = is_string($value) ? str_replace(',', '', trim($value)) : $value;
+
+            if (! is_numeric($clean)) {
+                throw new \InvalidArgumentException("Pricing setting {$this->setting_key} must be numeric; got " . var_export($value, true));
+            }
+
+            if ((float) $clean < 0) {
+                throw new \InvalidArgumentException("Pricing setting {$this->setting_key} cannot be negative; got " . var_export($value, true));
+            }
+
+            $value = in_array($this->setting_type, ['integer', 'int'], true) ? (int) $clean : (float) $clean;
+        }
+
         $this->attributes['setting_value'] = match($this->setting_type) {
             'json' => json_encode($value),
             'boolean', 'bool' => $value ? '1' : '0',

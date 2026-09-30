@@ -77,6 +77,7 @@
                                            value="{{ $rate['name'] }}"
                                            wire:change="updateRate('{{ $code }}', 'name', $event.target.value)"
                                            class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                           @error("rates.{{ $code }}.name")<p class="mt-1 text-xs font-semibold text-red-600">{{ $message }}</p>@enderror
                                 </div>
                                 <div>
                                     <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Description') }}</label>
@@ -84,6 +85,7 @@
                                            value="{{ $rate['description'] }}"
                                            wire:change="updateRate('{{ $code }}', 'description', $event.target.value)"
                                            class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600 shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                           @error("rates.{{ $code }}.description")<p class="mt-1 text-xs font-semibold text-red-600">{{ $message }}</p>@enderror
                                 </div>
                                 <p class="text-[11px] text-slate-400">{{ __('Leave blank to use the default.') }}</p>
                             </div>
@@ -100,6 +102,7 @@
                                                    value="{{ $rate['rate_per_mile'] }}"
                                                    wire:change="updateRate('{{ $code }}', 'rate_per_mile', $event.target.value)"
                                                    class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                                   @error("rates.{{ $code }}.rate_per_mile")<p class="mt-1 text-xs font-semibold text-red-600">{{ $message }}</p>@enderror
                                         </div>
                                     </div>
                                 </div>
@@ -115,6 +118,7 @@
                                                    value="{{ $rate['flat_amount'] }}"
                                                    wire:change="updateRate('{{ $code }}', 'flat_amount', $event.target.value)"
                                                    class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                                   @error("rates.{{ $code }}.flat_amount")<p class="mt-1 text-xs font-semibold text-red-600">{{ $message }}</p>@enderror
                                         </div>
                                     </div>
                                     @if(isset($rate['max_miles']))
@@ -126,6 +130,7 @@
                                                    value="{{ $rate['max_miles'] }}"
                                                    wire:change="updateRate('{{ $code }}', 'max_miles', $event.target.value)"
                                                    class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                                   @error("rates.{{ $code }}.max_miles")<p class="mt-1 text-xs font-semibold text-red-600">{{ $message }}</p>@enderror
                                         </div>
                                     @endif
                                     @if(isset($rate['max_hours']))
@@ -137,6 +142,7 @@
                                                    value="{{ $rate['max_hours'] }}"
                                                    wire:change="updateRate('{{ $code }}', 'max_hours', $event.target.value)"
                                                    class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                                   @error("rates.{{ $code }}.max_hours")<p class="mt-1 text-xs font-semibold text-red-600">{{ $message }}</p>@enderror
                                         </div>
                                     @endif
                                 </div>
@@ -176,6 +182,7 @@
                                            value="{{ $charge['name'] }}"
                                            wire:change="updateCharge('{{ $key }}', 'name', $event.target.value)"
                                            class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                           @error("charges.{{ $key }}.name")<p class="mt-1 text-xs font-semibold text-red-600">{{ $message }}</p>@enderror
                                 </div>
                                 <div>
                                     <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Description') }}</label>
@@ -183,6 +190,7 @@
                                            value="{{ $charge['description'] }}"
                                            wire:change="updateCharge('{{ $key }}', 'description', $event.target.value)"
                                            class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600 shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                           @error("charges.{{ $key }}.description")<p class="mt-1 text-xs font-semibold text-red-600">{{ $message }}</p>@enderror
                                 </div>
                                 @if(! $charge['is_custom'])
                                     <p class="text-[11px] text-slate-400">{{ __('Leave blank to use the default.') }}</p>
@@ -198,6 +206,7 @@
                                         <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Charged') }}</label>
                                         <select wire:change="updateCharge('{{ $key }}', 'unit', $event.target.value)"
                                                 class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                                @error("charges.{{ $key }}.unit")<p class="mt-1 text-xs font-semibold text-red-600">{{ $message }}</p>@enderror
                                             @foreach($unitOptions as $unitValue => $unitLabel)
                                                 <option value="{{ $unitValue }}" @selected($charge['unit'] === $unitValue)>{{ $unitLabel }}</option>
                                             @endforeach
@@ -215,6 +224,7 @@
                                                        value="{{ $charge[$amountField] }}"
                                                        wire:change="updateCharge('{{ $key }}', '{{ $amountField }}', $event.target.value)"
                                                        class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                                       @error("charges.{{ $key }}.{{ $amountField }}")<p class="mt-1 text-xs font-semibold text-red-600">{{ $message }}</p>@enderror
                                             </div>
                                         </div>
                                     @endif
@@ -232,6 +242,7 @@
                                                    value="{{ $charge['rate_per_hour'] }}"
                                                    wire:change="updateCharge('{{ $key }}', 'rate_per_hour', $event.target.value)"
                                                    class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                                   @error("charges.{{ $key }}.rate_per_hour")<p class="mt-1 text-xs font-semibold text-red-600">{{ $message }}</p>@enderror
                                         </div>
                                     </div>
                                 @endif
@@ -246,6 +257,7 @@
                                                    value="{{ $charge['rate_per_stop'] }}"
                                                    wire:change="updateCharge('{{ $key }}', 'rate_per_stop', $event.target.value)"
                                                    class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                                   @error("charges.{{ $key }}.rate_per_stop")<p class="mt-1 text-xs font-semibold text-red-600">{{ $message }}</p>@enderror
                                         </div>
                                     </div>
                                 @endif
@@ -260,6 +272,7 @@
                                                    value="{{ $charge['rate_per_mile'] }}"
                                                    wire:change="updateCharge('{{ $key }}', 'rate_per_mile', $event.target.value)"
                                                    class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                                   @error("charges.{{ $key }}.rate_per_mile")<p class="mt-1 text-xs font-semibold text-red-600">{{ $message }}</p>@enderror
                                         </div>
                                     </div>
                                 @endif
@@ -272,6 +285,7 @@
                                                value="{{ $charge['minimum_hours'] }}"
                                                wire:change="updateCharge('{{ $key }}', 'minimum_hours', $event.target.value)"
                                                class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                               @error("charges.{{ $key }}.minimum_hours")<p class="mt-1 text-xs font-semibold text-red-600">{{ $message }}</p>@enderror
                                     </div>
                                 @endif
                                 @if(isset($charge['free_miles']))
@@ -283,6 +297,7 @@
                                                value="{{ $charge['free_miles'] }}"
                                                wire:change="updateCharge('{{ $key }}', 'free_miles', $event.target.value)"
                                                class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                               @error("charges.{{ $key }}.free_miles")<p class="mt-1 text-xs font-semibold text-red-600">{{ $message }}</p>@enderror
                                     </div>
                                 @endif
                             </div>
@@ -373,6 +388,7 @@
                                    @checked($cancellation['auto_determine'])
                                    wire:change="updateCancellation('auto_determine', $event.target.checked ? 1 : 0)"
                                    class="h-4 w-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500">
+                                   @error("cancellation.auto_determine")<p class="mt-1 text-xs font-semibold text-red-600">{{ $message }}</p>@enderror
                             <label class="text-sm font-semibold text-slate-700">{{ __('Enable auto-determination') }}</label>
                         </div>
                     </div>
@@ -389,6 +405,7 @@
                                    value="{{ $cancellation['hours_before_pickup_for_24hr_charge'] }}"
                                    wire:change="updateCancellation('hours_before_pickup_for_24hr_charge', $event.target.value)"
                                    class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                   @error("cancellation.hours_before_pickup_for_24hr_charge")<p class="mt-1 text-xs font-semibold text-red-600">{{ $message }}</p>@enderror
                         </div>
                     </div>
                 </div>
@@ -414,6 +431,7 @@
                                    @checked($paymentTerms['due_immediately'])
                                    wire:change="updatePaymentTerms('due_immediately', $event.target.checked ? 1 : 0)"
                                    class="h-4 w-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500">
+                                   @error("payment_terms.due_immediately")<p class="mt-1 text-xs font-semibold text-red-600">{{ $message }}</p>@enderror
                             <label class="text-sm font-semibold text-slate-700">{{ __('Enable') }}</label>
                         </div>
                     </div>
@@ -427,6 +445,7 @@
                                    value="{{ $paymentTerms['grace_period_days'] }}"
                                    wire:change="updatePaymentTerms('grace_period_days', $event.target.value)"
                                    class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                   @error("payment_terms.grace_period_days")<p class="mt-1 text-xs font-semibold text-red-600">{{ $message }}</p>@enderror
                         </div>
 
                         <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
@@ -438,6 +457,7 @@
                                        value="{{ $paymentTerms['late_fee_percentage'] }}"
                                        wire:change="updatePaymentTerms('late_fee_percentage', $event.target.value)"
                                        class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                       @error("payment_terms.late_fee_percentage")<p class="mt-1 text-xs font-semibold text-red-600">{{ $message }}</p>@enderror
                                 <span class="text-slate-500">%</span>
                             </div>
                         </div>
@@ -450,6 +470,7 @@
                                    value="{{ $paymentTerms['late_fee_period_days'] }}"
                                    wire:change="updatePaymentTerms('late_fee_period_days', $event.target.value)"
                                    class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                   @error("payment_terms.late_fee_period_days")<p class="mt-1 text-xs font-semibold text-red-600">{{ $message }}</p>@enderror
                         </div>
                     </div>
 
@@ -461,6 +482,7 @@
                                   wire:change="updatePaymentTerms('terms_text', $event.target.value)"
                                   placeholder="{{ \App\Services\PricingResolver::termsTextFor($paymentTerms) }}"
                                   class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">{{ ($paymentTerms['terms_text_is_custom'] ?? false) ? $paymentTerms['terms_text'] : '' }}</textarea>
+                                  @error("payment_terms.terms_text")<p class="mt-1 text-xs font-semibold text-red-600">{{ $message }}</p>@enderror
                         <p class="mt-1 text-xs text-slate-500">{{ __('Leave blank to print the sentence the figures above imply. Write your own to replace it on every invoice.') }}</p>
                     </div>
                 </div>

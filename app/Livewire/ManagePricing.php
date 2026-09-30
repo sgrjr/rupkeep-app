@@ -7,12 +7,52 @@ use App\Models\PricingSetting;
 use App\Models\Organization;
 use App\Services\PricingResolver;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class ManagePricing extends Component
 {
     use AuthorizesRequests;
+
+    /**
+     * What each editable field may hold (TASK-452). Anything not listed here
+     * is refused: these values feed invoice math directly, and before this
+     * 'abc' stored as 0, '-5' as -5 (a negative wait rate turned wait time
+     * into a credit), and any code or field name at all was written through.
+     */
+    public const RATE_FIELD_RULES = [
+        'name' => ['string', 'max:120'],
+        'description' => ['string', 'max:500'],
+        'rate_per_mile' => ['numeric', 'min:0', 'max:1000'],
+        'flat_amount' => ['numeric', 'min:0', 'max:100000'],
+        'max_miles' => ['integer', 'min:0', 'max:10000'],
+        'max_hours' => ['integer', 'min:0', 'max:168'],
+    ];
+
+    public const CHARGE_FIELD_RULES = [
+        'name' => ['string', 'max:120'],
+        'description' => ['string', 'max:500'],
+        'rate_per_hour' => ['numeric', 'min:0', 'max:1000'],
+        'rate_per_stop' => ['numeric', 'min:0', 'max:10000'],
+        'rate_per_mile' => ['numeric', 'min:0', 'max:1000'],
+        'flat_amount' => ['numeric', 'min:0', 'max:100000'],
+        'minimum_hours' => ['numeric', 'min:0', 'max:24'],
+        'free_miles' => ['integer', 'min:0', 'max:10000'],
+    ];
+
+    public const CANCELLATION_FIELD_RULES = [
+        'auto_determine' => ['boolean'],
+        'hours_before_pickup_for_24hr_charge' => ['integer', 'min:0', 'max:720'],
+    ];
+
+    public const PAYMENT_TERMS_FIELD_RULES = [
+        'due_immediately' => ['boolean'],
+        'grace_period_days' => ['integer', 'min:0', 'max:365'],
+        'late_fee_percentage' => ['numeric', 'min:0', 'max:100'],
+        'late_fee_period_days' => ['integer', 'min:1', 'max:365'],
+        'terms_text' => ['string', 'max:2000'],
+    ];
 
     public $organization;
     public $rates = [];
@@ -62,16 +102,41 @@ class ManagePricing extends Component
     {
         $this->authorize('createJob', $this->organization);
 
-        $key = "rates.{$code}.{$field}";
+        $code = (string) $code;
+        $field = (string) $field;
+        $errorKey = "rates.{$code}.{$field}";
+
+        if (! array_key_exists($code, config('pricing.rates', []))) {
+            return $this->refuse($errorKey, __('That rate is not on the price list.'));
+        }
+
+        $rateType = config("pricing.rates.{$code}.type");
+        $allowed = array_filter(
+            array_keys(self::RATE_FIELD_RULES),
+            fn ($f) => match ($f) {
+                'rate_per_mile' => $rateType === 'per_mile',
+                'flat_amount', 'max_miles', 'max_hours' => $rateType === 'flat',
+                default => true,
+            }
+        );
+
+        if (! in_array($field, $allowed, true)) {
+            return $this->refuse($errorKey, __('That is not a field of this rate.'));
+        }
+
+        if (! $this->passes($errorKey, $field, $value, self::RATE_FIELD_RULES[$field])) {
+            return;
+        }
+
         $type = in_array($field, ['rate_per_mile', 'flat_amount', 'max_miles', 'max_hours']) ? 'float' : 'string';
 
         if ($value === '' || $value === null) {
             // Delete to revert to config default
-            PricingSetting::deleteForOrganization($this->organization->id, $key);
+            PricingSetting::deleteForOrganization($this->organization->id, "rates.{$code}.{$field}");
         } else {
             PricingSetting::setValueForOrganization(
                 $this->organization->id,
-                $key,
+                "rates.{$code}.{$field}",
                 $value,
                 $type,
                 'rates'
@@ -86,7 +151,35 @@ class ManagePricing extends Component
     {
         $this->authorize('createJob', $this->organization);
 
+        $key = (string) $key;
+        $field = (string) $field;
+        $errorKey = "charges.{$key}.{$field}";
+
         $isCustom = PricingResolver::isCustomCharge($this->organization->id, $key);
+
+        if (! $isCustom && ! array_key_exists($key, config('pricing.charges', []))) {
+            return $this->refuse($errorKey, __('That charge is not on the price list.'));
+        }
+
+        // A custom charge stores its unit; a config charge's fields are fixed
+        // by the config entry it overrides.
+        if ($field === 'unit') {
+            if (! $isCustom) {
+                return $this->refuse($errorKey, __('The unit of a standard charge cannot be changed.'));
+            }
+
+            if (! array_key_exists((string) $value, PricingResolver::CUSTOM_UNITS)) {
+                return $this->refuse($errorKey, __('Choose one of the listed units.'));
+            }
+        } elseif (! array_key_exists($field, self::CHARGE_FIELD_RULES)) {
+            return $this->refuse($errorKey, __('That is not a field of this charge.'));
+        } elseif (! $isCustom
+            && in_array($field, PricingResolver::CHARGE_NUMERIC_FIELDS, true)
+            && ! array_key_exists($field, config("pricing.charges.{$key}", []))) {
+            return $this->refuse($errorKey, __('That is not a field of this charge.'));
+        } elseif (! $this->passes($errorKey, $field, $value, self::CHARGE_FIELD_RULES[$field])) {
+            return;
+        }
 
         // A custom charge has no config entry to fall back to, so clearing its
         // name would publish an unnamed card on the public price sheet rather
@@ -133,6 +226,7 @@ class ManagePricing extends Component
                 'nullable',
                 'numeric',
                 'min:0',
+                'max:100000',
             ],
         ], [], [
             'newCharge.name' => __('name'),
@@ -179,6 +273,17 @@ class ManagePricing extends Component
     {
         $this->authorize('createJob', $this->organization);
 
+        $field = (string) $field;
+        $errorKey = "cancellation.{$field}";
+
+        if (! array_key_exists($field, self::CANCELLATION_FIELD_RULES)) {
+            return $this->refuse($errorKey, __('That is not a cancellation setting.'));
+        }
+
+        if (! $this->passes($errorKey, $field, $value, self::CANCELLATION_FIELD_RULES[$field])) {
+            return;
+        }
+
         $key = "cancellation.{$field}";
         $type = $field === 'auto_determine' ? 'boolean' : ($field === 'hours_before_pickup_for_24hr_charge' ? 'integer' : 'string');
 
@@ -202,6 +307,17 @@ class ManagePricing extends Component
     {
         $this->authorize('createJob', $this->organization);
 
+        $field = (string) $field;
+        $errorKey = "payment_terms.{$field}";
+
+        if (! array_key_exists($field, self::PAYMENT_TERMS_FIELD_RULES)) {
+            return $this->refuse($errorKey, __('That is not a payment-terms setting.'));
+        }
+
+        if (! $this->passes($errorKey, $field, $value, self::PAYMENT_TERMS_FIELD_RULES[$field])) {
+            return;
+        }
+
         $key = "payment_terms.{$field}";
         $type = match($field) {
             'due_immediately' => 'boolean',
@@ -224,6 +340,45 @@ class ManagePricing extends Component
 
         $this->loadPricingData();
         session()->flash('success', __('Payment terms updated successfully.'));
+    }
+
+    /**
+     * Validate one posted value. A blank is always allowed: it means "revert
+     * to the default". Anything else has to satisfy the field's rules, and a
+     * failure is shown beside the field and as a toast, with the page reloaded
+     * so the input shows the value that is actually stored.
+     */
+    protected function passes(string $errorKey, string $field, $value, array $rules): bool
+    {
+        $this->resetErrorBag($errorKey);
+
+        if ($value === '' || $value === null) {
+            return true;
+        }
+
+        $label = __(ucwords(str_replace('_', ' ', $field)));
+
+        $validator = Validator::make(
+            ['value' => is_scalar($value) ? $value : null],
+            ['value' => ['required', ...$rules]],
+            [],
+            ['value' => $label]
+        );
+
+        if ($validator->passes()) {
+            return true;
+        }
+
+        $this->refuse($errorKey, $validator->errors()->first('value'));
+
+        return false;
+    }
+
+    protected function refuse(string $errorKey, string $message): void
+    {
+        $this->addError($errorKey, $message);
+        $this->loadPricingData();
+        session()->flash('error', __('Not saved: :reason', ['reason' => $message]));
     }
 
     public function render()
