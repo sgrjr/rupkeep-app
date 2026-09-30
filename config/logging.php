@@ -58,7 +58,11 @@ return [
         'stack' => [
             'driver' => 'stack',
             'channels' => explode(',', env('LOG_STACK', 'single')),
-            'ignore_exceptions' => false,
+            // A log write that fails must never take the site down: an unwritable
+            // log file turned every request into a 500 on 2026-09-30, because
+            // Laravel reports exceptions through this channel and Monolog's
+            // StreamHandler throws when it cannot open the file.
+            'ignore_exceptions' => true,
         ],
 
         'single' => [
@@ -77,9 +81,6 @@ return [
             'path' => storage_path('logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'days' => env('LOG_DAILY_DAYS', 14),
-            // Group-writable, so a file first created by an artisan run in a
-            // shell is still writable by php-fpm (2026-09-30 outage).
-            'permission' => 0664,
             'replace_placeholders' => true,
             'tap' => [TrimStackTraceTap::class],
             'formatter_with' => [
