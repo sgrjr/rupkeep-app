@@ -131,9 +131,14 @@ class ImpersonateRouteTest extends TestCase
         $session = app('session.store')->all();
         $hashKey = 'password_hash_'.auth()->getDefaultDriver();
 
+        // Laravel 12 stores an HMAC of the hash rather than the hash itself
+        // (SessionGuard::hashPasswordForCookie); the middleware accepts either.
+        $sessionGuard = auth()->guard('web');
+
         $this->assertArrayHasKey($hashKey, $session);
+        $this->assertNotSame($sessionGuard->hashPasswordForCookie($admin->password), $session[$hashKey]);
         $this->assertSame(
-            $target->password,
+            $sessionGuard->hashPasswordForCookie($target->password),
             $session[$hashKey],
             'The session must carry the password hash of the user being impersonated. '
             .'Holding the one belonging to the impersonator makes AuthenticateSession '

@@ -20,7 +20,6 @@ yarn-error.log
 /.idea
 /.vscode
 /.zed
-*.lock
 
 # Dispatch bridge file. Derived from the canonical tasks DB; written on every
 # `dispatch:pull` / `dispatch:push`. The DB on production is the source of truth.

@@ -26,6 +26,17 @@ Super users deploy from **`/admin/server-management`**. The **"Deploy Update"** 
 git pull  →  php artisan assets:build  →  php artisan optimize:clear  →  php artisan optimize
 ```
 
+> **`composer.lock` is committed as of TASK-426 (Laravel 12.69, Livewire 3.8).**
+> The in-app deploy does **not** run Composer, so after a deploy that changes
+> `composer.lock`, run this on the host before the app is used:
+>
+> ```bash
+> composer install --no-dev --optimize-autoloader && php artisan optimize
+> ```
+>
+> Confirm with `composer show laravel/framework livewire/livewire` and
+> `composer audit` (expect no advisories). PHP 8.2 is sufficient.
+
 After a deploy that includes a migration, also click **"Run database migrations"** (`php artisan migrate --force`) on the same page. Command output is displayed inline; each command is whitelisted in `app/Http/Controllers/AdminToolsController.php`.
 
 Use **"Deploy Update"** (pull only), not **"Full Deploy"** — the latter also commits and pushes *from the server*, which can diverge from GitHub.

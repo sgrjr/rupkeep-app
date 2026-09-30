@@ -12,9 +12,6 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Google\Client;
-use Google\Service\Gmail;
-use Google\Service\Gmail\Message;
 
 class SendUserNotification
 {
@@ -204,29 +201,6 @@ class SendUserNotification
                 }
             }
         }
-        /*
-        $client = new Client();
-        $client->setClientId(env('GOOGLE_CLIENT_ID'));
-        $client->setClientSecret(env('GOOGLE_CLIENT_SECRET'));
-        $client->setRedirectUri(env('GOOGLE_REDIRECT_URI'));
-        $client->addScope(Gmail::GMAIL_SEND);
-
-        $gmail = new Gmail($client);
-        $gmailMessage = new Message();
-
-        $rawMessageString = "To: {$user->notification_address}\r\n";
-        $rawMessageString .= "Subject: {$subject}\r\n";
-        $rawMessageString .= "Content-Type: text/plain; charset=utf-8\r\n\r\n";
-        $rawMessageString .= $message;
-
-        // Base64 encode and make it URL-safe
-        $rawMessage = base64_encode($rawMessageString);
-        $rawMessage = str_replace(['+', '/', '='], ['-', '_', ''], $rawMessage);
-        $gmailMessage->setRaw($rawMessage);
-
-        $result = $gmail->users_messages->send('me', $gmailMessage);
-        return $result;
-        */
     }
 
     public static function sendSmtpOrSms($is_sms, $recipient, $message, $subject):void 
