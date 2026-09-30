@@ -173,8 +173,8 @@
                     <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Delivery') }}:</span> <a class="text-orange-600 hover:text-orange-700" target="_blank" href="http://maps.google.com/?daddr={{$log->job->delivery_address}}">{{ $log->job->delivery_address ?? '—' }}</a></p>
                     <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Delivery Time') }}:</span> <span class="text-slate-900">{{ LocalTime::format($log->job->scheduled_delivery_at, 'M j, Y g:i A', '—') }}</span></p>
                     <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Memo') }}:</span>
-                        @if(str_starts_with($log->job->memo ?? '', 'http'))
-                            <a target="_blank" href="{!!$log->job->memo!!}" class="text-orange-600 hover:text-orange-700">{{ __('View Link') }}</a>
+                        @if(filter_var($log->job->memo ?? '', FILTER_VALIDATE_URL) && str_starts_with($log->job->memo, 'http'))
+                            <a target="_blank" href="{{ $log->job->memo }}" rel="noopener noreferrer" class="text-orange-600 hover:text-orange-700">{{ __('View Link') }}</a>
                         @else
                             <span class="text-slate-900">{{ $log->job->memo ?? '—' }}</span>
                         @endif

@@ -26,7 +26,7 @@
                     <span class="text-slate-400">{{ $c->created_at?->diffForHumans() }}</span>
                 </div>
                 @if ($c->body !== '')
-                    <div class="prose prose-sm mt-2 max-w-none text-slate-700">{!! \Illuminate\Support\Str::markdown($c->body) !!}</div>
+                    <div class="prose prose-sm mt-2 max-w-none text-slate-700">{!! \Illuminate\Support\Str::markdown($c->body, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}</div>
                 @endif
                 @if ($canSendCustomerUpdate && !$isSystem && !$c->is_internal && !$c->sent_to_customer)
                     <div class="mt-2">

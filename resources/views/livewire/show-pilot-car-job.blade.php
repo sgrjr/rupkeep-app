@@ -565,8 +565,8 @@
                     <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Delivery') }}:</span> <a class="text-orange-600 hover:text-orange-700" target="_blank" href="http://maps.google.com/?daddr={{$job->delivery_address}}">{{ $job->delivery_address ?? '—' }}</a></p>
                     <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Delivery Time') }}:</span> <span class="text-slate-900">{{ LocalTime::format($job->scheduled_delivery_at, 'M j, Y g:i A', '—') }}</span></p>
                     <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Memo') }}:</span>
-                        @if(str_starts_with($job->memo ?? '', 'http'))
-                            <a target="_blank" href="{!!$job->memo!!}" class="text-orange-600 hover:text-orange-700">{{ __('View Link') }}</a>
+                        @if(filter_var($job->memo ?? '', FILTER_VALIDATE_URL) && str_starts_with($job->memo, 'http'))
+                            <a target="_blank" href="{{ $job->memo }}" rel="noopener noreferrer" class="text-orange-600 hover:text-orange-700">{{ __('View Link') }}</a>
                         @else
                             <span class="text-slate-900">{{ $job->memo ?? '—' }}</span>
                         @endif

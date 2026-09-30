@@ -56,7 +56,7 @@
         @if($job->canceled_reason)<p><b>canceled_reason:</b> {{$job->canceled_reason}}</p>@endif
         <p><b>memo:</b> 
             @if(str_starts_with($job->memo, 'http'))
-                <a target="_blank" href="{!!$job->memo!!}" class="button">view invoice</a>
+                <a target="_blank" href="{{ $job->memo }}" rel="noopener noreferrer" class="button">view invoice</a>
             @else
                 {{$job->memo}}
             @endif

@@ -43,7 +43,7 @@
 
         @if ($task->description)
             <div class="prose prose-sm mt-5 max-w-none rounded-2xl border border-slate-200 bg-slate-50 p-4 text-slate-700">
-                {!! \Illuminate\Support\Str::markdown($task->description) !!}
+                {!! \Illuminate\Support\Str::markdown($task->description, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
             </div>
         @endif
     </section>

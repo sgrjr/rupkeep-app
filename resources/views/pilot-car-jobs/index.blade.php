@@ -274,8 +274,8 @@
                                 <p class="text-sm font-semibold text-rose-600">{{ __('Cancellation Reason') }}: <span class="font-normal text-slate-700">{{ $job->canceled_reason }}</span></p>
                             @endif
                             <p class="pt-1"><span class="font-semibold text-slate-900">{{ __('Memo') }}:</span>
-                                @if(str_starts_with($job->memo ?? '', 'http'))
-                                    <a target="_blank" href="{!!$job->memo!!}" class="text-orange-600 hover:text-orange-700">{{ __('View Link') }}</a>
+                                @if(filter_var($job->memo ?? '', FILTER_VALIDATE_URL) && str_starts_with($job->memo, 'http'))
+                                    <a target="_blank" href="{{ $job->memo }}" rel="noopener noreferrer" class="text-orange-600 hover:text-orange-700">{{ __('View Link') }}</a>
                                 @else
                                     {{ $job->memo ?? '—' }}
                                 @endif
