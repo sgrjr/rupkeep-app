@@ -13,13 +13,14 @@ class SetupController extends Controller
 {
     public function index(Request $request): View
     {
-        if (! config('setup-console.enabled')) {
-            abort(404);
-        }
-
-        $authorized = Session::get('setup_console.authorized', false);
+        // Only a signed-in super user gets this far (auth + super on the
+        // route), so a 404 here would be a lie. When the console is off, say
+        // so and say how to turn it on; only the POST endpoints stay closed.
+        $enabled = (bool) config('setup-console.enabled');
+        $authorized = $enabled && Session::get('setup_console.authorized', false);
 
         return view('admin.setup', [
+            'enabled' => $enabled,
             'authorized' => $authorized,
             'lastOutput' => Session::get('setup_console.last_output'),
             'lastStatus' => Session::get('setup_console.last_status'),

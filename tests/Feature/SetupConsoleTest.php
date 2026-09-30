@@ -58,12 +58,19 @@ class SetupConsoleTest extends TestCase
         $this->actingAs($admin)->post(route('setup.run'), ['action' => 'db-reset'])->assertForbidden();
     }
 
-    public function test_disabled_console_is_not_found_even_for_a_super_user(): void
+    public function test_disabled_console_explains_itself_to_a_super_user_and_closes_the_actions(): void
     {
         Config::set('setup-console.enabled', false);
         $super = $this->super();
 
-        $this->actingAs($super)->get(route('setup.index'))->assertNotFound();
+        // Only a super user can reach this page, so it says the console is
+        // off rather than pretending the road does not exist.
+        $this->actingAs($super)->get(route('setup.index'))
+            ->assertOk()
+            ->assertSee(__('The setup console is switched off.'))
+            ->assertSee('SETUP_CONSOLE_ENABLED=true')
+            ->assertDontSee(__('Unlock Console'))
+            ->assertDontSee(__('Run db:reset'));
         $this->actingAs($super)->post(route('setup.login'), ['username' => 'setup', 'password' => 'secret'])->assertNotFound();
 
         Session::put('setup_console.authorized', true);

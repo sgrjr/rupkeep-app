@@ -24,7 +24,26 @@
                         </div>
                     @endif
 
-                    @if(! $authorized)
+                    @if(! $enabled)
+                        <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-700">
+                            <p class="font-semibold text-slate-900">{{ __('The setup console is switched off.') }}</p>
+                            <p class="mt-2 text-xs text-slate-600">
+                                {{ __('It runs db:reset, which wipes the database and reseeds it, so it stays off on production. Nothing here is broken; the site is already set up.') }}
+                            </p>
+                            <p class="mt-3 text-xs text-slate-600">
+                                {{ __('To use it on a throwaway environment, set these in .env and run php artisan config:clear:') }}
+                            </p>
+                            <pre class="mt-2 overflow-x-auto rounded-xl bg-black/80 px-3 py-2 text-xs text-slate-100">SETUP_CONSOLE_ENABLED=true
+SETUP_PASSWORD=some-long-random-string</pre>
+                            <p class="mt-3 text-xs text-slate-500">
+                                {{ __('Even when it is on, db:reset refuses to run while APP_ENV is production.') }}
+                            </p>
+                        </div>
+
+                        <a href="{{ route('dashboard') }}" class="inline-flex w-full items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-orange-300 hover:text-orange-600">
+                            {{ __('Back to dashboard') }}
+                        </a>
+                    @elseif(! $authorized)
                         <form method="POST" action="{{ route('setup.login') }}" class="space-y-5">
                             @csrf
                             <div>
