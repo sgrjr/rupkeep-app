@@ -133,13 +133,52 @@ class PricingResolver
     {
         $config = config('pricing.payment_terms', []);
 
-        return [
+        $terms = [
             'due_immediately' => static::value($organizationId, 'payment_terms.due_immediately', $config['due_immediately'] ?? true),
             'grace_period_days' => static::value($organizationId, 'payment_terms.grace_period_days', $config['grace_period_days'] ?? 30),
             'late_fee_percentage' => static::value($organizationId, 'payment_terms.late_fee_percentage', $config['late_fee_percentage'] ?? 10.0),
             'late_fee_period_days' => static::value($organizationId, 'payment_terms.late_fee_period_days', $config['late_fee_period_days'] ?? 30),
-            'terms_text' => static::value($organizationId, 'payment_terms.terms_text', $config['terms_text'] ?? ''),
         ];
+
+        // The printed terms follow the numbers unless the organization wrote
+        // its own sentence (TASK-451). The config used to carry a fixed "10%
+        // every 30 days" sentence that kept printing after an organization
+        // changed its percentage on /my/pricing.
+        $custom = trim((string) static::value($organizationId, 'payment_terms.terms_text', $config['terms_text'] ?? ''));
+
+        $terms['terms_text_is_custom'] = $custom !== '';
+        $terms['terms_text'] = $custom !== '' ? $custom : static::termsTextFor($terms);
+
+        return $terms;
+    }
+
+    /**
+     * The payment-terms sentence the numbers imply.
+     *
+     * @param array{due_immediately: mixed, grace_period_days: mixed, late_fee_percentage: mixed, late_fee_period_days: mixed} $terms
+     */
+    public static function termsTextFor(array $terms): string
+    {
+        $grace = (int) $terms['grace_period_days'];
+        $percent = (float) $terms['late_fee_percentage'];
+        $period = (int) $terms['late_fee_period_days'];
+
+        $percentText = rtrim(rtrim(number_format($percent, 2), '0'), '.');
+
+        $parts = [];
+        $parts[] = filter_var($terms['due_immediately'], FILTER_VALIDATE_BOOLEAN)
+            ? __('Payment is due upon receipt of the invoice.')
+            : __('Payment is due within :days days of the invoice date.', ['days' => $grace]);
+
+        if ($grace > 0) {
+            $parts[] = __('Invoices are considered past due :days days after the invoice date.', ['days' => $grace]);
+        }
+
+        if ($percent > 0 && $period > 0) {
+            $parts[] = __(':percent% interest is charged every :days days on past-due invoices.', ['percent' => $percentText, 'days' => $period]);
+        }
+
+        return implode(' ', $parts);
     }
 
     /**

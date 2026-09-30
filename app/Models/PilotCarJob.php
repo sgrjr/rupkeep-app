@@ -1555,29 +1555,36 @@ class PilotCarJob extends Model
         $logs = $this->billableLogs();
         $miles = $this->getTotalMiles($logs);
 
+        // Either may be gone: a customer can be deleted from under a job, and
+        // reading ->name off null threw from the middle of invoicing.
+        $organization = $this->organization;
+        $customer = $this->customer;
+
         $values = [
             'pilot_car_job_id' =>$this->id,
             'organization_id' =>$this->organization_id,
             'customer_id' =>$this->customer_id,
             'title' => 'INVOICE',
             'logo' => null,
-            'bill_from' => [
-                "company" => 'Casco Bay Pilot Car',
-                'attention' => 'Mary Reynolds',
-                "street" => 'P.O. Box 104',
-                'city' => 'Gorham',
-                'state' => 'ME',
-                'zip' => "04038"
+            // The organization's own letterhead and closing line (TASK-451);
+            // Casco Bay's used to be typed in here for every organization.
+            'bill_from' => $organization?->letterhead() ?? [
+                'company' => config('app.name'),
+                'attention' => null,
+                'street' => null,
+                'city' => null,
+                'state' => null,
+                'zip' => null,
             ],
             'bill_to' => [
-                "company" =>$this->customer->name,
+                "company" => $customer?->name,
                 'attention' => null,
-                "street" =>$this->customer->street,
-                'city' =>$this->customer->city,
-                'state' =>$this->customer->state,
-                'zip' =>$this->customer->zip,
+                "street" => $customer?->street,
+                'city' => $customer?->city,
+                'state' => $customer?->state,
+                'zip' => $customer?->zip,
             ],
-            'footer' => 'Casco Bay Pilot Car would like to thank you for your business. Thank you!',
+            'footer' => $organization?->invoiceFooter() ?? __('Thank you for your business.'),
             'truck_driver_name' =>$this->getTruckDrivers($logs),
             'truck_number' =>$this->getTruckNumbers($logs),
             'trailer_number' =>$this->getTrailerNumbers($logs),

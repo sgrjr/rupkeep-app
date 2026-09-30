@@ -148,7 +148,10 @@ return [
         'grace_period_days' => 30,
         'late_fee_percentage' => 10.0, // 10% per 30-day period
         'late_fee_period_days' => 30,
-        'terms_text' => 'Payment is due upon submission of invoices. Invoices will be considered past due after the first 30 days from the date of the invoice. 10% interest will be charged every 30 days, on past due invoices.',
+        // Blank: the printed sentence is generated from the numbers above by
+        // PricingResolver::termsTextFor(), so it follows an organization's edits.
+        // An organization can still write its own sentence on /my/pricing.
+        'terms_text' => '',
     ],
 
     // Legacy rate codes for backward compatibility

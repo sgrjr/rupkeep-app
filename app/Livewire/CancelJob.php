@@ -103,7 +103,9 @@ class CancelJob extends Component
 
             // If a specific cancellation type was selected, update rate_code and rate_value
             if ($actualCancellationType !== 'CANCEL') {
-                $pricingConfig = config('pricing.rates.' . $actualCancellationType, []);
+                // The organization's price for this outcome, not the config
+                // default (TASK-451): /my/pricing lets the office change it.
+                $pricingConfig = \App\Services\PricingResolver::rates($this->job->organization_id)[$actualCancellationType] ?? [];
                 if (!empty($pricingConfig)) {
                     $updateData['rate_code'] = $actualCancellationType;
                     if (isset($pricingConfig['flat_amount'])) {

@@ -455,9 +455,13 @@
 
                     <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
                         <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Payment Terms Text') }}</label>
+                        {{-- Blank means the sentence follows the numbers above (TASK-451); the
+                             generated sentence is shown as the placeholder so it can be read here. --}}
                         <textarea rows="4"
                                   wire:change="updatePaymentTerms('terms_text', $event.target.value)"
-                                  class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">{{ $paymentTerms['terms_text'] }}</textarea>
+                                  placeholder="{{ \App\Services\PricingResolver::termsTextFor($paymentTerms) }}"
+                                  class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">{{ ($paymentTerms['terms_text_is_custom'] ?? false) ? $paymentTerms['terms_text'] : '' }}</textarea>
+                        <p class="mt-1 text-xs text-slate-500">{{ __('Leave blank to print the sentence the figures above imply. Write your own to replace it on every invoice.') }}</p>
                     </div>
                 </div>
             </section>

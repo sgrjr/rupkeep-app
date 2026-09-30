@@ -343,16 +343,15 @@
 
     <footer>
         @php
-            $orgName = $billFrom['company'] ?? $organization?->name ?? 'Casco Bay Pilot Car';
-            $orgPhone = $organization?->telephone ?? '207-712-8064';
-            $footerText = $values['footer'] ?? __(':company would like to thank you for your service, Thank you! If you have any questions or concerns feel free to contact me at :phone', [
-                'company' => $orgName,
-                'phone' => $orgPhone
-            ]);
+            // The organization's own closing line and terms (TASK-451). No
+            // fallback names Casco Bay or its phone number any more.
+            $footerText = trim((string) ($values['footer'] ?? '')) !== ''
+                ? $values['footer']
+                : ($organization?->invoiceFooter() ?? __('Thank you for your business.'));
         @endphp
         <p>{{ $footerText }}</p>
         @php
-            $paymentTerms = config('pricing.payment_terms.terms_text', '');
+            $paymentTerms = \App\Services\PricingResolver::paymentTerms($invoice->organization_id ?? $organization?->id)['terms_text'] ?? '';
         @endphp
         @if($paymentTerms && !$invoice->paid_in_full)
             <p style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--invoice-border); font-size: 0.85rem; color: var(--invoice-muted);">

@@ -44,6 +44,43 @@ class Organization extends Model
         
     }
 
+    /**
+     * The "from" block printed on this organization's invoices (TASK-451).
+     *
+     * It used to be Casco Bay's name, contact and P.O. box typed into
+     * PilotCarJob::invoiceValues(), so every organization's invoices carried
+     * Casco Bay's letterhead. The primary contact doubles as the attention
+     * line unless it is an email address, which reads wrongly on a letter.
+     *
+     * @return array{company: string, attention: ?string, street: ?string, city: ?string, state: ?string, zip: ?string}
+     */
+    public function letterhead(): array
+    {
+        $contact = trim((string) $this->primary_contact);
+
+        return [
+            'company' => $this->name ?: config('app.name'),
+            'attention' => $contact !== '' && ! str_contains($contact, '@') ? $contact : null,
+            'street' => $this->street ?: null,
+            'city' => $this->city ?: null,
+            'state' => $this->state ?: null,
+            'zip' => $this->zip ?: null,
+        ];
+    }
+
+    /**
+     * The closing line printed under every invoice (TASK-451).
+     */
+    public function invoiceFooter(): string
+    {
+        $company = $this->name ?: config('app.name');
+        $phone = trim((string) $this->telephone);
+
+        return $phone !== ''
+            ? __(':company would like to thank you for your business. Thank you! If you have any questions or concerns, please call :phone.', ['company' => $company, 'phone' => $phone])
+            : __(':company would like to thank you for your business. Thank you!', ['company' => $company]);
+    }
+
     public function getOwnerEmailAttribute(){
         return $this->owner?->email;
     }
