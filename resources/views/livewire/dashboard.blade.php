@@ -328,6 +328,10 @@
 
                     @php $ownOrganization = auth()->user()->organization; @endphp
 
+                    {{-- The "where are the SSH credentials" reminder. A pointer to
+                         the password manager entry, never the secret itself. --}}
+                    <livewire:admin-sticky-note />
+
                     {{-- Two separate blast radii, deliberately not one button.
                          Wanting a clean slate for your own organization is the
                          ordinary case; wanting one for every organization is
