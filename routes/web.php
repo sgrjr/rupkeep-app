@@ -28,7 +28,6 @@ use App\Http\Controllers\AttachmentsController;
 use App\Http\Controllers\MyInvoicesController;
 use App\Http\Controllers\JobCsvExportController;
 use App\Http\Controllers\QuickBooksExportController;
-use App\Http\Controllers\Admin\GitUpdateController;
 use App\Http\Controllers\AdminToolsController;
 use App\Http\Controllers\UserEventController;
 use App\Http\Controllers\MyReportsController;
@@ -44,8 +43,8 @@ Route::middleware([
 ])->group(function () {
 
     Route::get('/dashboard/{component?}', Dashboard::class)->name('dashboard');
-    Route::post('/admin/git-update', GitUpdateController::class)->name('admin.git-update');
-    Route::post('/admin/tools/update-from-git', [AdminToolsController::class, 'updateFromGit'])->name('admin.tools.update_from_git');
+    // The dashboard's "reset to GitHub master" button; confirmation and lock inside (TASK-470).
+    Route::post('/admin/tools/update-from-git', [AdminToolsController::class, 'updateFromGit'])->name('admin.tools.update_from_git')->middleware('super');
 
     Route::post('/notifications/subscribe', [SubscriptionController::class, 'store']);
 

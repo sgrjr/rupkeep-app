@@ -12,6 +12,9 @@ class ServerManagement extends Component
 {
     public $output = [];
     public $isExecuting = false;
+
+    /** Typed by the operator before the rollback button does anything (TASK-470). */
+    public string $rollbackConfirmation = '';
     public $selectedWorkflow = null;
     
     public $queueJobsLoaded = false;
@@ -29,7 +32,7 @@ class ServerManagement extends Component
         }
         
         // Increase timeout for this request
-        set_time_limit(300);
+        set_time_limit(600);
     }
 
     public function executeCommand($commandKey)
@@ -48,7 +51,9 @@ class ServerManagement extends Component
             $controller = app(AdminToolsController::class);
             $request = Request::create(route('admin.tools.execute-command'), 'POST', [
                 'command' => $commandKey,
+                'confirmation' => $this->rollbackConfirmation,
             ]);
+            $this->rollbackConfirmation = '';
             $request->setUserResolver(fn() => Auth::user());
             $request->headers->set('X-Requested-With', 'XMLHttpRequest');
             

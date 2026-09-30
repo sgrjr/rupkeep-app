@@ -264,15 +264,24 @@
                 <div class="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
                     <div class="flex flex-wrap items-center justify-between gap-3">
                         <div>
-                            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Update Deployment') }}</p>
-                            <p class="text-sm text-slate-700">{{ __('Pull the latest code from GitHub onto this server.') }}</p>
+                            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Reset server to GitHub master') }}</p>
+                            <p class="text-sm text-slate-700">{{ __('Discards every change on this server and matches GitHub exactly (git reset --hard). Use it only when the Deploy on Server Management says the pull cannot fast-forward; deploy afterwards.') }}</p>
                         </div>
-                        <form method="POST" action="{{ route('admin.tools.update_from_git') }}" class="flex items-center gap-2">
+                        {{-- Two clicks, and a `confirmed` field the controller insists on (TASK-470).
+                             This button was labelled "Pull Latest Code" and ran reset --hard on one click. --}}
+                        <form method="POST" action="{{ route('admin.tools.update_from_git') }}" class="flex flex-wrap items-center gap-2"
+                              x-data="{ confirming: false }"
+                              x-on:submit="if (! confirming) { $event.preventDefault(); confirming = true; }">
                             @csrf
-                            <x-button type="submit">
-                                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v6h6M20 20v-6h-6M5.17 18.83A9 9 0 0 0 18.83 5.17M18 9V4h-5"/></svg>
-                                {{ __('Pull Latest Code') }}
+                            <input type="hidden" name="confirmed" value="1" />
+                            <x-button type="submit" x-show="! confirming">
+                                {{ __('Reset to GitHub master') }}
                             </x-button>
+                            <div x-show="confirming" x-cloak class="inline-flex flex-wrap items-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                                <span class="font-medium">{{ __('Local changes on the server will be lost. There is no undo.') }}</span>
+                                <button type="submit" class="rounded-full bg-red-600 px-3 py-1 font-semibold text-white transition hover:bg-red-700">{{ __('Yes, reset') }}</button>
+                                <button type="button" x-on:click="confirming = false" class="rounded-full border border-red-200 bg-white px-3 py-1 font-semibold text-red-600 transition hover:bg-red-100">{{ __('Cancel') }}</button>
+                            </div>
                         </form>
                     </div>
                     @if(session('git_output'))

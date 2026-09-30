@@ -11,11 +11,7 @@
             <!-- Git Commands -->
             <div>
                 <h2 class="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-500">{{ __('Git Commands') }}</h2>
-                <div class="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
-                    <p class="text-sm text-amber-800">
-                        <strong>{{ __('Note:') }}</strong> {{ __('Git pull and git-related commands are not functioning correctly yet and need to be troubleshooted and fixed.') }}
-                    </p>
-                </div>
+                <p class="mb-3 text-xs text-slate-500">{{ __('The server only pulls; it never commits or pushes. A pull that cannot fast-forward means something was edited on the host: use the reset button on the dashboard.') }}</p>
                 <div class="flex flex-wrap gap-2">
                     <button wire:click="executeCommand('git_pull')" 
                             wire:loading.attr="disabled"
@@ -24,25 +20,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v6h6M20 20v-6h-6M5.17 18.83A9 9 0 0 0 18.83 5.17M18 9V4h-5"/>
                         </svg>
                         <span wire:loading wire:target="executeCommand('git_pull')" class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-orange-600 border-t-transparent"></span>
-                        {{ __('Pull Latest Code') }}
-                    </button>
-                    <button wire:click="executeCommand('git_add_all')" 
-                            wire:loading.attr="disabled"
-                            class="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-semibold text-orange-600 transition hover:bg-orange-500 hover:text-white disabled:opacity-50">
-                        <span wire:loading wire:target="executeCommand('git_add_all')" class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-orange-600 border-t-transparent"></span>
-                        {{ __('Stage All Changes') }}
-                    </button>
-                    <button wire:click="executeCommand('git_commit')" 
-                            wire:loading.attr="disabled"
-                            class="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-semibold text-orange-600 transition hover:bg-orange-500 hover:text-white disabled:opacity-50">
-                        <span wire:loading wire:target="executeCommand('git_commit')" class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-orange-600 border-t-transparent"></span>
-                        {{ __('Commit (server:update)') }}
-                    </button>
-                    <button wire:click="executeCommand('git_push')" 
-                            wire:loading.attr="disabled"
-                            class="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-semibold text-orange-600 transition hover:bg-orange-500 hover:text-white disabled:opacity-50">
-                        <span wire:loading wire:target="executeCommand('git_push')" class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-orange-600 border-t-transparent"></span>
-                        {{ __('Push to Remote') }}
+                        {{ __('Git Pull (fast-forward only)') }}
                     </button>
                 </div>
             </div>
@@ -91,13 +69,36 @@
                             wire:loading.attr="disabled"
                             class="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-semibold text-orange-600 transition hover:bg-orange-500 hover:text-white disabled:opacity-50">
                         <span wire:loading wire:target="executeCommand('artisan_migrate')" class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-orange-600 border-t-transparent"></span>
-                        {{ __('Run Migrations') }}
-                    </button>
-                    <button wire:click="executeCommand('artisan_migrate_rollback')" 
+\1                    <button wire:click="executeCommand('artisan_queue_restart')"
                             wire:loading.attr="disabled"
+                            class="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-semibold text-orange-600 transition hover:bg-orange-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50">
+                        <span wire:loading wire:target="executeCommand('artisan_queue_restart')" class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-orange-600 border-t-transparent"></span>
+                        {{ __('Restart Queue Worker') }}
+                    </button>
+                    <button wire:click="executeCommand('composer_install')"
+                            wire:loading.attr="disabled"
+                            class="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-semibold text-orange-600 transition hover:bg-orange-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50">
+                        <span wire:loading wire:target="executeCommand('composer_install')" class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-orange-600 border-t-transparent"></span>
+                        {{ __('Composer Install') }}
+                    </button>
+                    <button wire:click="executeCommand('npm_ci')"
+                            wire:loading.attr="disabled"
+                            class="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-semibold text-orange-600 transition hover:bg-orange-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50">
+                        <span wire:loading wire:target="executeCommand('npm_ci')" class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-orange-600 border-t-transparent"></span>
+                        {{ __('npm ci') }}
+                    </button>
+                    <button wire:click="executeCommand('artisan_db_dump')"
+                            wire:loading.attr="disabled"
+                            class="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-semibold text-orange-600 transition hover:bg-orange-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50">
+                        <span wire:loading wire:target="executeCommand('artisan_db_dump')" class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-orange-600 border-t-transparent"></span>
+                        {{ __('Dump Database') }}
+                    </button>
+                    <input type="text" wire:model="rollbackConfirmation" placeholder="{{ __('Type ROLLBACK to enable') }}" autocomplete="off"
+                           class="rounded-full border border-red-200 bg-white px-4 py-2 text-sm text-red-700 placeholder:text-red-300 focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-200" />
+\1                            wire:loading.attr="disabled"
                             class="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-semibold text-orange-600 transition hover:bg-orange-500 hover:text-white disabled:opacity-50">
                         <span wire:loading wire:target="executeCommand('artisan_migrate_rollback')" class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-orange-600 border-t-transparent"></span>
-                        {{ __('Rollback Migration') }}
+                        {{ __('Rollback Last Migration (one step)') }}
                     </button>
                     <button wire:click="executeCommand('artisan_redis_health')" 
                             wire:loading.attr="disabled"
@@ -137,13 +138,7 @@
                             wire:loading.attr="disabled"
                             class="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-500 hover:text-white disabled:opacity-50">
                         <span wire:loading wire:target="executeWorkflow('deploy_update')" class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent"></span>
-                        {{ __('Deploy Update') }}
-                    </button>
-                    <button wire:click="executeWorkflow('full_deploy')" 
-                            wire:loading.attr="disabled"
-                            class="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-500 hover:text-white disabled:opacity-50">
-                        <span wire:loading wire:target="executeWorkflow('full_deploy')" class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent"></span>
-                        {{ __('Full Deploy') }}
+                        {{ __('Deploy (down, dump DB, pull, install, build, migrate, optimize, restart worker, up)') }}
                     </button>
                     <button wire:click="executeWorkflow('clear_all')" 
                             wire:loading.attr="disabled"

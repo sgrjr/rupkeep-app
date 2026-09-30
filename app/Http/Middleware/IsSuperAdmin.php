@@ -19,8 +19,11 @@ class IsSuperAdmin
             abort(403);
         }
 
-        // Increase timeout for long-running processes (5 minutes)
-        set_time_limit(300);
+        // The in-app deploy runs composer, npm and a build in one request.
+        // PHP's own limit is raised here; nginx and PHP-FPM have their own
+        // (fastcgi_read_timeout, request_terminate_timeout), see
+        // docs/DEPLOYMENT.md (TASK-470).
+        set_time_limit(600);
 
         return $next($request);
     }

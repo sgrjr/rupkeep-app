@@ -49,31 +49,57 @@ the real values and never prints a secret.
 
 ## In-app deploy (Super User only)
 
-Super users deploy from **`/admin/server-management`**. The **"Deploy Update"** button runs, in the project root:
+Super users deploy from **`/admin/server-management`**. The **"Deploy"** button
+runs, in the project root, stopping at the first failure (TASK-470):
 
 ```
-git pull  →  php artisan assets:build  →  php artisan optimize:clear  →  php artisan optimize
+php artisan down --retry=30
+php artisan db:dump                      # storage/app/private/backups/db/{stamp}.sql
+git pull --ff-only
+composer install --no-dev --optimize-autoloader --no-interaction
+npm ci --no-audit --no-fund
+php artisan assets:build                 # npm run build
+php artisan migrate --force
+php artisan optimize:clear
+php artisan optimize
+php artisan queue:restart                # the supervised worker reloads the new code
+php artisan up
 ```
 
-> **`composer.lock` is committed as of TASK-426 (Laravel 12.69, Livewire 3.8).**
-> The in-app deploy does **not** run Composer, so after a deploy that changes
-> `composer.lock`, run this on the host before the app is used:
->
-> ```bash
-> composer install --no-dev --optimize-autoloader && php artisan optimize
-> ```
->
-> Confirm with `composer show laravel/framework livewire/livewire` and
-> `composer audit` (expect no advisories). PHP 8.2 is sufficient.
+Whatever step fails, `php artisan up` still runs last, so a failed deploy
+leaves the old code serving, not a maintenance page. A dump that cannot be
+written stops the deploy before anything is pulled. One deploy at a time: a
+second click (or a second tab) gets "Another server command is still running".
 
-After a deploy that includes a migration, also click **"Run database migrations"** (`php artisan migrate --force`) on the same page. Command output is displayed inline; each command is whitelisted in `app/Http/Controllers/AdminToolsController.php`.
+The server only pulls. It never commits or pushes; the old "Full Deploy" and
+the stage/commit/push buttons are gone. A pull that cannot fast-forward means
+something was edited on the host: the dashboard's **"Reset to GitHub master"**
+button (two clicks; `git fetch` + `reset --hard origin/master` + `clean -fd`)
+throws those edits away, then run Deploy.
 
-Use **"Deploy Update"** (pull only), not **"Full Deploy"** — the latter also commits and pushes *from the server*, which can diverge from GitHub.
+**Rollback** rolls back one migration step, never a whole batch, and only after
+`ROLLBACK` is typed into the box next to the button.
 
-> **The in-app deploy does not restart the queue worker.** After any deploy that
-> touches queued code (jobs, listeners, notifications, mailables), run
-> `php artisan queue:restart` on the host so the supervised worker reloads — see
-> [Queue worker](#queue-worker).
+**Git over SSH** trusts only the GitHub host keys committed in
+`resources/ssh/github_known_hosts`. If a pull fails with "Host key verification
+failed", compare with `ssh-keyscan -t ed25519,ecdsa github.com` and update the
+file. (An HTTPS remote is unaffected.)
+
+**Timeouts.** The deploy runs inside one request. PHP allows 600 s
+(`IsSuperAdmin`), and the host must match it or nginx answers 504 while the
+deploy carries on blind:
+
+```nginx
+# in the pilotcar.io server block, location ~ \.php$
+fastcgi_read_timeout 600;
+```
+
+```ini
+; /etc/php/8.2/fpm/pool.d/www.conf
+request_terminate_timeout = 600
+```
+
+If a deploy times out anyway, run the same commands over SSH.
 
 **Security:** all server-management actions are gated by auth + `is_super`.
 
