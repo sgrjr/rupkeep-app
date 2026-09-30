@@ -280,9 +280,13 @@ class CustomerDeletionTest extends TestCase
 
     public function test_removing_an_extra_charge_asks_first(): void
     {
-        Livewire::actingAs($this->admin)
+        $html = Livewire::actingAs($this->admin)
             ->test(LogExtraCharges::class, ['log' => $this->log])
             ->assertSee('Remove this charge?')
-            ->assertSee('Overnight permit');
+            ->assertSee('Overnight permit')
+            ->html();
+
+        // TASK-419: the amount box had no text colour, so typed figures were invisible on some themes.
+        $this->assertMatchesRegularExpression('/id="charge-amount-\d+"[^>]*class="[^"]*text-slate-900[^"]*"/s', $html);
     }
 }

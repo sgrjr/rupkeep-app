@@ -47,7 +47,7 @@
                        step="0.01"
                        min="0"
                        placeholder="0.00"
-                       class="block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-orange-400 focus:ring-orange-200">
+                       class="block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-orange-400 focus:ring-orange-200 text-slate-900">
             </div>
 
             <button type="button"
