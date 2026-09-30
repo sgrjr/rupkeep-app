@@ -87,10 +87,9 @@ class TaskList extends Component
                   });
             });
         } elseif ($user && !($user->isSuper())) {
-            // Staff: scope to own org (super sees all)
-            $query->where(function (Builder $q) use ($user) {
-                $q->whereNull('organization_id')->orWhere('organization_id', $user->organization_id);
-            });
+            // Staff: own organization only. Tasks with no organization are
+            // the dev backlog and belong to the super user (TASK-439).
+            $query->where('organization_id', $user->organization_id);
         }
 
         if ($this->search !== '') {

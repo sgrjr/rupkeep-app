@@ -7,9 +7,13 @@ use App\Models\User;
 
 class TaskPolicy
 {
+    /**
+     * The staff tracker (list and board). Admins and managers; drivers file
+     * feedback through the form but do not work the queue (TASK-439).
+     */
     public function viewAny(User $user): bool
     {
-        return $user->isEmployee() || $user->isAdmin() || $user->isManager() || $user->isSuper();
+        return $user->isSuper() || $user->isAdmin() || $user->isManager();
     }
 
     public function view(User $user, Task $task): bool
@@ -64,16 +68,22 @@ class TaskPolicy
         return $user->isAdmin() || $user->isSuper();
     }
 
+    /**
+     * Who may work a task: a super user for any task; an admin or manager for
+     * their own organization's. A task with no organization (the dev backlog
+     * from dispatch:add and exception capture) belongs to the super user
+     * alone; it used to be workable by staff of every tenant (TASK-439).
+     */
     protected function isStaff(User $user, ?int $taskOrgId): bool
     {
         if ($user->isSuper()) {
             return true;
         }
 
-        if ($taskOrgId !== null && $user->organization_id !== $taskOrgId) {
+        if ($taskOrgId === null || $user->organization_id !== $taskOrgId) {
             return false;
         }
 
-        return $user->isAdmin() || $user->isManager() || $user->isEmployee();
+        return $user->isAdmin() || $user->isManager();
     }
 }

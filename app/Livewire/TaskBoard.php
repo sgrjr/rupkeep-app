@@ -78,9 +78,9 @@ class TaskBoard extends Component
         $query = Task::query()->with(['labels', 'assignee']);
 
         if ($user && !$user->isSuper()) {
-            $query->where(function (Builder $q) use ($user) {
-                $q->whereNull('organization_id')->orWhere('organization_id', $user->organization_id);
-            });
+            // Own organization only; the null-org dev backlog is the super
+            // user's (TASK-439).
+            $query->where('organization_id', $user->organization_id);
         }
         if (in_array($this->typeFilter, Task::TYPES, true)) {
             $query->where('type', $this->typeFilter);

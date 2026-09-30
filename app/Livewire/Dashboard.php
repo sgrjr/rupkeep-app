@@ -166,7 +166,8 @@ class Dashboard extends Component
        // Card link goes to the Public Roadmap for everyone; super users
        // additionally get a direct path into the staff triage queue.
        $viewer = Auth::user();
-       if ($viewer->isCustomer()) {
+       if (! $viewer->can('viewAny', \App\Models\Task::class)) {
+           // Customers and drivers: their own submissions only.
            $recentFeedback = \App\Models\Task::with('submitter')
                ->where('submitter_user_id', $viewer->id)
                ->orderBy('updated_at', 'desc')
@@ -176,12 +177,17 @@ class Dashboard extends Component
                ->whereNotIn('status', ['done', 'declined'])
                ->count();
        } else {
-           $recentFeedback = \App\Models\Task::with('submitter')
+           // Tracker staff: the organization's triage queue. This used to be
+           // every tenant's queue (TASK-439); a super user still sees all.
+           $triage = \App\Models\Task::query()
                ->where('status', 'triage')
+               ->when(! $viewer->isSuper(), fn ($q) => $q->where('organization_id', $viewer->organization_id));
+
+           $recentFeedback = (clone $triage)->with('submitter')
                ->orderBy('created_at', 'desc')
                ->take(5)
                ->get();
-           $totalFeedback = \App\Models\Task::where('status', 'triage')->count();
+           $totalFeedback = $triage->count();
        }
 
        $links = [

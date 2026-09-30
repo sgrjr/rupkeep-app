@@ -65,12 +65,12 @@ class DashboardFeedbackCardTest extends TestCase
 
         $submitter = User::factory()->create();
         // 3 triage tasks (org-wide) — all counted regardless of submitter.
-        $this->makeTask(['submitter_user_id' => $submitter->id, 'status' => 'triage']);
-        $this->makeTask(['submitter_user_id' => null, 'status' => 'triage']);
-        $this->makeTask(['submitter_user_id' => $manager->id, 'status' => 'triage']);
+        $this->makeTask(['organization_id' => $org->id, 'submitter_user_id' => $submitter->id, 'status' => 'triage']);
+        $this->makeTask(['organization_id' => $org->id, 'submitter_user_id' => null, 'status' => 'triage']);
+        $this->makeTask(['organization_id' => $org->id, 'submitter_user_id' => $manager->id, 'status' => 'triage']);
         // Non-triage tasks are not part of the org-wide count.
-        $this->makeTask(['submitter_user_id' => $submitter->id, 'status' => 'in_progress']);
-        $this->makeTask(['submitter_user_id' => $submitter->id, 'status' => 'done']);
+        $this->makeTask(['organization_id' => $org->id, 'submitter_user_id' => $submitter->id, 'status' => 'in_progress']);
+        $this->makeTask(['organization_id' => $org->id, 'submitter_user_id' => $submitter->id, 'status' => 'done']);
 
         Livewire::actingAs($manager)
             ->test(Dashboard::class)
@@ -84,8 +84,8 @@ class DashboardFeedbackCardTest extends TestCase
         $admin = User::factory()->admin()->forOrganization($org)->create();
 
         $submitter = User::factory()->create();
-        $this->makeTask(['submitter_user_id' => $submitter->id, 'status' => 'triage']);
-        $this->makeTask(['submitter_user_id' => null, 'status' => 'triage']);
+        $this->makeTask(['organization_id' => $org->id, 'submitter_user_id' => $submitter->id, 'status' => 'triage']);
+        $this->makeTask(['organization_id' => $org->id, 'submitter_user_id' => null, 'status' => 'triage']);
 
         Livewire::actingAs($admin)
             ->test(Dashboard::class)
