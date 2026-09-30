@@ -353,7 +353,9 @@
                                     </span>
                                 </div>
                                 <div class="mt-3 flex flex-wrap items-center gap-2">
+                                    @can('update', $invoice)
                                     <livewire:invoice-email-form :invoice="$invoice" :key="'email-form-' . $invoice->id" />
+                                    @endcan
                                     <button type="button" onclick="Livewire.dispatch('open-invoice-email-modal-{{ $invoice->id }}')" 
                                             class="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-white/70 px-3 py-1 text-[11px] font-semibold text-blue-600 shadow-sm transition hover:bg-blue-500 hover:text-white">
                                         <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">

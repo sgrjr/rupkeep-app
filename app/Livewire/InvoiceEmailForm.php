@@ -32,6 +32,10 @@ class InvoiceEmailForm extends Component
 
     public function mount(Invoice $invoice)
     {
+        // Sending an invoice is editing it (TASK-438). The blade only renders
+        // this for users who may, and the action checks again below.
+        $this->authorize('update', $invoice);
+
         $this->invoice = $invoice;
         $this->loadDefaultRecipients();
     }
@@ -76,6 +80,8 @@ class InvoiceEmailForm extends Component
 
     public function send()
     {
+        $this->authorize('update', $this->invoice);
+
         // Validate email addresses
         $toEmails = array_map('trim', array_filter(explode(',', $this->to)));
         $bccEmails = $this->bcc ? array_map('trim', array_filter(explode(',', $this->bcc))) : [];

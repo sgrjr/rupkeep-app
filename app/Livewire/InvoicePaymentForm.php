@@ -36,6 +36,9 @@ class InvoicePaymentForm extends Component
 
     public function mount(Invoice $invoice)
     {
+        // Recording a payment is editing the invoice (TASK-438).
+        $this->authorize('update', $invoice);
+
         $this->invoice = $invoice;
         $this->paymentDate = now()->format('Y-m-d');
         $this->loadAvailableCredit();
@@ -89,6 +92,8 @@ class InvoicePaymentForm extends Component
 
     public function applyPayment()
     {
+        $this->authorize('update', $this->invoice);
+
         $this->validate();
 
         $paymentAmount = (float) $this->paymentAmount;

@@ -81,6 +81,8 @@ class UserProfile extends Component
     }
 
     public function testNotification(){
+        $this->authorize('update', $this->profile);
+
         $this->notificationTesting = true;
         $this->notificationTestStatus = null;
         $this->notificationTestMessage = '';
@@ -151,10 +153,15 @@ class UserProfile extends Component
     }
 
     public function mergeToUser(){
+        // Merging deletes this profile and hands its logs and vehicles to
+        // another account: that is `delete` on the profile, which a user
+        // editing themselves does not hold (TASK-438).
+        $this->authorize('delete', $this->profile);
+
         if(!empty($this->merged_user)){
             $user = User::find($this->merged_user);
 
-            if($user && $this->profile->organization_id === $user->organization_id){
+            if($user && $user->id !== $this->profile->id && $this->profile->organization_id === $user->organization_id){
                 \App\Models\UserLog::where('car_driver_id', $this->profile->id)->update(['car_driver_id'=>$user->id]);
                 \App\Models\Vehicle::where('user_id', $this->profile->id)->update(['user_id'=>$user->id]);
                 $this->profile->delete();
