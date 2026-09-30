@@ -49,7 +49,7 @@
                                     @if($job->scheduled_pickup_at)
                                     <tr>
                                         <td style="padding: 8px 0; color: #6b7280; font-size: 14px; font-weight: 600;">{{ __('Scheduled Pickup') }}:</td>
-                                        <td style="padding: 8px 0; color: #111827; font-size: 14px;">{{ \Carbon\Carbon::parse($job->scheduled_pickup_at)->toDayDateTimeString() }}</td>
+                                        <td style="padding: 8px 0; color: #111827; font-size: 14px;">{{ \App\Support\LocalTime::dayDateTime($job->scheduled_pickup_at) }}</td>
                                     </tr>
                                     @endif
                                     @if($job->pickup_address)

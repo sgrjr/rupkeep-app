@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\PilotCarJob;
 use Illuminate\Support\Carbon;
+use App\Support\LocalTime;
 
 /**
  * The driver-facing SMS bodies for pilot-car job notifications (TASK-352 /
@@ -124,6 +125,7 @@ class JobSms
             return '';
         }
 
-        return ' @'.Carbon::parse($job->scheduled_pickup_at)->format('n/j g:i A');
+        // In the driver's timezone, not the server's (TASK-464).
+        return ' @'.LocalTime::format($job->scheduled_pickup_at, 'n/j g:i A');
     }
 }

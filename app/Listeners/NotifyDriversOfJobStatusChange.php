@@ -11,6 +11,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
+use App\Support\LocalTime;
 
 /**
  * Notifies every driver assigned to a job when the job's status changes
@@ -85,9 +86,7 @@ class NotifyDriversOfJobStatusChange implements ShouldQueue
 
     private function emailBody(PilotCarJob $job, JobStatusChanged $event, string $actionUrl): string
     {
-        $scheduledAt = $job->scheduled_pickup_at
-            ? Carbon::parse($job->scheduled_pickup_at)->toDayDateTimeString()
-            : 'Not scheduled';
+        $scheduledAt = LocalTime::dayDateTime($job->scheduled_pickup_at, 'Not scheduled'); // driver's timezone (TASK-464)
 
         return sprintf(
             "Job %s is now %s.\n\nJob Details:\n- Job #: %s\n- Load #: %s\n- Pickup: %s\n- Delivery: %s\n- Scheduled Pickup: %s\n\nView job: %s",

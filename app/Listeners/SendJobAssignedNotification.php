@@ -12,6 +12,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
+use App\Support\LocalTime;
 
 class SendJobAssignedNotification implements ShouldQueue
 {
@@ -27,10 +28,13 @@ class SendJobAssignedNotification implements ShouldQueue
         
         // Safety net: Only send notifications for jobs scheduled today or in the future
         // This prevents notifications when retroactively editing past jobs
-        if ($job->scheduled_pickup_at) {
-            $scheduledDate = Carbon::parse($job->scheduled_pickup_at)->startOfDay();
-            $today = Carbon::today()->startOfDay();
-            
+        // "Today" is the operator's day, not the server's UTC day (TASK-464):
+        // at 10 PM Eastern the UTC calendar has already turned over, and a
+        // job earlier that same evening looked like yesterday's.
+        $scheduledDate = LocalTime::parse($job->scheduled_pickup_at)?->startOfDay();
+        if ($scheduledDate) {
+            $today = LocalTime::today();
+
             // If scheduled pickup is in the past, skip notification
             if ($scheduledDate->lt($today)) {
                 Log::info('SendJobAssignedNotification: Skipping notification for past job', [
@@ -53,7 +57,7 @@ class SendJobAssignedNotification implements ShouldQueue
         $scheduledAt = null;
 
         if ($job->scheduled_pickup_at) {
-            $scheduledAt = Carbon::parse($job->scheduled_pickup_at)->toDayDateTimeString();
+            $scheduledAt = LocalTime::dayDateTime($job->scheduled_pickup_at);
         }
 
         // Link straight to where the driver can act on the assignment: the log

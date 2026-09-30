@@ -52,7 +52,7 @@
                                     @if($invoice->created_at)
                                     <tr>
                                         <td style="padding: 8px 0; color: #6b7280; font-size: 14px; font-weight: 600;">{{ __('Date') }}:</td>
-                                        <td style="padding: 8px 0; color: #111827; font-size: 14px;">{{ $invoice->created_at->toFormattedDateString() }}</td>
+                                        <td style="padding: 8px 0; color: #111827; font-size: 14px;">{{ \App\Support\LocalTime::mediumDate($invoice->created_at) }}</td>
                                     </tr>
                                     @endif
                                 </table>

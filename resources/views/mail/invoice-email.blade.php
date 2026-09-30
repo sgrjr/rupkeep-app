@@ -63,7 +63,7 @@
             <img src="{{ $organization->logo }}" alt="{{ $organization->name }}" class="logo" />
         @endif
         <h1 style="margin: 0; color: #172232;">{{ __('Invoice #:number', ['number' => $invoice->invoice_number]) }}</h1>
-        <p style="margin: 5px 0 0; color: #6b7280;">{{ __('Date: :date', ['date' => optional($invoice->created_at)->toFormattedDateString()]) }}</p>
+        <p style="margin: 5px 0 0; color: #6b7280;">{{ __('Date: :date', ['date' => \App\Support\LocalTime::mediumDate($invoice->created_at)]) }}</p>
     </div>
 
     @if($preliminaryText)

@@ -7,6 +7,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use App\Support\LocalTime;
 
 class PasswordChangedByAdmin extends Notification implements ShouldQueue
 {
@@ -31,7 +32,7 @@ class PasswordChangedByAdmin extends Notification implements ShouldQueue
             ->greeting('Hello ' . $notifiable->name . ',')
             ->line('Your password was changed by an administrator.')
             ->line('Changed by: ' . $this->admin->name)
-            ->line('Date: ' . now()->format('F j, Y g:i A'))
+            ->line('Date: ' . LocalTime::format(now(), 'F j, Y g:i A T'))
             ->line('If you did not request this change or have concerns, please contact your administrator immediately.')
             ->action('Log In', url('/login'))
             ->line('Thank you for using our application!');

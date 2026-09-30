@@ -8,6 +8,7 @@ use App\Support\JobSms;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Carbon;
+use App\Support\LocalTime;
 
 class NotifyAssignedDriversOfJobUncancellation implements ShouldQueue
 {
@@ -65,7 +66,7 @@ class NotifyAssignedDriversOfJobUncancellation implements ShouldQueue
 
             $scheduledAt = null;
             if ($job->scheduled_pickup_at) {
-                $scheduledAt = Carbon::parse($job->scheduled_pickup_at)->toDayDateTimeString();
+                $scheduledAt = LocalTime::dayDateTime($job->scheduled_pickup_at); // driver's timezone (TASK-464)
             }
 
             // A carrier SMS gateway needs a body that fits one 160-char text
