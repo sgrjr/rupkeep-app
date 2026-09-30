@@ -61,6 +61,9 @@ class AnnualVehicleReportModal extends Component
 
     public function generateReport()
     {
+        // Fleet reporting is a staff view (TASK-442).
+        abort_unless(auth()->user()?->isSuper() || auth()->user()?->isEmployee(), 403);
+
         $organizationId = Auth::user()->organization_id;
         
         // Use selected year or default to current year

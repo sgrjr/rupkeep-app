@@ -146,6 +146,9 @@ class EditPilotCarJob extends Component
     }
 
     public function saveJob(){
+        // A Livewire action is its own endpoint; mount() does not cover it (TASK-442).
+        $this->authorize('update', $this->job);
+
         $this->form->validate();
 
         $form = $this->form->all();

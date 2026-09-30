@@ -106,6 +106,9 @@ class OnboardingWizard extends Component
 
     public function createOrganization()
     {
+        // A Livewire action is its own endpoint; mount() does not cover it (TASK-442).
+        abort_unless(auth()->user()?->isSuper(), 403);
+
         $owner = null;
         if ($this->org_owner_email) {
             $owner = User::where('email', $this->org_owner_email)->first();
@@ -136,6 +139,9 @@ class OnboardingWizard extends Component
 
     public function importCsv()
     {
+        // A Livewire action is its own endpoint; mount() does not cover it (TASK-442).
+        abort_unless(auth()->user()?->isSuper(), 403);
+
         if (! $this->csv_file || ! $this->organizationId) {
             return;
         }
@@ -157,6 +163,9 @@ class OnboardingWizard extends Component
 
     public function addUser()
     {
+        // A Livewire action is its own endpoint; mount() does not cover it (TASK-442).
+        abort_unless(auth()->user()?->isSuper(), 403);
+
         $this->validate([
             'new_user_name' => 'required|string|max:255',
             'new_user_email' => 'required|email|max:255|unique:users,email',
@@ -197,6 +206,9 @@ class OnboardingWizard extends Component
 
     public function removeUser($index)
     {
+        // A Livewire action is its own endpoint; mount() does not cover it (TASK-442).
+        abort_unless(auth()->user()?->isSuper(), 403);
+
         if (isset($this->users[$index])) {
             $user = User::find($this->users[$index]['id']);
             if ($user) {
@@ -209,6 +221,9 @@ class OnboardingWizard extends Component
 
     public function addVehicle()
     {
+        // A Livewire action is its own endpoint; mount() does not cover it (TASK-442).
+        abort_unless(auth()->user()?->isSuper(), 403);
+
         $this->validate([
             'new_vehicle_name' => 'required|string|max:255',
             'new_vehicle_odometer' => 'nullable|integer|min:0',
@@ -242,6 +257,9 @@ class OnboardingWizard extends Component
 
     public function removeVehicle($index)
     {
+        // A Livewire action is its own endpoint; mount() does not cover it (TASK-442).
+        abort_unless(auth()->user()?->isSuper(), 403);
+
         if (isset($this->vehicles[$index])) {
             $vehicle = Vehicle::find($this->vehicles[$index]['id']);
             if ($vehicle) {
@@ -254,6 +272,9 @@ class OnboardingWizard extends Component
 
     public function sendWelcomeEmails()
     {
+        // A Livewire action is its own endpoint; mount() does not cover it (TASK-442).
+        abort_unless(auth()->user()?->isSuper(), 403);
+
         if (empty($this->selected_users_for_email) || ! $this->organizationId) {
             return;
         }
@@ -313,6 +334,9 @@ class OnboardingWizard extends Component
 
     public function complete()
     {
+        // A Livewire action is its own endpoint; mount() does not cover it (TASK-442).
+        abort_unless(auth()->user()?->isSuper(), 403);
+
         return redirect()->route('organizations.show', ['organization' => $this->organizationId])
             ->with('success', __('Onboarding completed successfully!'));
     }

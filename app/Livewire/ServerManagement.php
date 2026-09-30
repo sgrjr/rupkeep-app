@@ -34,6 +34,9 @@ class ServerManagement extends Component
 
     public function executeCommand($commandKey)
     {
+        // A Livewire action is its own endpoint; mount() does not cover it (TASK-442).
+        abort_unless(auth()->user()?->isSuper(), 403);
+
         if ($this->isExecuting) {
             return;
         }
@@ -78,6 +81,9 @@ class ServerManagement extends Component
 
     public function executeWorkflow($workflowKey)
     {
+        // A Livewire action is its own endpoint; mount() does not cover it (TASK-442).
+        abort_unless(auth()->user()?->isSuper(), 403);
+
         if ($this->isExecuting) {
             return;
         }
@@ -124,11 +130,17 @@ class ServerManagement extends Component
 
     public function clearOutput()
     {
+        // A Livewire action is its own endpoint; mount() does not cover it (TASK-442).
+        abort_unless(auth()->user()?->isSuper(), 403);
+
         $this->output = [];
     }
 
     public function loadQueueJobs()
     {
+        // A Livewire action is its own endpoint; mount() does not cover it (TASK-442).
+        abort_unless(auth()->user()?->isSuper(), 403);
+
         try {
             // Load pending jobs from jobs table
             $this->queueJobs = DB::table('jobs')

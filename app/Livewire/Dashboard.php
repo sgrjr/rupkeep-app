@@ -37,6 +37,9 @@ class Dashboard extends Component
     
     public function previewHeaders()
     {
+        // Importing jobs is creating jobs: admins and managers of this organization (TASK-442).
+        $this->authorize('createJob', auth()->user()->organization);
+
         if (!$this->file) {
             $this->addError('file', __('Please select a file before previewing.'));
             return;
@@ -426,6 +429,9 @@ class Dashboard extends Component
 
     public function confirmImport()
     {
+        // Importing jobs is creating jobs: admins and managers of this organization (TASK-442).
+        $this->authorize('createJob', auth()->user()->organization);
+
         // Clear previous errors and hide preview
         $this->resetErrorBag();
         session()->forget(['error', 'success']);
@@ -437,6 +443,9 @@ class Dashboard extends Component
     
     public function uploadFile()
     {
+        // Importing jobs is creating jobs: admins and managers of this organization (TASK-442).
+        $this->authorize('createJob', auth()->user()->organization);
+
         // Backend safety net: Check if file exists
         if (!$this->file) {
             $this->addError('file', __('Please select a file before uploading.'));

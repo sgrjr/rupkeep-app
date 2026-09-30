@@ -38,6 +38,9 @@ class UpdatePasswordForm extends Component
      */
     public function updatePassword(UpdatesUserPasswords $updater)
     {
+        // A Livewire action is its own endpoint; mount() does not cover it (TASK-442).
+        $this->authorize('update', $this->user);
+
         $this->resetErrorBag();
 
         $updater->update($this->user, $this->state);
