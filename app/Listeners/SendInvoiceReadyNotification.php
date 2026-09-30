@@ -8,10 +8,36 @@ use App\Mail\UserNotification;
 use App\Models\User;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Support\Facades\Log;
 
 class SendInvoiceReadyNotification implements ShouldQueue
 {
     use InteractsWithQueue;
+
+    /**
+     * Retry a transient mail failure with a pause, then give up loudly
+     * (TASK-465). tries/backoff/afterCommit/deleteWhenMissingModels are
+     * copied onto the queued job by the event dispatcher.
+     */
+    public int $tries = 3;
+
+    /** @var array<int, int> seconds before the second and third attempts */
+    public array $backoff = [30, 120];
+
+    /** Never before the row that fired the event is committed. */
+    public bool $afterCommit = true;
+
+    /** An event whose model was deleted before the worker ran is not a failure. */
+    public bool $deleteWhenMissingModels = true;
+
+    public function failed(InvoiceReady $event, \Throwable $exception): void
+    {
+        Log::error(static::class.': gave up after '.$this->tries.' attempts', [
+            'event' => InvoiceReady::class,
+            'error' => $exception->getMessage(),
+            'error_class' => get_class($exception),
+        ]);
+    }
     use SendsNotificationMail;
 
     /**

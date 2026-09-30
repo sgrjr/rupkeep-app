@@ -7,21 +7,43 @@ use App\Mail\UserNotification;
 use App\Mail\UserNotificationSms;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
 
+/**
+ * Deliver one message to one person over their preferred channel: the
+ * carrier email-to-SMS gateway (Brevo API first, Laravel Mail second) or a
+ * plain email.
+ *
+ * Two entry points (TASK-465):
+ * - to(): never throws. For callers with nobody to retry for them (a
+ *   controller, a Livewire action). A failure is logged and the message is
+ *   written to the log mailer.
+ * - deliver(): throws when the final send fails. For the queued
+ *   {@see \App\Jobs\SendUserMessage}, which retries with backoff and only
+ *   falls back to the log mailer on its last attempt.
+ */
 class SendUserNotification
 {
+    /** Seconds Brevo gets to answer before the attempt is given up. */
+    public const HTTP_TIMEOUT = 10;
 
-    public static function to(User $user, String $message, String $subject = null)
+    public static function to(User $user, string $message, ?string $subject = null): void
+    {
+        try {
+            static::deliver($user, $message, $subject);
+        } catch (\Throwable $e) {
+            static::recordUndeliverable($user, $message, $subject, $e);
+        }
+    }
+
+    /**
+     * @throws \Throwable when the message could not be handed to any transport
+     */
+    public static function deliver(User $user, string $message, ?string $subject = null): void
     {
         // Determine recipient: prefer SMS gateway, fallback to email
         $recipient = $user->getSmsGatewayAddress() ?? $user->email;
         $isSmsGateway = $user->getSmsGatewayAddress() !== null;
-        
+
         Log::info('SendUserNotification: Preparing to send', [
             'user_id' => $user->id,
             'user_name' => $user->name,
@@ -29,7 +51,7 @@ class SendUserNotification
             'subject' => $subject,
             'is_sms_gateway' => $isSmsGateway,
         ]);
-        
+
         if (empty($recipient)) {
             Log::warning('SendUserNotification: No valid recipient address', [
                 'user_id' => $user->id,
@@ -53,7 +75,7 @@ class SendUserNotification
         if ($isSmsGateway) {
             // Try Brevo API for SMS gateway addresses (proven working method from test notification)
             $api_key = config('mail.mailers.brevo.key');
-            
+
             // If Brevo API key is configured, try using Brevo
             if (!empty($api_key)) {
                 $sender_email = config('mail.mailers.brevo.sender.email');
@@ -64,8 +86,14 @@ class SendUserNotification
                 // Configure API key authorization: partner-key
                 $config = \Brevo\Client\Configuration::getDefaultConfiguration()->setApiKey('partner-key', $api_key);
 
+                // A bounded wait (TASK-465): without a timeout a stalled Brevo
+                // held the queue worker, and every driver after this one, for
+                // as long as the socket lived.
                 $apiInstance = new \Brevo\Client\Api\TransactionalEmailsApi(
-                    new \GuzzleHttp\Client(),
+                    new \GuzzleHttp\Client([
+                        'timeout' => self::HTTP_TIMEOUT,
+                        'connect_timeout' => 5,
+                    ]),
                     $config
                 );
 
@@ -91,7 +119,7 @@ class SendUserNotification
                     // Brevo-specific API exception - log detailed error
                     $errorBody = $e->getResponseBody();
                     $errorCode = $e->getCode();
-                    
+
                     Log::warning('SendUserNotification: Brevo API failed, falling back to Laravel Mail', [
                         'user_id' => $user->id,
                         'recipient' => $recipient,
@@ -102,9 +130,9 @@ class SendUserNotification
                         'api_key_length' => $api_key ? strlen($api_key) : 0,
                         'sender_email' => $sender_email,
                     ]);
-                    
+
                     // If the error is "API Key is not enabled", log a helpful message
-                    if (str_contains($e->getMessage(), 'API Key is not enabled') || 
+                    if (str_contains($e->getMessage(), 'API Key is not enabled') ||
                         (is_string($errorBody) && str_contains($errorBody, 'API Key is not enabled'))) {
                         Log::error('SendUserNotification: Brevo API Key is not enabled. Please check your Brevo dashboard:', [
                             'instructions' => [
@@ -117,7 +145,9 @@ class SendUserNotification
                         ]);
                     }
                     // Fall through to Laravel Mail fallback below
-                } catch (\Exception $e) {
+                } catch (\Throwable $e) {
+                    // \Throwable, not \Exception: a Guzzle timeout or a TypeError
+                    // inside the SDK must reach the fallback too (TASK-465).
                     Log::warning('SendUserNotification: Brevo failed with unexpected error, falling back to Laravel Mail', [
                         'user_id' => $user->id,
                         'recipient' => $recipient,
@@ -135,82 +165,88 @@ class SendUserNotification
                 // Fall through to Laravel Mail fallback below
             }
         }
-        
+
         // Use standard Laravel Mail facade (respects MAIL_MAILER config - will log in development)
-        // This handles both regular emails and SMS gateway fallback
-        try {
-            $defaultMailer = config('mail.default');
-            $mailerConfig = config("mail.mailers.{$defaultMailer}");
-            
-            // Check if mailer is properly configured
-            if ($defaultMailer === 'smtp' && empty(config('mail.mailers.smtp.username'))) {
-                Log::error('SendUserNotification: SMTP mailer is configured but missing credentials', [
+        // This handles both regular emails and SMS gateway fallback. A failure
+        // here is the caller's to handle: to() logs it, SendUserMessage retries.
+        $defaultMailer = config('mail.default');
+
+        // Check if mailer is properly configured
+        if ($defaultMailer === 'smtp' && empty(config('mail.mailers.smtp.username'))) {
+            Log::error('SendUserNotification: SMTP mailer is configured but missing credentials', [
+                'user_id' => $user->id,
+                'recipient' => $recipient,
+                'mailer' => $defaultMailer,
+                'issue' => 'SMTP username/password not configured. Set MAIL_USERNAME and MAIL_PASSWORD in .env',
+            ]);
+            throw new \RuntimeException('SMTP mailer is not properly configured. Missing MAIL_USERNAME or MAIL_PASSWORD.');
+        }
+
+        static::sendSmtpOrSms(is_sms: $isSmsGateway, recipient: $recipient, message: $message, subject: $subject);
+
+        Log::info('SendUserNotification: Sent successfully via Laravel Mail', [
+            'user_id' => $user->id,
+            'recipient' => $recipient,
+            'subject' => $subject,
+            'mailer' => $defaultMailer,
+        ]);
+    }
+
+    /**
+     * The message could not be sent and will not be retried: say so in the
+     * log and keep a copy via the log mailer.
+     */
+    public static function recordUndeliverable(User $user, string $message, ?string $subject, \Throwable $e): void
+    {
+        $recipient = $user->getSmsGatewayAddress() ?? $user->email;
+
+        // Check if it's a mail transport exception
+        $isTransportException = str_contains(get_class($e), 'TransportException') ||
+                               str_contains($e->getMessage(), 'transport') ||
+                               str_contains($e->getMessage(), 'mailer');
+
+        Log::error('SendUserNotification: Failed to send via Laravel Mail', [
+            'user_id' => $user->id,
+            'recipient' => $recipient,
+            'mailer' => config('mail.default'),
+            'error' => $e->getMessage(),
+            'error_class' => get_class($e),
+            'is_transport_error' => $isTransportException,
+            'previous_error' => $e->getPrevious() ? $e->getPrevious()->getMessage() : null,
+            'trace' => $e->getTraceAsString(),
+        ]);
+
+        // Final fallback: try using 'log' mailer if default mailer failed
+        if (config('mail.default') !== 'log' && $recipient) {
+            try {
+                Log::warning('SendUserNotification: Attempting final fallback to log mailer', [
                     'user_id' => $user->id,
                     'recipient' => $recipient,
-                    'mailer' => $defaultMailer,
-                    'issue' => 'SMTP username/password not configured. Set MAIL_USERNAME and MAIL_PASSWORD in .env',
                 ]);
-                throw new \Exception('SMTP mailer is not properly configured. Missing MAIL_USERNAME or MAIL_PASSWORD.');
-            }
-            
-            static::sendSmtpOrSms(is_sms: $isSmsGateway, recipient: $recipient, message: $message, subject: $subject);
-
-            Log::info('SendUserNotification: Sent successfully via Laravel Mail', [
-                'user_id' => $user->id,
-                'recipient' => $recipient,
-                'subject' => $subject,
-                'mailer' => $defaultMailer,
-            ]);
-        } catch (\Exception $e) {
-            // Check if it's a mail transport exception
-            $isTransportException = str_contains(get_class($e), 'TransportException') || 
-                                   str_contains($e->getMessage(), 'transport') ||
-                                   str_contains($e->getMessage(), 'mailer');
-            
-            Log::error('SendUserNotification: Failed to send via Laravel Mail', [
-                'user_id' => $user->id,
-                'recipient' => $recipient,
-                'mailer' => config('mail.default'),
-                'error' => $e->getMessage(),
-                'error_class' => get_class($e),
-                'is_transport_error' => $isTransportException,
-                'previous_error' => $e->getPrevious() ? $e->getPrevious()->getMessage() : null,
-                'trace' => $e->getTraceAsString(),
-            ]);
-            
-            // Final fallback: try using 'log' mailer if default mailer failed
-            if (config('mail.default') !== 'log') {
-                try {
-                    Log::warning('SendUserNotification: Attempting final fallback to log mailer', [
-                        'user_id' => $user->id,
-                        'recipient' => $recipient,
-                    ]);
-                    Mail::mailer('log')->to($recipient)->send(new UserNotification($message, $subject));
-                    Log::info('SendUserNotification: Notification logged (could not be sent)', [
-                        'user_id' => $user->id,
-                        'recipient' => $recipient,
-                        'subject' => $subject,
-                        'note' => 'Check storage/logs/laravel.log for notification details',
-                    ]);
-                } catch (\Exception $logException) {
-                    Log::error('SendUserNotification: Even log mailer failed - notification completely failed', [
-                        'user_id' => $user->id,
-                        'recipient' => $recipient,
-                        'error' => $logException->getMessage(),
-                    ]);
-                }
+                Mail::mailer('log')->to($recipient)->send(new UserNotification($message, $subject));
+                Log::info('SendUserNotification: Notification logged (could not be sent)', [
+                    'user_id' => $user->id,
+                    'recipient' => $recipient,
+                    'subject' => $subject,
+                    'note' => 'Check storage/logs/laravel.log for notification details',
+                ]);
+            } catch (\Throwable $logException) {
+                Log::error('SendUserNotification: Even log mailer failed - notification completely failed', [
+                    'user_id' => $user->id,
+                    'recipient' => $recipient,
+                    'error' => $logException->getMessage(),
+                ]);
             }
         }
     }
 
-    public static function sendSmtpOrSms($is_sms, $recipient, $message, $subject):void 
+    public static function sendSmtpOrSms($is_sms, $recipient, $message, $subject): void
     {
         if($is_sms){
             //not sending subject ON PURPOSE to prevent the carrier from misinterpreting message as anything but plain text.
             Mail::to($recipient)->send(new UserNotificationSms($message));
         }else{
             Mail::to($recipient)->send(new UserNotification($message, $subject));
-        }    
-
+        }
     }
 }

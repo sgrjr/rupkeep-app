@@ -2,7 +2,6 @@
 
 namespace App\Listeners;
 
-use App\Actions\SendUserNotification;
 use App\Events\JobStatusChanged;
 use App\Models\PilotCarJob;
 use App\Notifications\JobUpdate;
@@ -12,6 +11,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use App\Support\LocalTime;
+use App\Jobs\SendUserMessage;
 
 /**
  * Notifies every driver assigned to a job when the job's status changes
@@ -33,6 +33,31 @@ use App\Support\LocalTime;
 class NotifyDriversOfJobStatusChange implements ShouldQueue
 {
     use InteractsWithQueue;
+
+    /**
+     * Retry a transient mail failure with a pause, then give up loudly
+     * (TASK-465). tries/backoff/afterCommit/deleteWhenMissingModels are
+     * copied onto the queued job by the event dispatcher.
+     */
+    public int $tries = 3;
+
+    /** @var array<int, int> seconds before the second and third attempts */
+    public array $backoff = [30, 120];
+
+    /** Never before the row that fired the event is committed. */
+    public bool $afterCommit = true;
+
+    /** An event whose model was deleted before the worker ran is not a failure. */
+    public bool $deleteWhenMissingModels = true;
+
+    public function failed(JobStatusChanged $event, \Throwable $exception): void
+    {
+        Log::error(static::class.': gave up after '.$this->tries.' attempts', [
+            'event' => JobStatusChanged::class,
+            'error' => $exception->getMessage(),
+            'error_class' => get_class($exception),
+        ]);
+    }
 
     public function handle(JobStatusChanged $event): void
     {
@@ -65,7 +90,7 @@ class NotifyDriversOfJobStatusChange implements ShouldQueue
 
             // Routes to the SMS gateway (short body) or email, exactly like the
             // cancellation notifications.
-            SendUserNotification::to($driver, $body, $subject);
+            SendUserMessage::dispatch($driver, $body, $subject); // one queued job per recipient (TASK-465)
 
             // Web-push / database channel, matching the assignment flow.
             try {
