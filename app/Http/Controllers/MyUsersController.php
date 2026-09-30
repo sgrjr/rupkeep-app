@@ -54,16 +54,38 @@ class MyUsersController extends Controller
      */
     public function store(Request $request)
     {
-        if(!$request->has('organization_id')){
-            $request->merge([
-                'organization_id' => auth()->user()->organization_id
-            ]);
-        }
-        $user = new User($request->except('_method'));
+        $actor = auth()->user();
+
+        // The organization is the actor's. A super user may name another;
+        // nobody else may (TASK-437).
+        $organizationId = $actor->isSuper() && $request->filled('organization_id')
+            ? (int) $request->input('organization_id')
+            : $actor->organization_id;
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'string', 'min:6'],
+            'organization_role' => ['required', \Illuminate\Validation\Rule::in(array_column(User::roles(), 'id'))],
+            // A portal login may only be bound to a customer of THIS organization.
+            'customer_id' => ['nullable', \Illuminate\Validation\Rule::exists('customers', 'id')->where('organization_id', $organizationId)],
+            'notification_address' => ['nullable', 'email', 'max:255'],
+        ]);
+
+        $user = new User([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => $validated['password'],
+            'organization_id' => $organizationId,
+            'organization_role' => $validated['organization_role'],
+            'customer_id' => $validated['customer_id'] ?? null,
+            'notification_address' => $validated['notification_address'] ?? null,
+        ]);
 
         $this->authorize('create', $user);
         $user->save();
-        return back();
+
+        return back()->with('success', __(':name created.', ['name' => $user->name]));
     }
 
     /**

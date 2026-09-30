@@ -38,7 +38,9 @@ class CustomerContactPolicy
      */
     public function update(User $user, CustomerContact $customer_contact): bool
     {
-        return ($user->organization_id === $customer_contact->organization_id && ($user->isAdmin() || $user->isManager() || $user->isStandardEmployee()))
+        // Admins and managers. Drivers used to be admitted here, and the
+        // delete branch of the update action was gated by this (TASK-437).
+        return ($user->organization_id === $customer_contact->organization_id && ($user->isAdmin() || $user->isManager()))
             || $user->isSuper();
     }
 

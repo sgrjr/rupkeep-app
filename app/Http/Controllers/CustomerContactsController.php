@@ -35,19 +35,27 @@ class CustomerContactsController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(Request $request, string $customer_id)
     {
-        if(!$request->has('organization_id')){
-            $request->merge([
-                'organization_id' => Auth::user()->organization_id
-            ]);
-        }
-        $data = $request->except('_method');
-        // Convert checkbox values to booleans
-        $data['is_main_contact'] = $request->has('is_main_contact') && $request->input('is_main_contact') == '1';
-        $data['is_billing_contact'] = $request->has('is_billing_contact') && $request->input('is_billing_contact') == '1';
-        
-        $customer_contact = new CustomerContact($data);
+        // The contact belongs to the customer in the URL. customer_id and
+        // organization_id from the body used to win, so a contact could be
+        // planted on another organization's customer (TASK-437).
+        $customer = \App\Models\Customer::findOrFail($customer_id);
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:50'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'memo' => ['nullable', 'string', 'max:2000'],
+            'notification_address' => ['nullable', 'email', 'max:255'],
+        ]);
+
+        $customer_contact = new CustomerContact(array_merge($validated, [
+            'customer_id' => $customer->id,
+            'organization_id' => $customer->organization_id,
+            'is_main_contact' => $request->boolean('is_main_contact'),
+            'is_billing_contact' => $request->boolean('is_billing_contact'),
+        ]));
         $this->authorize('create', $customer_contact);
 
         $customer_contact->save();
@@ -84,11 +92,20 @@ class CustomerContactsController extends Controller
         $this->authorize('update', $customer_contact);
         
         if($request->has('delete') && $request->get('delete') === 'on'){
+            // Deleting is its own permission (admin), not a flavour of editing.
+            $this->authorize('delete', $customer_contact);
+
             $customer_contact->delete();
             return back()->with('success', __('Contact deleted.'));
         }
         
-        $data = $request->only(['name', 'phone', 'email', 'memo', 'notification_address']);
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:50'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'memo' => ['nullable', 'string', 'max:2000'],
+            'notification_address' => ['nullable', 'email', 'max:255'],
+        ]);
         // Convert checkbox values to booleans
         $data['is_main_contact'] = $request->has('is_main_contact') && $request->input('is_main_contact') == '1';
         $data['is_billing_contact'] = $request->has('is_billing_contact') && $request->input('is_billing_contact') == '1';

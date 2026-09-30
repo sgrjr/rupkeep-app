@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Http\Requests\CustomerRequest;
 use App\Models\Customer;
 use App\Models\CustomerContact;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -55,25 +56,23 @@ class CustomersController extends Controller
         return view('customers.edit', compact('customer'));
     }
 
-    public function store(Request $request){
-        if(!$request->has('organization_id')){
-            $request->merge([
-                'organization_id' => auth()->user()->organization_id
-            ]);
-        }
-        $customer = new Customer($request->except('_method'));
+    public function store(CustomerRequest $request){
+        // organization_id comes from the actor, never the form (TASK-437).
+        $customer = new Customer(array_merge($request->validated(), [
+            'organization_id' => auth()->user()->organization_id,
+        ]));
         $this->authorize('createCustomer', $customer);
         $customer->save();
         return redirect()->route('customers.index');
     }
 
-    public function update(Request $request, $customer){
+    public function update(CustomerRequest $request, $customer){
+        $customer = Customer::findOrFail($customer);
 
-        $customer = Customer::find($customer);
+        $this->authorize('update', $customer);
 
-        if($customer && $this->authorize('update', $customer)){
-           $customer->update($request->except('_method'));
-        }
+        // Validated allow-list only: organization_id stays what it is.
+        $customer->update($request->validated());
 
         return redirect()->route('customers.index');
     }
@@ -94,7 +93,22 @@ class CustomersController extends Controller
         $customer = Customer::find($customer);
         
         if($customer && $this->authorize('createContact', $customer)){
-            CustomerContact::create($request->except('_method'));
+            $validated = $request->validate([
+                'name' => ['required', 'string', 'max:255'],
+                'phone' => ['nullable', 'string', 'max:50'],
+                'email' => ['nullable', 'email', 'max:255'],
+                'memo' => ['nullable', 'string', 'max:2000'],
+                'notification_address' => ['nullable', 'email', 'max:255'],
+            ]);
+
+            // The contact belongs to the customer in the URL, never one named
+            // in the body (TASK-437).
+            CustomerContact::create(array_merge($validated, [
+                'customer_id' => $customer->id,
+                'organization_id' => $customer->organization_id,
+                'is_main_contact' => $request->boolean('is_main_contact'),
+                'is_billing_contact' => $request->boolean('is_billing_contact'),
+            ]));
         }
 
         return back();

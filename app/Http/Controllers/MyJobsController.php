@@ -163,25 +163,50 @@ class MyJobsController extends Controller
         return view('pilot-car-.edit', compact('job'));
     }
 
-    public function store(Request $request){
-        if(!$request->has('organization_id')){
-            $request->merge([
-                'organization_id' => Auth::user()->organization_id
-            ]);
-        }
+    /**
+     * The job fields a form may set, scoped to the actor's organization.
+     * organization_id, deleted_at, canceled_* and the invoice columns are
+     * fillable on the model but are never accepted from a request (TASK-437).
+     */
+    private function jobRules(int $organizationId): array
+    {
+        return [
+            'job_no' => ['nullable', 'string', 'max:100'],
+            'customer_id' => ['nullable', \Illuminate\Validation\Rule::exists('customers', 'id')->where('organization_id', $organizationId)],
+            'scheduled_pickup_at' => ['nullable', 'date'],
+            'scheduled_delivery_at' => ['nullable', 'date'],
+            'load_no' => ['nullable', 'string', 'max:100'],
+            'pickup_address' => ['nullable', 'string', 'max:500'],
+            'delivery_address' => ['nullable', 'string', 'max:500'],
+            'check_no' => ['nullable', 'string', 'max:100'],
+            'rate_code' => ['nullable', 'string', 'max:100'],
+            'rate_value' => ['nullable', 'numeric', 'min:0'],
+            'mini_addon_amount' => ['nullable', 'numeric', 'min:0'],
+            'memo' => ['nullable', 'string', 'max:5000'],
+            'public_memo' => ['nullable', 'string', 'max:5000'],
+            'default_driver_id' => ['nullable', \Illuminate\Validation\Rule::exists('users', 'id')->where('organization_id', $organizationId)],
+            'default_truck_driver_id' => ['nullable', \Illuminate\Validation\Rule::exists('customer_contacts', 'id')->where('organization_id', $organizationId)],
+        ];
+    }
 
-        $job = new Job($request->except('_method'));
+    public function store(Request $request){
+        $organizationId = Auth::user()->organization_id;
+
+        $job = new Job(array_merge(
+            $request->validate($this->jobRules($organizationId)),
+            ['organization_id' => $organizationId]
+        ));
         $this->authorize('create', $job);
         $job->save();
         return redirect()->route('my.jobs.edit', ['job'=>$job->id]);
     }
 
     public function update(Request $request, $job){
-        $job = Job::find($job);
+        $job = Job::findOrFail($job);
 
-        if($job && $this->authorize('update', $job)){
-           $job->update($request->except('_method'));
-        }
+        $this->authorize('update', $job);
+
+        $job->update($request->validate($this->jobRules($job->organization_id)));
 
         return redirect()->route('my.jobs.show', ['job'=>$job->id]);
     }
