@@ -63,7 +63,11 @@ class CustomersController extends Controller
         ]));
         $this->authorize('createCustomer', $customer);
         $customer->save();
-        return redirect()->route('customers.index');
+
+        // Create, update and delete all returned to the list without a word
+        // (TASK-460).
+        return redirect()->route('customers.index')
+            ->with('success', __(':name created.', ['name' => $customer->name]));
     }
 
     public function update(CustomerRequest $request, $customer){
@@ -74,18 +78,25 @@ class CustomersController extends Controller
         // Validated allow-list only: organization_id stays what it is.
         $customer->update($request->validated());
 
-        return redirect()->route('customers.index');
+        return redirect()->route('customers.index')
+            ->with('success', __(':name updated.', ['name' => $customer->name]));
     }
 
     public function destroy(Request $request, $customer){
 
         $customer = Customer::find($customer);
 
-        if($customer && $this->authorize('delete', $customer)){
-           $customer->delete();
+        if (! $customer) {
+            return redirect()->route('customers.index')
+                ->with('error', __('That customer no longer exists.'));
         }
 
-        return redirect()->route('customers.index');
+        $this->authorize('delete', $customer);
+        $name = $customer->name;
+        $customer->delete();
+
+        return redirect()->route('customers.index')
+            ->with('success', __(':name deleted.', ['name' => $name]));
     }
 
     public function createContact(Request $request, $customer){

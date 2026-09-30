@@ -67,14 +67,28 @@ class TaskThread extends Component
             return; // never email internal comments
         }
 
-        // Email the submitter (if any) via the standard Laravel Notification pipeline.
+        // Email the submitter via the standard Laravel Notification pipeline.
+        // The comment was marked "sent to customer" whether or not anything
+        // went out (TASK-460): no submitter, no email address, or a failed
+        // hand-off all showed the same green tick.
         $submitter = $this->task->submitter;
-        if ($submitter && $submitter->email) {
+
+        if (! $submitter || ! $submitter->email) {
+            session()->flash('error', __('This task has no customer email address to send to.'));
+            return;
+        }
+
+        try {
             $submitter->notify(new \App\Notifications\TaskUpdate($this->task, $comment));
+        } catch (\Throwable $e) {
+            report($e);
+            session()->flash('error', __('The update could not be emailed. Nothing was sent.'));
+            return;
         }
 
         $comment->update(['sent_to_customer' => true]);
 
+        session()->flash('success', __('Update emailed to :email.', ['email' => $submitter->email]));
         $this->dispatch('commentAdded');
     }
 

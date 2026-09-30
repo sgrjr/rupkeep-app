@@ -286,19 +286,36 @@ class OnboardingWizard extends Component
 
         $features = $this->getAvailableFeatures();
 
+        $sent = 0;
+        $failed = [];
+
         foreach ($users as $user) {
             $message = $this->buildWelcomeMessage($user, $organization, $features);
             $subject = __('Welcome to :app', ['app' => config('app.name')]);
 
             try {
                 Mail::to($user->email)->send(new \App\Mail\UserNotification($message, $subject));
-            } catch (\Exception $e) {
+                $sent++;
+            } catch (\Throwable $e) {
                 report($e);
+                $failed[] = $user->email;
             }
         }
 
-        $this->email_sent = true;
-        session()->flash('message', __('Welcome emails sent to :count users.', ['count' => $users->count()]));
+        // "Sent to N users" used to be reported whatever happened (TASK-460).
+        $this->email_sent = $sent > 0;
+
+        if ($failed === []) {
+            session()->flash('message', __('Welcome emails sent to :count users.', ['count' => $sent]));
+        } elseif ($sent > 0) {
+            session()->flash('error', __('Welcome emails sent to :sent of :total users. Not sent: :failed', [
+                'sent' => $sent,
+                'total' => $users->count(),
+                'failed' => implode(', ', $failed),
+            ]));
+        } else {
+            session()->flash('error', __('No welcome emails could be sent. Check the mail settings and the log.'));
+        }
     }
 
     protected function getAvailableFeatures()

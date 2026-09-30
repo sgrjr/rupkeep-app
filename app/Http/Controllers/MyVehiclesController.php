@@ -148,7 +148,11 @@ class MyVehiclesController extends Controller
 
         $vehicle->delete();
 
-        return redirect()->route('my.vehicles.index');
+        // The index never rendered the old 'status' codes, so archive, restore
+        // and delete all came back to a silent list (TASK-460).
+        return redirect()
+            ->route('my.vehicles.index')
+            ->with('success', __(':name archived. It can be restored from the archived vehicles.', ['name' => $vehicle->name]));
     }
 
     public function restore(Request $request, int $vehicle)
@@ -163,7 +167,7 @@ class MyVehiclesController extends Controller
 
         return redirect()
             ->route('my.vehicles.index')
-            ->with('status', 'vehicle-restored');
+            ->with('success', __(':name restored.', ['name' => $model->name]));
     }
 
     public function forceDestroy(Request $request, int $vehicle)
@@ -178,6 +182,6 @@ class MyVehiclesController extends Controller
 
         return redirect()
             ->route('my.vehicles.index')
-            ->with('status', 'vehicle-deleted');
+            ->with('success', __(':name permanently deleted.', ['name' => $model->name]));
     }
 }

@@ -24,6 +24,7 @@
                     ['type' => 'success', 'message' => session('success')],
                     ['type' => 'error', 'message' => session('error')],
                     ['type' => 'warning', 'message' => session('warning')],
+                    ['type' => 'info', 'message' => session('info')],
                     ['type' => 'info', 'message' => session('message')],
                 ])->filter(fn ($toast) => filled($toast['message']))->values();
 

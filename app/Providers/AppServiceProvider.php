@@ -20,6 +20,7 @@ use App\Models\Invoice;
 use App\Models\PilotCarJob;
 use App\Observers\InvoiceObserver;
 use App\Observers\PilotCarJobObserver;
+use App\Support\LivewireFlashToasts;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
@@ -54,6 +55,10 @@ class AppServiceProvider extends ServiceProvider
         PilotCarJob::observe(PilotCarJobObserver::class);
 
         $this->suppressMinishlinkGmpBcmathWarning();
+
+        // A session flash raised inside a Livewire request becomes a toast
+        // instead of vanishing until the next page load (TASK-460).
+        LivewireFlashToasts::register();
     }
 
     /**

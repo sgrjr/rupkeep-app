@@ -27,6 +27,7 @@
                     ['type' => 'success', 'message' => session('success')],
                     ['type' => 'error', 'message' => session('error')],
                     ['type' => 'warning', 'message' => session('warning')],
+                    ['type' => 'info', 'message' => session('info')],
                     ['type' => 'info', 'message' => session('message')],
                 ])->filter(fn ($toast) => filled($toast['message']))->values();
 
@@ -54,7 +55,22 @@
                     })
                     ->filter(fn ($toast) => filled(data_get($toast, 'message')));
 
-                $toastMessages = $legacyToasts->concat($structuredToasts)->values()->all();
+                // A validation failure that redirected back lands here with
+                // $errors, and thirty of the plain forms render neither @error
+                // nor $errors (TASK-460): the form just came back unchanged.
+                // Name the first problem once; inline messages, where they
+                // exist, say the rest.
+                $validationToasts = collect();
+                if (isset($errors) && $errors->any()) {
+                    $validationToasts->push([
+                        'type' => 'error',
+                        'message' => $errors->count() > 1
+                            ? __(':first (and :n more)', ['first' => $errors->first(), 'n' => $errors->count() - 1])
+                            : $errors->first(),
+                    ]);
+                }
+
+                $toastMessages = $legacyToasts->concat($structuredToasts)->concat($validationToasts)->values()->all();
             @endphp
 
             <x-toast-stack :toasts="$toastMessages" />
