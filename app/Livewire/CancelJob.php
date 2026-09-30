@@ -73,6 +73,31 @@ class CancelJob extends Component
 
             $this->validate();
 
+            // A Livewire action is its own endpoint: the hidden button on the
+            // job page is not a state check (TASK-458). A second cancel used to
+            // overwrite the reason and the date and text the drivers again; a
+            // cancel after invoicing left the invoice billing the old rate.
+            $this->job->refresh();
+
+            if ($this->job->canceled_at) {
+                $this->addError('cancellationReason', __('This job was already cancelled on :date.', [
+                    'date' => \App\Support\LocalTime::format($this->job->canceled_at, 'M j, Y g:i A'),
+                ]));
+
+                return;
+            }
+
+            $billedBy = $this->job->liveInvoice()
+                ?? $this->job->summaryInvoices()->notVoid()->latest('invoices.id')->first();
+
+            if ($billedBy) {
+                $this->addError('cancellationReason', __('This job is on invoice #:number. Void or regenerate that invoice first; cancelling now would leave it billing the old rate.', [
+                    'number' => $billedBy->invoice_number,
+                ]));
+
+                return;
+            }
+
             \Log::info('CancelJob: Validation passed', [
                 'job_id' => $this->job->id,
             ]);

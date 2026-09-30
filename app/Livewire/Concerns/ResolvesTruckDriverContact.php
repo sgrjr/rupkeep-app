@@ -19,6 +19,69 @@ use App\Models\CustomerContact;
 trait ResolvesTruckDriverContact
 {
     /**
+     * The truck-driver dropdown's options for a customer: its contacts, each
+     * labelled with a phone number when one is on file, behind a "none" row.
+     * Shared by the create and edit forms so the two lists read the same
+     * (TASK-458): the edit form used to build its own list without phones and
+     * left the dropdown empty when the job had no customer.
+     *
+     * @return array<int, array{name: string, value: int|null}>
+     */
+    protected function truckDriverOptionsFor(int|string|null $customerId): array
+    {
+        $options = [
+            ['name' => __('(none selected)'), 'value' => null],
+        ];
+
+        if (! $customerId) {
+            return $options;
+        }
+
+        CustomerContact::where('customer_id', $customerId)
+            ->orderBy('name')
+            ->get()
+            ->each(function (CustomerContact $contact) use (&$options) {
+                $label = $contact->phone ? $contact->name . ' (' . $contact->phone . ')' : $contact->name;
+                $options[] = ['name' => $label, 'value' => $contact->id];
+            });
+
+        return $options;
+    }
+
+    /**
+     * Whether a chosen contact belongs to the job's customer. A contact id
+     * from the previous customer's list, or from another organization, must
+     * not be written to the job (TASK-458).
+     */
+    protected function truckDriverBelongsTo(int|string|null $contactId, int|string|null $customerId): bool
+    {
+        if (! $contactId) {
+            return true;
+        }
+
+        return $customerId
+            && CustomerContact::whereKey($contactId)->where('customer_id', $customerId)->exists();
+    }
+
+    /**
+     * Whether another live job in the organization already carries this job
+     * number (TASK-458). Case- and whitespace-insensitive, like the importer.
+     */
+    protected function jobNumberTaken(int $organizationId, ?string $jobNo, ?int $exceptJobId = null): bool
+    {
+        $jobNo = trim((string) $jobNo);
+
+        if ($jobNo === '') {
+            return false;
+        }
+
+        return \App\Models\PilotCarJob::where('organization_id', $organizationId)
+            ->whereRaw('LOWER(TRIM(job_no)) = ?', [mb_strtolower($jobNo)])
+            ->when($exceptJobId, fn ($q) => $q->whereKeyNot($exceptJobId))
+            ->exists();
+    }
+
+    /**
      * @return int|null The contact id to store as default_truck_driver_id,
      *                  or null when nothing was typed.
      */

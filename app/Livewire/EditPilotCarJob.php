@@ -129,15 +129,24 @@ class EditPilotCarJob extends Component
             $this->form->default_driver_id = $jobModel->default_driver_id;
             $this->form->default_truck_driver_id = $jobModel->default_truck_driver_id;
             
-            // Load truck drivers for this customer
-            if ($jobModel->customer_id) {
-                $this->truckDrivers = [
-                    ['name' => '(none selected)', 'value' => null]
-                ];
-                CustomerContact::where('customer_id', $jobModel->customer_id)
-                    ->get()
-                    ->each(fn($contact) => $this->truckDrivers[] = ['name' => $contact->name, 'value' => $contact->id]);
-            }
+            // Same list as the create form, phones included, and never empty
+            // (TASK-458).
+            $this->truckDrivers = $this->truckDriverOptionsFor($jobModel->customer_id);
+        }
+    }
+
+    /**
+     * The create form has always had this hook; the edit form did not, so
+     * after changing the customer the dropdown kept listing the previous
+     * customer's contacts and the job could be saved with one of them
+     * (TASK-458).
+     */
+    public function updatedFormCustomerId($value): void
+    {
+        $this->truckDrivers = $this->truckDriverOptionsFor($value);
+
+        if (! $this->truckDriverBelongsTo($this->form->default_truck_driver_id, $value)) {
+            $this->form->default_truck_driver_id = null;
         }
     }
 
@@ -154,17 +163,37 @@ class EditPilotCarJob extends Component
 
         $form = $this->form->all();
 
+        $customerId = $form['customer_id'] ?? $this->job->customer_id;
+
+        // `exists:customers,id` says nothing about whose customer it is.
+        if ($customerId && ! Customer::whereKey($customerId)->where('organization_id', $this->job->organization_id)->exists()) {
+            $this->addError('form.customer_id', __('That customer could not be found.'));
+
+            return;
+        }
+
+        if ($this->jobNumberTaken($this->job->organization_id, $this->form->job_no, $this->job->id)) {
+            $this->addError('form.job_no', __('Job number :number is already used by another job.', ['number' => trim((string) $this->form->job_no)]));
+
+            return;
+        }
+
         // Inline truck driver (TASK-362), attached to whichever customer the
         // job is filed under.
         $resolvedTruckDriverId = $this->resolveTruckDriverContact(
             $this->form->new_truck_driver_name,
             $this->form->new_truck_driver_phone,
-            $form['customer_id'] ?? $this->job->customer_id,
+            $customerId,
             $this->job->organization_id,
         );
 
         if ($resolvedTruckDriverId) {
             $form['default_truck_driver_id'] = $resolvedTruckDriverId;
+        } elseif (! $this->truckDriverBelongsTo($form['default_truck_driver_id'] ?? null, $customerId)) {
+            // The previous customer's contact, or anyone else's (TASK-458).
+            $this->addError('form.default_truck_driver_id', __('That truck driver is not one of this customer\'s contacts.'));
+
+            return;
         }
 
         // Transient form-only fields — not columns on pilot_car_jobs.

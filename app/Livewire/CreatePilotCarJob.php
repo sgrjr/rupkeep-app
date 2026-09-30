@@ -153,20 +153,12 @@ class CreatePilotCarJob extends Component
 
     protected function loadTruckDriversForCustomer($customerId): void
     {
-        $this->truckDrivers = [
-            ['name' => '(none selected)', 'value' => null]
-        ];
+        $this->truckDrivers = $this->truckDriverOptionsFor($customerId);
 
-        if (! $customerId) {
-            return;
+        // A contact picked under the previous customer is not this customer's.
+        if (! $this->truckDriverBelongsTo($this->form->default_truck_driver_id, $customerId)) {
+            $this->form->default_truck_driver_id = null;
         }
-
-        CustomerContact::where('customer_id', $customerId)
-            ->get()
-            ->each(function ($contact) {
-                $label = $contact->phone ? $contact->name . ' (' . $contact->phone . ')' : $contact->name;
-                $this->truckDrivers[] = ['name' => $label, 'value' => $contact->id];
-            });
     }
 
     public function render()
@@ -189,6 +181,13 @@ class CreatePilotCarJob extends Component
         }
 
         $organization = Auth::user()->organization;
+
+        // The importer dedupes on job_no; the form never did (TASK-458).
+        if ($this->jobNumberTaken($organization->id, $this->form->job_no)) {
+            $this->addError('form.job_no', __('Job number :number is already used by another job.', ['number' => trim((string) $this->form->job_no)]));
+
+            return;
+        }
 
         $form = $this->form->all();
 
@@ -244,6 +243,10 @@ class CreatePilotCarJob extends Component
 
         if ($resolvedTruckDriverId) {
             $form['default_truck_driver_id'] = $resolvedTruckDriverId;
+        } elseif (! $this->truckDriverBelongsTo($form['default_truck_driver_id'] ?? null, $form['customer_id'] ?? null)) {
+            $this->addError('form.default_truck_driver_id', __('That truck driver is not one of this customer\'s contacts.'));
+
+            return;
         }
 
         // Transient form-only fields — not columns on pilot_car_jobs.
