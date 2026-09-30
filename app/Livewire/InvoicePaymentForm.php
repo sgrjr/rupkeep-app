@@ -3,17 +3,29 @@
 namespace App\Livewire;
 
 use App\Models\Invoice;
-use App\Models\Customer;
-use Livewire\Component;
-use Livewire\Attributes\Validate;
+use App\Services\InvoicePayments;
+use App\Support\Money;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Validate;
+use Livewire\Component;
 
 class InvoicePaymentForm extends Component
 {
     public Invoice $invoice;
     public $showModal = false;
 
-    #[Validate('required|numeric|min:0.01', message: 'Payment amount is required and must be greater than 0.')]
+    /**
+     * Minted when the modal opens and sent with the submit. A double-click
+     * sends two requests carrying the same key; the second records nothing
+     * (TASK-449 b).
+     */
+    public string $submissionKey = '';
+
+    // Zero is allowed: a payment can be made entirely from account credit
+    // (TASK-449 c). The total (cash + credit) still has to be positive.
+    #[Validate('nullable|numeric|min:0', message: 'Payment amount must be a number of at least 0.')]
     public $paymentAmount = '';
 
     #[Validate('nullable|string|max:255')]
@@ -64,6 +76,7 @@ class InvoicePaymentForm extends Component
 
     protected function resetForm()
     {
+        $this->submissionKey = (string) Str::uuid();
         $this->paymentAmount = '';
         $this->paymentMethod = '';
         $this->checkNumber = '';
@@ -94,92 +107,57 @@ class InvoicePaymentForm extends Component
     {
         $this->authorize('update', $this->invoice);
 
-        $this->validate();
+        if ($this->invoice->isVoid()) {
+            $this->addError('paymentAmount', __('A void invoice is not owed; nothing to pay.'));
 
-        $paymentAmount = (float) $this->paymentAmount;
-        $creditAmount = $this->useAccountCredit ? (float) ($this->creditAmount ?? 0) : 0;
-        $totalPayment = $paymentAmount + $creditAmount;
-
-        if ($totalPayment <= 0) {
-            $this->addError('paymentAmount', 'Total payment (cash + credit) must be greater than 0.');
             return;
         }
 
-        // Check if customer has enough credit
-        if ($this->useAccountCredit && $creditAmount > 0) {
-            $availableCredit = (float) $this->invoice->customer->account_credit;
-            if ($creditAmount > $availableCredit) {
-                $this->addError('creditAmount', "Customer only has $" . number_format($availableCredit, 2) . " in account credit.");
-                return;
+        $this->validate();
+
+        try {
+            $result = InvoicePayments::record($this->invoice, [
+                'cash_amount' => $this->paymentAmount,
+                'credit_amount' => $this->useAccountCredit ? $this->creditAmount : 0,
+                'payment_method' => $this->paymentMethod ?: null,
+                'check_number' => $this->checkNumber ?: null,
+                'payment_date' => $this->paymentDate ?: null,
+                'notes' => $this->notes ?: null,
+                'recorded_by' => Auth::id(),
+                'submission_key' => $this->submissionKey ?: (string) Str::uuid(),
+            ]);
+        } catch (ValidationException $e) {
+            foreach ($e->errors() as $field => $messages) {
+                $this->addError($field, $messages[0] ?? __('The payment could not be recorded.'));
             }
+
+            return;
         }
 
-        // Get current payments
-        $values = $this->invoice->values ?? [];
-        $payments = $values['payments'] ?? [];
+        if ($result['duplicate']) {
+            session()->flash('info', __('That payment was already recorded.'));
+        } else {
+            $parts = [__('Payment of :amount recorded.', ['amount' => Money::currency($result['payment']['amount'])])];
 
-        // Calculate remaining balance
-        $lateFees = $this->invoice->calculateLateFees();
-        $totalDue = $lateFees['total_with_late_fees'];
-        $totalPaid = array_sum(array_column($payments, 'amount'));
-        $remainingBalance = max(0, $totalDue - $totalPaid);
+            if ($result['overpayment'] > 0) {
+                $parts[] = __(':amount over the balance was added to the customer\'s account credit.', [
+                    'amount' => Money::currency($result['overpayment']),
+                ]);
+            }
 
-        // Check if payment exceeds remaining balance
-        if ($totalPayment > $remainingBalance) {
-            $overpayment = $totalPayment - $remainingBalance;
-            // Allow overpayment - it becomes account credit
+            $parts[] = $result['paid_in_full']
+                ? __('The invoice is paid in full.')
+                : __('Remaining balance :amount.', ['amount' => Money::currency($result['remaining_balance'])]);
+
+            session()->flash('success', implode(' ', $parts));
         }
 
-        // Record payment
-        $payment = [
-            'amount' => $totalPayment,
-            'cash_amount' => $paymentAmount,
-            'credit_amount' => $creditAmount,
-            'used_credit' => $this->useAccountCredit && $creditAmount > 0,
-            'payment_method' => $this->paymentMethod,
-            'check_number' => $this->checkNumber,
-            'payment_date' => $this->paymentDate ?: now()->format('Y-m-d'),
-            'notes' => $this->notes,
-            'recorded_by' => Auth::id(),
-            'recorded_at' => now()->toDateTimeString(),
-        ];
-
-        $payments[] = $payment;
-        $values['payments'] = $payments;
-
-        // Update total paid
-        $newTotalPaid = array_sum(array_column($payments, 'amount'));
-        $values['total_paid'] = $newTotalPaid;
-
-        // Update paid_in_full status
-        if ($newTotalPaid >= $totalDue) {
-            $this->invoice->paid_in_full = true;
-        }
-
-        // Update customer account credit
-        if ($this->useAccountCredit && $creditAmount > 0) {
-            $customer = $this->invoice->customer;
-            $customer->account_credit = max(0, (float) $customer->account_credit - $creditAmount);
-            $customer->save();
-        }
-
-        // Handle overpayment - add to customer credit
-        if ($newTotalPaid > $totalDue) {
-            $overpayment = $newTotalPaid - $totalDue;
-            $customer = $this->invoice->customer;
-            $customer->account_credit = ((float) $customer->account_credit) + $overpayment;
-            $customer->save();
-            $payment['overpayment'] = $overpayment;
-            $payment['overpayment_added_to_credit'] = true;
-        }
-
-        // Save invoice
-        $this->invoice->values = $values;
-        $this->invoice->save();
-
-        session()->flash('success', __('Payment recorded successfully.'));
+        // The totals and the payments table around this modal are rendered by
+        // the page, not by this component, so a re-render here would leave
+        // them stale (TASK-449 g). Reload the page; the layout shows the flash.
         $this->closeModal();
-        $this->dispatch('payment-recorded');
+
+        return $this->redirectRoute('my.invoices.edit', ['invoice' => $this->invoice->id]);
     }
 
     public function render()

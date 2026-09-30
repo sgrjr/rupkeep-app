@@ -49,14 +49,17 @@
                         <div class="grid gap-4 md:grid-cols-2">
                             <div>
                                 <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600 mb-1">
-                                    {{ __('Payment Amount') }} <span class="text-red-500">*</span>
+                                    {{ __('Payment Amount') }}
                                 </label>
                                 <div class="relative">
                                     <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
-                                    <input type="number" step="0.01" min="0.01" wire:model="paymentAmount" 
+                                    <input type="number" step="0.01" min="0" wire:model="paymentAmount"
                                            class="w-full rounded-xl border border-slate-200 bg-white pl-8 pr-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900"
                                            placeholder="0.00">
                                 </div>
+                                @if($availableCredit > 0)
+                                    <p class="mt-1 text-xs text-slate-400">{{ __('Leave at 0 to pay entirely from account credit.') }}</p>
+                                @endif
                                 @error('paymentAmount') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                             </div>
 
@@ -142,12 +145,15 @@
                                     class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50">
                                 {{ __('Cancel') }}
                             </button>
-                            <button type="submit" 
-                                    class="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-orange-600">
+                            {{-- Disabled while the request is in flight; the submission key
+                                 makes a second click harmless even if it gets through (TASK-449). --}}
+                            <button type="submit" wire:loading.attr="disabled" wire:target="applyPayment"
+                                    class="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-orange-600 disabled:cursor-wait disabled:opacity-60">
                                 <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/>
                                 </svg>
-                                {{ __('Record Payment') }}
+                                <span wire:loading.remove wire:target="applyPayment">{{ __('Record Payment') }}</span>
+                                <span wire:loading wire:target="applyPayment">{{ __('Recording…') }}</span>
                             </button>
                         </div>
                     </form>
