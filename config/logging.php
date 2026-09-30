@@ -77,6 +77,9 @@ return [
             'path' => storage_path('logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'days' => env('LOG_DAILY_DAYS', 14),
+            // Group-writable, so a file first created by an artisan run in a
+            // shell is still writable by php-fpm (2026-09-30 outage).
+            'permission' => 0664,
             'replace_placeholders' => true,
             'tap' => [TrimStackTraceTap::class],
             'formatter_with' => [
