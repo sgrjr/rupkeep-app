@@ -335,7 +335,12 @@ class QuickBooksExportTest extends TestCase
      * user a file it will reject is a wasted round trip. Say so before the
      * download instead.
      */
-    public function test_an_export_too_large_for_quickbooks_is_refused_with_an_explanation(): void
+    /**
+     * QuickBooks takes 100 invoices per import. An export over that used to
+     * be refused outright, so "export everything" never worked for a real
+     * organization; it is now split into numbered files in one zip (TASK-450).
+     */
+    public function test_an_export_too_large_for_one_import_is_split_into_numbered_files(): void
     {
         [$manager, $organization, $customer] = $this->exportOrg();
 
@@ -343,10 +348,27 @@ class QuickBooksExportTest extends TestCase
             $this->invoice($organization, $customer, ['total' => 100]);
         }
 
-        $this->actingAs($manager)
+        $response = $this->actingAs($manager)
             ->get(route('my.invoices.export.quickbooks'))
-            ->assertRedirect()
-            ->assertSessionHas('error');
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/zip');
+
+        $zip = new \ZipArchive();
+        $this->assertTrue($zip->open($response->baseResponse->getFile()->getPathname()));
+        $this->assertSame(2, $zip->numFiles);
+
+        $names = [$zip->getNameIndex(0), $zip->getNameIndex(1)];
+        $this->assertMatchesRegularExpression('/-part01-of-02\.csv$/', $names[0]);
+        $this->assertMatchesRegularExpression('/-part02-of-02\.csv$/', $names[1]);
+
+        $first = array_map('str_getcsv', array_values(array_filter(explode("\n", trim($zip->getFromIndex(0))))));
+        $second = array_map('str_getcsv', array_values(array_filter(explode("\n", trim($zip->getFromIndex(1))))));
+        $zip->close();
+
+        $this->assertSame('*InvoiceNo', $first[0][0], 'every part carries the header');
+        $this->assertSame('*InvoiceNo', $second[0][0]);
+        $this->assertCount(100, array_unique(array_column(array_slice($first, 1), self::INVOICE_NO)));
+        $this->assertCount(1, array_unique(array_column(array_slice($second, 1), self::INVOICE_NO)));
     }
 
     public function test_a_customer_cannot_pull_the_accounting_feed(): void

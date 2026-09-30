@@ -5,11 +5,12 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Concerns\FiltersInvoiceExports;
 use App\Models\Invoice;
 use App\Services\InvoiceLineItems;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use ZipArchive;
 
 /**
  * An accounts-receivable feed shaped for QuickBooks Online's own invoice
@@ -32,15 +33,18 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  * children's lines, each labelled with the job it came from. That preserves the
  * detail TASK-383 had to flatten into a text column, without double-counting:
  * the summary's total is the sum of its children, and here so are its lines.
+ * Where an admin set the summary's total by hand, an Adjustment line carries
+ * the difference; where a late fee was applied, a Late Fee line carries it;
+ * so the QuickBooks total equals the paper one in both cases (TASK-450).
+ *
+ * QuickBooks accepts at most 100 invoices and 1,000 rows per file. Rather
+ * than refuse a larger export, it is split into numbered files inside one
+ * zip, each within both limits, and imported one after another.
  */
 class QuickBooksExportController extends Controller
 {
     use FiltersInvoiceExports;
 
-    /**
-     * QuickBooks Online refuses an import above these, so a file over the limit
-     * is a wasted round trip for the user rather than a partial success.
-     */
     private const MAX_INVOICES = 100;
     private const MAX_ROWS = 1000;
 
@@ -62,9 +66,29 @@ class QuickBooksExportController extends Controller
         'extra_charge' => 'Extra Charge',
         'mileage' => 'Mileage',
         'mini_addon' => 'Mini Add-On',
+        'adjustment' => 'Adjustment',
+        'late_fee' => 'Late Fee',
     ];
 
-    public function __invoke(Request $request): StreamedResponse|RedirectResponse
+    private const HEADER = [
+        '*InvoiceNo',
+        '*Customer',
+        '*InvoiceDate',
+        '*DueDate',
+        'Terms',
+        'Location',
+        'Memo',
+        'Item(Product/Service)',
+        'ItemDescription',
+        'ItemQuantity',
+        'ItemRate',
+        '*ItemAmount',
+        'Taxable',
+        'TaxRate',
+        'Service Date',
+    ];
+
+    public function __invoke(Request $request): StreamedResponse|BinaryFileResponse
     {
         $this->authorizeExport($request);
 
@@ -87,110 +111,207 @@ class QuickBooksExportController extends Controller
                 && isset($present[$invoice->parent_invoice_id])
         )->values();
 
-        $rows = $this->rows($invoices);
+        $files = $this->files($invoices);
+        $stamp = now()->format('Ymd-His');
 
-        if ($over = $this->overLimit($invoices, $rows)) {
-            return back()->with('error', $over);
+        if (count($files) <= 1) {
+            $filename = 'quickbooks-invoices-'.$stamp.'.csv';
+
+            return response()->streamDownload(function () use ($files) {
+                $handle = fopen('php://output', 'w');
+                $this->writeCsv($handle, $files[0] ?? []);
+                fclose($handle);
+            }, $filename, [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            ]);
         }
 
-        $filename = 'quickbooks-invoices-'.now()->format('Ymd-His').'.csv';
-
-        return response()->streamDownload(function () use ($rows) {
-            $handle = fopen('php://output', 'w');
-
-            // The column names from QuickBooks Online's own downloadable sample
-            // file. Matching them means the import wizard's mapping step
-            // pre-fills instead of asking the user to pair 15 columns by hand.
-            fputcsv($handle, [
-                '*InvoiceNo',
-                '*Customer',
-                '*InvoiceDate',
-                '*DueDate',
-                'Terms',
-                'Location',
-                'Memo',
-                'Item(Product/Service)',
-                'ItemDescription',
-                'ItemQuantity',
-                'ItemRate',
-                '*ItemAmount',
-                'Taxable',
-                'TaxRate',
-                'Service Date',
-            ]);
-
-            foreach ($rows as $row) {
-                fputcsv($handle, $row);
-            }
-
-            fclose($handle);
-        }, $filename, [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
-        ]);
+        return $this->zipped($files, $stamp);
     }
 
     /**
-     * Every CSV row for this export, invoice headers repeated down their lines.
+     * The export split into QuickBooks-sized files: each holds at most 100
+     * invoices and 1,000 rows, and an invoice is never split across two.
+     *
+     * @return array<int, array<int, array>> files, each a list of CSV rows
      */
-    private function rows(Collection $invoices): array
+    private function files(Collection $invoices): array
     {
-        $rows = [];
+        $files = [];
+        $current = [];
+        $currentInvoices = 0;
 
         foreach ($invoices as $invoice) {
-            $values = is_array($invoice->values) ? $invoice->values : [];
-            $lines = InvoiceLineItems::forInvoice($invoice);
+            $rows = $this->rowsFor($invoice);
 
-            // An invoice with no itemizable lines still has to bill. This
-            // happens to summaries whose children were force-deleted, and to
-            // very old invoices carrying a total and nothing else. Billing the
-            // stored total as a single line is honest; skipping the invoice
-            // would quietly drop revenue.
-            if ($lines === []) {
-                $total = (float) ($values['total'] ?? 0);
+            if ($rows === []) {
+                continue;
+            }
 
-                if (round($total, 2) == 0.0) {
-                    continue;
-                }
+            $wouldOverflow = $currentInvoices + 1 > self::MAX_INVOICES
+                || count($current) + count($rows) > self::MAX_ROWS;
 
-                $lines = [[
+            if ($current !== [] && $wouldOverflow) {
+                $files[] = $current;
+                $current = [];
+                $currentInvoices = 0;
+            }
+
+            array_push($current, ...$rows);
+            $currentInvoices++;
+        }
+
+        if ($current !== []) {
+            $files[] = $current;
+        }
+
+        return $files;
+    }
+
+    /**
+     * One zip, one numbered CSV per QuickBooks import inside it.
+     */
+    private function zipped(array $files, string $stamp): BinaryFileResponse
+    {
+        $path = tempnam(sys_get_temp_dir(), 'qbo');
+        $zip = new ZipArchive();
+
+        if ($zip->open($path, ZipArchive::OVERWRITE) !== true) {
+            abort(500, __('The export could not be packaged.'));
+        }
+
+        $total = count($files);
+
+        foreach ($files as $index => $rows) {
+            $handle = fopen('php://temp', 'r+');
+            $this->writeCsv($handle, $rows);
+            rewind($handle);
+            $zip->addFromString(
+                sprintf('quickbooks-invoices-%s-part%02d-of-%02d.csv', $stamp, $index + 1, $total),
+                stream_get_contents($handle)
+            );
+            fclose($handle);
+        }
+
+        $zip->close();
+
+        return response()
+            ->download($path, 'quickbooks-invoices-'.$stamp.'.zip', ['Content-Type' => 'application/zip'])
+            ->deleteFileAfterSend(true);
+    }
+
+    /**
+     * @param resource $handle
+     */
+    private function writeCsv($handle, array $rows): void
+    {
+        // The column names from QuickBooks Online's own downloadable sample
+        // file. Matching them means the import wizard's mapping step
+        // pre-fills instead of asking the user to pair 15 columns by hand.
+        fputcsv($handle, self::HEADER);
+
+        foreach ($rows as $row) {
+            fputcsv($handle, $row);
+        }
+    }
+
+    /**
+     * Every CSV row for one invoice: its header repeated down its lines.
+     */
+    private function rowsFor(Invoice $invoice): array
+    {
+        $values = is_array($invoice->values) ? $invoice->values : [];
+        $lines = InvoiceLineItems::forInvoice($invoice);
+        $total = (float) str_replace(',', '', (string) ($values['total'] ?? 0));
+
+        // An invoice with no itemizable lines still has to bill. This
+        // happens to summaries whose children were force-deleted, and to
+        // very old invoices carrying a total and nothing else. Billing the
+        // stored total as a single line is honest; skipping the invoice
+        // would quietly drop revenue.
+        if ($lines === []) {
+            if (round($total, 2) == 0.0) {
+                return [];
+            }
+
+            $lines = [[
+                'invoice' => $invoice,
+                'key' => 'pilot_car_service',
+                'description' => __('Pilot Car Service'),
+                'quantity' => 1,
+                'rate' => $total,
+                'amount' => $total,
+            ]];
+        }
+
+        // A summary's children reconcile to their own totals, not to the
+        // summary's: when an admin set the summary's figure by hand (a
+        // discount, usually) the difference is a line of its own, so the
+        // QuickBooks invoice totals what the paper one does.
+        if ($invoice->isSummary()) {
+            $linesTotal = array_sum(array_map(fn ($line) => (float) $line['amount'], $lines));
+            $difference = round($total - $linesTotal, 2);
+
+            if (abs($difference) >= 0.005) {
+                $lines[] = [
                     'invoice' => $invoice,
-                    'key' => 'pilot_car_service',
-                    'description' => __('Pilot Car Service'),
+                    'key' => 'adjustment',
+                    'description' => $difference < 0 ? __('Summary discount') : __('Summary adjustment'),
                     'quantity' => 1,
-                    'rate' => $total,
-                    'amount' => $total,
-                ]];
+                    'rate' => $difference,
+                    'amount' => $difference,
+                ];
             }
+        }
 
-            $lateFees = $invoice->calculateLateFees();
-            $dueDate = $lateFees['due_date'] ?? null;
-            $invoiceDate = $invoice->created_at;
+        // A late fee that was actually applied is money the customer was
+        // billed (TASK-443 keeps it beside the total rather than inside it).
+        $lateFees = $invoice->calculateLateFees();
+        $appliedFee = (float) ($lateFees['applied_late_fee_amount'] ?? 0);
 
-            $header = [
-                $invoice->invoice_number,
-                optional($invoice->customer)->name ?? '',
-                $this->date($invoiceDate),
-                $this->date($dueDate),
-                $this->terms($invoiceDate, $dueDate),
-                '',
-                $this->memo($invoice, $values),
+        if ($appliedFee > 0) {
+            $appliedAt = $lateFees['applied_at'] ?? null;
+            $lines[] = [
+                'invoice' => $invoice,
+                'key' => 'late_fee',
+                'description' => $appliedAt
+                    ? __('Late fee applied :date', ['date' => $this->date($appliedAt)])
+                    : __('Late fee'),
+                'quantity' => 1,
+                'rate' => $appliedFee,
+                'amount' => $appliedFee,
             ];
+        }
 
-            foreach ($lines as $line) {
-                $source = $line['invoice'];
+        $dueDate = $lateFees['due_date'] ?? null;
+        $invoiceDate = $invoice->created_at;
 
-                $rows[] = array_merge($header, [
-                    self::ITEMS[$line['key']] ?? 'Pilot Car Escort',
-                    $this->describe($invoice, $source, $line['description']),
-                    $this->number((float) $line['quantity'], 2),
-                    $this->number((float) $line['rate'], 2),
-                    $this->number((float) $line['amount'], 2),
-                    'N',
-                    '',
-                    $this->date($source->job?->scheduled_pickup_at),
-                ]);
-            }
+        $header = [
+            $invoice->invoice_number,
+            $this->csvText(optional($invoice->customer)->name ?? ''),
+            $this->date($invoiceDate),
+            $this->date($dueDate),
+            $this->terms($invoiceDate, $dueDate),
+            '',
+            $this->csvText($this->memo($invoice, $values)),
+        ];
+
+        $rows = [];
+
+        foreach ($lines as $line) {
+            $source = $line['invoice'];
+
+            $rows[] = array_merge($header, [
+                self::ITEMS[$line['key']] ?? 'Pilot Car Escort',
+                $this->csvText($this->describe($invoice, $source, $line['description'])),
+                $this->number((float) $line['quantity'], 2),
+                $this->number((float) $line['rate'], 2),
+                $this->number((float) $line['amount'], 2),
+                'N',
+                '',
+                $this->date($source->job?->scheduled_pickup_at),
+            ]);
         }
 
         return $rows;
@@ -208,7 +329,7 @@ class QuickBooksExportController extends Controller
      */
     private function describe(Invoice $invoice, Invoice $source, string $description): string
     {
-        if (! $invoice->isSummary()) {
+        if (! $invoice->isSummary() || $source->is($invoice)) {
             return $description;
         }
 
@@ -284,28 +405,5 @@ class QuickBooksExportController extends Controller
     private function number(float $value, int $decimals): string
     {
         return number_format($value, $decimals, '.', '');
-    }
-
-    /**
-     * The message shown when the export is too big for QuickBooks to swallow,
-     * or null when it fits.
-     */
-    private function overLimit(Collection $invoices, array $rows): ?string
-    {
-        if ($invoices->count() > self::MAX_INVOICES) {
-            return __(
-                'QuickBooks accepts :max invoices per import and this export has :count. Narrow the date range or pick a single customer, then export again.',
-                ['max' => self::MAX_INVOICES, 'count' => $invoices->count()]
-            );
-        }
-
-        if (count($rows) > self::MAX_ROWS) {
-            return __(
-                'QuickBooks accepts :max rows per import and this export has :count line items. Narrow the date range or pick a single customer, then export again.',
-                ['max' => self::MAX_ROWS, 'count' => count($rows)]
-            );
-        }
-
-        return null;
     }
 }

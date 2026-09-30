@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Concerns\FiltersInvoiceExports;
 use App\Models\Invoice;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -29,6 +30,11 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  * silently lose that revenue rather than merely duplicating it -- the worse of
  * the two failures -- so it stays, and rolls its children's figures up into
  * its own row so the detail still reaches the sheet.
+ *
+ * The money columns reconcile (TASK-450): Subtotal + Hotel + Tolls + Wait
+ * Time + Extra Charges + Deadhead + Mini = Total Amount, on every row. Gas is
+ * the drivers' own fuel from the logs and is not billed, so it stays outside
+ * that sum.
  */
 class JobCsvExportController extends Controller
 {
@@ -39,7 +45,7 @@ class JobCsvExportController extends Controller
         $this->authorizeExport($request);
 
         $invoices = $this->filteredInvoices($request, $this->exportFilters($request));
-        $invoices->loadMissing(['children.job']);
+        $invoices->loadMissing(['job.logs', 'children.job.logs']);
 
         $present = $this->idLookup($invoices);
 
@@ -122,40 +128,44 @@ class JobCsvExportController extends Controller
                 // add up to. A single invoice reports itself.
                 $children = $invoice->isSummary() ? $invoice->children : collect();
                 $figures = $children->isNotEmpty()
-                    ? $this->rollUpFigures($children)
+                    ? $this->rollUpFigures($children, $invoice)
                     : $this->invoiceFigures($invoice);
                 $summaryDetail = $children->isNotEmpty()
                     ? $this->summaryDetail($children)
                     : '';
 
+                $payments = $this->payments($values);
+
                 $row = [
                     $invoice->invoice_number,
                     optional($invoice->created_at)->format('m/d/Y'),
-                    optional($customer)->name ?? '',
-                    $customerAddress,
-                    optional($job)->job_no ?? '',
-                    optional($job)->load_no ?? '',
+                    $this->csvText(optional($customer)->name ?? ''),
+                    $this->csvText($customerAddress),
+                    $this->csvText($values['job_no'] ?? optional($job)->job_no ?? ''),
+                    $this->csvText($values['load_no'] ?? optional($job)->load_no ?? ''),
                     number_format((float) $billableMiles, 1, '.', ''),
-                    optional($job)->rate_code ?? '',
-                    optional($job)->rate_value ?? '',
+                    // The rate the invoice was cut at, not whatever the job
+                    // says today (TASK-450).
+                    $this->csvText($values['rate_code'] ?? optional($job)->rate_code ?? ''),
+                    $values['rate_value'] ?? optional($job)->rate_value ?? '',
                     number_format($figures['subtotal'], 2, '.', ''),
                     number_format($figures['hotel'], 2, '.', ''),
                     number_format($figures['tolls'], 2, '.', ''),
                     number_format($figures['gas'], 2, '.', ''),
                     number_format($figures['wait_time'], 2, '.', ''),
                     number_format($figures['extra_charge'], 2, '.', ''),
-                    $children->isNotEmpty()
+                    $this->csvText($children->isNotEmpty()
                         ? $this->rolledUpExtraChargeDetail($children)
-                        : $this->extraChargeDetail($values),
+                        : $this->extraChargeDetail($values)),
                     $figures['deadhead_count'],
                     number_format($figures['deadhead'], 2, '.', ''),
                     number_format($figures['mini'], 2, '.', ''),
-                    number_format((float) ($totals['total'] ?? ($values['total'] ?? 0)), 2, '.', ''),
-                    $invoice->paid_in_full ? 'Paid' : 'Unpaid',
-                    $invoice->paid_in_full && $invoice->updated_at ? $invoice->updated_at->format('m/d/Y') : '',
-                    optional($job)->check_no ?? '',
-                    $values['notes'] ?? $values['memo'] ?? ($job ? $job->memo : '') ?? '',
-                    $summaryDetail,
+                    number_format($figures['total'], 2, '.', ''),
+                    $this->paidStatus($invoice, $payments),
+                    $this->paymentDate($invoice, $payments),
+                    $this->csvText(optional($job)->check_no ?? ''),
+                    $this->csvText($values['notes'] ?? $values['memo'] ?? ($job ? $job->memo : '') ?? ''),
+                    $this->csvText($summaryDetail),
                 ];
 
                 fputcsv($handle, $row);
@@ -166,42 +176,77 @@ class JobCsvExportController extends Controller
     }
 
     /**
-     * The expense and charge figures one invoice carries, read from wherever
-     * its values blob happens to keep them (flat keys on older invoices, a
-     * nested `expenses` / `total` array on newer ones).
+     * The expense and charge figures one invoice carries, in dollars.
+     *
+     * Every charge is read from the key invoiceValues() actually writes
+     * (`cost_of_wait_time`, `dead_head_charge`, ...). Before TASK-450 the wait
+     * column read `wait_time_hours`, so three hours billed at $90 exported as
+     * 3.00, and Subtotal read keys nothing ever wrote, so it was always 0.
+     * Subtotal is now whatever is left of the total once every column beside
+     * it is taken out -- the same definition InvoiceLineItems gives the
+     * "Pilot Car Service" line -- so the row adds up.
+     *
+     * The nested `expenses` / `total` reads are kept for the handful of very
+     * old snapshots that were written in that shape.
      */
     private function invoiceFigures(Invoice $invoice): array
     {
         $values = is_array($invoice->values) ? $invoice->values : [];
         $totals = is_array($values['total'] ?? null) ? $values['total'] : [];
         $expenses = is_array($values['expenses'] ?? null) ? $values['expenses'] : [];
-        $job = $invoice->job;
+        $money = fn ($v) => (float) str_replace(',', '', (string) ($v ?? 0));
 
-        return [
-            'subtotal' => (float) ($totals['subtotal'] ?? $totals['base'] ?? ($values['subtotal'] ?? 0)),
-            'hotel' => (float) ($expenses['hotel'] ?? $values['hotel'] ?? 0),
-            'tolls' => (float) ($expenses['tolls'] ?? $values['tolls'] ?? 0),
-            'gas' => (float) ($expenses['gas'] ?? $values['gas'] ?? 0),
-            'wait_time' => (float) ($expenses['wait_time'] ?? $values['wait_time_hours'] ?? 0),
-            'extra_charge' => (float) ($expenses['extra_charge'] ?? $values['extra_charge'] ?? 0),
+        $waitTime = isset($values['cost_of_wait_time'])
+            ? $money($values['cost_of_wait_time'])
+            : (isset($expenses['wait_time'])
+                ? $money($expenses['wait_time'])
+                : (isset($values['wait_time_hours'], $values['wait_time_rate'])
+                    ? (float) $values['wait_time_hours'] * (float) $values['wait_time_rate']
+                    : 0.0));
+
+        $extraStops = isset($values['cost_of_extra_stop'], $values['extra_load_stops_count'])
+            ? (float) $values['extra_load_stops_count'] * $money($values['cost_of_extra_stop'])
+            : 0.0;
+
+        $figures = [
+            'hotel' => $money($expenses['hotel'] ?? $values['hotel'] ?? 0),
+            'tolls' => $money($expenses['tolls'] ?? $values['tolls'] ?? 0),
+            // Fuel is the drivers' own expense from their logs, never billed.
+            // The snapshot rarely carries it, so the logs are the source.
+            'gas' => isset($expenses['gas']) || isset($values['gas'])
+                ? $money($expenses['gas'] ?? $values['gas'])
+                : (float) ($invoice->job?->logs->sum(fn ($log) => (float) ($log->gas ?? 0)) ?? 0),
+            'wait_time' => $waitTime,
+            'extra_charge' => $money($expenses['extra_charge'] ?? $values['extra_charge'] ?? 0),
             // `deadhead_count` is not a key invoiceValues() has ever emitted, and
             // the last fallback read is_deadhead off a JOB, where that column has
             // never existed - so this column exported 0 for every row. The trip
             // count actually lives under `dead_head` (TASK-354).
             'deadhead_count' => (int) ($values['dead_head'] ?? $values['deadhead_count'] ?? $totals['deadhead_count'] ?? 0),
-            'deadhead' => (float) ($totals['deadhead'] ?? $values['dead_head_charge'] ?? 0),
-            'mini' => (float) ($totals['mini'] ?? $values['mini_addon_amount'] ?? $values['mini_cost'] ?? 0),
+            'deadhead' => $money($totals['deadhead'] ?? $values['dead_head_charge'] ?? 0),
+            'mini' => $money($totals['mini'] ?? $values['mini_addon_amount'] ?? $values['mini_cost'] ?? 0),
+            'total' => $money($totals['total'] ?? (is_array($values['total'] ?? null) ? 0 : ($values['total'] ?? 0))),
         ];
+
+        // Extra stops have no column of their own, so they stay inside the
+        // subtotal along with the rate's own charge and the mileage.
+        $figures['subtotal'] = round($figures['total'] - (
+            $figures['hotel'] + $figures['tolls'] + $figures['wait_time']
+            + $figures['extra_charge'] + $figures['deadhead'] + $figures['mini']
+        ), 2);
+        $figures['extra_stops'] = $extraStops;
+
+        return $figures;
     }
 
     /**
      * The same figures for a summary, summed across the children it covers.
      */
-    private function rollUpFigures(Collection $children): array
+    private function rollUpFigures(Collection $children, Invoice $summary): array
     {
         $rolled = array_fill_keys([
-            'subtotal', 'hotel', 'tolls', 'gas', 'wait_time',
-            'extra_charge', 'deadhead_count', 'deadhead', 'mini',
+            'subtotal', 'hotel', 'tolls', 'gas', 'wait_time', 'extra_charge',
+            'deadhead_count', 'deadhead', 'mini', 'total', 'extra_stops',
         ], 0);
 
         foreach ($children as $child) {
@@ -212,7 +257,67 @@ class JobCsvExportController extends Controller
 
         $rolled['deadhead_count'] = (int) $rolled['deadhead_count'];
 
+        // The total is the summary's own: it is what the customer was billed,
+        // and an admin may have set it by hand (SummaryInvoiceValues override).
+        // Any difference from the children's sum lands in Subtotal, so the
+        // row still adds up.
+        $values = is_array($summary->values) ? $summary->values : [];
+        $rolled['total'] = (float) str_replace(',', '', (string) ($values['total'] ?? $rolled['total']));
+        $rolled['subtotal'] = round($rolled['total'] - (
+            $rolled['hotel'] + $rolled['tolls'] + $rolled['wait_time']
+            + $rolled['extra_charge'] + $rolled['deadhead'] + $rolled['mini']
+        ), 2);
+
         return $rolled;
+    }
+
+    /** The payments recorded on the invoice (InvoicePaymentForm), oldest first. */
+    private function payments(array $values): array
+    {
+        $payments = $values['payments'] ?? [];
+
+        return is_array($payments) ? array_values(array_filter($payments, 'is_array')) : [];
+    }
+
+    /**
+     * Paid, Partial or Unpaid. A partly paid invoice used to export as
+     * "Unpaid", which is what a bookkeeper would chase (TASK-450).
+     */
+    private function paidStatus(Invoice $invoice, array $payments): string
+    {
+        if ($invoice->paid_in_full) {
+            return 'Paid';
+        }
+
+        $paid = array_sum(array_map(fn ($p) => (float) ($p['amount'] ?? 0), $payments));
+
+        return $paid > 0 ? 'Partial' : 'Unpaid';
+    }
+
+    /**
+     * The date of the last payment recorded, else the date the invoice was
+     * marked paid. `updated_at` used to stand in for both, and it moves on
+     * every edit.
+     */
+    private function paymentDate(Invoice $invoice, array $payments): string
+    {
+        $dates = array_filter(array_map(fn ($p) => $p['payment_date'] ?? null, $payments));
+
+        if ($dates !== []) {
+            try {
+                return Carbon::parse(max($dates))->format('m/d/Y');
+            } catch (\Throwable) {
+                // fall through to the invoice's own stamp
+            }
+        }
+
+        if ($invoice->paid_in_full) {
+            $stamp = $invoice->paid_at ?? $invoice->updated_at;
+
+            return $stamp ? $stamp->format('m/d/Y') : '';
+        }
+
+        return '';
     }
 
     /**

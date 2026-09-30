@@ -96,4 +96,24 @@ trait FiltersInvoiceExports
     {
         return array_flip($invoices->pluck('id')->all());
     }
+
+    /**
+     * A free-text cell that Excel and Sheets will not execute. A value that
+     * starts with =, +, -, @ or a tab/CR is read as a formula by both, so a
+     * memo of "=HYPERLINK(...)" typed into a job would run on the
+     * bookkeeper's machine (TASK-450). The leading apostrophe is the
+     * spreadsheet convention for "this is text"; it is not shown in the cell.
+     * Numeric columns never go through here: a negative amount must stay a
+     * number.
+     */
+    protected function csvText(?string $value): string
+    {
+        $value = (string) $value;
+
+        if ($value !== '' && in_array($value[0], ['=', '+', '-', '@', "\t", "\r"], true)) {
+            return "'".$value;
+        }
+
+        return $value;
+    }
 }
