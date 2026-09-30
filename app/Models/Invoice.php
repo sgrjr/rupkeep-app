@@ -24,6 +24,10 @@ class Invoice extends Model
      */
     protected $fillable = [
         'paid_in_full',
+        'status',
+        'sent_at',
+        'paid_at',
+        'replaces_invoice_id',
         'marked_for_attention',
         'values',
         'organization_id',
@@ -32,6 +36,34 @@ class Invoice extends Model
         'parent_invoice_id',
         'invoice_type',
     ];
+
+    /**
+     * The lifecycle (TASK-480).
+     *
+     *   draft -> sent -> paid
+     *     \       \
+     *      +-------+--> void
+     *
+     * draft  Staff only. Excluded from the portal, InvoiceReady, exports and
+     *        summaries' visibility to the customer. Fully editable;
+     *        regenerating replaces it in place.
+     * sent   In the customer's hands. Editing asks for confirmation and is
+     *        recorded on the invoice thread.
+     * paid   Balance reached zero (payment form) or marked paid. Kept in step
+     *        with the legacy paid_in_full flag both ways, see booted().
+     * void   Replaces deletion everywhere. Excluded from totals, the
+     *        dashboard, exports and summary parents. The row stays, so the
+     *        number is never reused and the history is never lost.
+     */
+    public const STATUS_DRAFT = 'draft';
+    public const STATUS_SENT = 'sent';
+    public const STATUS_PAID = 'paid';
+    public const STATUS_VOID = 'void';
+
+    public const STATUSES = [self::STATUS_DRAFT, self::STATUS_SENT, self::STATUS_PAID, self::STATUS_VOID];
+
+    /** The statuses a customer may see: what was actually billed to them. */
+    public const CUSTOMER_VISIBLE_STATUSES = [self::STATUS_SENT, self::STATUS_PAID];
 
     public $timestamps = true;
 
@@ -46,7 +78,176 @@ class Invoice extends Model
             'paid_in_full' => 'boolean',
             'marked_for_attention' => 'boolean',
             'values' => 'array',
+            'sent_at' => 'datetime',
+            'paid_at' => 'datetime',
+            'voided_at' => 'datetime',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        // `paid_in_full` predates `status` and is read in dozens of places
+        // (observer job sync, exports, the portal, the dashboard). Rather than
+        // migrate every reader at once, the two are kept in step here, in
+        // whichever direction the write came from. A void invoice is never
+        // "paid" -- its money is not owed -- so void wins.
+        static::saving(function (self $invoice): void {
+            if ($invoice->status === null) {
+                $invoice->status = $invoice->paid_in_full ? self::STATUS_PAID : self::STATUS_DRAFT;
+            }
+
+            if ($invoice->status === self::STATUS_VOID) {
+                $invoice->paid_in_full = false;
+
+                return;
+            }
+
+            if (! $invoice->exists) {
+                // On creation every attribute is "dirty", so neither side can
+                // be taken as the write that happened. Legacy callers (CSV
+                // import, the factory, older tests) say paid_in_full and let
+                // status default; a paid invoice is paid whatever the default.
+                if ($invoice->paid_in_full) {
+                    $invoice->status = self::STATUS_PAID;
+                } else {
+                    $invoice->paid_in_full = $invoice->status === self::STATUS_PAID;
+                }
+            } elseif ($invoice->isDirty('status')) {
+                $invoice->paid_in_full = $invoice->status === self::STATUS_PAID;
+            } elseif ($invoice->isDirty('paid_in_full')) {
+                if ($invoice->paid_in_full) {
+                    $invoice->status = self::STATUS_PAID;
+                } elseif ($invoice->status === self::STATUS_PAID) {
+                    // Un-marking a paid invoice puts it back in the customer's
+                    // hands, not back on the drafting table.
+                    $invoice->status = self::STATUS_SENT;
+                }
+            }
+
+            if ($invoice->status === self::STATUS_PAID && ! $invoice->paid_at) {
+                $invoice->paid_at = now();
+            }
+
+            if ($invoice->status !== self::STATUS_DRAFT && ! $invoice->sent_at) {
+                $invoice->sent_at = now();
+            }
+        });
+    }
+
+    public function isDraft(): bool
+    {
+        return $this->status === self::STATUS_DRAFT;
+    }
+
+    public function isSent(): bool
+    {
+        return $this->status === self::STATUS_SENT;
+    }
+
+    public function isPaid(): bool
+    {
+        return $this->status === self::STATUS_PAID;
+    }
+
+    public function isVoid(): bool
+    {
+        return $this->status === self::STATUS_VOID;
+    }
+
+    /** Sent or paid: the customer may see it and it counts toward what they owe. */
+    public function isVisibleToCustomer(): bool
+    {
+        return in_array($this->status, self::CUSTOMER_VISIBLE_STATUSES, true);
+    }
+
+    public function scopeNotVoid($query)
+    {
+        return $query->where('status', '!=', self::STATUS_VOID);
+    }
+
+    public function scopeVisibleToCustomer($query)
+    {
+        return $query->whereIn('status', self::CUSTOMER_VISIBLE_STATUSES);
+    }
+
+    /**
+     * Put the invoice in the customer's hands. The caller fires InvoiceReady;
+     * this only records the transition. Returns false when there was nothing
+     * to do (already sent or paid, or void).
+     */
+    public function markSent(): bool
+    {
+        if (! $this->isDraft()) {
+            return false;
+        }
+
+        $this->status = self::STATUS_SENT;
+        $this->sent_at = now();
+        $this->save();
+
+        return true;
+    }
+
+    /**
+     * Void replaces deletion. The row stays; every total, export, list and
+     * summary parent leaves it out.
+     */
+    public function void(?int $byUserId = null, ?string $reason = null): bool
+    {
+        if ($this->isVoid()) {
+            return false;
+        }
+
+        $values = $this->values ?? [];
+        $values['voided'] = array_filter([
+            'from_status' => $this->status,
+            'reason' => $reason,
+        ]);
+
+        $this->values = $values;
+        $this->status = self::STATUS_VOID;
+        $this->voided_at = now();
+        $this->voided_by_id = $byUserId;
+        $this->save();
+
+        // A summary's pivot rows are what make its jobs "billed" (job status,
+        // the active/completed scopes, the job page). A void summary bills
+        // nothing, so they go the way the old delete took them; the job
+        // numbers it covered are still in the values snapshot.
+        if ($this->isSummary()) {
+            $this->jobs()->detach();
+        }
+
+        return true;
+    }
+
+    /**
+     * Rebuild a single invoice's snapshot from its job, in place. Only a draft
+     * is rebuilt this way -- a sent invoice is regenerated by voiding it and
+     * drafting a replacement (MyInvoicesController::regenerate), so the
+     * document the customer holds is never silently rewritten.
+     */
+    public function regenerateFromJob(): bool
+    {
+        if ($this->isSummary() || ! $this->isDraft() || ! $this->job) {
+            return false;
+        }
+
+        $this->values = $this->job->fresh()->invoiceValues()['values'];
+        $this->save();
+
+        return true;
+    }
+
+    public function statusLabel(): string
+    {
+        return match ($this->status) {
+            self::STATUS_DRAFT => __('Draft'),
+            self::STATUS_SENT => __('Sent'),
+            self::STATUS_PAID => __('Paid'),
+            self::STATUS_VOID => __('Void'),
+            default => (string) $this->status,
+        };
     }
 
     public function organization(){
@@ -206,10 +407,10 @@ class Invoice extends Model
             'late_fee_percentage' => $lateFeePercentage,
         ];
 
-        // Settled, or billed through a summary: nothing more accrues. What was
-        // applied stays on the invoice so the figures the customer saw and
-        // paid still add up.
-        if ($this->paid_in_full || $this->parent_invoice_id) {
+        // Settled, void, or billed through a summary: nothing more accrues.
+        // What was applied stays on the invoice so the figures the customer
+        // saw and paid still add up.
+        if ($this->paid_in_full || $this->isVoid() || $this->parent_invoice_id) {
             return $result + [
                 'is_past_due' => false,
                 'days_overdue' => 0,
@@ -277,6 +478,12 @@ class Invoice extends Model
      */
     public function getRemainingBalanceAttribute(): float
     {
+        // Marked paid from the dropdown, or void: nothing is owed, whatever
+        // the recorded payments add up to (TASK-449 e).
+        if ($this->paid_in_full || $this->isVoid()) {
+            return 0.0;
+        }
+
         $lateFees = $this->calculateLateFees();
         $totalDue = $lateFees['total_with_late_fees'];
         $totalPaid = $this->total_paid;

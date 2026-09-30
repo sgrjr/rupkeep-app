@@ -23,6 +23,7 @@ trait BuildsInvoiceIndex
         return $request->validate([
             'q' => ['nullable', 'string', 'max:255'],
             'paid' => ['nullable', 'in:yes,no'],
+            'status' => ['nullable', 'in:draft,sent,paid,void,all'],
             'type' => ['nullable', 'in:single,summary'],
             'orphaned' => ['nullable', 'in:1'],
             'from' => ['nullable', 'date'],
@@ -56,6 +57,15 @@ trait BuildsInvoiceIndex
             $query->where('paid_in_full', $filters['paid'] === 'yes');
         }
 
+        // Void invoices are kept, not deleted (TASK-480), but they are not
+        // bills, so they show only when asked for.
+        $status = $filters['status'] ?? null;
+        if ($status === null || $status === '') {
+            $query->notVoid();
+        } elseif ($status !== 'all') {
+            $query->where('status', $status);
+        }
+
         if (($filters['type'] ?? null) === 'summary') {
             $query->where('invoice_type', 'summary');
         } elseif (($filters['type'] ?? null) === 'single') {
@@ -85,11 +95,12 @@ trait BuildsInvoiceIndex
      */
     protected function invoiceIndexPayload(Builder $query, array $filters, bool $crossOrganization = false): array
     {
-        $summed = (clone $query)->get(['id', 'values']);
+        $summed = (clone $query)->get(['id', 'values', 'status']);
 
         return [
             'invoices' => $query->orderByDesc('created_at')->paginate(25)->withQueryString(),
-            'listedTotal' => $summed->sum(fn (Invoice $invoice) => (float) data_get($invoice->values, 'total', 0)),
+            'listedTotal' => $summed->reject(fn (Invoice $invoice) => $invoice->isVoid())
+                ->sum(fn (Invoice $invoice) => (float) data_get($invoice->values, 'total', 0)),
             'listedCount' => $summed->count(),
             'filters' => $filters,
             'crossOrganization' => $crossOrganization,

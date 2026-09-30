@@ -280,7 +280,8 @@ class Dashboard extends Component
             // Calculate invoice stats
             // Only count single invoices (non-summary, non-child) for revenue to avoid double-counting
             // Summary invoices contain totals from their child invoices, so counting both would duplicate amounts
-            $allInvoices = \App\Models\Invoice::where('organization_id', $organization->id)->get();
+            // Void invoices are not bills (TASK-480).
+            $allInvoices = \App\Models\Invoice::where('organization_id', $organization->id)->notVoid()->get();
             $singleInvoices = $allInvoices->filter(fn($inv) => 
                 $inv->invoice_type !== 'summary' && $inv->parent_invoice_id === null
             );

@@ -120,6 +120,11 @@ class InvoiceEmailForm extends Component
                 Mail::to($email)->send($mailable);
             }
 
+            // Emailing the invoice IS sending it (TASK-480). The email itself
+            // is the customer's notice, so InvoiceReady is not fired here --
+            // that would be a second "invoice ready" mail on their doorstep.
+            $this->invoice->markSent();
+
             session()->flash('success', __('Invoice email sent successfully to :count recipient(s).', ['count' => count($toEmails)]));
             $this->closeModal();
         } catch (\Exception $e) {

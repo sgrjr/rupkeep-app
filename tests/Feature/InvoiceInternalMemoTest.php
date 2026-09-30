@@ -66,6 +66,7 @@ class InvoiceInternalMemoTest extends TestCase
         ]);
 
         $this->invoice = $job->fresh()->createInvoice();
+        $this->invoice->markSent(); // the portal shows only what was sent (TASK-480)
     }
 
     public function test_the_customer_portal_never_shows_internal_log_memos(): void

@@ -69,6 +69,7 @@ class MyCustomersController extends Controller
         $invoices = \App\Models\Invoice::where('customer_id', $customer_id)
             ->where('organization_id', auth()->user()->organization_id)
             ->whereNull('parent_invoice_id') // Only parent invoices
+            ->notVoid() // a void invoice is not owed (TASK-480)
             ->orderBy('created_at')
             ->get();
         

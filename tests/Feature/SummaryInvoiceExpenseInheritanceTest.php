@@ -65,7 +65,11 @@ class SummaryInvoiceExpenseInheritanceTest extends TestCase
             'end_job_mileage' => 80,
         ], $logAttributes));
 
-        return $job->fresh()->createInvoice();
+        // Sent, not draft: the exports below only carry what was billed (TASK-480).
+        $invoice = $job->fresh()->createInvoice();
+        $invoice->markSent();
+
+        return $invoice;
     }
 
     private function summaryOf(array $children): Invoice
@@ -75,7 +79,10 @@ class SummaryInvoiceExpenseInheritanceTest extends TestCase
                 'invoice_ids' => collect($children)->pluck('id')->all(),
             ]);
 
-        return Invoice::where('invoice_type', 'summary')->latest('id')->firstOrFail();
+        $summary = Invoice::where('invoice_type', 'summary')->latest('id')->firstOrFail();
+        $summary->markSent();
+
+        return $summary->fresh();
     }
 
     public function test_a_summary_does_not_inherit_the_first_childs_expenses(): void

@@ -192,9 +192,11 @@ class PilotCarJob extends Model
      */
     public function createInvoice(array $invoiceValues = [])
     {
-        // Ensure invoice values include required fields
-        if (empty($invoiceValues)) {
-            $invoiceValues = $this->invoiceValues();
+        // Ensure invoice values include required fields. A caller that passes
+        // only flags (paid_in_full, replaces_invoice_id, ...) still gets the
+        // snapshot built from the job; only an explicit `values` replaces it.
+        if (! array_key_exists('values', $invoiceValues)) {
+            $invoiceValues = array_merge($this->invoiceValues(), $invoiceValues);
         }
 
         // Always default these from the parent job so callers don't have to
@@ -204,11 +206,30 @@ class PilotCarJob extends Model
         $invoiceValues['organization_id'] = $invoiceValues['organization_id'] ?? $this->organization_id;
         $invoiceValues['customer_id']     = $invoiceValues['customer_id']     ?? $this->customer_id;
         $invoiceValues['invoice_type']    = $invoiceValues['invoice_type']    ?? 'single';
+        // A new invoice is a draft until someone sends it (TASK-480). One that
+        // arrives already paid (CSV import of settled history) was obviously
+        // in the customer's hands, so it is not.
+        $invoiceValues['status'] ??= ! empty($invoiceValues['paid_in_full']) ? Invoice::STATUS_PAID : Invoice::STATUS_DRAFT;
 
         // Create invoice directly (no pivot table entry for single invoices)
         $invoice = Invoice::create($invoiceValues);
 
         return $invoice;
+    }
+
+    /**
+     * The one single invoice that currently bills this job, if any: not void,
+     * newest first. A child of a summary counts -- the job is billed through
+     * that summary and must not be invoiced a second time (TASK-447).
+     */
+    public function liveInvoice(): ?Invoice
+    {
+        return Invoice::query()
+            ->where('pilot_car_job_id', $this->id)
+            ->where(fn ($q) => $q->whereNull('invoice_type')->orWhere('invoice_type', '!=', 'summary'))
+            ->notVoid()
+            ->latest('id')
+            ->first();
     }
 
     public function getInvoicesCountAttribute(){
@@ -538,6 +559,8 @@ class PilotCarJob extends Model
                                     
                                     // Set paid_in_full based on job's invoice_paid status from CSV
                                     $invoiceValues['paid_in_full'] = (bool)($job->invoice_paid ?? false);
+                                    // Imported history was billed long ago: never a draft (TASK-480).
+                                    $invoiceValues['status'] = $invoiceValues['paid_in_full'] ? Invoice::STATUS_PAID : Invoice::STATUS_SENT;
                                     
                                     // Create single invoice using createInvoice() - this does NOT create pivot entries
                                     // Single invoices only use pilot_car_job_id, pivot table is only for summary invoices
@@ -2302,11 +2325,14 @@ class PilotCarJob extends Model
 
         // Check if job has invoices (completed)
         // Check both single invoices (via pilot_car_job_id) and summary invoices (via pivot)
+        // A void invoice bills nothing (TASK-480): a job whose only invoice
+        // was voided is back to ACTIVE, exactly as it was after the old delete.
         $hasSingleInvoice = $this->relationLoaded('singleInvoices')
-            ? $this->singleInvoices->isNotEmpty()
+            ? $this->singleInvoices->reject(fn (Invoice $invoice) => $invoice->isVoid())->isNotEmpty()
             : Invoice::where('pilot_car_job_id', $this->id)
                 ->where('invoice_type', '!=', 'summary')
                 ->whereNull('parent_invoice_id')
+                ->notVoid()
                 ->exists();
         $hasSummaryInvoice = $this->relationLoaded('summaryInvoices')
             ? $this->summaryInvoices->isNotEmpty()

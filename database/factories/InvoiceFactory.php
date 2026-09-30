@@ -21,6 +21,9 @@ class InvoiceFactory extends Factory
 
         return [
             'paid_in_full' => false,
+            // A factory invoice stands in for one the customer has received.
+            // Use draft() for one that has not been sent yet (TASK-480).
+            'status' => Invoice::STATUS_SENT,
             'values' => [
                 'title' => 'INVOICE',
                 'total' => $this->faker->randomFloat(2, 100, 1500),
@@ -43,6 +46,16 @@ class InvoiceFactory extends Factory
             'customer_id' => $customer,
             'pilot_car_job_id' => null,
         ];
+    }
+
+    public function draft(): static
+    {
+        return $this->state(fn () => ['status' => Invoice::STATUS_DRAFT]);
+    }
+
+    public function void(): static
+    {
+        return $this->state(fn () => ['status' => Invoice::STATUS_VOID, 'voided_at' => now()]);
     }
 }
 

@@ -91,7 +91,7 @@ class InvoiceUpdateTest extends TestCase
     public function test_manager_can_delete_invoice_snapshot(): void
     {
         $organization = Organization::factory()->create();
-        $manager = User::factory()->admin()->create([
+        $manager = User::factory()->manager()->create([
             'organization_id' => $organization->id,
         ]);
 
@@ -121,17 +121,25 @@ class InvoiceUpdateTest extends TestCase
             'delete' => 'on',
         ]);
 
+        // Managers may edit but not void: voiding is the admin-only `delete`
+        // ability (TASK-446).
+        $response->assertForbidden();
+        $this->assertFalse($invoice->fresh()->isVoid());
+
+        $admin = User::factory()->admin()->create(['organization_id' => $organization->id]);
+
+        $response = $this->actingAs($admin)->put(route('my.invoices.update', $invoice), [
+            'paid_in_full' => 'no',
+            'delete' => 'on',
+        ]);
+
         $response->assertRedirect(route('my.jobs.show', ['job' => $job->id]));
         $response->assertSessionHas('success');
 
-        $this->assertDatabaseMissing('invoices', [
-            'id' => $invoice->id,
-        ]);
-
-        $this->assertDatabaseMissing('summary_invoice_jobs', [
-            'invoice_id' => $invoice->id,
-            'pilot_car_job_id' => $job->id,
-        ]);
+        // Void replaces delete (TASK-480): the row stays, the status changes.
+        $this->assertDatabaseHas('invoices', ['id' => $invoice->id, 'status' => Invoice::STATUS_VOID]);
+        $this->assertNotNull($invoice->fresh()->voided_at);
+        $this->assertSame(0.0, $invoice->fresh()->remaining_balance);
     }
 
     public function test_creating_summary_invoice_groups_child_invoices(): void
@@ -189,8 +197,26 @@ class InvoiceUpdateTest extends TestCase
             ]);
         }
 
-        Event::assertDispatchedTimes(InvoiceReady::class, 1);
+        // Everything is a draft until sent (TASK-480): the customer hears
+        // nothing at creation, and only from Send.
+        Event::assertNotDispatched(InvoiceReady::class);
+        $this->assertTrue($summary->isDraft());
+        $this->assertTrue($children->every(fn (Invoice $child) => $child->isDraft()));
+
+        // A summary cannot go out while a child is still a draft ...
+        $this->actingAs($admin)->post(route('my.invoices.send', $summary))->assertSessionHas('error');
+        Event::assertNotDispatched(InvoiceReady::class);
+
+        // ... so send the children, then the summary.
+        foreach ($children as $child) {
+            $this->actingAs($admin)->post(route('my.invoices.send', $child))->assertSessionHas('success');
+        }
+        $this->actingAs($admin)->post(route('my.invoices.send', $summary))->assertSessionHas('success');
+
+        Event::assertDispatchedTimes(InvoiceReady::class, 3);
         Event::assertDispatched(InvoiceReady::class, fn ($event) => $event->invoice->id === $summary->id);
+        $this->assertTrue($summary->fresh()->isSent());
+        $this->assertNotNull($summary->fresh()->sent_at);
     }
 
     public function test_summary_invoice_can_release_child_invoices_on_delete(): void
@@ -231,11 +257,13 @@ class InvoiceUpdateTest extends TestCase
 
         $response->assertRedirect(route('my.jobs.show', ['job' => $jobA->id]));
 
-        $this->assertDatabaseMissing('invoices', ['id' => $summary->id]);
+        // Voided, not deleted (TASK-480).
+        $this->assertDatabaseHas('invoices', ['id' => $summary->id, 'status' => Invoice::STATUS_VOID]);
 
         foreach ($children as $child) {
             $fresh = $child->fresh();
             $this->assertDatabaseHas('invoices', ['id' => $child->id]);
+            $this->assertFalse($fresh->isVoid(), 'Released child stays live.');
             $this->assertNull($fresh->parent_invoice_id, 'Released child should no longer be parented by the summary.');
             $this->assertNotNull($fresh->pilot_car_job_id, 'Released child should still be associated with its job via pilot_car_job_id (single invoices use the FK, not the summary_invoice_jobs pivot).');
         }

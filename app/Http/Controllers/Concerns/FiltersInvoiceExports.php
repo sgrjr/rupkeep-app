@@ -50,8 +50,11 @@ trait FiltersInvoiceExports
      */
     protected function filteredInvoices(Request $request, array $data): Collection
     {
+        // Sent and paid only: a draft has not been billed and a void invoice
+        // is not owed, so neither belongs in the books (TASK-480).
         $query = Invoice::query()
             ->with(['customer', 'job'])
+            ->visibleToCustomer()
             ->where('organization_id', $request->user()->organization_id)
             ->orderByDesc('created_at');
 

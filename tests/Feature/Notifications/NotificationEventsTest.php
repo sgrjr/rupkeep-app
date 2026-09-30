@@ -78,7 +78,11 @@ class NotificationEventsTest extends TestCase
         });
     }
 
-    public function test_invoice_ready_event_dispatched_when_invoice_created(): void
+    /**
+     * TASK-480: creation makes a draft and tells nobody; Send is what fires
+     * InvoiceReady.
+     */
+    public function test_invoice_ready_event_dispatched_when_invoice_sent_not_when_created(): void
     {
         Event::fake([InvoiceReady::class]);
 
@@ -107,9 +111,17 @@ class NotificationEventsTest extends TestCase
 
         $response->assertStatus(302);
 
+        Event::assertNotDispatched(InvoiceReady::class);
+
+        $invoice = Invoice::where('pilot_car_job_id', $state['job']->id)->firstOrFail();
+        $this->assertTrue($invoice->isDraft());
+
+        $this->post(route('my.invoices.send', $invoice))->assertStatus(302);
+
         Event::assertDispatched(InvoiceReady::class, function (InvoiceReady $event) use ($state) {
             return $event->invoice->pilot_car_job_id === $state['job']->id;
         });
+        $this->assertTrue($invoice->fresh()->isSent());
     }
 
     public function test_invoice_ready_listener_sends_mail_to_managers_and_customer_users(): void

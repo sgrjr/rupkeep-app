@@ -142,7 +142,7 @@ class InvoiceTenancyTest extends TestCase
         $this->assertSame($before, Invoice::count());
     }
 
-    public function test_job_page_delete_only_reaches_this_jobs_invoices(): void
+    public function test_job_page_void_only_reaches_this_jobs_invoices(): void
     {
         [$adminA, $invoiceB] = $this->crossTenant();
         $a = $adminA->organization;
@@ -154,13 +154,13 @@ class InvoiceTenancyTest extends TestCase
         // Another organization's invoice: forbidden by the policy.
         Livewire::actingAs($adminA)
             ->test(ShowPilotCarJob::class, ['job' => $jobA->id])
-            ->call('deleteInvoice', $invoiceB->id)
+            ->call('voidInvoice', $invoiceB->id)
             ->assertForbidden();
 
         // Own organization, but a different job: not found from this page.
         Livewire::actingAs($adminA)
             ->test(ShowPilotCarJob::class, ['job' => $jobA->id])
-            ->call('deleteInvoice', $otherInvoiceA->id)
+            ->call('voidInvoice', $otherInvoiceA->id)
             ->assertNotFound();
 
         $this->assertNotNull(Invoice::find($invoiceB->id));

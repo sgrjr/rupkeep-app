@@ -21,7 +21,11 @@ class InvoiceObserver
         // LogExtraCharges component -- land here as a dirty `values` blob.
         //
         // The refresh saves the parent quietly, so this does not re-enter.
-        if ($invoice->isDirty('values') && $invoice->parent_invoice_id) {
+        //
+        // A child that is voided (TASK-480) leaves the summary the same way a
+        // deleted one used to -- except that deletion never told the parent,
+        // so A $500 + B $300 kept printing $800 after B was gone (TASK-446).
+        if (($invoice->isDirty('values') || $invoice->isDirty('status')) && $invoice->parent_invoice_id) {
             if ($parent = $invoice->parent) {
                 SummaryInvoiceValues::refresh($parent);
             }

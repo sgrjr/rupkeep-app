@@ -12,18 +12,56 @@
         <div class="flex flex-wrap items-center justify-between gap-4">
     <div>
                 <p class="text-xs font-semibold uppercase tracking-wide">{{ __('Invoice Management') }}</p>
-                <h1 class="text-xl font-semibold">
+                <h1 class="flex flex-wrap items-center gap-2 text-xl font-semibold">
                     {{ __('Invoice #:number', ['number' => $invoice->invoice_number]) }}
+                    <x-invoice-status :invoice="$invoice" />
                 </h1>
                 <p class="text-xs">
                     {{ __('Created :date • Last updated :updated', [
                         'date' => LocalTime::format($invoice->created_at, 'M j, Y g:ia'),
                         'updated' => optional($invoice->updated_at)->diffForHumans(),
                     ]) }}
+                    @if($invoice->isVoid())
+                        • {{ __('Voided :date', ['date' => LocalTime::format($invoice->voided_at, 'M j, Y g:ia')]) }}
+                    @elseif($invoice->sent_at)
+                        • {{ __('Sent :date', ['date' => LocalTime::format($invoice->sent_at, 'M j, Y g:ia')]) }}
+                    @endif
+                    @if($invoice->replaces_invoice_id)
+                        • <a class="underline" href="{{ route('my.invoices.edit', ['invoice' => $invoice->replaces_invoice_id]) }}">{{ __('Replaces a voided invoice') }}</a>
+                    @endif
                 </p>
                 </div>
 
             <div class="flex flex-wrap items-center gap-2">
+                @if($invoice->isDraft())
+                    {{-- The one action that puts the invoice in front of the customer (TASK-480). --}}
+                    <form method="POST" action="{{ route('my.invoices.send', ['invoice' => $invoice->id]) }}"
+                          onsubmit="return confirm(@js(__('Send this invoice to the customer? They will be notified and it will appear in their portal.')))">
+                        @csrf
+                        <button type="submit"
+                                class="inline-flex items-center gap-2 rounded-full bg-orange-500 px-3 py-1 text-xs font-semibold text-white shadow-sm transition hover:bg-orange-600">
+                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5"/>
+                            </svg>
+                            {{ __('Send to customer') }}
+                        </button>
+                    </form>
+                @endif
+                @if(! $invoice->isSummary() && $job && ($invoice->isDraft() || $invoice->isSent()) && ! $invoice->parent_invoice_id)
+                    <form method="POST" action="{{ route('my.invoices.regenerate', ['invoice' => $invoice->id]) }}"
+                          onsubmit="return confirm(@js($invoice->isDraft()
+                              ? __('Rebuild this draft from the current job and log figures? Edits made on this page will be replaced.')
+                              : __('This invoice has been sent. Regenerating voids it and creates a new draft from the job; the customer keeps seeing the old one until you send the new one. Continue?')))">
+                        @csrf
+                        <button type="submit"
+                                class="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-white px-3 py-1 text-xs font-semibold text-amber-700 shadow-sm transition hover:bg-amber-500 hover:text-white">
+                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992V4.356M3.985 14.652H8.977v4.992M4.031 9.348a8.25 8.25 0 0 1 13.803-3.075l3.181 3.075M19.969 14.652a8.25 8.25 0 0 1-13.803 3.075L2.985 14.652"/>
+                            </svg>
+                            {{ $invoice->isDraft() ? __('Rebuild from job') : __('Regenerate') }}
+                        </button>
+                    </form>
+                @endif
                 <livewire:invoice-email-form :invoice="$invoice" />
                 <button type="button" onclick="Livewire.dispatch('open-invoice-email-modal-{{ $invoice->id }}')" 
                         class="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white px-3 py-1 text-xs font-semibold text-blue-600 shadow-sm transition hover:bg-blue-500 hover:text-white">
@@ -280,7 +318,7 @@
                             </a>
                         @endif
                         <p class="rounded-xl border border-orange-100 bg-orange-50 px-3 py-2 text-[11px] text-orange-700">
-                            {{ __('Need the invoice to re-sync with log data? Update the logs from the job view, then regenerate a fresh invoice from the job page.') }}
+                            {{ __('Need the invoice to re-sync with log data? Update the logs from the job view, then use Rebuild from job (draft) or Regenerate (sent) above.') }}
                             <a href="#invoice-snapshot-info" class="ml-1 inline-flex items-center gap-1 text-orange-700 font-semibold underline decoration-dotted hover:text-orange-800">
                                 {{ __('See more') }}
                                 <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
@@ -331,9 +369,22 @@
             </div>
         @endif
 
+        @if($invoice->isVoid())
+            <div class="rounded-3xl border border-red-200 bg-red-50 px-6 py-4 text-sm text-red-800">
+                <p class="font-semibold">{{ __('This invoice is void.') }}</p>
+                <p class="mt-1 text-xs">{{ __('It is kept for the record but is not owed, is not shown to the customer, and is left out of totals and exports. It cannot be edited or sent.') }}</p>
+                @if(!empty(data_get($values, 'voided.reason')))
+                    <p class="mt-1 text-xs">{{ data_get($values, 'voided.reason') }}</p>
+                @endif
+            </div>
+        @endif
+
         <form action="{{ route('my.invoices.update', ['invoice' => $invoice->id]) }}" method="post" class="space-y-8"
-              x-data="{ deleting: false }"
-              x-on:submit="if (deleting && ! confirm(@js(__('Permanently delete this invoice? This cannot be undone.')))) $event.preventDefault()">
+              x-data="{ deleting: false, inCustomerHands: @js($invoice->isVisibleToCustomer()) }"
+              x-on:submit="
+                  if (deleting && ! confirm(@js(__('Void this invoice? It stays on record but is no longer owed, shown to the customer, or counted in totals.')))) { $event.preventDefault(); return; }
+                  if (! deleting && inCustomerHands && ! confirm(@js(__('This invoice has already been sent to the customer. Save the changes anyway? The revision will be noted on the invoice.')))) { $event.preventDefault(); }
+              ">
             @csrf
             @method('PUT')
 
@@ -360,25 +411,29 @@
                             <option value="no" {{ $invoice->paid_in_full ? '' : 'selected' }}>{{ __('No') }}</option>
                         </select>
 
+                        @can('delete', $invoice)
+                        @unless($invoice->isVoid())
                         <label class="inline-flex items-center gap-2 rounded-full border border-red-100 bg-red-50 px-3 py-1 text-xs font-semibold text-red-600">
                             <input type="checkbox" name="delete" id="delete_invoice" x-model="deleting" class="rounded border-red-200 text-red-500 focus:ring-red-400">
-                            {{ __('Delete invoice') }}
+                            {{ __('Void invoice') }}
                         </label>
+                        @endunless
+                        @endcan
                     </div>
                 </div>
 
                 @if($invoice->isSummary())
                     <div x-show="deleting" x-cloak
                          class="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
-                        <p class="font-semibold text-slate-700">{{ __('When deleting this summary invoice') }}</p>
+                        <p class="font-semibold text-slate-700">{{ __('When voiding this summary invoice') }}</p>
                         <div class="mt-2 space-y-2">
                             <label class="flex items-center gap-2">
                                 <input type="radio" name="delete_mode" value="release_children" class="text-orange-500 focus:ring-orange-400" checked>
-                                <span>{{ __('Release child invoices (keep them editable individually)') }}</span>
+                                <span>{{ __('Release child invoices (they stay live and can be billed individually)') }}</span>
                             </label>
                             <label class="flex items-center gap-2">
-                                <input type="radio" name="delete_mode" value="delete_children" class="text-red-500 focus:ring-red-400">
-                                <span>{{ __('Delete child invoices as well (irreversible)') }}</span>
+                                <input type="radio" name="delete_mode" value="void_children" class="text-red-500 focus:ring-red-400">
+                                <span>{{ __('Void the child invoices as well') }}</span>
                             </label>
                         </div>
                     </div>
@@ -933,7 +988,7 @@
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.16-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.04-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
                         </svg>
-                        {{ __('Delete invoice permanently') }}
+                        {{ __('Void invoice') }}
                     </button>
                 </div>
             </form>
@@ -1009,7 +1064,7 @@
                     </div>
                 </div>
 
-                <p>{{ __('Do you need the invoice to reflect new mileage, expenses, or rate changes made to the Job/Logs? First delete this invoice, adjust the job logs, and then return to') }} @if($job)<a href="{{ route('my.jobs.show', ['job' => $job->id]) }}" class="font-semibold text-orange-600 underline hover:text-orange-700">{{ __('the job page') }}</a>@else{{ __('the job page') }}@endif {{ __('to generate a fresh invoice. This ensures the totals stay in sync with your Job Logs.') }}</p>
+                <p>{{ __('Do you need the invoice to reflect new mileage, expenses, or rate changes made to the Job/Logs? Adjust the logs on') }} @if($job)<a href="{{ route('my.jobs.show', ['job' => $job->id]) }}" class="font-semibold text-orange-600 underline hover:text-orange-700">{{ __('the job page') }}</a>@else{{ __('the job page') }}@endif{{ __(', then use Rebuild from job while this invoice is a draft, or Regenerate once it has been sent (that voids this one and cuts a new draft). Invoices are never deleted: voiding keeps the record and the number.') }}</p>
                 <p>{{ __('If you want the Job and Log values to remain as they are but you want different invoicing values, it is safe to edit the values directly on this page -- the values edited on this page  effect only this invoice  and has no cascading effect on Job & Log values.') }}</p>
             </div>
         </section>

@@ -38,8 +38,11 @@ class InvoiceController extends Controller
             ]);
         }
 
+        // Only what was actually billed: drafts are staff work in progress
+        // and void invoices are not owed (TASK-480).
         $query = Invoice::query()
             ->with(['customer', 'job'])
+            ->visibleToCustomer()
             ->where('customer_id', $user->customer_id ?? null);
 
         // Filter by payment status

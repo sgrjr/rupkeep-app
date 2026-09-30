@@ -180,6 +180,10 @@ Route::middleware([
     Route::get('my/invoices/{invoice}', [MyInvoicesController::class, 'show'])->name('my.invoices.show');
     Route::put('my/invoices/{invoice}', [MyInvoicesController::class, 'update'])->name('my.invoices.update');
     Route::post('my/invoices/{invoice}/apply-late-fees', [MyInvoicesController::class, 'applyLateFees'])->name('my.invoices.apply-late-fees');
+    // The lifecycle (TASK-480): draft -> sent on Send; a single invoice is
+    // rebuilt from its job (draft in place, sent = void + new draft).
+    Route::post('my/invoices/{invoice}/send', [MyInvoicesController::class, 'send'])->name('my.invoices.send');
+    Route::post('my/invoices/{invoice}/regenerate', [MyInvoicesController::class, 'regenerate'])->name('my.invoices.regenerate');
     Route::post('my/invoices/{invoice}/toggle-marked-for-attention', [MyInvoicesController::class, 'toggleMarkedForAttention'])->name('my.invoices.toggle-marked-for-attention');
     Route::post('my/invoices/create-summary', [MyInvoicesController::class, 'createSummaryFromInvoices'])->name('my.invoices.create-summary');
     Route::post('my/invoices/{invoice}/regenerate-summary', [MyInvoicesController::class, 'regenerateSummary'])->name('my.invoices.regenerate-summary');

@@ -331,16 +331,49 @@ class ShowPilotCarJob extends Component
         $this->authorize('update', $this->job);
         $this->authorize('create', Invoice::class);
 
+        // One live invoice per job (TASK-447). This button used to create a
+        // second invoice every time it was clicked, which the customer then
+        // saw twice in the portal and the exports counted twice.
+        if ($existing = $this->job->liveInvoice()) {
+            if ($existing->parent_invoice_id) {
+                session()->flash('error', __('Job :job is billed on summary invoice #:number. Void that summary first if you need to re-invoice it.', [
+                    'job' => $this->job->job_no ?? $this->job->id,
+                    'number' => $existing->parent?->invoice_number ?? $existing->parent_invoice_id,
+                ]));
+
+                return;
+            }
+
+            if ($existing->isDraft()) {
+                $existing->regenerateFromJob();
+                $this->recentInvoiceId = $existing->id;
+                $this->loadJobRelations();
+
+                session()->flash('success', __('Draft invoice #:number refreshed from the job.', [
+                    'number' => $existing->invoice_number,
+                ]));
+                $this->dispatch('updated');
+
+                return;
+            }
+
+            session()->flash('error', __('Invoice #:number has already been :status. Open it to regenerate or void it.', [
+                'number' => $existing->invoice_number,
+                'status' => strtolower($existing->statusLabel()),
+            ]));
+
+            return;
+        }
+
         // Capture status before invoicing so we can announce the ACTIVE ->
         // COMPLETED transition to assigned drivers (TASK-311).
         $fromStatus = $this->job->fresh()?->status ?? $this->job->status;
 
-        // Create single invoice for this job (no pivot entry needed)
+        // A new invoice is a draft (TASK-480): the customer hears nothing until
+        // someone sends it, so InvoiceReady is fired from Send, not here.
         $invoice = $this->job->createInvoice();
 
         $invoice->refresh();
-
-        event(new InvoiceReady($invoice));
 
         JobStatusChanged::fireIfChanged($this->job, $fromStatus);
 
@@ -348,7 +381,7 @@ class ShowPilotCarJob extends Component
 
         $this->loadJobRelations();
 
-        session()->flash('success', __('Invoice #:number created for job :job.', [
+        session()->flash('success', __('Draft invoice #:number created for job :job. Send it when it is ready.', [
             'number' => $invoice->invoice_number,
             'job' => $this->job->job_no ?? $this->job->id,
         ]));
@@ -405,7 +438,12 @@ class ShowPilotCarJob extends Component
     /**
      * Delete an invoice from the job show page.
      */
-    public function deleteInvoice(int $invoiceId): void
+    /**
+     * Void replaces delete (TASK-480 / TASK-446). The row stays so the number
+     * is never reused; totals, exports and the portal leave it out. A voided
+     * summary releases its children so they can be billed individually.
+     */
+    public function voidInvoice(int $invoiceId): void
     {
         $invoice = Invoice::findOrFail($invoiceId);
         $this->authorize('delete', $invoice);
@@ -416,18 +454,16 @@ class ShowPilotCarJob extends Component
             || $this->job->summaryInvoices()->where('invoices.id', $invoice->id)->exists();
         abort_unless($belongsToJob, 404);
 
-        // If this is a summary invoice, release children first
         if ($invoice->isSummary()) {
             foreach ($invoice->children as $child) {
                 $child->update(['parent_invoice_id' => null]);
             }
-            JobInvoice::where('invoice_id', $invoice->id)->delete();
         }
 
-        $invoice->forceDelete();
+        $invoice->void(auth()->id());
         $this->loadJobRelations();
 
-        session()->flash('success', __('Invoice deleted.'));
+        session()->flash('success', __('Invoice #:number voided.', ['number' => $invoice->invoice_number]));
     }
 
     /**

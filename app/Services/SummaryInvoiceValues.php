@@ -132,7 +132,7 @@ class SummaryInvoiceValues
      */
     public static function childTotal(Invoice $summary): float
     {
-        $children = $summary->children()->get();
+        $children = $summary->children()->notVoid()->get();
 
         return round(
             $children->sum(fn (Invoice $child) => (float) data_get($child->values ?? [], 'total', 0)),
@@ -156,7 +156,9 @@ class SummaryInvoiceValues
             return false;
         }
 
-        $children = $summary->children()->with('job')->get();
+        // A void child is no longer part of the bill (TASK-480), so it drops
+        // out of the sum and the rows exactly as a deleted one should have.
+        $children = $summary->children()->notVoid()->with('job')->get();
 
         // A summary that has lost every child has nothing to recompute from.
         // Leave the last known figures rather than zeroing a document that may
@@ -183,7 +185,7 @@ class SummaryInvoiceValues
             return false;
         }
 
-        $children ??= $summary->children()->with('job')->get();
+        $children ??= $summary->children()->notVoid()->with('job')->get();
 
         if ($children->isEmpty()) {
             return false;

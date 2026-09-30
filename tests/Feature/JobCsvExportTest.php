@@ -35,6 +35,7 @@ class JobCsvExportTest extends TestCase
         ]);
 
         $invoice = Invoice::create([
+            'status' => Invoice::STATUS_SENT,
             'organization_id' => $organization->id,
             'customer_id' => $customer->id,
             'pilot_car_job_id' => $job->id,
@@ -118,6 +119,7 @@ class JobCsvExportTest extends TestCase
         ]);
 
         $paidInvoice = Invoice::create([
+            'status' => Invoice::STATUS_SENT,
             'organization_id' => $organization->id,
             'customer_id' => $customer->id,
             'pilot_car_job_id' => $job->id,
@@ -128,6 +130,7 @@ class JobCsvExportTest extends TestCase
         $paidInvoice->forceFill(['created_at' => now()->subDays(10)])->save();
 
         $discarded = Invoice::create([
+            'status' => Invoice::STATUS_SENT,
             'organization_id' => $organization->id,
             'customer_id' => $customer->id,
             'pilot_car_job_id' => $job->id,
@@ -234,6 +237,7 @@ class JobCsvExportTest extends TestCase
         ]);
 
         Invoice::create([
+            'status' => Invoice::STATUS_SENT,
             'organization_id' => $organization->id,
             'customer_id' => $customer->id,
             'pilot_car_job_id' => $job->id,
@@ -268,6 +272,7 @@ class JobCsvExportTest extends TestCase
         [$manager, $organization, $customer] = $this->exportOrg();
 
         $summary = Invoice::create([
+            'status' => Invoice::STATUS_SENT,
             'organization_id' => $organization->id,
             'customer_id' => $customer->id,
             'invoice_type' => 'summary',
@@ -278,6 +283,7 @@ class JobCsvExportTest extends TestCase
 
         foreach ([1, 2] as $ignored) {
             $child = Invoice::create([
+                'status' => Invoice::STATUS_SENT,
                 'organization_id' => $organization->id,
                 'customer_id' => $customer->id,
                 'parent_invoice_id' => $summary->id,
@@ -387,6 +393,7 @@ class JobCsvExportTest extends TestCase
     private function summaryCutLater(Organization $organization, Customer $customer): Invoice
     {
         $summary = Invoice::create([
+            'status' => Invoice::STATUS_SENT,
             'organization_id' => $organization->id,
             'customer_id' => $customer->id,
             'invoice_type' => 'summary',
@@ -400,6 +407,7 @@ class JobCsvExportTest extends TestCase
 
         foreach ($children as $values) {
             $child = Invoice::create([
+                'status' => Invoice::STATUS_SENT,
                 'organization_id' => $organization->id,
                 'customer_id' => $customer->id,
                 'parent_invoice_id' => $summary->id,

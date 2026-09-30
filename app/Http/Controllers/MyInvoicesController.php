@@ -6,6 +6,7 @@ use App\Events\InvoiceReady;
 use App\Events\JobStatusChanged;
 use Illuminate\Http\Request;
 use App\Models\Invoice;
+use App\Models\InvoiceComment;
 use App\Models\PilotCarJob;
 use App\Models\JobInvoice;
 use App\Models\UserLog;
@@ -129,50 +130,51 @@ class MyInvoicesController extends Controller
         $this->authorize('update', $invoice);
 
         if ($request->boolean('delete')) {
-            // Deleting is its own permission, not a flavour of editing.
+            // Voiding is its own permission, not a flavour of editing.
             $this->authorize('delete', $invoice);
 
+            // Void replaces delete (TASK-480 / TASK-446). Nothing is removed:
+            // the number is never reused, the history stays, and totals,
+            // exports, the portal and summary parents all leave it out. The
+            // old forceDelete also threw AFTER committing for the ~1,000
+            // invoices whose job is gone, because it redirected to a null job.
             $jobId = $invoice->pilot_car_job_id ?? $invoice->children()->value('pilot_car_job_id');
-            $deleteMode = $request->input('delete_mode', $invoice->isSummary() ? 'release_children' : 'delete_children');
+            $mode = $request->input('delete_mode', 'release_children');
 
-            if ($invoice->isSummary()) {
-                $children = $invoice->children()->get();
+            DB::transaction(function () use ($invoice, $mode, $request) {
+                if ($invoice->isSummary()) {
+                    foreach ($invoice->children()->get() as $child) {
+                        if (in_array($mode, ['void_children', 'delete_children'], true)) {
+                            $child->void($request->user()->id, __('Voided with summary #:number', ['number' => $invoice->invoice_number]));
+                        }
 
-                if ($deleteMode === 'release_children') {
-                    foreach ($children as $child) {
+                        // Released either way: a child of a void summary is not
+                        // "billed through" anything.
                         $child->update(['parent_invoice_id' => null]);
                     }
-
-                    // Delete pivot entries for summary invoice (summary invoices use pivot table)
-                    JobInvoice::where('invoice_id', $invoice->id)->delete();
-                    $invoice->forceDelete();
-
-                    session()->flash('success', __('Summary invoice deleted. Child invoices released.'));
-
-                    return redirect()->route('my.jobs.show', ['job' => $jobId]);
                 }
 
-                // Delete children and their pivot entries (if they're summaries)
-                foreach ($children as $child) {
-                    if ($child->isSummary()) {
-                        // Only summary invoices have pivot entries
-                        JobInvoice::where('invoice_id', $child->id)->delete();
-                    }
-                    $child->forceDelete();
-                }
-            }
+                $invoice->void($request->user()->id);
+            });
 
-            // Defensive cleanup: remove any pivot rows for this invoice regardless
-            // of single/summary type. Single invoices normally have none, but a
-            // stale row would orphan otherwise.
-            JobInvoice::where('invoice_id', $invoice->id)->delete();
+            session()->flash('success', $invoice->isSummary()
+                ? __('Summary invoice #:number voided.', ['number' => $invoice->invoice_number])
+                : __('Invoice #:number voided.', ['number' => $invoice->invoice_number]));
 
-            $invoice->forceDelete();
+            $jobExists = $jobId && PilotCarJob::whereKey($jobId)->exists();
 
-            session()->flash('success', __('Invoice deleted.'));
-
-            return redirect()->route('my.jobs.show', ['job' => $jobId]);
+            return $jobExists
+                ? redirect()->route('my.jobs.show', ['job' => $jobId])
+                : redirect()->route('my.invoices.index');
         }
+
+        if ($invoice->isVoid()) {
+            session()->flash('error', __('A void invoice cannot be edited.'));
+
+            return redirect()->route('my.invoices.edit', ['invoice' => $invoice->id]);
+        }
+
+        $valuesBefore = $invoice->values ?? [];
 
         $values = $invoice->values ?? [];
 
@@ -238,11 +240,172 @@ class MyInvoicesController extends Controller
             $invoice->paid_in_full = $request->input('paid_in_full') === 'yes';
         }
 
+        $wasInCustomerHands = $invoice->isVisibleToCustomer();
+
         $invoice->save();
+
+        // A sent invoice is a document the customer holds. Changing it is
+        // allowed, but never silent: the change goes on the invoice thread
+        // (TASK-480).
+        if ($wasInCustomerHands && $invoice->wasChanged('values')) {
+            $this->recordRevision($invoice, $valuesBefore, $invoice->values ?? [], $request->user()->id);
+        }
 
         session()->flash('success', __('Invoice updated.'));
 
         return redirect()->route('my.invoices.edit', ['invoice' => $invoice->id]);
+    }
+
+    /**
+     * Put the invoice in the customer's hands (TASK-480). This is the one
+     * place InvoiceReady fires: creation used to fire it, so the customer was
+     * emailed a portal link the moment staff clicked Create.
+     */
+    public function send(Request $request, Invoice $invoice)
+    {
+        $this->authorize('update', $invoice);
+
+        if ($invoice->isVoid()) {
+            session()->flash('error', __('A void invoice cannot be sent.'));
+
+            return redirect()->route('my.invoices.edit', ['invoice' => $invoice->id]);
+        }
+
+        if (! $invoice->isDraft()) {
+            session()->flash('info', __('Invoice #:number was already sent on :date.', [
+                'number' => $invoice->invoice_number,
+                'date' => optional($invoice->sent_at)->format('M j, Y') ?? '—',
+            ]));
+
+            return redirect()->route('my.invoices.edit', ['invoice' => $invoice->id]);
+        }
+
+        // A summary follows its children: it cannot go out while any of them
+        // is still being drafted.
+        if ($invoice->isSummary()) {
+            $drafts = $invoice->children()->where('status', Invoice::STATUS_DRAFT)->get();
+
+            if ($drafts->isNotEmpty()) {
+                session()->flash('error', __('Send the draft child invoices first: :numbers', [
+                    'numbers' => $drafts->map(fn (Invoice $c) => '#' . $c->invoice_number)->implode(', '),
+                ]));
+
+                return redirect()->route('my.invoices.edit', ['invoice' => $invoice->id]);
+            }
+        }
+
+        $invoice->markSent();
+
+        event(new InvoiceReady($invoice));
+
+        session()->flash('success', __('Invoice #:number sent. The customer can now see it in their portal.', [
+            'number' => $invoice->invoice_number,
+        ]));
+
+        return redirect()->route('my.invoices.edit', ['invoice' => $invoice->id]);
+    }
+
+    /**
+     * Rebuild a single invoice from its job (TASK-480 / TASK-447).
+     *
+     * A draft is rebuilt in place. A sent invoice is a document the customer
+     * holds, so it is voided and a fresh draft is cut that points back at it;
+     * the customer keeps seeing the old number until the new one is sent. A
+     * paid invoice is settled and is left alone.
+     */
+    public function regenerate(Request $request, Invoice $invoice)
+    {
+        $this->authorize('update', $invoice);
+
+        if ($invoice->isSummary()) {
+            return $this->regenerateSummary($request, $invoice);
+        }
+
+        if (! $invoice->job) {
+            session()->flash('error', __('This invoice has no job to rebuild from.'));
+
+            return redirect()->route('my.invoices.edit', ['invoice' => $invoice->id]);
+        }
+
+        if ($invoice->isPaid() || $invoice->isVoid()) {
+            session()->flash('error', __('A :status invoice cannot be regenerated.', ['status' => strtolower($invoice->statusLabel())]));
+
+            return redirect()->route('my.invoices.edit', ['invoice' => $invoice->id]);
+        }
+
+        if ($invoice->parent_invoice_id) {
+            session()->flash('error', __('This invoice is part of a summary. Rebuild the summary, or void it first.'));
+
+            return redirect()->route('my.invoices.edit', ['invoice' => $invoice->id]);
+        }
+
+        if ($invoice->isDraft()) {
+            $invoice->regenerateFromJob();
+
+            session()->flash('success', __('Draft rebuilt from the job.'));
+
+            return redirect()->route('my.invoices.edit', ['invoice' => $invoice->id]);
+        }
+
+        // Sent: void and replace.
+        $this->authorize('delete', $invoice);
+
+        $replacement = DB::transaction(function () use ($invoice, $request) {
+            $invoice->void($request->user()->id, __('Replaced by a regenerated invoice'));
+
+            return $invoice->job->createInvoice([
+                'replaces_invoice_id' => $invoice->id,
+            ]);
+        });
+
+        session()->flash('success', __('Invoice #:old voided. Draft #:new created from the job; send it when it is ready.', [
+            'old' => $invoice->invoice_number,
+            'new' => $replacement->fresh()->invoice_number,
+        ]));
+
+        return redirect()->route('my.invoices.edit', ['invoice' => $replacement->id]);
+    }
+
+    /**
+     * The customer-facing record of an edit made after the invoice was sent.
+     */
+    private function recordRevision(Invoice $invoice, array $before, array $after, int $userId): void
+    {
+        $ignore = ['payments', 'total_paid', 'late_fees', 'summary_items', 'child_invoice_ids'];
+        $flatBefore = Arr::except(Arr::dot($before), $ignore);
+        $flatAfter = Arr::except(Arr::dot($after), $ignore);
+
+        $changed = collect(array_keys($flatBefore + $flatAfter))
+            ->reject(fn ($key) => collect($ignore)->contains(fn ($i) => $key === $i || str_starts_with($key, $i . '.')))
+            ->filter(fn ($key) => ($flatBefore[$key] ?? null) != ($flatAfter[$key] ?? null))
+            ->values();
+
+        if ($changed->isEmpty()) {
+            return;
+        }
+
+        $lines = [__('Invoice revised after it was sent.')];
+
+        if (($flatBefore['total'] ?? null) != ($flatAfter['total'] ?? null)) {
+            $lines[] = __('Total: $:from → $:to', [
+                'from' => number_format((float) ($flatBefore['total'] ?? 0), 2),
+                'to' => number_format((float) ($flatAfter['total'] ?? 0), 2),
+            ]);
+        }
+
+        $others = $changed->reject(fn ($k) => $k === 'total')
+            ->map(fn ($k) => ucwords(str_replace(['_', '.'], [' ', ' › '], $k)))
+            ->take(12);
+
+        if ($others->isNotEmpty()) {
+            $lines[] = __('Changed: :fields', ['fields' => $others->implode(', ')]);
+        }
+
+        InvoiceComment::create([
+            'invoice_id' => $invoice->id,
+            'user_id' => $userId,
+            'body' => implode("\n", $lines),
+        ]);
     }
 
     /**
@@ -459,7 +622,8 @@ class MyInvoicesController extends Controller
         /** @var \App\Models\Invoice $invoice */
         $invoice = $createdInvoices->first();
 
-        event(new InvoiceReady($invoice));
+        // Everything created here is a draft; InvoiceReady fires from Send
+        // (TASK-480), not from creation.
 
         // A job moves ACTIVE -> COMPLETED once it has an invoice; tell assigned
         // drivers for any job whose status actually changed (TASK-311).
@@ -491,9 +655,11 @@ class MyInvoicesController extends Controller
             return back()->with('error', __('Please select at least two invoices to create a summary.'));
         }
 
-        // Only this organization's invoices, whatever ids were posted (TASK-430).
+        // Only this organization's invoices, whatever ids were posted (TASK-430),
+        // and never a void one: it is not a bill (TASK-480).
         $invoices = Invoice::with('customer', 'organization', 'job')
             ->whereIn('id', $invoiceIds)
+            ->notVoid()
             ->when(! $request->user()->isSuper(), fn ($q) => $q->where('organization_id', $request->user()->organization_id))
             ->get();
 

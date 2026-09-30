@@ -26,11 +26,17 @@
                     </div>
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600 mb-1">{{ __('Status') }}</label>
-                        <select name="paid" class="w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
-                            <option value="">{{ __('Any') }}</option>
-                            <option value="yes" @selected(($filters['paid'] ?? '') === 'yes')>{{ __('Paid') }}</option>
-                            <option value="no" @selected(($filters['paid'] ?? '') === 'no')>{{ __('Unpaid') }}</option>
+                        <select name="status" class="w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                            <option value="">{{ __('Live (not void)') }}</option>
+                            <option value="draft" @selected(($filters['status'] ?? '') === 'draft')>{{ __('Draft') }}</option>
+                            <option value="sent" @selected(($filters['status'] ?? '') === 'sent')>{{ __('Sent (unpaid)') }}</option>
+                            <option value="paid" @selected(($filters['status'] ?? '') === 'paid')>{{ __('Paid') }}</option>
+                            <option value="void" @selected(($filters['status'] ?? '') === 'void')>{{ __('Void') }}</option>
+                            <option value="all" @selected(($filters['status'] ?? '') === 'all')>{{ __('Everything') }}</option>
                         </select>
+                        @if(($filters['paid'] ?? '') !== '')
+                            <input type="hidden" name="paid" value="{{ $filters['paid'] }}">
+                        @endif
                     </div>
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600 mb-1">{{ __('Type') }}</label>
@@ -133,11 +139,7 @@
                                         {{ \App\Support\Money::currency((float) ($values['total'] ?? 0)) }}
                                     </td>
                                     <td class="px-4 py-3">
-                                        @if($invoice->paid_in_full)
-                                            <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">{{ __('Paid') }}</span>
-                                        @else
-                                            <span class="rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-semibold text-rose-700">{{ __('Unpaid') }}</span>
-                                        @endif
+                                        <x-invoice-status :invoice="$invoice" />
                                     </td>
                                     <td class="px-4 py-3 text-right whitespace-nowrap">
                                         <a href="{{ route('my.invoices.edit', ['invoice' => $invoice->id]) }}" class="text-orange-600 hover:underline">{{ __('Open') }}</a>

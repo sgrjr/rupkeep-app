@@ -40,11 +40,14 @@ class InvoicePolicy
         }
 
         // Same organization AND same customer: a customer id alone is not a
-        // tenancy check (TASK-430).
+        // tenancy check (TASK-430). And only what was actually billed to
+        // them: a draft is staff work in progress and a void invoice is not
+        // owed (TASK-480).
         if ($user->isCustomer()
             && $user->organization_id === $model->organization_id
             && $user->customer_id !== null
-            && $user->customer_id === $model->customer_id) {
+            && $user->customer_id === $model->customer_id
+            && $model->isVisibleToCustomer()) {
             return true;
         }
 

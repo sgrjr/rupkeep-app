@@ -45,17 +45,18 @@ trait HasJobScopes {
         // Active jobs are those that are not completed, not cancelled
         // Status is ACTIVE if: no canceled_at AND no invoices (single or summary)
         // Match the logic from getStatusAttribute()
+        // A void invoice bills nothing (TASK-480), so it does not complete a job.
         return $query->whereNull('canceled_at')
-            ->whereDoesntHave('singleInvoices')
-            ->whereDoesntHave('summaryInvoices');
+            ->whereDoesntHave('singleInvoices', fn($i) => $i->notVoid())
+            ->whereDoesntHave('summaryInvoices', fn($i) => $i->notVoid());
     }
     public function scopeIsCompleted($query){
         // Completed jobs are those that have invoices (single or summary)
         // Status is COMPLETED if: has single invoices OR has summary invoices
         // Match the logic from getStatusAttribute()
         return $query->where(function($q) {
-            $q->whereHas('singleInvoices')
-              ->orWhereHas('summaryInvoices');
+            $q->whereHas('singleInvoices', fn($i) => $i->notVoid())
+              ->orWhereHas('summaryInvoices', fn($i) => $i->notVoid());
         });
     }
     public function scopeIsFlagged($query){

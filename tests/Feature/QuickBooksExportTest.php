@@ -174,6 +174,7 @@ class QuickBooksExportTest extends TestCase
         [$manager, $organization, $customer] = $this->exportOrg();
 
         $summary = Invoice::create([
+            'status' => Invoice::STATUS_SENT,
             'organization_id' => $organization->id,
             'customer_id' => $customer->id,
             'invoice_type' => 'summary',
@@ -219,6 +220,7 @@ class QuickBooksExportTest extends TestCase
         [$manager, $organization, $customer] = $this->exportOrg();
 
         $summary = Invoice::create([
+            'status' => Invoice::STATUS_SENT,
             'organization_id' => $organization->id,
             'customer_id' => $customer->id,
             'invoice_type' => 'summary',
@@ -243,6 +245,7 @@ class QuickBooksExportTest extends TestCase
         [$manager, $organization, $customer] = $this->exportOrg();
 
         $summary = Invoice::create([
+            'status' => Invoice::STATUS_SENT,
             'organization_id' => $organization->id,
             'customer_id' => $customer->id,
             'invoice_type' => 'summary',
@@ -371,6 +374,7 @@ class QuickBooksExportTest extends TestCase
     private function invoice(Organization $organization, Customer $customer, array $values, ?PilotCarJob $job = null): Invoice
     {
         return Invoice::create([
+            'status' => Invoice::STATUS_SENT,
             'organization_id' => $organization->id,
             'customer_id' => $customer->id,
             'pilot_car_job_id' => $job?->id,
@@ -381,6 +385,7 @@ class QuickBooksExportTest extends TestCase
     private function child(Organization $organization, Customer $customer, Invoice $summary, array $values): Invoice
     {
         return Invoice::create([
+            'status' => Invoice::STATUS_SENT,
             'organization_id' => $organization->id,
             'customer_id' => $customer->id,
             'parent_invoice_id' => $summary->id,
