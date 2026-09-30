@@ -282,6 +282,7 @@
                     </summary>
                     <div class="grid gap-4 sm:grid-cols-2">
                         <div>
+                            @can('manage', $log)
                             <label for="car_driver_id" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Escort Driver') }}</label>
                             <select id="car_driver_id" wire:model.blur="form.car_driver_id" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                                 <option value="">{{ __('Select Driver') }}</option>
@@ -290,6 +291,11 @@
                                 @endforeach
                             </select>
                             @error('form.car_driver_id') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
+                            @else
+                            <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Escort Driver') }}</label>
+                            <p class="mt-2 text-sm text-slate-900">{{ $log->user?->name ?? __('(none selected)') }}</p>
+                            <p class="mt-1 text-xs text-slate-400">{{ __('Only a manager can reassign a log.') }}</p>
+                            @endcan
                         </div>
                         <div>
                             <label for="vehicle_id" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Vehicle') }}</label>
@@ -414,7 +420,11 @@
                                 </div>
                                 
                                 <div class="flex gap-2">
+                                    @can('manage', $log)
                                     <input type="number" id="billable_miles" wire:model.blur="form.billable_miles" step="0.1" min="0" placeholder="{{ __('Leave blank for calculated value') }}" class="flex-1 rounded-xl border {{ $hasOverride ? 'border-orange-300' : 'border-slate-400' }} px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                    @else
+                                    <p class="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">{{ $hasOverride ? number_format((float) $form->billable_miles, 1) : __('Calculated') }} <span class="text-xs text-slate-400">{{ __('(manager override only)') }}</span></p>
+                                    @endcan
                                     @if($hasOverride)
                                         <button type="button" wire:click="$set('form.billable_miles', null)" class="inline-flex items-center gap-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:border-slate-400 hover:bg-slate-50" title="{{ __('Clear override and use calculated value') }}">
                                             <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>

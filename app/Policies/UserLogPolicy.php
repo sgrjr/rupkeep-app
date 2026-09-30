@@ -39,7 +39,27 @@ class UserLogPolicy
      */
     public function update(User $user, UserLog $model): bool
     {
-        return ($user->organization_id === $model->organization_id && ($user->isAdmin() || $user->isManager() || $user->isStandardEmployee())) || $user->isSuper();
+        if ($this->manage($user, $model)) {
+            return true;
+        }
+
+        // A driver edits their OWN log. Any standard employee in the
+        // organization used to pass here, so one driver could rewrite,
+        // reassign and re-bill a colleague's log (TASK-435).
+        return $user->isStandardEmployee()
+            && $user->organization_id === $model->organization_id
+            && $model->car_driver_id === $user->id;
+    }
+
+    /**
+     * The office side of a log: reassigning the driver and overriding the
+     * billable miles. Admins and managers of the organization, never the
+     * driver, even on their own log.
+     */
+    public function manage(User $user, UserLog $model): bool
+    {
+        return $user->isSuper()
+            || ($user->organization_id === $model->organization_id && ($user->isAdmin() || $user->isManager()));
     }
 
     /**

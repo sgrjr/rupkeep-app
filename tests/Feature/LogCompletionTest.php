@@ -176,16 +176,17 @@ class LogCompletionTest extends TestCase
 
     public function test_a_coworker_who_is_not_the_assigned_driver_cannot_complete_the_log(): void
     {
-        // A same-org standard employee CAN open the log (policy 'update'), so
-        // this is the case where completion authorization actually has to hold.
+        // Since TASK-435 a same-org driver cannot even open a colleague's log
+        // (policy 'update' requires car_driver_id === user), so the mount
+        // refuses before markComplete is reachable.
         $coworker = User::factory()->standard()->create(['organization_id' => $this->organization->id]);
         $log = $this->log($this->driver());
 
         Livewire::actingAs($coworker)
             ->test('edit-user-log', ['log' => $log])
-            ->call('markComplete')
             ->assertForbidden();
 
+        $this->assertFalse($coworker->can('complete', $log));
         $this->assertNull($log->fresh()->completed_at);
     }
 

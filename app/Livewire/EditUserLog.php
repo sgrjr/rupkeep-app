@@ -22,7 +22,6 @@ class EditLogForm extends Form
     #[Validate('exists:pilot_car_jobs,id|min:1')]
     public $job_id = null;
 
-    #[Validate('nullable|exists:users,id|min:1')]
     public $car_driver_id = null;
 
     #[Validate('nullable|exists:customer_contacts,id|min:1')]
@@ -32,6 +31,21 @@ class EditLogForm extends Form
     public $new_truck_driver_memo = null;
     public $vehicle_id = null;
     public $vehicle_position = null;
+
+    /**
+     * Driver and vehicle must belong to the log's organization; a bare
+     * `exists` accepted any id in the database (TASK-435). Merged with the
+     * attribute rules above by Livewire.
+     */
+    protected function rules(): array
+    {
+        $organizationId = $this->component->log->organization_id;
+
+        return [
+            'car_driver_id' => ['nullable', \Illuminate\Validation\Rule::exists('users', 'id')->where('organization_id', $organizationId)],
+            'vehicle_id' => ['nullable', \Illuminate\Validation\Rule::exists('vehicles', 'id')->where('organization_id', $organizationId)],
+        ];
+    }
 
     public $truck_no = null;
 
@@ -363,7 +377,29 @@ class EditUserLog extends Component
             session()->flash('error', __('This log has been denied and cannot be edited.'));
             return false;
         }
-        
+
+        // A Livewire action is its own endpoint: mount()'s check does not
+        // cover it (TASK-435).
+        $this->authorize('update', $this->log);
+
+        // Reassigning the driver and overriding billable miles are office
+        // decisions. The fields are hidden from drivers; a value that arrives
+        // anyway is refused rather than quietly applied.
+        if (! auth()->user()->can('manage', $this->log)) {
+            $reassigned = (int) ($this->form->car_driver_id ?? 0) !== (int) ($this->log->car_driver_id ?? 0);
+            $overridden = $this->normalizeMiles($this->form->billable_miles) !== $this->normalizeMiles($this->log->billable_miles);
+
+            if ($reassigned) {
+                $this->addError('form.car_driver_id', __('Only a manager can reassign a log.'));
+            }
+            if ($overridden) {
+                $this->addError('form.billable_miles', __('Only a manager can override billable miles.'));
+            }
+            if ($reassigned || $overridden) {
+                return false;
+            }
+        }
+
         try {
             $this->form->validate();
 
@@ -596,6 +632,8 @@ class EditUserLog extends Component
 
     public function uploadFile()
     {
+        $this->authorize('update', $this->log);
+
         $this->validate([
             'file' => 'required|file|max:10240',
         ]);
