@@ -25,14 +25,26 @@ use Livewire\Attributes\Layout;
 
 class JobAssignmentForm extends Form
 {
-    #[Validate('required|exists:users,id|max:255')]
     public $car_driver_id = null;
- 
-    #[Validate('nullable|exists:vehicles,id|max:255')]
+
     public $vehicle_id = null;
 
-    #[Validate('required|string')]
     public $vehicle_position = null;
+
+    /**
+     * The driver and vehicle must belong to the job's organization: a bare
+     * `exists` accepted any id in the database (TASK-433).
+     */
+    protected function rules(): array
+    {
+        $organizationId = $this->component->job->organization_id;
+
+        return [
+            'car_driver_id' => ['required', \Illuminate\Validation\Rule::exists('users', 'id')->where('organization_id', $organizationId)],
+            'vehicle_id' => ['nullable', \Illuminate\Validation\Rule::exists('vehicles', 'id')->where('organization_id', $organizationId)],
+            'vehicle_position' => ['required', 'string'],
+        ];
+    }
 }
 
 #[Layout('layouts.app')]
@@ -95,6 +107,10 @@ class ShowPilotCarJob extends Component
         User::where('organization_id', $this->job->organization_id)->get()->map(fn($d)=>$this->drivers[] = ['name'=>$d->name, 'value'=> $d->id ]);
 
         $this->authorize('view', $this->job);
+
+        // Staff only: customer-portal users share the organization_id, and
+        // the route middleware does not cover a Livewire request (TASK-433).
+        abort_unless(auth()->user()->isSuper() || auth()->user()->isEmployee(), 403);
 
         $this->loadJobRelations();
     }
@@ -224,7 +240,13 @@ class ShowPilotCarJob extends Component
         ];
     }
 
+    /**
+     * Every public action below authorizes on its own (TASK-433): a Livewire
+     * action is its own endpoint and mount()'s check does not cover it.
+     */
     public function assignJob(){
+        $this->authorize('update', $this->job);
+
         try {
             // Validate the form - this will throw ValidationException if it fails
             $this->assignment->validate();
@@ -279,6 +301,11 @@ class ShowPilotCarJob extends Component
 
     public function uploadFile()
     {
+        // Drivers attach paperwork from the road, so this is staff-of-this-
+        // organization rather than `update` (which is admin/manager).
+        $this->authorize('view', $this->job);
+        abort_unless(auth()->user()->isSuper() || auth()->user()->isEmployee(), 403);
+
         $this->validate([
             'file' => 'required|file|max:10240',
         ]);
@@ -301,6 +328,9 @@ class ShowPilotCarJob extends Component
     }
 
     public function generateInvoice(){
+        $this->authorize('update', $this->job);
+        $this->authorize('create', Invoice::class);
+
         // Capture status before invoicing so we can announce the ACTIVE ->
         // COMPLETED transition to assigned drivers (TASK-311).
         $fromStatus = $this->job->fresh()?->status ?? $this->job->status;
@@ -331,6 +361,8 @@ class ShowPilotCarJob extends Component
      */
     public function notifyCustomerContact(int $contactId): void
     {
+        $this->authorize('update', $this->job);
+
         $contact = CustomerContact::findOrFail($contactId);
         
         // Verify contact belongs to this job's customer

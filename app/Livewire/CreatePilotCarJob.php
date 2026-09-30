@@ -100,6 +100,10 @@ class CreatePilotCarJob extends Component
 
     public function mount(){
        $user = Auth::user();
+
+       // Admins and managers of this organization (TASK-433).
+       $this->authorize('createJob', $user->organization);
+
        $customers = $user->organization->customers;
 
        $this->customers = [
@@ -171,6 +175,7 @@ class CreatePilotCarJob extends Component
     }
 
     public function createJob(){
+        $this->authorize('createJob', Auth::user()->organization);
 
         // Validate on submit. Without this the form relied entirely on
         // real-time #[Validate] feedback, which only fires on properties the

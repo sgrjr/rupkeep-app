@@ -307,6 +307,7 @@
         <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div class="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div class="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-orange-400 to-orange-600"></div>
+                @can('update', $job)
                 <form wire:submit="generateInvoice" class="space-y-3">
                     <div class="flex items-center justify-between">
                         <div>
@@ -322,6 +323,9 @@
                         {{ __('Create Invoice') }}
                     </x-button>
                 </form>
+                @else
+                    <p class="text-xs text-slate-500">{{ __('Invoices are created by a manager or admin.') }}</p>
+                @endcan
 
                 @if($primaryInvoices->isNotEmpty())
                     <div class="mt-5 space-y-2">
@@ -775,6 +779,7 @@
             @endif
 
             <div class="mt-6 space-y-6">
+                @can('update', $job)
                 <form wire:submit="assignJob"
                       class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 shadow-sm">
                         <div class="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center">
@@ -838,6 +843,9 @@
                             </button>
                         </div>
                 </form>
+                @else
+                    <p class="text-xs text-slate-500">{{ __('Drivers are assigned by a manager or admin.') }}</p>
+                @endcan
 
                 @if(optional($job->logs)->isNotEmpty())
                     <div class="space-y-4">

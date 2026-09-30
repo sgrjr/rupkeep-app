@@ -148,9 +148,10 @@ Route::middleware([
     Route::put('/my/jobs/{job}', [MyJobsController::class, 'update'])->name('my.jobs.update');
     Route::delete('/my/jobs/{job}', [MyJobsController::class, 'destroy'])->name('my.jobs.destroy');
     Route::put('/my/jobs/{job}/restore', [MyJobsController::class, 'restore'])->name('my.jobs.restore');
-    Route::get('/my/jobs/create', CreatePilotCarJob::class)->name('my.jobs.create');
-    Route::get('/my/jobs/{job}', ShowPilotCarJob::class)->name('my.jobs.show');
-    Route::get('/my/jobs/{job}/edit', EditPilotCarJob::class)->name('my.jobs.edit');
+    // Staff only (TASK-433): customer-portal accounts share the organization_id.
+    Route::get('/my/jobs/create', CreatePilotCarJob::class)->name('my.jobs.create')->middleware('staff');
+    Route::get('/my/jobs/{job}', ShowPilotCarJob::class)->name('my.jobs.show')->middleware('staff');
+    Route::get('/my/jobs/{job}/edit', EditPilotCarJob::class)->name('my.jobs.edit')->middleware('staff');
     Route::get('/my/profile', MyUserProfile::class)->name('my.profile');
     Route::get('/feedback', function () {
         return view('feedback.index');
@@ -159,11 +160,11 @@ Route::middleware([
     Route::get('/documentation', [\App\Http\Controllers\DocumentationController::class, 'index'])->name('documentation.index');
     Route::get('/documentation/roadmap', [\App\Http\Controllers\DocumentationController::class, 'roadmap'])->name('documentation.roadmap');
     Route::get('/documentation/{document}', [\App\Http\Controllers\DocumentationController::class, 'show'])->name('documentation.show');
-    Route::get('jobs/{job}', ShowPilotCarJob::class)->name('jobs.show');
+    Route::get('jobs/{job}', ShowPilotCarJob::class)->name('jobs.show')->middleware('staff');
     Route::get('jobs', [JobsController::class, 'index'])->name('jobs.index');
     // The cross-organization counterpart to /jobs, for super users.
     Route::get('invoices', [InvoicesController::class, 'index'])->name('invoices.index');
-    Route::get('logs/{log}', EditUserLog::class)->name('logs.edit');
+    Route::get('logs/{log}', EditUserLog::class)->name('logs.edit')->middleware('staff');
     Route::delete('logs/{log}',[UserLogsController::class, 'delete'])->name('logs.destroy');
 
     Route::get('attachments/{attachment}', [AttachmentsController::class, 'download'])->name('attachments.download');
