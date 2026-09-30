@@ -13,9 +13,13 @@
         $values = is_array($values ?? $invoice->values) ? ($values ?? $invoice->values) : [];
     @endphp
 
+    {{-- Internal log memos appear only on the staff browser preview (the route
+         is staff-gated and the block is .no-print). Never on the PDF, which
+         goes to the customer (TASK-444). --}}
     @include('invoices.templates.render', [
         'invoice' => $invoice,
         'values' => $values,
+        'showInternalMemos' => ! ($forPdf ?? false) && auth()->check() && ! auth()->user()->isCustomer(),
     ])
 </body>
 </html>

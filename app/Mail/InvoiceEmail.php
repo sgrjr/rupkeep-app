@@ -79,10 +79,12 @@ class InvoiceEmail extends Mailable
 
         $values = is_array($this->invoice->values) ? $this->invoice->values : [];
 
-        // Generate PDF
+        // Generate PDF. forPdf selects the letter-width dompdf layout and
+        // keeps staff-only content (internal log memos) off the document.
         $pdf = Pdf::loadView('invoices.print', [
             'invoice' => $this->invoice,
             'values' => $values,
+            'forPdf' => true,
         ]);
 
         $filename = 'Invoice-' . $this->invoice->invoice_number . '.pdf';

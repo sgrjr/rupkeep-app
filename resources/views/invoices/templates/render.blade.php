@@ -54,7 +54,13 @@
     $canceledReason = trim((string) ($job?->canceled_reason ?? '')) ?: null;
 @endphp
 
-@if($invoice->job && auth()->check() && auth()->user()->organization_id)
+{{-- Driver log memos are staff-only. The include site must opt in explicitly:
+     only the staff print preview does. This used to be gated on
+     auth()->user()->organization_id, which customer-portal users also carry,
+     so the portal showed the memos on screen; and the `.no-print` class only
+     hides under @media print, which dompdf and mail clients never apply, so
+     the emailed HTML and the PDF attachment carried them too (TASK-444). --}}
+@if(($showInternalMemos ?? false) && $invoice->job)
     @php
         $logMemos = $invoice->job->logs()->whereNotNull('memo')->where('memo', '!=', '')->get();
     @endphp
