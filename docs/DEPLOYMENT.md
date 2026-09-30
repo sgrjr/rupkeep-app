@@ -227,7 +227,12 @@ user=www-data
 numprocs=1
 redirect_stderr=true
 stdout_logfile=/var/www/rupkeep-app/storage/logs/worker.log
+stdout_logfile_maxbytes=10MB
+stdout_logfile_backups=5
 ```
+
+The two `stdout_logfile_*` lines keep `worker.log` from growing forever
+(TASK-469); supervisor rotates it itself, no logrotate needed.
 
 Reload after editing the conf: `sudo supervisorctl reread && sudo supervisorctl update`.
 
@@ -251,6 +256,27 @@ systemctl status supervisor
 For local testing without a worker, you can make listeners synchronous — see [`TESTING_NOTIFICATIONS.md`](TESTING_NOTIFICATIONS.md).
 
 ---
+
+## Monitoring
+
+Three things watch production once the scheduler cron below is installed
+(TASK-469):
+
+- **`queue:health --notify`** runs every fifteen minutes. It is unhealthy when
+  no `queue:work` process is running, when the oldest pending job is five or
+  more minutes old, when more than 100 jobs are queued, or when `failed_jobs`
+  is not empty. On a problem it emails every super user (at most once per six
+  hours for the same problem) and emails once more when the problem clears.
+  Run it by hand any time: `php artisan queue:health` (exit code 1 = needs
+  attention; `--json` for scripts).
+- **`/up`** answers `503` when the database cannot be reached or the oldest
+  pending job is five or more minutes old, and `200` otherwise. Point an
+  external uptime monitor (UptimeRobot, Better Stack, a cron on another box)
+  at `https://pilotcar.io/up` every minute or two. That is the alarm for "the
+  site is down" and "the worker is dead"; nothing inside the app can raise it
+  when the app itself is down.
+- **Logs**: `LOG_STACK=daily` (see the env table above) rotates `laravel.log`;
+  supervisor rotates `worker.log` (see the worker section).
 
 ## Scheduler (cron)
 

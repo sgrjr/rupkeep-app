@@ -9,6 +9,7 @@ use App\Events\LogCompleted;
 use App\Events\JobStatusChanged;
 use App\Events\JobWasCanceled;
 use App\Events\JobWasUncanceled;
+use App\Listeners\CheckApplicationHealth;
 use App\Listeners\NotifyAssignedDriversOfJobCancellation;
 use App\Listeners\NotifyAssignedDriversOfJobUncancellation;
 use App\Listeners\NotifyDriversOfJobStatusChange;
@@ -21,6 +22,7 @@ use App\Models\PilotCarJob;
 use App\Observers\InvoiceObserver;
 use App\Observers\PilotCarJobObserver;
 use App\Support\LivewireFlashToasts;
+use Illuminate\Foundation\Events\DiagnosingHealth;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
@@ -49,6 +51,10 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(InvoiceReady::class, SendInvoiceReadyNotification::class);
         Event::listen(InvoiceFlagged::class, SendInvoiceFlaggedNotification::class);
         Event::listen(LogCompleted::class, SendLogCompletedNotification::class);
+
+        // /up answers 503 when the database is down or the queue is not being
+        // drained, so an uptime monitor can act on it (TASK-469).
+        Event::listen(DiagnosingHealth::class, CheckApplicationHealth::class);
 
         // Register model observers for payment status synchronization
         Invoice::observe(InvoiceObserver::class);

@@ -2,258 +2,211 @@
 
 namespace App\Console\Commands;
 
+use App\Listeners\Concerns\SendsNotificationMail;
+use App\Mail\UserNotification;
+use App\Models\User;
+use App\Services\QueueHealthCheck;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\Process\Process;
 
+/**
+ * Report on the queue and, when scheduled with --notify, tell the super
+ * users the moment it needs attention (TASK-469). The judgement lives in
+ * {@see QueueHealthCheck}; this prints it, adds the host-level colour
+ * (supervisor, worker log) and mails it.
+ */
 class QueueHealth extends Command
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
-    protected $signature = 'queue:health';
+    use SendsNotificationMail;
 
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Check queue worker health, configuration, and status';
+    /** Do not repeat the same alert more often than this. */
+    public const REALERT_HOURS = 6;
 
-    /**
-     * Execute the console command.
-     */
-    public function handle()
+    public const ALERT_CACHE_KEY = 'queue-health:last-alert';
+
+    protected $signature = 'queue:health
+                            {--notify : Email the super users when the queue needs attention (throttled) and when it recovers}
+                            {--json : Machine-readable report}';
+
+    protected $description = 'Check queue worker health, configuration, and status; --notify alerts the super users';
+
+    public function handle(QueueHealthCheck $check): int
     {
-        $output = [];
-        $output[] = "=== Queue Health Check ===";
-        $output[] = "";
+        $report = $check->run();
+        $facts = $report['facts'];
 
-        // Queue Configuration
-        $output[] = "=== Queue Configuration ===";
-        $defaultConnection = config('queue.default', 'sync');
-        $output[] = "Default Queue Connection: " . $defaultConnection;
-        
-        $queueConfig = config("queue.connections.{$defaultConnection}", []);
-        if (!empty($queueConfig)) {
-            $driver = $queueConfig['driver'] ?? 'unknown';
-            $output[] = "Queue Driver: " . $driver;
-            
-            if ($driver === 'database') {
-                $connection = $queueConfig['connection'] ?? null;
-                $table = $queueConfig['table'] ?? 'jobs';
-                $queue = $queueConfig['queue'] ?? 'default';
-                $output[] = "Database Connection: " . ($connection ?? 'default');
-                $output[] = "Jobs Table: " . $table;
-                $output[] = "Queue Name: " . $queue;
-            } elseif ($driver === 'redis') {
-                $connection = $queueConfig['connection'] ?? 'default';
-                $queue = $queueConfig['queue'] ?? 'default';
-                $output[] = "Redis Connection: " . $connection;
-                $output[] = "Queue Name: " . $queue;
+        if ($this->option('json')) {
+            $this->line(json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+        } else {
+            $this->printReport($report);
+        }
+
+        if ($this->option('notify')) {
+            $this->notify($report);
+        }
+
+        return $report['healthy'] ? self::SUCCESS : self::FAILURE;
+    }
+
+    protected function printReport(array $report): void
+    {
+        $facts = $report['facts'];
+
+        $this->info('=== Queue Health Check ===');
+        $this->line('');
+        $this->line('Connection: '.$facts['connection'].'  Driver: '.$facts['driver']);
+
+        if ($facts['driver'] === 'database') {
+            $this->line('Pending jobs: '.($facts['pending'] ?? 'unknown'));
+            $this->line('Oldest pending job: '.($facts['oldest_pending_minutes'] === null ? 'none' : $facts['oldest_pending_minutes'].' minute(s) old'));
+            $this->line('Worker processes: '.($facts['workers'] === null ? 'unknown (no `ps` on this host)' : $facts['workers']));
+        }
+
+        $this->line('Failed jobs: '.($facts['failed'] ?? 'unknown'));
+        foreach ($facts['recent_failed'] as $failed) {
+            $this->line(sprintf('  - #%s on %s at %s: %s', $failed->id, $failed->queue ?? 'default', $failed->failed_at ?? 'unknown', $failed->summary));
+        }
+        foreach ($facts['errors'] as $error) {
+            $this->warn($error);
+        }
+
+        $this->line('');
+        $this->info('=== Supervisor ===');
+        foreach ($this->supervisorStatus() as $line) {
+            $this->line('  '.$line);
+        }
+
+        $this->line('');
+        $this->info('=== Worker log (last 10 lines) ===');
+        foreach ($this->workerLogTail() as $line) {
+            $this->line('  '.$line);
+        }
+
+        $this->line('');
+        if ($report['healthy']) {
+            $this->info('=== Status: HEALTHY ===');
+        } else {
+            $this->error('=== Status: NEEDS ATTENTION ===');
+            foreach ($report['problems'] as $problem) {
+                $this->line('  - '.$problem);
+            }
+            $this->line('');
+            $this->line('Fix: sudo supervisorctl status rupkeep-worker; php artisan queue:failed; php artisan queue:retry all');
+        }
+    }
+
+    /**
+     * Mail the super users about a problem, at most once per REALERT_HOURS
+     * for the same set of problems, and once more when it clears.
+     */
+    protected function notify(array $report): void
+    {
+        $last = Cache::get(self::ALERT_CACHE_KEY);
+
+        if ($report['healthy']) {
+            if ($last) {
+                $this->mailSuperUsers('Queue recovered', "The queue on ".config('app.url')." is healthy again.\n\nPrevious problems:\n- ".implode("\n- ", $last['problems'] ?? []));
+                Cache::forget(self::ALERT_CACHE_KEY);
+            }
+
+            return;
+        }
+
+        $signature = md5(implode('|', $report['problems']));
+
+        $lastAt = $last ? Carbon::parse($last['at']) : null;
+
+        if ($lastAt && ($last['signature'] ?? null) === $signature && $lastAt->gt(now()->subHours(self::REALERT_HOURS))) {
+            $this->line('Alert already sent '.$lastAt->diffForHumans().'; not repeating.');
+
+            return;
+        }
+
+        $body = "The queue on ".config('app.url')." needs attention.\n\n- ".implode("\n- ", $report['problems']);
+
+        if ($report['facts']['recent_failed'] !== []) {
+            $body .= "\n\nMost recent failures:";
+            foreach ($report['facts']['recent_failed'] as $failed) {
+                $body .= sprintf("\n- #%s at %s: %s", $failed->id, $failed->failed_at ?? 'unknown', $failed->summary);
             }
         }
-        $output[] = "";
 
-        // Check Queue Connection Status
-        $output[] = "=== Queue Connection Status ===";
-        try {
-            $size = Queue::size();
-            $output[] = "Queue Size (Pending Jobs): " . number_format($size);
-        } catch (\Exception $e) {
-            $output[] = "ERROR: Cannot connect to queue: " . $e->getMessage();
-            $output[] = "";
-            $output[] = "Check your queue configuration in config/queue.php";
-            $output[] = "and verify your queue driver (database/redis) is properly configured.";
+        $body .= "\n\nOn the host: sudo supervisorctl status rupkeep-worker; php artisan queue:health; php artisan queue:failed; php artisan queue:retry all";
+
+        $sent = $this->mailSuperUsers('Queue needs attention: '.count($report['problems']).' problem(s)', $body);
+
+        if ($sent > 0) {
+            Cache::put(self::ALERT_CACHE_KEY, [
+                'signature' => $signature,
+                'problems' => $report['problems'],
+                'at' => now()->toIso8601String(),
+            ], now()->addDays(2));
         }
-        $output[] = "";
+    }
 
-        // Database Queue Statistics
-        if ($defaultConnection === 'database' || ($queueConfig['driver'] ?? '') === 'database') {
-            $output[] = "=== Database Queue Statistics ===";
-            try {
-                $jobsTable = $queueConfig['table'] ?? 'jobs';
-                $pendingJobs = DB::table($jobsTable)->count();
-                $output[] = "Pending Jobs: " . number_format($pendingJobs);
-                
-                // Get oldest pending job
-                $oldestJob = DB::table($jobsTable)->orderBy('id', 'asc')->first();
-                if ($oldestJob) {
-                    $output[] = "Oldest Pending Job ID: " . $oldestJob->id;
-                    $output[] = "Oldest Job Queue: " . ($oldestJob->queue ?? 'default');
-                    if (isset($oldestJob->created_at)) {
-                        $output[] = "Oldest Job Created: " . $oldestJob->created_at;
-                    }
-                } else {
-                    $output[] = "No pending jobs";
-                }
-            } catch (\Exception $e) {
-                $output[] = "ERROR: Cannot access jobs table: " . $e->getMessage();
-                $output[] = "Table: " . ($jobsTable ?? 'jobs');
+    /** @return int how many super users were actually sent to */
+    protected function mailSuperUsers(string $subject, string $body): int
+    {
+        $recipients = User::query()
+            ->where('is_super', true)
+            ->get()
+            ->map(fn (User $user) => trim($user->email ?: ''))
+            ->filter()
+            ->unique();
+
+        if ($recipients->isEmpty()) {
+            Log::warning('queue:health --notify: no super user has an email address; nobody was told');
+            $this->warn('No super user has an email address; nobody was told.');
+
+            return 0;
+        }
+
+        $sent = 0;
+        foreach ($recipients as $address) {
+            if ($this->mailSafely($address, new UserNotification($body, $subject))) {
+                $sent++;
             }
-            $output[] = "";
         }
 
-        // Failed Jobs
-        $output[] = "=== Failed Jobs ===";
-        try {
-            $failedJobsCount = DB::table('failed_jobs')->count();
-            $output[] = "Total Failed Jobs: " . number_format($failedJobsCount);
-            
-            if ($failedJobsCount > 0) {
-                $recentFailed = DB::table('failed_jobs')
-                    ->orderBy('failed_at', 'desc')
-                    ->limit(5)
-                    ->get();
-                
-                $output[] = "";
-                $output[] = "Recent Failed Jobs (last 5):";
-                foreach ($recentFailed as $failed) {
-                    $output[] = "  - ID: {$failed->id}, Queue: " . ($failed->queue ?? 'default') . 
-                                ", Failed: " . ($failed->failed_at ?? 'unknown');
-                }
-            }
-        } catch (\Exception $e) {
-            $output[] = "ERROR: Cannot access failed_jobs table: " . $e->getMessage();
-        }
-        $output[] = "";
+        $this->line(sprintf('Notified %d of %d super user(s): %s', $sent, $recipients->count(), $subject));
 
-        // Check for Running Queue Workers
-        $output[] = "=== Queue Worker Process Status ===";
+        return $sent;
+    }
+
+    /** @return list<string> */
+    protected function supervisorStatus(): array
+    {
         try {
-            // Check for artisan queue:work processes
-            $process = new Process(['ps', 'aux'], base_path());
+            $process = new Process(['supervisorctl', 'status']);
+            $process->setTimeout(5);
             $process->run();
-            $psOutput = $process->getOutput();
-            
-            $workerProcesses = [];
-            $lines = explode("\n", $psOutput);
-            foreach ($lines as $line) {
-                if (str_contains($line, 'artisan') && str_contains($line, 'queue:work')) {
-                    $workerProcesses[] = $line;
-                }
-            }
-            
-            if (empty($workerProcesses)) {
-                $output[] = "WARNING: No queue worker processes detected";
-                $output[] = "";
-                $output[] = "Queue workers should be running via Supervisor or manually.";
-                $output[] = "To start a worker manually: php artisan queue:work";
-                $output[] = "Or check Supervisor status: sudo supervisorctl status";
-            } else {
-                $output[] = "Found " . count($workerProcesses) . " queue worker process(es):";
-                foreach ($workerProcesses as $idx => $proc) {
-                    // Extract PID and other info
-                    $parts = preg_split('/\s+/', trim($proc));
-                    $pid = $parts[1] ?? 'unknown';
-                    $cpu = $parts[2] ?? 'unknown';
-                    $mem = $parts[3] ?? 'unknown';
-                    $output[] = "  Worker #" . ($idx + 1) . ": PID $pid, CPU: {$cpu}%, Mem: {$mem}%";
-                }
-            }
-        } catch (\Exception $e) {
-            $output[] = "WARNING: Cannot check process status: " . $e->getMessage();
-            $output[] = "This is normal if 'ps' command is not available.";
-        }
-        $output[] = "";
 
-        // Check Supervisor Status (if available)
-        $output[] = "=== Supervisor Status ===";
-        try {
-            $supervisorProcess = new Process(['supervisorctl', 'status'], base_path());
-            $supervisorProcess->setTimeout(5);
-            $supervisorProcess->run();
-            
-            if ($supervisorProcess->isSuccessful()) {
-                $supervisorOutput = $supervisorProcess->getOutput();
-                if (!empty(trim($supervisorOutput))) {
-                    $output[] = "Supervisor processes:";
-                    $lines = explode("\n", trim($supervisorOutput));
-                    foreach ($lines as $line) {
-                        if (!empty(trim($line))) {
-                            $output[] = "  " . trim($line);
-                        }
-                    }
-                } else {
-                    $output[] = "Supervisor is running but no processes found";
-                }
-            } else {
-                $output[] = "Supervisor command failed (may require sudo or not installed)";
-                $output[] = "Error: " . $supervisorProcess->getErrorOutput();
+            if (! $process->isSuccessful()) {
+                return ['supervisorctl unavailable: '.trim($process->getErrorOutput() ?: 'not installed or needs sudo')];
             }
-        } catch (\Exception $e) {
-            $output[] = "Supervisor status check failed: " . $e->getMessage();
-            $output[] = "This is normal if Supervisor is not installed or requires sudo.";
-        }
-        $output[] = "";
 
-        // Worker Log Tail
-        $output[] = "=== Recent Worker Log Output (Last 20 lines) ===";
-        $workerLogPath = storage_path('logs/worker.log');
-        try {
-            if (file_exists($workerLogPath) && is_readable($workerLogPath)) {
-                // Get last 20 lines of the log file
-                $logLines = file($workerLogPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-                if ($logLines !== false && !empty($logLines)) {
-                    $lastLines = array_slice($logLines, -20);
-                    if (!empty($lastLines)) {
-                        foreach ($lastLines as $line) {
-                            $output[] = $line;
-                        }
-                    } else {
-                        $output[] = "Log file is empty";
-                    }
-                } else {
-                    $output[] = "Log file is empty";
-                }
-            } else {
-                $output[] = "Log file not found or not readable: {$workerLogPath}";
-                $output[] = "Logs will appear here once the worker starts processing jobs.";
-            }
-        } catch (\Exception $e) {
-            $output[] = "Error reading log file: " . $e->getMessage();
-        }
-        $output[] = "";
+            $lines = array_values(array_filter(array_map('trim', explode("\n", $process->getOutput()))));
 
-        // Recommendations
-        $output[] = "=== Recommendations ===";
-        $hasIssues = false;
-        
-        try {
-            $queueSize = Queue::size();
-            if ($queueSize > 100) {
-                $output[] = "⚠ High queue size detected ({$queueSize} jobs). Consider:";
-                $output[] = "  - Starting additional queue workers";
-                $output[] = "  - Checking for stuck/failing jobs";
-                $hasIssues = true;
-            }
-        } catch (\Exception $e) {
-            // Already logged above
+            return $lines ?: ['Supervisor is running but manages no processes'];
+        } catch (\Throwable $e) {
+            return ['supervisorctl unavailable: '.$e->getMessage()];
+        }
+    }
+
+    /** @return list<string> */
+    protected function workerLogTail(): array
+    {
+        $path = storage_path('logs/worker.log');
+
+        if (! is_readable($path)) {
+            return ['No worker.log yet at '.$path];
         }
 
-        try {
-            $failedCount = DB::table('failed_jobs')->count();
-            if ($failedCount > 0) {
-                $output[] = "⚠ Failed jobs detected ({$failedCount} total). Review with:";
-                $output[] = "  - php artisan queue:failed";
-                $output[] = "  - php artisan queue:retry all (to retry)";
-                $hasIssues = true;
-            }
-        } catch (\Exception $e) {
-            // Already logged above
-        }
+        $lines = @file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [];
 
-        if (!$hasIssues) {
-            $output[] = "✓ No obvious issues detected";
-        }
-        $output[] = "";
-
-        $output[] = "=== Status: " . ($hasIssues ? "NEEDS ATTENTION" : "HEALTHY") . " ===";
-        
-        $this->info(implode("\n", $output));
-        return $hasIssues ? 1 : 0;
+        return array_slice($lines, -10) ?: ['worker.log is empty'];
     }
 }

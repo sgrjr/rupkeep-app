@@ -172,13 +172,12 @@ class VehicleMaintenanceDueDatesTest extends TestCase
         $this->assertNotNull($this->vehicle->fresh()->maintenance_reminder_sent_at);
     }
 
-    public function test_the_scheduler_runs_the_digest_and_nothing_else(): void
+    public function test_the_scheduler_runs_the_digest_and_not_the_hourly_quote(): void
     {
-        $commands = collect(app(Schedule::class)->events())->map(fn ($event) => $event->command)->all();
+        $commands = collect(app(Schedule::class)->events())->map(fn ($event) => $event->command)->implode(' ');
 
-        $this->assertCount(1, $commands);
-        $this->assertStringContainsString('vehicles:send-maintenance-reminders', $commands[0]);
-        $this->assertStringNotContainsString('inspire', implode(' ', $commands));
+        $this->assertStringContainsString('vehicles:send-maintenance-reminders', $commands);
+        $this->assertStringNotContainsString('inspire', $commands);
     }
 
     /** The markup of one titled block on the edit page, up to the next block. */
