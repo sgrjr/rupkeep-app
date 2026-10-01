@@ -147,7 +147,7 @@ Issue the token by signing into the production app as a super user, going to Jet
 
 ## Other helpful pointers
 
-- **Tests**: `php artisan test`. Suite is green (256 passed, 21 pre-existing Jetstream feature-gate skips as of 2026-07). Use `--filter=TaskTest` to scope.
+- **Tests**: `php artisan test`. Suite is green (899 passed, 9 Jetstream feature-gate skips for 2FA / password update / browser sessions / account deletion, as of 2026-10). Use `--filter=TaskTest` to scope. Three source-scanning tests guard the views: `FormControlContrastTest` (every control has a visible border, text colour and background), `MobilePolishTest` (alt text, rel on blank-target links, wire:key on looped rows) and `ListenerRegistrationTest` (each event has exactly one listener; event discovery is off in `bootstrap/app.php`).
 - **Telling the user what happened**: `session()->flash('success' | 'error' | 'warning' | 'info', $msg)` works everywhere. In a controller it shows as a toast on the next page; inside a Livewire action `App\Support\LivewireFlashToasts` turns it into a `notify` event the layout's toast stack shows immediately, and stops it leaking to the next page (TASK-460). Do not add per-component banners just to make a flash visible.
 - **Currency formatting** in views: use `App\Support\Money::currency($amount)` — it falls back gracefully when `ext-intl` isn't loaded.
 - **Memory** for session-spanning facts: see `C:\Users\sreynoldsjr\.claude\projects\.../memory/MEMORY.md` (Claude Code only).
