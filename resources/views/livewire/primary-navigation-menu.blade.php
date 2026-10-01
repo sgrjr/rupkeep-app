@@ -255,7 +255,9 @@
 
                             @if(auth()->user()->isSuper())
                                 <div class="border-t border-slate-100"></div>
-                                <x-dropdown-link href="{{ route('user-events.index', ['type' => 'feedback']) }}">
+                                {{-- Feedback lands in Dispatch as triage tasks (TASK-475); the
+                                     user_events rows are the pre-integration history. --}}
+                                <x-dropdown-link href="{{ route('tasks.index', ['status' => 'triage', 'label' => 'source:feedback']) }}">
                                     {{ __('View All Feedback') }}
                                 </x-dropdown-link>
                             @endif
@@ -420,7 +422,7 @@
                     </x-responsive-nav-link>
 
                     @if(auth()->user()->isSuper())
-                        <x-responsive-nav-link href="{{ route('user-events.index', ['type' => 'feedback']) }}" :active="request()->routeIs('user-events.index') && request()->get('type') === 'feedback'">
+                        <x-responsive-nav-link href="{{ route('tasks.index', ['status' => 'triage', 'label' => 'source:feedback']) }}" :active="request()->routeIs('tasks.index') && request()->get('label') === 'source:feedback'">
                             {{ __('View All Feedback') }}
                         </x-responsive-nav-link>
                     @endif

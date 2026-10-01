@@ -160,9 +160,11 @@ Route::middleware([
         return view('feedback.index');
     })->name('feedback.index');
     
-    Route::get('/documentation', [\App\Http\Controllers\DocumentationController::class, 'index'])->name('documentation.index');
-    Route::get('/documentation/roadmap', [\App\Http\Controllers\DocumentationController::class, 'roadmap'])->name('documentation.roadmap');
-    Route::get('/documentation/{document}', [\App\Http\Controllers\DocumentationController::class, 'show'])->name('documentation.show');
+    // /documentation and /documentation/roadmap are public (TASK-475); only
+    // the staff guides stay behind sign-in.
+    Route::get('/documentation/{document}', [\App\Http\Controllers\DocumentationController::class, 'show'])
+        ->whereIn('document', ['onboarding']) // so this group does not swallow the public /documentation/roadmap
+        ->name('documentation.show');
     Route::get('jobs/{job}', ShowPilotCarJob::class)->name('jobs.show')->middleware('staff');
     Route::get('jobs', [JobsController::class, 'index'])->name('jobs.index');
     // The cross-organization counterpart to /jobs, for super users.
@@ -217,6 +219,16 @@ Route::middleware([
     })->name('home');    
 
     Route::get('/pricing', [PricingController::class, 'show'])->name('pricing');
+
+    // The "Public Roadmap" was behind sign-in (TASK-475). Anyone may read it;
+    // a visitor sees the organization this site speaks for.
+    Route::get('/documentation', [\App\Http\Controllers\DocumentationController::class, 'index'])->name('documentation.index');
+    Route::get('/documentation/roadmap', [\App\Http\Controllers\DocumentationController::class, 'roadmap'])->name('documentation.roadmap');
+
+    // Terms and privacy (TASK-475). Jetstream's feature is off, so the route
+    // names it would have registered are ours to define.
+    Route::get('/terms', [\App\Http\Controllers\LegalController::class, 'terms'])->name('terms.show');
+    Route::get('/privacy', [\App\Http\Controllers\LegalController::class, 'policy'])->name('policy.show');
 
     // Passwordless sign-in (TASK-319). One request form issues one row that is
     // redeemable either by clicking the emailed link or by typing the code.

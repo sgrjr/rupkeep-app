@@ -32,8 +32,10 @@ class DocumentationController extends Controller
 
     public function roadmap()
     {
+        // Public to anyone (TASK-475). A visitor sees the organization this
+        // site speaks for, not every organization's public tasks at once.
         $user = auth()->user();
-        $orgId = $user?->organization_id;
+        $orgId = $user?->organization_id ?? \App\Support\PublicOrganization::resolve()?->id;
 
         $orgScope = fn ($q) => $q->where('is_public', true)
             ->when($orgId, fn ($w) => $w->where(function ($scope) use ($orgId) {

@@ -1,4 +1,6 @@
-<x-app-layout>
+{{-- Public (TASK-475): the app layout needs a signed-in user, so a visitor
+     gets the public one. --}}
+<x-dynamic-component :component="auth()->check() ? 'app-layout' : 'public-layout'" :title="__('Public Roadmap')">
     <x-slot name="header">
         <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -166,4 +168,4 @@
             @endauth
         </div>
     </div>
-</x-app-layout>
+</x-dynamic-component>

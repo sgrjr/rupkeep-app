@@ -69,7 +69,7 @@ Email is the baseline (Brevo via `getbrevo/brevo-php`). SMS works today via gate
 **Pattern:** Laravel Events + Notifications. Existing events: `JobAssigned`, `JobWasCanceled`, job-uncancel. Listeners dispatch to email + (where subscribed) push.
 
 **Outstanding:**
-- `InvoiceReady`, `InvoiceFlagged`, `Welcome` notifications not yet wired
+- `InvoiceReady` (fires from Send) and `InvoiceFlagged` are wired to their listeners in `AppServiceProvider`; welcome emails go out from the onboarding wizard's last step
 - Real Brevo SMS API integration (replace gateway workaround) — low priority
 - Per-user notification preferences (email / SMS / push)
 

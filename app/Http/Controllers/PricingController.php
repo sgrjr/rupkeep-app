@@ -31,19 +31,7 @@ class PricingController extends Controller
      */
     private function getDefaultOrganization(): ?Organization
     {
-        // First, check if default_organization_id is set in config
-        $defaultOrgId = config('pricing.default_organization_id');
-
-        if ($defaultOrgId) {
-            $organization = Organization::find($defaultOrgId);
-            if ($organization) {
-                return $organization;
-            }
-        }
-
-        // If not set or not found, search for "Casco Bay Pilot Car"
-        $organization = Organization::where('name', 'Casco Bay Pilot Car')->first();
-
-        return $organization;
+        // Shared with the roadmap and the legal pages (TASK-475).
+        return \App\Support\PublicOrganization::resolve();
     }
 }

@@ -66,6 +66,13 @@
                             <p class="text-left">Tel: 207-712-8064</p>
                             <p class="text-left">Email: cascobaypc@gmail.com</p>
                             <p class="text-left">303 Bridgton Road East Baldwin, ME 04024</p>
+                            <p class="text-left mt-2">
+                                <a href="{{ route('terms.show') }}" class="underline">{{ __('Terms of Service') }}</a>
+                                &middot;
+                                <a href="{{ route('policy.show') }}" class="underline">{{ __('Privacy Policy') }}</a>
+                                &middot;
+                                <a href="{{ route('documentation.roadmap') }}" class="underline">{{ __('Roadmap') }}</a>
+                            </p>
                         </div>
                    </div>
 

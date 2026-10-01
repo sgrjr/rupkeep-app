@@ -69,7 +69,7 @@
                         <li>{{ __('No additional software required (works with any browser)') }}</li>
                         <li>{{ __('Print to PDF directly from browser') }}</li>
                         <li>{{ __('Consistent formatting across all invoices') }}</li>
-                        <li>{{ __('Future-ready: PDF library integration can be added later if needed') }}</li>
+                        <li>{{ __('Download a PDF of any invoice from its page') }}</li>
                     </ul>
                 </div>
 
@@ -86,7 +86,7 @@
                     <ul class="mt-3 space-y-2 text-sm text-slate-600 list-disc list-inside">
                         <li>{{ __('Drivers receive email notifications when jobs are assigned') }}</li>
                         <li>{{ __('Customers receive emails when invoices are ready') }}</li>
-                        <li>{{ __('Flexible architecture allows SMS integration in the future') }}</li>
+                        <li>{{ __('Drivers can receive the same notices as text messages and browser push notifications') }}</li>
                         <li>{{ __('All notifications are queued for reliable delivery') }}</li>
                     </ul>
                 </div>
@@ -449,7 +449,7 @@
                                         <li>{{ __('Expenses: tolls, gas, hotel, extra charges') }}</li>
                                         <li>{{ __('Wait time hours and reason') }}</li>
                                         <li>{{ __('Extra load stops') }}</li>
-                                        <li>{{ __('Deadhead legs') }}</li>
+                                        <li>{{ __('Deadhead miles driven to the pickup, and how many of them to bill') }}</li>
                                         <li>{{ __('Pre-trip check confirmation') }}</li>
                                         <li>{{ __('Load cancellation status (if applicable)') }}</li>
                                         <li>{{ __('Internal memo (staff-only notes)') }}</li>

@@ -1,4 +1,5 @@
-<x-app-layout>
+{{-- Public (TASK-475), like the roadmap it links to. --}}
+<x-dynamic-component :component="auth()->check() ? 'app-layout' : 'public-layout'" :title="__('Documentation')">
     <x-slot name="header">
         <div class="flex flex-wrap items-center justify-between gap-4">
             <div>
@@ -58,4 +59,4 @@
             </div>
         </section>
     </div>
-</x-app-layout>
+</x-dynamic-component>
