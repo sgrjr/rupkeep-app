@@ -1956,6 +1956,17 @@ class PilotCarJob extends Model
         return count($logs);
     }
 
+    /**
+     * The job's billable and non-billable miles for the invoice snapshot.
+     *
+     * Alive, not dead (TASK-476 asked): invoiceValues() reads total_billable
+     * from here. It deliberately differs from UserLog::total_billable_miles
+     * in one case: a log with odometer readings but no job readings bills
+     * nothing here (the span includes the approach and the drive home),
+     * while the accessor falls back to the odometer span. The annual report
+     * uses the accessor; changing either side changes invoices, so neither
+     * was aligned blind.
+     */
     public function getTotalMiles($logs = false){
 
         if(!$logs) $logs = $this->logs;
