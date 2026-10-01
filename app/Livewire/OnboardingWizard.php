@@ -89,12 +89,32 @@ class OnboardingWizard extends Component
                 'org_name' => 'required|string|max:255',
                 'org_primary_contact' => 'required|string|max:255',
             ]);
+            // Create once, then update: Back to step 1 and Next used to insert a
+            // second organization and orphan the first one's users and
+            // vehicles (TASK-473).
             $this->createOrganization();
+        }
+
+        if ($this->currentStep === 2 && $this->organizationId && ! $this->organizationHasAdmin()) {
+            // The first user of a new organization should be the person who
+            // will run it, so the role picker defaults to admin until one exists.
+            $this->new_user_role = User::ROLE_ADMIN;
         }
 
         if ($this->currentStep < 6) {
             $this->currentStep++;
         }
+    }
+
+    /**
+     * Whether the organization being set up has someone who can run it.
+     */
+    protected function organizationHasAdmin(): bool
+    {
+        return $this->organizationId
+            && User::where('organization_id', $this->organizationId)
+                ->where('organization_role', User::ROLE_ADMIN)
+                ->exists();
     }
 
     public function previousStep()
@@ -119,7 +139,7 @@ class OnboardingWizard extends Component
             $owner = User::superUser();
         }
 
-        $this->organization = Organization::create([
+        $attributes = [
             'name' => $this->org_name,
             'primary_contact' => $this->org_primary_contact,
             'telephone' => $this->org_telephone,
@@ -132,7 +152,20 @@ class OnboardingWizard extends Component
             'logo_url' => $this->org_logo_url,
             'website_url' => $this->org_website_url,
             'user_id' => $owner->id,
-        ]);
+        ];
+
+        // Already created on an earlier pass through step 1: update it in
+        // place rather than minting a second organization (TASK-473).
+        $existing = $this->organizationId ? Organization::find($this->organizationId) : null;
+
+        if ($existing) {
+            $existing->update($attributes);
+            $this->organization = $existing;
+
+            return;
+        }
+
+        $this->organization = Organization::create($attributes);
 
         $this->organizationId = $this->organization->id;
     }
@@ -353,6 +386,22 @@ class OnboardingWizard extends Component
     {
         // A Livewire action is its own endpoint; mount() does not cover it (TASK-442).
         abort_unless(auth()->user()?->isSuper(), 403);
+
+        if (! $this->organizationId) {
+            session()->flash('error', __('Create the organization first.'));
+            $this->currentStep = 1;
+
+            return;
+        }
+
+        // An organization nobody can administer is not set up (TASK-473).
+        if (! $this->organizationHasAdmin()) {
+            session()->flash('error', __('Add at least one Admin user before finishing; otherwise nobody can run this organization.'));
+            $this->currentStep = 3;
+            $this->new_user_role = User::ROLE_ADMIN;
+
+            return;
+        }
 
         return redirect()->route('organizations.show', ['organization' => $this->organizationId])
             ->with('success', __('Onboarding completed successfully!'));

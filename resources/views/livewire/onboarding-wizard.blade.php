@@ -175,7 +175,7 @@
                                     <div wire:key="onboarding-user-{{ $index }}-{{ md5($user['email'] ?? $index) }}" class="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-2">
                                         <div>
                                             <p class="text-sm font-semibold text-slate-900">{{ $user['name'] }}</p>
-                                            <p class="text-xs text-slate-600">{{ $user['email'] }} • {{ User::ROLE_LABELS[$user['role']] ?? $user['role'] }}</p>
+                                            <p class="text-xs text-slate-600">{{ $user['email'] }} • {{ \App\Models\User::ROLE_LABELS[$user['role']] ?? $user['role'] }}</p>
                                         </div>
                                         <button type="button" wire:click="removeUser({{ $index }})" class="text-xs font-medium text-red-600 hover:text-red-700">
                                             {{ __('Remove') }}
@@ -322,7 +322,7 @@
                                             <input type="checkbox" wire:model="selected_users_for_email" value="{{ $user->id }}" class="h-4 w-4 rounded border-slate-400 text-orange-600 focus:ring-orange-500">
                                             <div class="flex-1">
                                                 <p class="text-sm font-semibold text-slate-900">{{ $user->name }}</p>
-                                                <p class="text-xs text-slate-600">{{ $user->email }} • {{ User::ROLE_LABELS[$user->organization_role] ?? $user->organization_role }}</p>
+                                                <p class="text-xs text-slate-600">{{ $user->email }} • {{ \App\Models\User::ROLE_LABELS[$user->organization_role] ?? $user->organization_role }}</p>
                                             </div>
                                         </label>
                                     @endforeach
