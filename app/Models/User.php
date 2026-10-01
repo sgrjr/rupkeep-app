@@ -237,13 +237,22 @@ class User extends Authenticatable
         }
 
         $address = trim($this->notification_address);
-        
+
         // If it contains @, it's likely an email gateway address
         if (str_contains($address, '@')) {
             return $address;
         }
 
         return null;
+    }
+
+    /**
+     * Stored normalised (TASK-468): "(207) 416-8659@mms.uscc.net" becomes
+     * 2074168659@mms.uscc.net, which is what the carrier accepts.
+     */
+    public function setNotificationAddressAttribute($value): void
+    {
+        $this->attributes['notification_address'] = \App\Support\NotificationAddress::normalize($value);
     }
 
     /**

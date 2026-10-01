@@ -87,6 +87,11 @@ class NotifyAssignedDriversOfJobCancellation implements ShouldQueue
             $recipient = $driver->getSmsGatewayAddress() ?? $driver->email;
 
             if (! $recipient) {
+                \Log::warning('NotifyAssignedDriversOfJobCancellation: driver has no notification address or email; nothing sent', [
+                    'job_id' => $job->id,
+                    'driver_id' => $driver->id,
+                ]);
+
                 continue;
             }
 

@@ -31,14 +31,13 @@ class SendCustomerContactNotification
         
         // If no email/gateway, try to construct SMS gateway from phone if we have provider info
         // For now, we'll just use what's available
-        if (empty($recipient) && !empty($contact->phone)) {
-            // Could construct gateway here if we had provider info
-            // For now, skip if no notification_address or email
-            return;
-        }
-
         if (empty($recipient)) {
-            // No valid recipient address
+            // Say so (TASK-468): a silent skip read as "the message went out".
+            \Log::warning('SendCustomerContactNotification: contact has no notification address or email; nothing sent', [
+                'contact_id' => $contact->id,
+                'has_phone' => ! empty($contact->phone),
+            ]);
+
             return;
         }
 

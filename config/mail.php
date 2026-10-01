@@ -3,6 +3,15 @@
 return [
 
     /*
+    | Carrier email-to-SMS gateway sends go through Laravel Mail by default,
+    | where UserNotificationSms is subject-less so the whole text fits one
+    | SMS (TASK-352 / TASK-468). The Brevo API requires a subject and so
+    | always pushed gateway texts past 160 chars; set SMS_GATEWAY_TRANSPORT=api
+    | to go back to it.
+    */
+    'sms_gateway_transport' => env('SMS_GATEWAY_TRANSPORT', 'mail'),
+
+    /*
     |--------------------------------------------------------------------------
     | Default Mailer
     |--------------------------------------------------------------------------

@@ -5,6 +5,8 @@ namespace App\Listeners;
 use App\Events\LogCompleted;
 use App\Listeners\Concerns\SendsNotificationMail;
 use App\Mail\UserNotification;
+use App\Mail\UserNotificationSms;
+use App\Support\OfficeSms;
 use App\Models\User;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
@@ -76,17 +78,31 @@ class SendLogCompletedNotification implements ShouldQueue
         foreach ($recipients as $user) {
             $address = trim($user->notification_address ?: $user->email ?: '');
 
+            if ($address === '') {
+                Log::warning('SendLogCompletedNotification: recipient has no notification address or email; nothing sent', [
+                    'log_id' => $log->id,
+                    'user_id' => $user->id,
+                ]);
+
+                continue;
+            }
+
             // The driver who just completed the log does not need to be told
             // they completed it — but a manager completing someone else's log
             // is a different person from the log's driver, so dedupe on the
             // address rather than on the role.
-            if ($address === '' || isset($seen[$address]) || $user->id === $event->completedBy->id) {
+            if (isset($seen[$address]) || $user->id === $event->completedBy->id) {
                 continue;
             }
 
             $seen[$address] = true;
 
-            $this->mailSafely($address, new UserNotification($message, $subject, 'mail.notification-text', [], $orgName));
+            // A carrier gateway gets one short text, not the HTML email (TASK-468).
+            if ($user->usesSmsGateway()) {
+                $this->mailSafely($address, new UserNotificationSms(OfficeSms::logCompleted($job, $driverName, $url)));
+            } else {
+                $this->mailSafely($address, new UserNotification($message, $subject, 'mail.notification-text', [], $orgName));
+            }
         }
     }
 }

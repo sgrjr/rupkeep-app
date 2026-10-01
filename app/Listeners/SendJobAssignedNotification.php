@@ -76,6 +76,12 @@ class SendJobAssignedNotification implements ShouldQueue
         $recipient = $this->resolveAddress($driver->notification_address, $driver->email);
 
         if (! $recipient) {
+            // Say so (TASK-468): a silent skip read as "the text went out".
+            Log::warning('SendJobAssignedNotification: driver has no notification address or email; nothing sent', [
+                'job_id' => $job->id,
+                'driver_id' => $driver->id,
+            ]);
+
             return;
         }
 

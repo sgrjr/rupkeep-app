@@ -47,7 +47,7 @@ class CustomerContactsController extends Controller
             'phone' => ['nullable', 'string', 'max:50'],
             'email' => ['nullable', 'email', 'max:255'],
             'memo' => ['nullable', 'string', 'max:2000'],
-            'notification_address' => ['nullable', 'email', 'max:255'],
+            'notification_address' => ['nullable', 'string', 'max:255', new \App\Rules\NotificationAddress],
         ]);
 
         $customer_contact = new CustomerContact(array_merge($validated, [
@@ -98,7 +98,7 @@ class CustomerContactsController extends Controller
             'phone' => ['nullable', 'string', 'max:50'],
             'email' => ['nullable', 'email', 'max:255'],
             'memo' => ['nullable', 'string', 'max:2000'],
-            'notification_address' => ['nullable', 'email', 'max:255'],
+            'notification_address' => ['nullable', 'string', 'max:255', new \App\Rules\NotificationAddress],
         ]);
         // Convert checkbox values to booleans
         $data['is_main_contact'] = $request->has('is_main_contact') && $request->input('is_main_contact') == '1';

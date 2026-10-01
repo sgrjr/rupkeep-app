@@ -5,6 +5,8 @@ namespace App\Listeners;
 use App\Events\InvoiceReady;
 use App\Listeners\Concerns\SendsNotificationMail;
 use App\Mail\UserNotification;
+use App\Mail\UserNotificationSms;
+use App\Support\OfficeSms;
 use App\Models\User;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
@@ -67,13 +69,22 @@ class SendInvoiceReadyNotification implements ShouldQueue
             foreach ($users as $user) {
                 $address = trim($user->notification_address ?: $user->email ?: '');
 
-                if ($address === '' || isset($seen[$address])) {
+                if ($address === '') {
+                    Log::warning('SendInvoiceReadyNotification: recipient has no notification address or email; nothing sent', [
+                        'invoice_id' => $invoice->id,
+                        'user_id' => $user->id,
+                    ]);
+
+                    continue;
+                }
+
+                if (isset($seen[$address])) {
                     continue;
                 }
 
                 $seen[$address] = true;
 
-                $this->sendInvoiceReady($address, $invoice, $orgName, $isOrgUser);
+                $this->sendInvoiceReady($address, $invoice, $orgName, $isOrgUser, $user->usesSmsGateway());
             }
         };
 
@@ -81,11 +92,18 @@ class SendInvoiceReadyNotification implements ShouldQueue
         $deliver($customerUsers, false);
     }
 
-    private function sendInvoiceReady(string $address, $invoice, string $orgName, bool $isOrgUser): void
+    private function sendInvoiceReady(string $address, $invoice, string $orgName, bool $isOrgUser, bool $viaSmsGateway = false): void
     {
         $url = $isOrgUser
             ? route('my.invoices.edit', ['invoice' => $invoice->id])
             : route('customer.invoices.show', ['invoice' => $invoice->id]);
+
+        // A carrier gateway gets one short text, not the HTML email (TASK-468).
+        if ($viaSmsGateway) {
+            $this->mailSafely($address, new UserNotificationSms(OfficeSms::invoiceReady($invoice, $url, $isOrgUser)));
+
+            return;
+        }
 
         $subject = sprintf('Invoice Ready: %s', $invoice->invoice_number);
         $total = number_format((float) ($invoice->values['total'] ?? 0), 2);

@@ -19,26 +19,16 @@
  */
 
 return [
+    // AT&T (txt.att.net / mms.att.net) and T-Mobile (tmomail.net, which also
+    // carried Sprint) shut their email-to-SMS gateways in 2025 (TASK-053 /
+    // TASK-468). An address on one of them cannot be delivered to, so they
+    // are no longer offered; a driver on those carriers needs a mailbox or
+    // push instead.
     'providers' => [
-        'att' => [
-            'name' => 'AT&T',
-            'sms' => '@txt.att.net',
-            'mms' => '@mms.att.net',
-        ],
         'verizon' => [
             'name' => 'Verizon',
             'sms' => '@vtext.com',
             'mms' => '@vzwpix.com',
-        ],
-        'tmobile' => [
-            'name' => 'T-Mobile',
-            'sms' => '@tmomail.net',
-            'mms' => '@tmomail.net',
-        ],
-        'sprint' => [
-            'name' => 'Sprint',
-            'sms' => '@messaging.sprintpcs.com',
-            'mms' => '@pm.sprint.com',
         ],
         'uscc' => [
             'name' => 'US Cellular',

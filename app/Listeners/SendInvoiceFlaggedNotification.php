@@ -5,6 +5,8 @@ namespace App\Listeners;
 use App\Events\InvoiceFlagged;
 use App\Listeners\Concerns\SendsNotificationMail;
 use App\Mail\UserNotification;
+use App\Mail\UserNotificationSms;
+use App\Support\OfficeSms;
 use App\Models\User;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
@@ -56,6 +58,10 @@ class SendInvoiceFlaggedNotification implements ShouldQueue
         $recipients = $this->collectRecipients($invoice, $comment->user);
 
         if ($recipients->isEmpty()) {
+            Log::warning('SendInvoiceFlaggedNotification: nobody to tell; nothing sent', [
+                'invoice_id' => $invoice->id,
+            ]);
+
             return;
         }
 
@@ -70,9 +76,17 @@ class SendInvoiceFlaggedNotification implements ShouldQueue
         );
 
         $subject = sprintf('Invoice Flagged: %s', $invoice->invoice_number);
+        $url = route('my.invoices.edit', ['invoice' => $invoice->id]);
 
-        $recipients->each(function (string $address) use ($message, $subject, $orgName) {
-            $this->mailSafely($address, new UserNotification($message, $subject, 'mail.notification-text', [], $orgName));
+        $recipients->each(function (User $user) use ($message, $subject, $orgName, $invoice, $comment, $url) {
+            $address = trim($user->notification_address ?: $user->email);
+
+            // A carrier gateway gets one short text, not the HTML email (TASK-468).
+            if ($user->usesSmsGateway()) {
+                $this->mailSafely($address, new UserNotificationSms(OfficeSms::invoiceFlagged($invoice, optional($comment->user)->name, $url)));
+            } else {
+                $this->mailSafely($address, new UserNotification($message, $subject, 'mail.notification-text', [], $orgName));
+            }
         });
     }
 
@@ -88,16 +102,24 @@ class SendInvoiceFlaggedNotification implements ShouldQueue
             ->where('customer_id', $invoice->customer_id)
             ->get();
 
+        // Users, not addresses, so the channel can follow the recipient; one
+        // per address, and a recipient with no address is logged, not dropped.
         return $organizationUsers
             ->merge($customerUsers)
             ->filter(fn (User $user) => ! $author || $user->isNot($author))
-            ->map(function (User $user) {
-                $address = $user->notification_address ?: $user->email;
+            ->filter(function (User $user) use ($invoice) {
+                if (trim((string) ($user->notification_address ?: $user->email)) !== '') {
+                    return true;
+                }
 
-                return $address ? trim($address) : null;
+                Log::warning('SendInvoiceFlaggedNotification: recipient has no notification address or email; nothing sent', [
+                    'invoice_id' => $invoice->id,
+                    'user_id' => $user->id,
+                ]);
+
+                return false;
             })
-            ->filter()
-            ->unique()
+            ->unique(fn (User $user) => trim($user->notification_address ?: $user->email))
             ->values();
     }
 }

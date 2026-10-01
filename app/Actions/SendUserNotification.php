@@ -72,7 +72,12 @@ class SendUserNotification
         // - Brevo automatically retries these messages - most deliver successfully after retry
         // - Monitor Brevo dashboard for delivery statistics and bounce reports
         // - See docs/SMS_GATEWAY_TROUBLESHOOTING.md for detailed troubleshooting guidance
-        if ($isSmsGateway) {
+        // The Brevo API requires a subject, and a subject on a gateway text
+        // pushed every cancel/uncancel/status message past 160 chars into the
+        // iOS attachment problem TASK-352 fixed for the Mail path (TASK-468).
+        // Gateway texts therefore go through Laravel Mail, subject-less, unless
+        // SMS_GATEWAY_TRANSPORT=api asks for the old behaviour.
+        if ($isSmsGateway && config('mail.sms_gateway_transport', 'mail') === 'api') {
             // Try Brevo API for SMS gateway addresses (proven working method from test notification)
             $api_key = config('mail.mailers.brevo.key');
 

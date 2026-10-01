@@ -62,6 +62,11 @@ class NotifyDriverOfUnassignment implements ShouldQueue
         $recipient = trim((string) ($driver->notification_address ?: $driver->email));
 
         if ($recipient === '') {
+            Log::warning('NotifyDriverOfUnassignment: driver has no notification address or email; nothing sent', [
+                'job_id' => $job->id,
+                'driver_id' => $driver->id,
+            ]);
+
             return;
         }
 

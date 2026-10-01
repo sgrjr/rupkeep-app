@@ -69,7 +69,7 @@ class MyUsersController extends Controller
             'organization_role' => ['required', \Illuminate\Validation\Rule::in(array_column(User::roles(), 'id'))],
             // A portal login may only be bound to a customer of THIS organization.
             'customer_id' => ['nullable', \Illuminate\Validation\Rule::exists('customers', 'id')->where('organization_id', $organizationId)],
-            'notification_address' => ['nullable', 'email', 'max:255'],
+            'notification_address' => ['nullable', 'string', 'max:255', new \App\Rules\NotificationAddress],
         ]);
 
         $user = new User([

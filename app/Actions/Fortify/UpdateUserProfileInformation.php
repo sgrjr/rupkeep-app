@@ -28,7 +28,7 @@ class UpdateUserProfileInformation implements UpdatesUserProfileInformation
             'theme' => ['nullable', 'string', Rule::in(array_column(User::themes(), 'value'))],
             // Either a plain email or a carrier SMS gateway address
             // (2075551234@mms.uscc.net); both are email-shaped.
-            'notification_address' => ['nullable', 'email', 'max:255'],
+            'notification_address' => ['nullable', 'string', 'max:255', new \App\Rules\NotificationAddress],
         ])->validateWithBag('updateProfileInformation');
 
         if (isset($input['photo'])) {

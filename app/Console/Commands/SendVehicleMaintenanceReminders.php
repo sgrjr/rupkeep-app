@@ -4,6 +4,8 @@ namespace App\Console\Commands;
 
 use App\Listeners\Concerns\SendsNotificationMail;
 use App\Mail\UserNotification;
+use App\Mail\UserNotificationSms;
+use App\Support\OfficeSms;
 use App\Models\User;
 use App\Models\Vehicle;
 use Illuminate\Console\Command;
@@ -59,13 +61,25 @@ class SendVehicleMaintenanceReminders extends Command
             $organization = $orgVehicles->first()->organization;
             $orgName = $organization?->name ?: 'your organization';
 
+            // Users, not addresses, so the channel can follow the recipient
+            // (TASK-468); one per address, and nobody dropped silently.
             $recipients = User::query()
                 ->where('organization_id', $organizationId)
                 ->whereIn('organization_role', [User::ROLE_ADMIN, User::ROLE_EMPLOYEE_MANAGER])
                 ->get()
-                ->map(fn (User $user) => trim($user->notification_address ?: $user->email ?: ''))
-                ->filter()
-                ->unique()
+                ->filter(function (User $user) use ($organizationId) {
+                    if (trim($user->notification_address ?: $user->email ?: '') !== '') {
+                        return true;
+                    }
+
+                    Log::warning('Maintenance reminder: manager has no notification address or email; nothing sent', [
+                        'organization_id' => $organizationId,
+                        'user_id' => $user->id,
+                    ]);
+
+                    return false;
+                })
+                ->unique(fn (User $user) => trim($user->notification_address ?: $user->email))
                 ->values();
 
             $lines = $orgVehicles
@@ -97,11 +111,18 @@ class SendVehicleMaintenanceReminders extends Command
             );
 
             $sent = 0;
-            foreach ($recipients as $address) {
-                if ($this->mailSafely($address, new UserNotification($message, $subject, 'mail.maintenance-due', [
-                    'items' => $lines->all(),
-                    'orgName' => $orgName,
-                ], $orgName))) {
+            foreach ($recipients as $user) {
+                $address = trim($user->notification_address ?: $user->email);
+
+                // A carrier gateway gets one short text, not the HTML digest.
+                $mailable = $user->usesSmsGateway()
+                    ? new UserNotificationSms(OfficeSms::maintenanceDue($lines->count(), route('my.vehicles.index')))
+                    : new UserNotification($message, $subject, 'mail.maintenance-due', [
+                        'items' => $lines->all(),
+                        'orgName' => $orgName,
+                    ], $orgName);
+
+                if ($this->mailSafely($address, $mailable)) {
                     $sent++;
                 }
             }

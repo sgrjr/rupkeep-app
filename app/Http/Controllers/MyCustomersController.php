@@ -176,7 +176,7 @@ class MyCustomersController extends Controller
                 'phone' => ['nullable', 'string', 'max:50'],
                 'email' => ['nullable', 'email', 'max:255'],
                 'memo' => ['nullable', 'string', 'max:2000'],
-                'notification_address' => ['nullable', 'email', 'max:255'],
+                'notification_address' => ['nullable', 'string', 'max:255', new \App\Rules\NotificationAddress],
             ]);
 
             // The contact belongs to the customer in the URL, never one named

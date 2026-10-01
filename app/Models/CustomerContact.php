@@ -72,6 +72,14 @@ class CustomerContact extends Model
     }
 
     /**
+     * Stored normalised, as on User (TASK-468).
+     */
+    public function setNotificationAddressAttribute($value): void
+    {
+        $this->attributes['notification_address'] = \App\Support\NotificationAddress::normalize($value);
+    }
+
+    /**
      * Check if contact has SMS notification capability
      */
     public function hasSmsNotification(): bool
