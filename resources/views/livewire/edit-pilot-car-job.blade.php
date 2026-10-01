@@ -165,12 +165,12 @@
                     <div class="mt-3 space-y-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-3">
                         <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{{ __('Or add a new truck driver') }}</p>
                         <input type="text" wire:model.blur="form.new_truck_driver_name" placeholder="{{ __('Driver name') }}"
-                               class="block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                               class="block w-full rounded-lg border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                         @error('form.new_truck_driver_name')
                             <p class="text-xs font-semibold text-red-500">{{ $message }}</p>
                         @enderror
                         <input type="text" wire:model.blur="form.new_truck_driver_phone" placeholder="{{ __('Phone (optional)') }}"
-                               class="block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                               class="block w-full rounded-lg border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                         @error('form.new_truck_driver_phone')
                             <p class="text-xs font-semibold text-red-500">{{ $message }}</p>
                         @enderror

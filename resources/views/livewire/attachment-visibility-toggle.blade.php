@@ -2,7 +2,7 @@
     <input type="checkbox"
            wire:model="isPublic"
            wire:change="toggle"
-           class="h-3.5 w-3.5 rounded border-slate-300 text-orange-600 focus:ring-orange-500" />
+           class="h-3.5 w-3.5 rounded border-slate-400 text-orange-600 focus:ring-orange-500" />
     <span class="flex items-center gap-1">
         @if($isPublic)
             <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">

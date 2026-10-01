@@ -51,7 +51,7 @@ SETUP_PASSWORD=some-long-random-string</pre>
                                     {{ __('Username') }}
                                 </label>
                                 <input id="username" name="username" type="text" value="{{ old('username', config('setup-console.username')) }}" required autofocus
-                                       class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                       class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white">
                             </div>
 
                             <div>
@@ -59,7 +59,7 @@ SETUP_PASSWORD=some-long-random-string</pre>
                                     {{ __('Password') }}
                                 </label>
                                 <input id="password" name="password" type="password" required
-                                       class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                       class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white">
                                 @error('password')
                                     <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p>
                                 @enderror

@@ -187,7 +187,7 @@
                                     <td class="px-4 py-3">
                                         @if($canSelect)
                                             <label class="inline-flex items-center gap-2 text-xs font-semibold text-slate-600">
-                                                <input name="invoice_this[]" value="{{ $job->id }}" type="checkbox" class="rounded border-slate-300 text-orange-500 focus:ring-orange-400"/>
+                                                <input name="invoice_this[]" value="{{ $job->id }}" type="checkbox" class="rounded border-slate-400 text-orange-500 focus:ring-orange-400"/>
                                                 {{ $primaryInvoice ? __('Group') : __('Select') }}
                                             </label>
                                         @else

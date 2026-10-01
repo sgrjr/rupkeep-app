@@ -211,12 +211,12 @@
                         </div>
 
                         <div class="mt-6 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                            <input id="is_in_service" name="is_in_service" type="checkbox" value="1" class="h-4 w-4 rounded border-slate-300 text-orange-500 focus:ring-orange-400" {{ old('is_in_service', $vehicle->is_in_service) ? 'checked' : '' }}>
+                            <input id="is_in_service" name="is_in_service" type="checkbox" value="1" class="h-4 w-4 rounded border-slate-400 text-orange-500 focus:ring-orange-400" {{ old('is_in_service', $vehicle->is_in_service) ? 'checked' : '' }}>
                             <label for="is_in_service" class="text-sm font-semibold text-slate-700">{{ __('Vehicle is currently in service') }}</label>
                         </div>
 
                         <div class="mt-3 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                            <input id="is_in_garage" name="is_in_garage" type="checkbox" value="1" class="h-4 w-4 rounded border-slate-300 text-orange-500 focus:ring-orange-400" {{ old('is_in_garage', $vehicle->is_in_garage) ? 'checked' : '' }}>
+                            <input id="is_in_garage" name="is_in_garage" type="checkbox" value="1" class="h-4 w-4 rounded border-slate-400 text-orange-500 focus:ring-orange-400" {{ old('is_in_garage', $vehicle->is_in_garage) ? 'checked' : '' }}>
                             <label for="is_in_garage" class="text-sm font-semibold text-slate-700">{{ __('Vehicle is currently in the garage') }}</label>
                         </div>
                     </section>

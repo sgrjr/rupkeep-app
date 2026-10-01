@@ -25,7 +25,7 @@
                             <div>
                                 <label for="year_select" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Year') }}</label>
                                 <select id="year_select" wire:model="selectedYear" 
-                                        class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                                        class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
                                     @foreach($this->years as $year)
                                         <option value="{{ $year }}">{{ $year }}</option>
                                     @endforeach

@@ -22,7 +22,7 @@
                         <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600 mb-1">{{ __('Search') }}</label>
                         <input type="text" name="q" value="{{ $filters['q'] ?? '' }}"
                                placeholder="{{ __('Invoice #, customer, job #') }}"
-                               class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                               class="w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                     </div>
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600 mb-1">{{ __('Status') }}</label>
@@ -70,7 +70,7 @@
                     <div class="md:col-span-6 flex flex-wrap items-center justify-between gap-3">
                         <label class="inline-flex items-center gap-2 text-xs font-medium text-slate-600">
                             <input type="checkbox" name="orphaned" value="1" @checked(($filters['orphaned'] ?? '') === '1')
-                                   class="rounded border-slate-300 text-orange-500 focus:ring-orange-200">
+                                   class="rounded border-slate-400 text-orange-500 focus:ring-orange-200">
                             {{ __('Only invoices with no job attached') }}
                         </label>
                         <div class="flex gap-2">

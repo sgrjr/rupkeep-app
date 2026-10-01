@@ -5,7 +5,7 @@
             <div class="lg:col-span-2">
                 <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Search') }}</label>
                 <input type="text" wire:model.live.debounce.250ms="search" placeholder="{{ __('Search by title or code…') }}"
-                    class="mt-1 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                    class="mt-1 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white">
             </div>
             <div>
                 <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Status') }}</label>

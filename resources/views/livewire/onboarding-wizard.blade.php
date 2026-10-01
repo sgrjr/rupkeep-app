@@ -78,49 +78,49 @@
                         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <div>
                                 <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Name') }} *</label>
-                                <input type="text" wire:model="org_name" class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                <input type="text" wire:model="org_name" class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white">
                                 @error('org_name') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                             </div>
 
                             <div>
                                 <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Primary Contact') }} *</label>
-                                <input type="text" wire:model="org_primary_contact" class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                <input type="text" wire:model="org_primary_contact" class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white">
                                 @error('org_primary_contact') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                             </div>
 
                             <div>
                                 <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Email') }}</label>
-                                <input type="email" wire:model="org_email" class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                <input type="email" wire:model="org_email" class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white">
                             </div>
 
                             <div>
                                 <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Telephone') }}</label>
-                                <input type="text" wire:model="org_telephone" class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                <input type="text" wire:model="org_telephone" class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white">
                             </div>
 
                             <div>
                                 <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Street') }}</label>
-                                <input type="text" wire:model="org_street" class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                <input type="text" wire:model="org_street" class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white">
                             </div>
 
                             <div>
                                 <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('City') }}</label>
-                                <input type="text" wire:model="org_city" class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                <input type="text" wire:model="org_city" class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white">
                             </div>
 
                             <div>
                                 <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('State') }}</label>
-                                <input type="text" wire:model="org_state" class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                <input type="text" wire:model="org_state" class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white">
                             </div>
 
                             <div>
                                 <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Zip Code') }}</label>
-                                <input type="text" wire:model="org_zip" class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                <input type="text" wire:model="org_zip" class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white">
                             </div>
 
                             <div>
                                 <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Owner Email') }}</label>
-                                <input type="email" wire:model="org_owner_email" class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                <input type="email" wire:model="org_owner_email" class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white">
                                 <p class="mt-1 text-xs text-slate-500">{{ __('Email of existing user to set as owner. Leave blank to use super user.') }}</p>
                             </div>
                         </div>
@@ -190,30 +190,30 @@
                             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div>
                                     <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Name') }} *</label>
-                                    <input type="text" wire:model="new_user_name" class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                    <input type="text" wire:model="new_user_name" class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white">
                                     @error('new_user_name') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                                 </div>
 
                                 <div>
                                     <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Email') }} *</label>
-                                    <input type="email" wire:model="new_user_email" class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                    <input type="email" wire:model="new_user_email" class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white">
                                     @error('new_user_email') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                                 </div>
 
                                 <div>
                                     <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Password') }} *</label>
-                                    <input type="password" wire:model="new_user_password" class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                    <input type="password" wire:model="new_user_password" class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white">
                                     @error('new_user_password') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                                 </div>
 
                                 <div>
                                     <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Confirm Password') }} *</label>
-                                    <input type="password" wire:model="new_user_password_confirmation" class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                    <input type="password" wire:model="new_user_password_confirmation" class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white">
                                 </div>
 
                                 <div class="sm:col-span-2">
                                     <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Role') }} *</label>
-                                    <select wire:model="new_user_role" class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                    <select wire:model="new_user_role" class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white">
                                         @foreach($roles as $role)
                                             <option value="{{ $role['id'] }}">{{ $role['name'] }}</option>
                                         @endforeach
@@ -259,13 +259,13 @@
                             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div>
                                     <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Name') }} *</label>
-                                    <input type="text" wire:model="new_vehicle_name" placeholder="Car 001" class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                    <input type="text" wire:model="new_vehicle_name" placeholder="Car 001" class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white">
                                     @error('new_vehicle_name') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                                 </div>
 
                                 <div>
                                     <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Odometer') }}</label>
-                                    <input type="number" wire:model="new_vehicle_odometer" min="0" class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                    <input type="number" wire:model="new_vehicle_odometer" min="0" class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white">
                                     @error('new_vehicle_odometer') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                                 </div>
                             </div>
@@ -319,7 +319,7 @@
 
                                     @foreach($allUsers as $user)
                                         <label wire:key="onboarding-email-user-{{ $user->id }}" class="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 hover:bg-slate-50">
-                                            <input type="checkbox" wire:model="selected_users_for_email" value="{{ $user->id }}" class="h-4 w-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500">
+                                            <input type="checkbox" wire:model="selected_users_for_email" value="{{ $user->id }}" class="h-4 w-4 rounded border-slate-400 text-orange-600 focus:ring-orange-500">
                                             <div class="flex-1">
                                                 <p class="text-sm font-semibold text-slate-900">{{ $user->name }}</p>
                                                 <p class="text-xs text-slate-600">{{ $user->email }} • {{ User::ROLE_LABELS[$user->organization_role] ?? $user->organization_role }}</p>

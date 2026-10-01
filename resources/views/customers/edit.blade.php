@@ -186,11 +186,11 @@
 
                             <div class="mt-4 flex flex-wrap items-center gap-4">
                                 <label class="flex items-center gap-2">
-                                    <input type="checkbox" name="is_main_contact" value="1" {{ $contact->is_main_contact ? 'checked' : '' }} class="rounded border-slate-300 text-orange-600 focus:ring-orange-500">
+                                    <input type="checkbox" name="is_main_contact" value="1" {{ $contact->is_main_contact ? 'checked' : '' }} class="rounded border-slate-400 text-orange-600 focus:ring-orange-500">
                                     <span class="text-sm font-medium text-slate-700">{{ __('Main Contact') }}</span>
                                 </label>
                                 <label class="flex items-center gap-2">
-                                    <input type="checkbox" name="is_billing_contact" value="1" {{ $contact->is_billing_contact ? 'checked' : '' }} class="rounded border-slate-300 text-orange-600 focus:ring-orange-500">
+                                    <input type="checkbox" name="is_billing_contact" value="1" {{ $contact->is_billing_contact ? 'checked' : '' }} class="rounded border-slate-400 text-orange-600 focus:ring-orange-500">
                                     <span class="text-sm font-medium text-slate-700">{{ __('Billing Contact') }}</span>
                                 </label>
                             </div>
@@ -276,11 +276,11 @@
 
                         <div class="mt-4 flex flex-wrap items-center gap-4">
                             <label class="flex items-center gap-2">
-                                <input type="checkbox" name="is_main_contact" value="1" class="rounded border-slate-300 text-orange-600 focus:ring-orange-500">
+                                <input type="checkbox" name="is_main_contact" value="1" class="rounded border-slate-400 text-orange-600 focus:ring-orange-500">
                                 <span class="text-sm font-medium text-slate-700">{{ __('Main Contact') }}</span>
                             </label>
                             <label class="flex items-center gap-2">
-                                <input type="checkbox" name="is_billing_contact" value="1" class="rounded border-slate-300 text-orange-600 focus:ring-orange-500">
+                                <input type="checkbox" name="is_billing_contact" value="1" class="rounded border-slate-400 text-orange-600 focus:ring-orange-500">
                                 <span class="text-sm font-medium text-slate-700">{{ __('Billing Contact') }}</span>
                             </label>
                         </div>

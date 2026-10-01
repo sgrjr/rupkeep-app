@@ -483,7 +483,7 @@
                         </div>
                         <div class="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2">
                             <input type="checkbox" id="isPublicUpload" wire:model="isPublicUpload" 
-                                   class="h-4 w-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500" />
+                                   class="h-4 w-4 rounded border-slate-400 text-orange-600 focus:ring-orange-500" />
                             <label for="isPublicUpload" class="flex-1 cursor-pointer text-xs text-slate-700">
                                 <span class="font-semibold">{{ __('Make visible to customer') }}</span>
                                 <p class="mt-0.5 text-[10px] text-slate-500">{{ __('This file will be visible in the customer portal') }}</p>
@@ -841,7 +841,7 @@
                             <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Assign driver & vehicle') }}</label>
                             <div class="w-full sm:flex-1">
                                 <select wire:model="assignment.car_driver_id"
-                                        class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                        class="w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                                     <option value="">{{ __('Select Driver') }}</option>
                                     @foreach($drivers as $driver)
                                         @if($driver['value'])
@@ -853,7 +853,7 @@
                             </div>
                             <div class="w-full sm:flex-1">
                                 <select wire:model="assignment.vehicle_id" 
-                                        class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                        class="w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                                     <option value="">{{ __('Select Vehicle') }}</option>
                                     @foreach($vehicles as $vehicle)
                                         @if($vehicle['value'])
@@ -865,7 +865,7 @@
                             </div>
                             <div class="w-full sm:flex-1">
                                 <select wire:model="assignment.vehicle_position" 
-                                        class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                        class="w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                                     <option value="">{{ __('Select Position') }}</option>
                                     @foreach($vehicle_positions as $position)
                                         @if($position['value'])

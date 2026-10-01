@@ -170,7 +170,7 @@
                                                 </button>
                                                 <form wire:submit.prevent="confirmImport" class="space-y-3">
                                                     <div class="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                                                        <input type="checkbox" id="autoCreateInvoices" wire:model="autoCreateInvoices" class="h-4 w-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500">
+                                                        <input type="checkbox" id="autoCreateInvoices" wire:model="autoCreateInvoices" class="h-4 w-4 rounded border-slate-400 text-orange-600 focus:ring-orange-500">
                                                         <label for="autoCreateInvoices" class="flex-1 cursor-pointer text-xs text-slate-700">
                                                             <span class="font-semibold">{{ __('Create invoices for imported jobs') }}</span>
                                                             <p class="mt-0.5 text-[10px] text-slate-500">{{ __('Automatically generate invoices for all imported jobs (useful for historical data)') }}</p>

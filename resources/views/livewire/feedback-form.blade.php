@@ -55,7 +55,7 @@
                         <form wire:submit="submit" class="space-y-4">
                             <div>
                                 <label for="severity" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Type') }}</label>
-                                <select id="severity" wire:model="severity" class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                <select id="severity" wire:model="severity" class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white">
                                     <option value="info">{{ __('Informational') }} - {{ __('Suggestion, general feedback') }}</option>
                                     <option value="error">{{ __('Critical') }} - {{ __('Bug, error, fix this, need this now') }}</option>
                                 </select>
@@ -66,7 +66,7 @@
                                 <label for="feedback" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Your Feedback') }}</label>
                                 <textarea id="feedback" wire:model="feedback" rows="6" 
                                           placeholder="{{ __('Please share your thoughts, suggestions, or report any issues you\'ve encountered...') }}"
-                                          class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900"></textarea>
+                                          class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white"></textarea>
                                 @error('feedback') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                                 <p class="mt-1 text-xs text-slate-500">{{ __('Minimum 3 characters, maximum 5000 characters.') }}</p>
                             </div>
@@ -116,7 +116,7 @@
             <form wire:submit="submit" class="space-y-4">
                 <div>
                     <label for="severity_modal" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Type') }}</label>
-                    <select id="severity_modal" wire:model="severity" class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                    <select id="severity_modal" wire:model="severity" class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white">
                         <option value="info">{{ __('Informational') }} - {{ __('Suggestion, general feedback') }}</option>
                         <option value="error">{{ __('Critical') }} - {{ __('Bug, error, fix this, need this now') }}</option>
                     </select>
@@ -127,7 +127,7 @@
                     <label for="feedback_modal" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Your Feedback') }}</label>
                     <textarea id="feedback_modal" wire:model="feedback" rows="6" 
                               placeholder="{{ __('Please share your thoughts, suggestions, or report any issues you\'ve encountered...') }}"
-                              class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900"></textarea>
+                              class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white"></textarea>
                     @error('feedback') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                     <p class="mt-1 text-xs text-slate-500">{{ __('Minimum 3 characters, maximum 5000 characters.') }}</p>
                 </div>
@@ -171,7 +171,7 @@
                 <form wire:submit="submit" class="space-y-4">
                     <div>
                         <label for="severity_inline" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Type') }}</label>
-                        <select id="severity_inline" wire:model="severity" class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                        <select id="severity_inline" wire:model="severity" class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white">
                             <option value="info">{{ __('Informational') }} - {{ __('Suggestion, general feedback') }}</option>
                             <option value="error">{{ __('Critical') }} - {{ __('Bug, error, fix this, need this now') }}</option>
                         </select>
@@ -182,7 +182,7 @@
                         <label for="feedback_inline" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Your Feedback') }}</label>
                         <textarea id="feedback_inline" wire:model="feedback" rows="6" 
                                   placeholder="{{ __('Please share your thoughts, suggestions, or report any issues you\'ve encountered...') }}"
-                                  class="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900"></textarea>
+                                  class="mt-2 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white"></textarea>
                         @error('feedback') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                         <p class="mt-1 text-xs text-slate-500">{{ __('Minimum 3 characters, maximum 5000 characters.') }}</p>
                     </div>

@@ -24,7 +24,7 @@
                             <label for="to" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('To') }} <span class="text-red-500">*</span></label>
                             <input type="email" id="to" wire:model="to" required
                                    placeholder="{{ __('customer@example.com') }}"
-                                   class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                   class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                             @error('to') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                             <p class="mt-1 text-xs text-slate-500">{{ __('Multiple emails: separate with commas') }}</p>
                         </div>
@@ -33,7 +33,7 @@
                             <label for="bcc" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('BCC (Blind Copy)') }}</label>
                             <input type="email" id="bcc" wire:model="bcc"
                                    placeholder="{{ __('your@email.com') }}"
-                                   class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                   class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                             @error('bcc') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                             <p class="mt-1 text-xs text-slate-500">{{ __('Your email is pre-filled. Add others separated by commas.') }}</p>
                         </div>
@@ -42,7 +42,7 @@
                             <label for="preliminaryText" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Preliminary Text') }}</label>
                             <textarea id="preliminaryText" wire:model="preliminaryText" rows="4"
                                       placeholder="{{ __('Add a personal message that will appear above the invoice in the email...') }}"
-                                      class="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900"></textarea>
+                                      class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900"></textarea>
                             @error('preliminaryText') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                             <p class="mt-1 text-xs text-slate-500">{{ __('Optional message to include before the invoice details') }}</p>
                         </div>
@@ -50,7 +50,7 @@
                         @if(config('features.invoice_pdf_downloads', false))
                             <div class="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50/60 p-4">
                                 <input type="checkbox" id="includePdf" wire:model="includePdf" 
-                                       class="h-4 w-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500">
+                                       class="h-4 w-4 rounded border-slate-400 text-orange-600 focus:ring-orange-500">
                                 <label for="includePdf" class="flex-1 cursor-pointer text-sm text-slate-700">
                                     <span class="font-semibold">{{ __('Include PDF attachment') }}</span>
                                     <p class="mt-0.5 text-xs text-slate-500">{{ __('Attach a downloadable PDF version of the invoice to the email') }}</p>

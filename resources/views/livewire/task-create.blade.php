@@ -10,13 +10,13 @@
             <div class="space-y-4 text-left">
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Title') }}</label>
-                    <input type="text" wire:model.blur="title" maxlength="255" class="mt-1 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                    <input type="text" wire:model.blur="title" maxlength="255" class="mt-1 block w-full rounded-xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white">
                     @error('title') <p class="mt-1 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Description (Markdown)') }}</label>
-                    <textarea wire:model.blur="description" rows="5" class="mt-1 block w-full rounded-2xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900" placeholder="{{ __('Optional. Markdown supported.') }}"></textarea>
+                    <textarea wire:model.blur="description" rows="5" class="mt-1 block w-full rounded-2xl border border-slate-400 px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white" placeholder="{{ __('Optional. Markdown supported.') }}"></textarea>
                     @error('description') <p class="mt-1 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                 </div>
 
@@ -46,7 +46,7 @@
                     <div class="mt-2 flex flex-wrap gap-2">
                         @foreach ($allLabels as $label)
                             <label wire:key="label-option-{{ $label->id }}" class="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold transition hover:border-orange-300 hover:bg-orange-50">
-                                <input type="checkbox" value="{{ $label->id }}" wire:model="label_ids" class="h-3 w-3 rounded border-slate-300 text-orange-600 focus:ring-orange-500">
+                                <input type="checkbox" value="{{ $label->id }}" wire:model="label_ids" class="h-3 w-3 rounded border-slate-400 text-orange-600 focus:ring-orange-500">
                                 <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-white" style="background-color: {{ $label->color ?: '#94a3b8' }}">{{ $label->name }}</span>
                             </label>
                         @endforeach
@@ -54,7 +54,7 @@
                 </div>
 
                 <label class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5">
-                    <input type="checkbox" wire:model="is_public" class="h-3.5 w-3.5 rounded border-slate-300 text-orange-600 focus:ring-orange-500">
+                    <input type="checkbox" wire:model="is_public" class="h-3.5 w-3.5 rounded border-slate-400 text-orange-600 focus:ring-orange-500">
                     <span class="text-xs font-semibold uppercase tracking-wide text-slate-700">{{ __('Visible to customer') }}</span>
                 </label>
             </div>

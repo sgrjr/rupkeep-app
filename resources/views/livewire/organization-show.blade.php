@@ -226,7 +226,7 @@
 
                                             <div class="mt-4">
                                                 <x-label for="role" value="{{ __('Organization Role') }}" />
-                                                <select id="role" class="block mt-1 w-full text-slate-900" name="role"  wire:model="form.role">
+                                                <select id="role" class="block mt-1 w-full text-slate-900 bg-white" name="role"  wire:model="form.role">
                                                     @foreach($roles as $role)
                                                     <option value="{{$role['id']}}">{{$role['name']}} ({{$role['short_description']}})</option>
                                                     @endforeach
@@ -369,7 +369,7 @@
 
                                                 {{-- Auto-Create Invoices Checkbox --}}
                                                 <div class="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                                                    <input type="checkbox" id="autoCreateInvoices" wire:model="autoCreateInvoices" class="h-4 w-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500">
+                                                    <input type="checkbox" id="autoCreateInvoices" wire:model="autoCreateInvoices" class="h-4 w-4 rounded border-slate-400 text-orange-600 focus:ring-orange-500">
                                                     <label for="autoCreateInvoices" class="flex-1 cursor-pointer text-sm text-slate-700">
                                                         <span class="font-semibold">{{ __('Create invoices for imported jobs') }}</span>
                                                         <p class="mt-0.5 text-xs text-slate-500">{{ __('Automatically generate invoices for all imported jobs (useful for historical data)') }}</p>

@@ -36,7 +36,7 @@
                        id="charge-description-{{ $log->id }}"
                        wire:model="description"
                        placeholder="{{ __('e.g. Equipment rental') }}"
-                       class="block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-orange-400 focus:ring-orange-200 text-slate-900">
+                       class="block w-full rounded-lg border-slate-400 text-sm shadow-sm focus:border-orange-400 focus:ring-orange-200 text-slate-900 bg-white">
             </div>
 
             <div class="w-28 shrink-0">
@@ -47,7 +47,7 @@
                        step="0.01"
                        min="0"
                        placeholder="0.00"
-                       class="block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-orange-400 focus:ring-orange-200 text-slate-900">
+                       class="block w-full rounded-lg border-slate-400 text-sm shadow-sm focus:border-orange-400 focus:ring-orange-200 text-slate-900 bg-white">
             </div>
 
             <button type="button"

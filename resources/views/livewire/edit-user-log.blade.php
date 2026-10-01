@@ -359,7 +359,7 @@
                         </div>
                         <div class="sm:col-span-2">
                             <label for="memo" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Log Memo (Internal)') }}</label>
-                            <textarea id="memo" wire:model.blur="form.memo" @disabled($locked) rows="4" class="mt-2 block w-full rounded-2xl border border-slate-400 min-h-[44px] px-3 py-2 text-base shadow-sm sm:text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900"></textarea>
+                            <textarea id="memo" wire:model.blur="form.memo" @disabled($locked) rows="4" class="mt-2 block w-full rounded-2xl border border-slate-400 min-h-[44px] px-3 py-2 text-base shadow-sm sm:text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white"></textarea>
                             <p class="mt-1 text-xs text-slate-400">{{ __('This memo is internal and private. It will NOT be displayed on invoices. Only organization users can view this. Notes that appear on invoices go in the Job Memo (External) under Load Information, which the office maintains.') }}</p>
                             @error('form.memo') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                         </div>
@@ -376,22 +376,22 @@
                     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                         <div>
                             <label for="clock_in" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Clock In') }}</label>
-                            <input type="datetime-local" id="clock_in" wire:model="form.clock_in" @disabled($locked) class="mt-2 block w-full rounded-xl border border-slate-400 min-h-[44px] px-3 py-2 text-base shadow-sm sm:text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                            <input type="datetime-local" id="clock_in" wire:model="form.clock_in" @disabled($locked) class="mt-2 block w-full rounded-xl border border-slate-400 min-h-[44px] px-3 py-2 text-base shadow-sm sm:text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white">
                             @error('form.clock_in') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                         </div>
                         <div>
                             <label for="clock_out" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Clock Out') }}</label>
-                            <input type="datetime-local" id="clock_out" wire:model="form.clock_out" @disabled($locked) class="mt-2 block w-full rounded-xl border border-slate-400 min-h-[44px] px-3 py-2 text-base shadow-sm sm:text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                            <input type="datetime-local" id="clock_out" wire:model="form.clock_out" @disabled($locked) class="mt-2 block w-full rounded-xl border border-slate-400 min-h-[44px] px-3 py-2 text-base shadow-sm sm:text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white">
                             @error('form.clock_out') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                         </div>
                         <div>
                             <label for="start_mileage" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Start Mileage') }}</label>
-                            <input type="number" id="start_mileage" wire:model.blur="form.start_mileage" @disabled($locked) class="mt-2 block w-full rounded-xl border border-slate-400 min-h-[44px] px-3 py-2 text-base shadow-sm sm:text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                            <input type="number" id="start_mileage" wire:model.blur="form.start_mileage" @disabled($locked) class="mt-2 block w-full rounded-xl border border-slate-400 min-h-[44px] px-3 py-2 text-base shadow-sm sm:text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white">
                             @error('form.start_mileage') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                         </div>
                         <div>
                             <label for="end_mileage" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('End Mileage') }}</label>
-                            <input type="number" id="end_mileage" wire:model.blur="form.end_mileage" @disabled($locked) class="mt-2 block w-full rounded-xl border border-slate-400 min-h-[44px] px-3 py-2 text-base shadow-sm sm:text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                            <input type="number" id="end_mileage" wire:model.blur="form.end_mileage" @disabled($locked) class="mt-2 block w-full rounded-xl border border-slate-400 min-h-[44px] px-3 py-2 text-base shadow-sm sm:text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white">
                             @error('form.end_mileage') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                         </div>
                     </div>
@@ -407,22 +407,22 @@
                     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                         <div>
                             <label for="started_at" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Job Start Time') }}</label>
-                            <input type="datetime-local" id="started_at" wire:model="form.started_at" @disabled($locked) class="mt-2 block w-full rounded-xl border border-slate-400 min-h-[44px] px-3 py-2 text-base shadow-sm sm:text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                            <input type="datetime-local" id="started_at" wire:model="form.started_at" @disabled($locked) class="mt-2 block w-full rounded-xl border border-slate-400 min-h-[44px] px-3 py-2 text-base shadow-sm sm:text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white">
                             @error('form.started_at') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                         </div>
                         <div>
                             <label for="ended_at" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Job End Time') }}</label>
-                            <input type="datetime-local" id="ended_at" wire:model="form.ended_at" @disabled($locked) class="mt-2 block w-full rounded-xl border border-slate-400 min-h-[44px] px-3 py-2 text-base shadow-sm sm:text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                            <input type="datetime-local" id="ended_at" wire:model="form.ended_at" @disabled($locked) class="mt-2 block w-full rounded-xl border border-slate-400 min-h-[44px] px-3 py-2 text-base shadow-sm sm:text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white">
                             @error('form.ended_at') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                         </div>
                         <div>
                             <label for="start_job_mileage" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Start Job Mileage') }}</label>
-                            <input type="number" id="start_job_mileage" wire:model.blur="form.start_job_mileage" @disabled($locked) class="mt-2 block w-full rounded-xl border border-slate-400 min-h-[44px] px-3 py-2 text-base shadow-sm sm:text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                            <input type="number" id="start_job_mileage" wire:model.blur="form.start_job_mileage" @disabled($locked) class="mt-2 block w-full rounded-xl border border-slate-400 min-h-[44px] px-3 py-2 text-base shadow-sm sm:text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white">
                             @error('form.start_job_mileage') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                         </div>
                         <div>
                             <label for="end_job_mileage" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('End Job Mileage') }}</label>
-                            <input type="number" id="end_job_mileage" wire:model.blur="form.end_job_mileage" @disabled($locked) class="mt-2 block w-full rounded-xl border border-slate-400 min-h-[44px] px-3 py-2 text-base shadow-sm sm:text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                            <input type="number" id="end_job_mileage" wire:model.blur="form.end_job_mileage" @disabled($locked) class="mt-2 block w-full rounded-xl border border-slate-400 min-h-[44px] px-3 py-2 text-base shadow-sm sm:text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white">
                             @error('form.end_job_mileage') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                         </div>
                         <div>
@@ -461,7 +461,7 @@
                                 
                                 <div class="flex gap-2">
                                     @can('manage', $log)
-                                    <input type="number" id="billable_miles" wire:model.blur="form.billable_miles" @disabled($locked) step="0.1" min="0" placeholder="{{ __('Leave blank for calculated value') }}" class="flex-1 rounded-xl border {{ $hasOverride ? 'border-orange-300' : 'border-slate-400' }} min-h-[44px] px-3 py-2 text-base shadow-sm sm:text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                    <input type="number" id="billable_miles" wire:model.blur="form.billable_miles" @disabled($locked) step="0.1" min="0" placeholder="{{ __('Leave blank for calculated value') }}" class="flex-1 rounded-xl border {{ $hasOverride ? 'border-orange-300' : 'border-slate-400' }} min-h-[44px] px-3 py-2 text-base shadow-sm sm:text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white">
                                     @else
                                     <p class="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">{{ $hasOverride ? number_format((float) $form->billable_miles, 1) : __('Calculated') }} <span class="text-xs text-slate-400">{{ __('(manager override only)') }}</span></p>
                                     @endcan
@@ -506,7 +506,7 @@
                                     <div>
                                         <label for="dead_head_driven" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Miles Driven') }}</label>
                                         <input type="number" id="dead_head_driven" wire:model.live.blur="form.dead_head_driven" @disabled($locked) step="0.1" min="0"
-                                               class="mt-2 block w-full rounded-xl border border-slate-400 min-h-[44px] px-3 py-2 text-base shadow-sm sm:text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                               class="mt-2 block w-full rounded-xl border border-slate-400 min-h-[44px] px-3 py-2 text-base shadow-sm sm:text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white">
                                         @if($dhApproach === null)
                                             <p class="mt-1 text-xs text-slate-400">{{ __('Enter the trip mileage above and this can be read straight off the odometer.') }}</p>
                                         @elseif(! $dhEntered)
@@ -531,7 +531,7 @@
                                         <label for="dead_head_billed" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Miles Billed') }}</label>
                                         <input type="number" id="dead_head_billed" wire:model.live.blur="form.dead_head_billed" @disabled($locked) step="0.1" min="0" max="{{ $dhCeiling }}"
                                                placeholder="{{ __('0 - not billed') }}"
-                                               class="mt-2 block w-full rounded-xl border border-slate-400 min-h-[44px] px-3 py-2 text-base shadow-sm sm:text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                               class="mt-2 block w-full rounded-xl border border-slate-400 min-h-[44px] px-3 py-2 text-base shadow-sm sm:text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white">
                                         <p class="mt-1 text-xs text-slate-500">
                                             @if(! $dhEntered)
                                                 {{ __('Enter the miles driven first.') }}
@@ -560,7 +560,7 @@
                         </div>
                         <div>
                             <label for="extra_load_stops_count" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Extra Load Stops') }}</label>
-                            <input type="number" id="extra_load_stops_count" wire:model.blur="form.extra_load_stops_count" @disabled($locked) min="0" step="1" class="mt-2 block w-full rounded-xl border border-slate-400 min-h-[44px] px-3 py-2 text-base shadow-sm sm:text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                            <input type="number" id="extra_load_stops_count" wire:model.blur="form.extra_load_stops_count" @disabled($locked) min="0" step="1" class="mt-2 block w-full rounded-xl border border-slate-400 min-h-[44px] px-3 py-2 text-base shadow-sm sm:text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white">
                             @error('form.extra_load_stops_count') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                         </div>
                     </div>
@@ -576,17 +576,17 @@
                     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                         <div>
                             <label for="tolls" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Tolls') }}</label>
-                            <input type="number" id="tolls" wire:model.blur="form.tolls" @disabled($locked) step="0.01" min="0" class="mt-2 block w-full rounded-xl border border-slate-400 min-h-[44px] px-3 py-2 text-base shadow-sm sm:text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                            <input type="number" id="tolls" wire:model.blur="form.tolls" @disabled($locked) step="0.01" min="0" class="mt-2 block w-full rounded-xl border border-slate-400 min-h-[44px] px-3 py-2 text-base shadow-sm sm:text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white">
                             @error('form.tolls') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                         </div>
                         <div>
                             <label for="hotel" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Hotel') }}</label>
-                            <input type="number" id="hotel" wire:model.blur="form.hotel" @disabled($locked) step="0.01" min="0" class="mt-2 block w-full rounded-xl border border-slate-400 min-h-[44px] px-3 py-2 text-base shadow-sm sm:text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                            <input type="number" id="hotel" wire:model.blur="form.hotel" @disabled($locked) step="0.01" min="0" class="mt-2 block w-full rounded-xl border border-slate-400 min-h-[44px] px-3 py-2 text-base shadow-sm sm:text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white">
                             @error('form.hotel') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                         </div>
                         <div>
                             <label for="wait_time_hours" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Wait Time (hrs)') }}</label>
-                            <input type="number" id="wait_time_hours" wire:model.blur="form.wait_time_hours" @disabled($locked) step="0.25" min="0" class="mt-2 block w-full rounded-xl border border-slate-400 min-h-[44px] px-3 py-2 text-base shadow-sm sm:text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                            <input type="number" id="wait_time_hours" wire:model.blur="form.wait_time_hours" @disabled($locked) step="0.25" min="0" class="mt-2 block w-full rounded-xl border border-slate-400 min-h-[44px] px-3 py-2 text-base shadow-sm sm:text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white">
                             @error('form.wait_time_hours') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                         </div>
                     </div>
@@ -620,12 +620,12 @@
                         </div>
                         <div>
                             <label for="truck_no" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Truck #') }}</label>
-                            <input type="text" id="truck_no" wire:model.blur="form.truck_no" @disabled($locked) class="mt-2 block w-full rounded-xl border border-slate-400 min-h-[44px] px-3 py-2 text-base shadow-sm sm:text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                            <input type="text" id="truck_no" wire:model.blur="form.truck_no" @disabled($locked) class="mt-2 block w-full rounded-xl border border-slate-400 min-h-[44px] px-3 py-2 text-base shadow-sm sm:text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white">
                             @error('form.truck_no') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                         </div>
                         <div>
                             <label for="trailer_no" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Trailer #') }}</label>
-                            <input type="text" id="trailer_no" wire:model.blur="form.trailer_no" @disabled($locked) class="mt-2 block w-full rounded-xl border border-slate-400 min-h-[44px] px-3 py-2 text-base shadow-sm sm:text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                            <input type="text" id="trailer_no" wire:model.blur="form.trailer_no" @disabled($locked) class="mt-2 block w-full rounded-xl border border-slate-400 min-h-[44px] px-3 py-2 text-base shadow-sm sm:text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white">
                             @error('form.trailer_no') <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                         </div>
                         <div class="sm:col-span-2">
@@ -634,17 +634,17 @@
                                 <div class="mt-3 grid gap-3 sm:grid-cols-2 md:grid-cols-3">
                                     <div>
                                         <label for="new_truck_driver_name" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Name') }}</label>
-                                        <input type="text" id="new_truck_driver_name" wire:model.blur="form.new_truck_driver_name" @disabled($locked) class="mt-2 block w-full rounded-xl border border-slate-400 min-h-[44px] px-3 py-2 text-base shadow-sm sm:text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                        <input type="text" id="new_truck_driver_name" wire:model.blur="form.new_truck_driver_name" @disabled($locked) class="mt-2 block w-full rounded-xl border border-slate-400 min-h-[44px] px-3 py-2 text-base shadow-sm sm:text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white">
                                         @error('form.new_truck_driver_name') <p class="mt-1 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                                     </div>
                                     <div>
                                         <label for="new_truck_driver_phone" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Phone') }}</label>
-                                        <input type="tel" id="new_truck_driver_phone" wire:model.blur="form.new_truck_driver_phone" @disabled($locked) class="mt-2 block w-full rounded-xl border border-slate-400 min-h-[44px] px-3 py-2 text-base shadow-sm sm:text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                                        <input type="tel" id="new_truck_driver_phone" wire:model.blur="form.new_truck_driver_phone" @disabled($locked) class="mt-2 block w-full rounded-xl border border-slate-400 min-h-[44px] px-3 py-2 text-base shadow-sm sm:text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white">
                                         @error('form.new_truck_driver_phone') <p class="mt-1 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                                     </div>
                                     <div class="md:col-span-3">
                                         <label for="new_truck_driver_memo" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Notes') }}</label>
-                                        <textarea id="new_truck_driver_memo" wire:model.blur="form.new_truck_driver_memo" @disabled($locked) rows="2" class="mt-2 block w-full rounded-2xl border border-slate-400 min-h-[44px] px-3 py-2 text-base shadow-sm sm:text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900"></textarea>
+                                        <textarea id="new_truck_driver_memo" wire:model.blur="form.new_truck_driver_memo" @disabled($locked) rows="2" class="mt-2 block w-full rounded-2xl border border-slate-400 min-h-[44px] px-3 py-2 text-base shadow-sm sm:text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white"></textarea>
                                         @error('form.new_truck_driver_memo') <p class="mt-1 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                                     </div>
                                 </div>
@@ -655,7 +655,7 @@
                             {{-- Office only (TASK-456): this is what the customer reads on
                                  the invoice, and it belongs to the job, not the log. --}}
                             @can('update', $log->job)
-                            <textarea id="job_public_memo" wire:model.blur="form.job_public_memo" @disabled($locked) rows="4" class="mt-2 block w-full rounded-2xl border border-slate-400 min-h-[44px] px-3 py-2 text-base shadow-sm sm:text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900"></textarea>
+                            <textarea id="job_public_memo" wire:model.blur="form.job_public_memo" @disabled($locked) rows="4" class="mt-2 block w-full rounded-2xl border border-slate-400 min-h-[44px] px-3 py-2 text-base shadow-sm sm:text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900 bg-white"></textarea>
                             <p class="mt-1 text-xs text-slate-400">{{ __('This memo is customer-facing and may appear on invoices for this job. It is saved on the job, not this log.') }}</p>
                             @else
                             <p id="job_public_memo" class="mt-2 whitespace-pre-wrap rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">{{ $log->job?->public_memo ?: '—' }}</p>
@@ -706,7 +706,7 @@
                             </div>
                             <div class="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2">
                                 <input type="checkbox" id="isPublicUpload" wire:model="isPublicUpload" 
-                                       class="h-4 w-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500" />
+                                       class="h-4 w-4 rounded border-slate-400 text-orange-600 focus:ring-orange-500" />
                                 <label for="isPublicUpload" class="flex-1 cursor-pointer text-xs text-slate-700">
                                     <span class="font-semibold">{{ __('Make visible to customer') }}</span>
                                     <p class="mt-0.5 text-[10px] text-slate-500">{{ __('This file will be visible in the customer portal') }}</p>
