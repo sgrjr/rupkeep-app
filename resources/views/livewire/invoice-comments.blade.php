@@ -35,7 +35,7 @@
 
         <div class="space-y-4">
             @forelse($comments as $comment)
-                <div class="border border-gray-200 rounded-md p-4">
+                <div wire:key="invoice-comment-{{ $comment->id }}" class="border border-gray-200 rounded-md p-4">
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-sm font-semibold text-gray-800">

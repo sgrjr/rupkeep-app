@@ -70,9 +70,9 @@
                    </div>
 
                    <div class="grid grid-cols-1 gap-2 justify-center md:grid md:grid-cols-3 w-full md:justify-between">
-                        <img src="/images/cbpc/cascobpc.png" class="block m-auto"/>
-                        <a class="block m-auto" href="http://www.nationalpca.org/"><img src="/images/npca.avif" /></a>
-                        <a class="block m-auto" href="https://dmv.ny.gov/business/escort-driver-certification"><img src="/images/nscevehicle.avif" /></a>
+                        <img alt="{{ config('app.name') }}" src="/images/cbpc/cascobpc.png" class="block m-auto"/>
+                        <a class="block m-auto" href="http://www.nationalpca.org/"><img alt="National Pilot Car Association" src="/images/npca.avif" /></a>
+                        <a class="block m-auto" href="https://dmv.ny.gov/business/escort-driver-certification"><img alt="Escort driver certification" src="/images/nscevehicle.avif" /></a>
                    </div>
                 </footer>
             </div>

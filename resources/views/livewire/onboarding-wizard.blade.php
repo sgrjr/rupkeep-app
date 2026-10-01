@@ -172,7 +172,7 @@
                             <div class="space-y-2">
                                 <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Added Users') }}</p>
                                 @foreach($users as $index => $user)
-                                    <div class="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-2">
+                                    <div wire:key="onboarding-user-{{ $index }}-{{ md5($user['email'] ?? $index) }}" class="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-2">
                                         <div>
                                             <p class="text-sm font-semibold text-slate-900">{{ $user['name'] }}</p>
                                             <p class="text-xs text-slate-600">{{ $user['email'] }} • {{ User::ROLE_LABELS[$user['role']] ?? $user['role'] }}</p>
@@ -239,7 +239,7 @@
                             <div class="space-y-2">
                                 <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Added Vehicles') }}</p>
                                 @foreach($vehicles as $index => $vehicle)
-                                    <div class="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-2">
+                                    <div wire:key="onboarding-vehicle-{{ $index }}-{{ md5($vehicle['name'] ?? $index) }}" class="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-2">
                                         <div>
                                             <p class="text-sm font-semibold text-slate-900">{{ $vehicle['name'] }}</p>
                                             @if($vehicle['odometer'])
@@ -318,7 +318,7 @@
                                     </div>
 
                                     @foreach($allUsers as $user)
-                                        <label class="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 hover:bg-slate-50">
+                                        <label wire:key="onboarding-email-user-{{ $user->id }}" class="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 hover:bg-slate-50">
                                             <input type="checkbox" wire:model="selected_users_for_email" value="{{ $user->id }}" class="h-4 w-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500">
                                             <div class="flex-1">
                                                 <p class="text-sm font-semibold text-slate-900">{{ $user->name }}</p>

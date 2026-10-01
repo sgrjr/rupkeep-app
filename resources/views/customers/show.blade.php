@@ -152,7 +152,7 @@
                 @csrf
 
                 <div class="overflow-hidden rounded-2xl border border-slate-200">
-                    <div class="max-h-[28rem] overflow-y-auto">
+                    <div class="max-h-[28rem] overflow-auto">
                         <table class="min-w-full divide-y divide-slate-200 text-sm text-slate-600">
                             <thead class="sticky top-0 z-10 bg-slate-50 text-xs uppercase tracking-wide text-slate-500 shadow-sm">
                             <tr>

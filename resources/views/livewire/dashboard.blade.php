@@ -44,7 +44,7 @@
                 @php
                     $icon = $iconMap[$card->title] ?? '<svg class="h-10 w-10 text-orange-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /></svg>';
                 @endphp
-                <div class="group relative min-w-[260px] overflow-hidden rounded-3xl border border-orange-100 bg-white/80 p-5 shadow-sm transition hover:-translate-y-1 hover:border-orange-200 hover:shadow-xl sm:min-w-0 sm:p-6" style="scroll-snap-align:start;">
+                <div wire:key="dashboard-card-{{ \Illuminate\Support\Str::slug($card->title) }}" class="group relative min-w-[260px] overflow-hidden rounded-3xl border border-orange-100 bg-white/80 p-5 shadow-sm transition hover:-translate-y-1 hover:border-orange-200 hover:shadow-xl sm:min-w-0 sm:p-6" style="scroll-snap-align:start;">
                     <div class="absolute right-0 top-0 h-32 w-32 -translate-y-14 translate-x-10 rounded-full bg-orange-100 opacity-60 blur-3xl transition group-hover:opacity-70"></div>
                     <div class="relative flex items-start justify-between">
                         <div>

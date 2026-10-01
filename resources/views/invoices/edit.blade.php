@@ -70,7 +70,7 @@
                     </svg>
                     {{ __('Email Invoice') }}
                 </button>
-                <a href="{{ route('my.invoices.print', ['invoice' => $invoice->id]) }}" target="_blank"
+                <a href="{{ route('my.invoices.print', ['invoice' => $invoice->id]) }}" target="_blank" rel="noopener noreferrer"
                    class="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-white px-3 py-1 text-xs font-semibold text-orange-600 shadow-sm transition hover:bg-orange-500 hover:text-white">
                     <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round"
@@ -459,7 +459,7 @@
                 @if(count($payments) > 0)
                     <div class="mt-6 border-t border-slate-200 pt-6">
                         <h3 class="text-sm font-semibold text-slate-900 mb-4">{{ __('Payment History') }}</h3>
-                        <div class="overflow-hidden rounded-2xl border border-slate-200">
+                        <div class="overflow-x-auto rounded-2xl border border-slate-200">
                             <table class="min-w-full divide-y divide-slate-200 text-xs">
                                 <thead class="bg-slate-50 text-slate-500">
                                     <tr>
@@ -945,7 +945,7 @@
                                 </div>
                             @endforeach
                         </div>
-                        <div class="hidden md:block overflow-hidden rounded-2xl border border-slate-200">
+                        <div class="hidden md:block overflow-x-auto rounded-2xl border border-slate-200">
                             <table class="min-w-full divide-y divide-slate-200 text-xs text-slate-600">
                                 <thead class="bg-slate-50 text-slate-500">
                                     <tr>

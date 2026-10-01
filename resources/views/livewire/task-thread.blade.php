@@ -4,7 +4,7 @@
     <ul class="mt-4 space-y-3">
         @forelse ($comments as $c)
             @php $isSystem = $c->isSystem(); @endphp
-            <li @class([
+            <li wire:key="thread-comment-{{ $c->id }}" @class([
                 'rounded-2xl border px-4 py-3 text-sm shadow-sm',
                 'border-slate-200 bg-white' => !$isSystem && !$c->is_internal,
                 'border-amber-200 bg-amber-50/60' => !$isSystem && $c->is_internal,

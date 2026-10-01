@@ -45,7 +45,7 @@
                     <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Labels') }}</label>
                     <div class="mt-2 flex flex-wrap gap-2">
                         @foreach ($allLabels as $label)
-                            <label class="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold transition hover:border-orange-300 hover:bg-orange-50">
+                            <label wire:key="label-option-{{ $label->id }}" class="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold transition hover:border-orange-300 hover:bg-orange-50">
                                 <input type="checkbox" value="{{ $label->id }}" wire:model="label_ids" class="h-3 w-3 rounded border-slate-300 text-orange-600 focus:ring-orange-500">
                                 <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-white" style="background-color: {{ $label->color ?: '#94a3b8' }}">{{ $label->name }}</span>
                             </label>

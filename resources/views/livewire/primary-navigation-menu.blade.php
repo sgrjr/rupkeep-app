@@ -287,7 +287,8 @@
                 </div>
 
                 <div class="flex items-center lg:hidden shrink-0">
-                    <button @click="open = ! open" type="button" class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border-2 border-white/40 bg-white/20 backdrop-blur-sm shadow-md transition-all hover:bg-white/30 hover:border-white/60 hover:shadow-lg active:scale-95 focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-1">
+                    {{-- 44px tap target (TASK-462); it was 36px. --}}
+                    <button @click="open = ! open" type="button" aria-label="{{ __('Open menu') }}" :aria-expanded="open.toString()" class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border-2 border-white/40 bg-white/20 backdrop-blur-sm shadow-md transition-all hover:bg-white/30 hover:border-white/60 hover:shadow-lg active:scale-95 focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-1">
                         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="#f9b104">
                             <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
                             <path :class="{'hidden': ! open, 'inline-flex': open }" class="hidden" stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -316,6 +317,27 @@
                         {{ __('Reports') }}
                     </x-responsive-nav-link>
                 @endif
+
+                {{-- Dispatch was desktop-only (TASK-462); same links, same gate. --}}
+                @can('viewAny', \App\Models\Task::class)
+                    <div class="mt-2 space-y-1 rounded-lg border border-slate-100 bg-white p-2">
+                        <p class="px-3 pt-1 text-xs font-semibold uppercase tracking-wide text-slate-400">{{ __('Dispatch') }}</p>
+                        <x-responsive-nav-link href="{{ route('tasks.index') }}" :active="request()->routeIs('tasks.index') || request()->routeIs('tasks.show')">
+                            {{ __('Tasks (list)') }}
+                        </x-responsive-nav-link>
+                        <x-responsive-nav-link href="{{ route('tasks.board') }}" :active="request()->routeIs('tasks.board')">
+                            {{ __('Board (kanban)') }}
+                        </x-responsive-nav-link>
+                        <x-responsive-nav-link href="{{ route('documentation.roadmap') }}" :active="request()->routeIs('documentation.roadmap')">
+                            {{ __('Public Roadmap') }}
+                        </x-responsive-nav-link>
+                        @if(auth()->user()->isSuper())
+                            <x-responsive-nav-link href="{{ route('admin.feedback.index') }}" :active="request()->routeIs('admin.feedback.index')">
+                                {{ __('Feedback Inbox') }}
+                            </x-responsive-nav-link>
+                        @endif
+                    </div>
+                @endcan
 
                 @if(auth()->user()->can('createJob', auth()->user()->organization))
                     <x-responsive-nav-link href="{{ route('my.jobs.index') }}" :active="request()->routeIs('my.jobs.*')">

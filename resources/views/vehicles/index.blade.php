@@ -153,7 +153,8 @@
                                             <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-4.536a2.5 2.5 0 11-3.536 3.536L4.5 16.5V19.5H7.5l8.5-8.5"/></svg>
                                             {{ __('Manage') }}
                                         </a>
-                                        <livewire:annual-vehicle-report-modal :vehicleId="$vehicle->id" />
+                                        {{-- One component per row needs its own key (TASK-462, as TASK-401). --}}
+                                        <livewire:annual-vehicle-report-modal :vehicleId="$vehicle->id" :key="'annual-vehicle-report-'.$vehicle->id" />
                                         <button type="button" onclick="Livewire.dispatch('open-annual-report-modal-{{ $vehicle->id }}')" 
                                                 class="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-white px-3 py-1 text-[11px] font-semibold text-blue-600 transition hover:border-blue-300 hover:bg-blue-50">
                                             <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">

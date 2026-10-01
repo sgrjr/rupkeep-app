@@ -183,7 +183,7 @@
                         <div class="mb-6">
                             <h3 class="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-600">Pending Jobs (Latest 50)</h3>
                             <div class="rounded-lg border border-slate-200 bg-white overflow-hidden">
-                                <div class="max-h-[400px] overflow-y-auto">
+                                <div class="max-h-[400px] overflow-auto">
                                     <table class="min-w-full divide-y divide-slate-200">
                                         <thead class="bg-slate-50 sticky top-0">
                                             <tr>
@@ -220,7 +220,7 @@
                         <div class="mb-6">
                             <h3 class="mb-2 text-xs font-semibold uppercase tracking-wider text-red-600">Failed Jobs (Latest 50)</h3>
                             <div class="rounded-lg border border-red-200 bg-white overflow-hidden">
-                                <div class="max-h-[400px] overflow-y-auto">
+                                <div class="max-h-[400px] overflow-auto">
                                     <div class="divide-y divide-red-100">
                                         @foreach($failedJobs as $job)
                                             <div class="p-4 hover:bg-red-50">

@@ -3,7 +3,7 @@
     <p class="text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Extra Charges') }}</p>
 
     @forelse($charges as $charge)
-        <div class="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+        <div wire:key="extra-charge-{{ $charge->id }}" class="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
             <span class="min-w-0 flex-1 truncate text-sm text-slate-900">{{ $charge->description }}</span>
             <span class="shrink-0 text-sm font-semibold text-slate-900">${{ number_format($charge->amount, 2) }}</span>
 

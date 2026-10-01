@@ -185,9 +185,9 @@
                 </article>
 
                 <article class="space-y-3 text-sm text-slate-600">
-                    <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Pickup') }}:</span> <a class="text-orange-600 hover:text-orange-700" target="_blank" href="http://maps.google.com/?daddr={{$log->job->pickup_address}}">{{ $log->job->pickup_address ?? '—' }}</a></p>
+                    <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Pickup') }}:</span> <a class="text-orange-600 hover:text-orange-700" target="_blank" rel="noopener noreferrer" href="http://maps.google.com/?daddr={{$log->job->pickup_address}}">{{ $log->job->pickup_address ?? '—' }}</a></p>
                     <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Pickup Time') }}:</span> <span class="text-slate-900">{{ LocalTime::format($log->job->scheduled_pickup_at, 'M j, Y g:i A', '—') }}</span></p>
-                    <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Delivery') }}:</span> <a class="text-orange-600 hover:text-orange-700" target="_blank" href="http://maps.google.com/?daddr={{$log->job->delivery_address}}">{{ $log->job->delivery_address ?? '—' }}</a></p>
+                    <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Delivery') }}:</span> <a class="text-orange-600 hover:text-orange-700" target="_blank" rel="noopener noreferrer" href="http://maps.google.com/?daddr={{$log->job->delivery_address}}">{{ $log->job->delivery_address ?? '—' }}</a></p>
                     <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Delivery Time') }}:</span> <span class="text-slate-900">{{ LocalTime::format($log->job->scheduled_delivery_at, 'M j, Y g:i A', '—') }}</span></p>
                     <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Memo') }}:</span>
                         @if(filter_var($log->job->memo ?? '', FILTER_VALIDATE_URL) && str_starts_with($log->job->memo, 'http'))

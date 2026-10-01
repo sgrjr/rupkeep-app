@@ -418,7 +418,7 @@
                                         <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-4.536a2.5 2.5 0 11-3.536 3.536L4.5 16.5V19.5H7.5l8.5-8.5"/></svg>
                                         {{ __('Edit Invoice') }}
                                     </a>
-                                    <a class="inline-flex items-center gap-1 rounded-full border border-white/70 px-3 py-1 text-[11px] font-semibold text-slate-600 transition hover:border-slate-400 hover:text-orange-600" href="{{ route('my.invoices.print', ['invoice' => $invoice->id]) }}" target="_blank">
+                                    <a class="inline-flex items-center gap-1 rounded-full border border-white/70 px-3 py-1 text-[11px] font-semibold text-slate-600 transition hover:border-slate-400 hover:text-orange-600" href="{{ route('my.invoices.print', ['invoice' => $invoice->id]) }}" target="_blank" rel="noopener noreferrer">
                                         <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h10M7 11h10M7 15h5M17 15h.01M6 19h12a2 2 0 002-2v-8a2 2 0 00-2-2h-1V5a2 2 0 00-2-2H9a2 2 0 00-2 2v2H6a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
                                         {{ __('Print') }}
                                     </a>
@@ -613,9 +613,9 @@
                 </article>
 
                 <article class="space-y-3 text-sm text-slate-600">
-                    <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Pickup') }}:</span> <a class="text-orange-600 hover:text-orange-700" target="_blank" href="http://maps.google.com/?daddr={{$job->pickup_address}}">{{ $job->pickup_address ?? '—' }}</a></p>
+                    <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Pickup') }}:</span> <a class="text-orange-600 hover:text-orange-700" target="_blank" rel="noopener noreferrer" href="http://maps.google.com/?daddr={{$job->pickup_address}}">{{ $job->pickup_address ?? '—' }}</a></p>
                     <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Pickup Time') }}:</span> <span class="text-slate-900">{{ LocalTime::format($job->scheduled_pickup_at, 'M j, Y g:i A', '—') }}</span></p>
-                    <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Delivery') }}:</span> <a class="text-orange-600 hover:text-orange-700" target="_blank" href="http://maps.google.com/?daddr={{$job->delivery_address}}">{{ $job->delivery_address ?? '—' }}</a></p>
+                    <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Delivery') }}:</span> <a class="text-orange-600 hover:text-orange-700" target="_blank" rel="noopener noreferrer" href="http://maps.google.com/?daddr={{$job->delivery_address}}">{{ $job->delivery_address ?? '—' }}</a></p>
                     <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Delivery Time') }}:</span> <span class="text-slate-900">{{ LocalTime::format($job->scheduled_delivery_at, 'M j, Y g:i A', '—') }}</span></p>
                     <p><span class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Memo') }}:</span>
                         @if(filter_var($job->memo ?? '', FILTER_VALIDATE_URL) && str_starts_with($job->memo, 'http'))
@@ -682,7 +682,7 @@
                                 </thead>
                                 <tbody class="divide-y divide-slate-100 bg-white">
                                     @forelse($job->customer->contacts as $contact)
-                                        <tr>
+                                        <tr wire:key="contact-row-{{ $contact->id }}">
                                             <td class="px-4 py-2 text-slate-700">
                                                 <div class="flex flex-wrap items-center gap-2">
                                                     <span>{{ $contact->name }}</span>
@@ -1060,7 +1060,7 @@
 
                 <div class="space-y-4">
                     @foreach($trashedLogs as $log)
-                        <div class="rounded-2xl border border-amber-200 bg-white p-5 shadow-sm opacity-75">
+                        <div wire:key="trashed-log-{{ $log->id }}" class="rounded-2xl border border-amber-200 bg-white p-5 shadow-sm opacity-75">
                             <div class="flex flex-wrap items-start justify-between gap-3">
                                 <div>
                                     <p class="text-xs font-semibold uppercase tracking-wider text-amber-600">{{ __('Deleted Log ID') }}: {{ $log->id }}</p>

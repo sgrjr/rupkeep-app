@@ -1,19 +1,16 @@
 @auth
 <script>
-
-console.log('started');
+{{-- Quiet on success (TASK-462): six console.log lines ran on every page
+     load. Failures still go to console.error. --}}
 const VAPID_PUBLIC_KEY = "BMPgW_eNDtZPVH-RYHfAPEkzR6Fvmw7A247WEuFrYH82OLXV7nK6zTRIT_F1zd-0vUfg51P-pGwVmeQugeHjsiA";
 
     async function subscribeUser() {
         // 1. Wait for the service worker to be fully active
         const registration = await navigator.serviceWorker.ready;
-        
-        console.log('Service Worker is ready and active.');
 
         // 2. Check for existing subscription
         const existingSubscription = await registration.pushManager.getSubscription();
         if (existingSubscription) {
-            console.log('User already subscribed.');
             return existingSubscription;
         }
 
@@ -33,8 +30,8 @@ const VAPID_PUBLIC_KEY = "BMPgW_eNDtZPVH-RYHfAPEkzR6Fvmw7A247WEuFrYH82OLXV7nK6zT
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                 }
             });
-            
-            console.log('Successfully sent subscription to server!');
+
+            return subscription;
         } catch (error) {
             console.error('Push subscription failed:', error);
         }
@@ -49,14 +46,11 @@ const VAPID_PUBLIC_KEY = "BMPgW_eNDtZPVH-RYHfAPEkzR6Fvmw7A247WEuFrYH82OLXV7nK6zT
     }
 
     // Trigger the registration and subscription process immediately on load
+    if ('serviceWorker' in navigator && 'PushManager' in window) {
         navigator.serviceWorker.register('/sw.js')
-            .then(reg => {
-                console.log('Registration initiated...');
-                // 2. Now call your subscription logic
-                return subscribeUser();
-            })
-            .then(sub => console.log('Successfully subscribed:', sub))
-            .catch(err => console.error('Full stack failure:', err));
+            .then(() => subscribeUser())
+            .catch(err => console.error('Push registration failed:', err));
+    }
 
 </script>
 @endauth

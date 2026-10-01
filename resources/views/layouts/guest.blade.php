@@ -17,7 +17,9 @@
         <!-- Styles -->
         @livewireStyles
     </head>
-    <body class="welcome {{true || request()->has('customer_id')? 'dark-theme':'default-theme'}}">
+    {{-- A leftover `true ||` forced the dark theme on every login and portal
+         page (TASK-462). --}}
+    <body class="welcome {{ request()->has('customer_id') ? 'dark-theme' : 'default-theme' }}">
         <div>
             @php
                 $legacyToasts = collect([

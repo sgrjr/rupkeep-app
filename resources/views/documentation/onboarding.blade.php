@@ -25,7 +25,7 @@
             <div class="mt-6 p-4 bg-orange-50 border border-orange-200 rounded-lg">
                 <p class="text-slate-700">
                     <strong>{{ __('Public Pricing Page:') }}</strong> {{ __('We\'ve created a public pricing page that displays your service rates, charges, cancellation policies, and payment terms. This marketing page is accessible to both guests and authenticated users, making it easy for potential customers to review your pricing.') }}
-                    <a href="{{ route('pricing') }}" target="_blank" class="text-orange-600 hover:text-orange-700 underline font-semibold ml-1">{{ __('View Pricing Page →') }}</a>
+                    <a href="{{ route('pricing') }}" target="_blank" rel="noopener noreferrer" class="text-orange-600 hover:text-orange-700 underline font-semibold ml-1">{{ __('View Pricing Page →') }}</a>
                 </p>
             </div>
         </section>

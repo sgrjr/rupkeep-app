@@ -1,1 +1,1 @@
-<img  src="{{url('/images/logo.webp')}}" />
+<img alt="{{ config('app.name') }}" src="{{url('/images/logo.webp')}}" />
