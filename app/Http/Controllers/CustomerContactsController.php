@@ -12,25 +12,8 @@ class CustomerContactsController extends Controller
 
     use AuthorizesRequests;
 
-    /**
-     * Display a listing of the resource.
-     */
-    public function index(Request $request){
-        if(Auth::user()->isSuper()){
-            $contacts = CustomerContact::all();
-        }else{
-            $contacts = CustomerContact::where('organization_id', Auth::user()->organization_id)->get();
-        }
-        return view('customers.contact_index', compact('contacts'));
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
+    // index (its view never existed), create, show and edit (dd()) are gone
+    // (TASK-474); contacts are managed on the customer's edit page.
 
     /**
      * Store a newly created resource in storage.
@@ -60,22 +43,6 @@ class CustomerContactsController extends Controller
 
         $customer_contact->save();
         return back()->with('success', __('Contact created.'));
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        dd($id);
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        dd($id);
     }
 
     /**

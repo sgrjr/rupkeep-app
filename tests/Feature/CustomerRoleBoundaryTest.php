@@ -65,12 +65,10 @@ class CustomerRoleBoundaryTest extends TestCase
             'my.customers.show' => route('my.customers.show', $this->ownCustomer),
             'my.customers.edit' => route('my.customers.edit', $this->ownCustomer),
             'my.customers.create' => route('my.customers.create'),
-            'customers.contacts.index' => route('customers.contacts.index', $this->ownCustomer),
-            'my.vehicles.show' => route('my.vehicles.show', $this->vehicle),
             'my.vehicles.edit' => route('my.vehicles.edit', $this->vehicle),
             'my.vehicles.create' => route('my.vehicles.create'),
             'my.users.create' => route('my.users.create'),
-            'my.users.show' => route('my.users.show', $this->driver),
+            'my.users.index' => route('my.users.index'),
             'my.invoices.index' => route('my.invoices.index'),
             'organizations.show' => route('organizations.show', $this->org),
         ];

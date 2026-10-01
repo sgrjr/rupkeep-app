@@ -102,16 +102,17 @@ Route::middleware([
     // Staff-only customer management. Customer-portal/guest accounts share the
     // company's organization_id, so this whole resource is gated behind the
     // staff role (TASK-358) in addition to each action's own authorization.
-    Route::resource('/customers', CustomersController::class)->middleware('staff');
-    Route::resource('/customers/{customer}/contacts', CustomerContactsController::class)->names([
-        'index' => 'customers.contacts.index',
-        'create' => 'customers.contacts.create',
-        'store' => 'customers.contacts.store',
-        'show' => 'customers.contacts.show',
-        'edit' => 'customers.contacts.edit',
-        'update' => 'customers.contacts.update',
-        'destroy' => 'customers.contacts.destroy',
-    ])->middleware('staff');
+    // Only the actions that have handlers (TASK-474): the resource used to
+    // register customers.show (no method, 500) and contact index/create/show/
+    // edit (missing view or a dd()).
+    Route::resource('/customers', CustomersController::class)->except(['show'])->middleware('staff');
+    Route::resource('/customers/{customer}/contacts', CustomerContactsController::class)
+        ->only(['store', 'update', 'destroy'])
+        ->names([
+            'store' => 'customers.contacts.store',
+            'update' => 'customers.contacts.update',
+            'destroy' => 'customers.contacts.destroy',
+        ])->middleware('staff');
 
     // Customers routes - explicitly defined to ensure all routes are registered
     Route::get('/my/customers', [MyCustomersController::class, 'index'])->name('my.customers.index')->middleware('staff');
@@ -129,16 +130,14 @@ Route::middleware([
     Route::get('/my/users', [MyUsersController::class, 'index'])->name('my.users.index')->middleware('staff');
     Route::get('/my/users/create', [MyUsersController::class, 'create'])->name('my.users.create')->middleware('staff');
     Route::post('/my/users', [MyUsersController::class, 'store'])->name('my.users.store')->middleware('staff');
-    Route::get('/my/users/{user}', [MyUsersController::class, 'show'])->name('my.users.show')->middleware('staff');
-    Route::get('/my/users/{user}/edit', [MyUsersController::class, 'edit'])->name('my.users.edit')->middleware('staff');
-    Route::put('/my/users/{user}', [MyUsersController::class, 'update'])->name('my.users.update')->middleware('staff');
+    // show / edit / update had empty bodies (TASK-474); a user is edited from the profile page.
     Route::delete('/my/users/{user}', [MyUsersController::class, 'destroy'])->name('my.users.destroy')->middleware('staff');
     
     // Vehicles routes - explicitly defined to ensure all routes are registered
     Route::get('/my/vehicles', [MyVehiclesController::class, 'index'])->name('my.vehicles.index')->middleware('staff');
     Route::get('/my/vehicles/create', [MyVehiclesController::class, 'create'])->name('my.vehicles.create')->middleware('staff');
     Route::post('/my/vehicles', [MyVehiclesController::class, 'store'])->name('my.vehicles.store')->middleware('staff');
-    Route::get('/my/vehicles/{vehicle}', [MyVehiclesController::class, 'show'])->name('my.vehicles.show')->middleware('staff');
+    // my.vehicles.show had no method (TASK-474); the edit page is the vehicle page.
     Route::get('/my/vehicles/{vehicle}/edit', [MyVehiclesController::class, 'edit'])->name('my.vehicles.edit')->middleware('staff');
     Route::put('/my/vehicles/{vehicle}', [MyVehiclesController::class, 'update'])->name('my.vehicles.update')->middleware('staff');
     Route::delete('/my/vehicles/{vehicle}', [MyVehiclesController::class, 'destroy'])->name('my.vehicles.destroy')->middleware('staff');

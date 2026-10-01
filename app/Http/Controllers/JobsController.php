@@ -50,7 +50,11 @@ class JobsController extends Controller
 
         if($request->has('customer')){
             $query->where('customer_id', $request->get('customer'));
-            $customer = Customer::where('id', $request->get('customer'))->first();
+            // Scoped like every other lookup on this page (TASK-474): another
+            // organization's customer name must not render here.
+            $customer = Customer::where('id', $request->get('customer'))
+                ->when($scopeOrganizationId !== null, fn ($q) => $q->where('organization_id', $scopeOrganizationId))
+                ->first();
         }else if($request->has('search_field')){
             if(in_array($request->search_field, ['job_no','load_no','invoice_no','check_no','delivery_address','pickup_address'])){
                 $query->where($request->search_field, $request->search_value);

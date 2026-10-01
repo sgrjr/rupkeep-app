@@ -8,7 +8,6 @@ use App\Models\User;
 use App\Models\Organization;
 
 use Illuminate\Support\Facades\Hash;
-use App\Actions\Jetstream\CreateTeam;
 
 class SuperCreate extends Command
 {

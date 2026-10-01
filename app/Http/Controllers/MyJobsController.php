@@ -154,15 +154,6 @@ class MyJobsController extends Controller
         return view('pilot-car-jobs.index', compact('jobs','customer', 'showDeleted', 'totalJobs', 'paidJobs', 'unpaidJobs', 'canceledJobs', 'missingJobNo'));
     }
 
-    public function create(Request $request){
-        return view('pilot-car-jobs.create');
-    }
-
-    public function edit(Request $request, int $customer_id){
-        $job = Job::where('id', $customer_id)->first();
-        return view('pilot-car-.edit', compact('job'));
-    }
-
     /**
      * The job fields a form may set, scoped to the actor's organization.
      * organization_id, deleted_at, canceled_* and the invoice columns are

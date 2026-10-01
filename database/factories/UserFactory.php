@@ -2,7 +2,6 @@
 
 namespace Database\Factories;
 
-use App\Models\Team;
 use App\Models\User;
 use App\Models\Organization;
 use App\Models\Customer;
@@ -112,26 +111,5 @@ class UserFactory extends Factory
         return $this->state(fn () => [
             'organization_id' => $organization->id,
         ]);
-    }
-
-    /**
-     * Indicate that the user should have a personal team.
-     */
-    public function withPersonalTeam(?callable $callback = null): static
-    {
-        if (! Features::hasTeamFeatures()) {
-            return $this->state([]);
-        }
-
-        return $this->has(
-            Team::factory()
-                ->state(fn (array $attributes, User $user) => [
-                    'name' => $user->name.'\'s Team',
-                    'user_id' => $user->id,
-                    'personal_team' => true,
-                ])
-                ->when(is_callable($callback), $callback),
-            'ownedTeams'
-        );
     }
 }
