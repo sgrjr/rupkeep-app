@@ -46,7 +46,10 @@ Route::middleware([
     // The dashboard's "reset to GitHub master" button; confirmation and lock inside (TASK-470).
     Route::post('/admin/tools/update-from-git', [AdminToolsController::class, 'updateFromGit'])->name('admin.tools.update_from_git')->middleware('super');
 
-    Route::post('/notifications/subscribe', [SubscriptionController::class, 'store']);
+    Route::post('/notifications/subscribe', [SubscriptionController::class, 'store'])->name('notifications.subscribe');
+    // Called from the logout form so a shared device stops receiving the
+    // previous person's pushes (TASK-467).
+    Route::post('/notifications/unsubscribe', [SubscriptionController::class, 'destroy'])->name('notifications.unsubscribe');
 
     // Server Management (super admin only)
     Route::get('/admin/server-management', \App\Livewire\ServerManagement::class)

@@ -97,5 +97,10 @@
         @stack('modals')
 
         @livewireScripts
+
+        {{-- The Livewire page layout never registered for push (TASK-467); only
+             layouts/app.blade.php did, so the dashboard and every other
+             full-page component silently skipped it. --}}
+        @include('components.push-notifications')
     </body>
 </html>

@@ -4,6 +4,7 @@ namespace App\Listeners;
 
 use App\Events\JobWasCanceled;
 use App\Mail\UserNotification;
+use App\Notifications\JobUpdate;
 use App\Support\JobSms;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
@@ -129,7 +130,23 @@ class NotifyAssignedDriversOfJobCancellation implements ShouldQueue
             // Use SendUserNotification action for consistency
             // SMS gateway addresses use Brevo, regular emails use Laravel Mail
             SendUserMessage::dispatch($driver, $message, $subject); // one queued job per recipient (TASK-465)
-            
+
+            // The most time-critical message there is also goes to the phone's
+            // notification tray (TASK-467), like assignment and status changes.
+            try {
+                $driver->notify(new JobUpdate(
+                    $job,
+                    $subject,
+                    sprintf('Do not proceed. %s', $event->cancellationReason ?: $cancellationTypeDescription)
+                ));
+            } catch (\Throwable $e) {
+                \Log::warning('NotifyAssignedDriversOfJobCancellation: push notification failed', [
+                    'job_id' => $job->id,
+                    'driver_id' => $driver->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
             \Log::info('NotifyAssignedDriversOfJobCancellation: Notification sent', [
                 'job_id' => $job->id,
                 'driver_id' => $driver->id,

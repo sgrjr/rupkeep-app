@@ -3,6 +3,7 @@
 namespace App\Listeners;
 
 use App\Events\JobWasUncanceled;
+use App\Notifications\JobUpdate;
 use App\Support\JobSms;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
@@ -127,7 +128,18 @@ class NotifyAssignedDriversOfJobUncancellation implements ShouldQueue
             // Use SendUserNotification action for consistency
             // SMS gateway addresses use Brevo, regular emails use Laravel Mail
             SendUserMessage::dispatch($driver, $message, $subject); // one queued job per recipient (TASK-465)
-            
+
+            // Phone tray too (TASK-467).
+            try {
+                $driver->notify(new JobUpdate($job, $subject, 'This job is active again. Proceed as scheduled.'));
+            } catch (\Throwable $e) {
+                \Log::warning('NotifyAssignedDriversOfJobUncancellation: push notification failed', [
+                    'job_id' => $job->id,
+                    'driver_id' => $driver->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
             \Log::info('NotifyAssignedDriversOfJobUncancellation: Notification sent', [
                 'job_id' => $job->id,
                 'driver_id' => $driver->id,

@@ -57,9 +57,11 @@ class JobUpdate extends Notification implements ShouldQueue
             ? route('my.jobs.show', ['job' => $this->job->id])
             : route('dashboard');
 
+        // /assets/favicon.ico never existed (TASK-467); the icon lives at the
+        // web root.
         return (new WebPushMessage)
             ->title($this->title)
-            ->icon('/assets/favicon.ico')
+            ->icon('/favicon.ico')
             ->body($this->body)
             ->action('View Job', $url)
             ->data(['url' => $url]);
