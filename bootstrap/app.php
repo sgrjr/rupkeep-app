@@ -16,6 +16,11 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    // Listeners are wired explicitly in AppServiceProvider::boot(). Laravel 11
+    // also discovers every class in app/Listeners by default, which registered
+    // each of them a second time, so every driver text, cancellation notice
+    // and invoice email went out twice (TASK-459).
+    ->withEvents(discover: false)
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
             'customer' => EnsureCustomer::class,

@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Events\InvoiceFlagged;
 use App\Events\InvoiceReady;
 use App\Events\JobAssigned;
+use App\Events\JobUnassigned;
 use App\Events\LogCompleted;
 use App\Events\JobStatusChanged;
 use App\Events\JobWasCanceled;
@@ -12,6 +13,7 @@ use App\Events\JobWasUncanceled;
 use App\Listeners\CheckApplicationHealth;
 use App\Listeners\NotifyAssignedDriversOfJobCancellation;
 use App\Listeners\NotifyAssignedDriversOfJobUncancellation;
+use App\Listeners\NotifyDriverOfUnassignment;
 use App\Listeners\NotifyDriversOfJobStatusChange;
 use App\Listeners\SendInvoiceFlaggedNotification;
 use App\Listeners\SendInvoiceReadyNotification;
@@ -45,6 +47,7 @@ class AppServiceProvider extends ServiceProvider
         $this->forceApplicationUrl();
 
         Event::listen(JobAssigned::class, SendJobAssignedNotification::class);
+        Event::listen(JobUnassigned::class, NotifyDriverOfUnassignment::class);
         Event::listen(JobWasCanceled::class, NotifyAssignedDriversOfJobCancellation::class);
         Event::listen(JobWasUncanceled::class, NotifyAssignedDriversOfJobUncancellation::class);
         Event::listen(JobStatusChanged::class, NotifyDriversOfJobStatusChange::class);

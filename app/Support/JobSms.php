@@ -35,6 +35,21 @@ class JobSms
     }
 
     /**
+     * Sent to the driver who was taken off a job (TASK-459).
+     */
+    public static function unassigned(PilotCarJob $job, string $actionUrl): string
+    {
+        return SmsMessage::make()
+            ->fixed('Job ')
+            ->flexible(self::jobRef($job))
+            ->fixed(': you are no longer assigned')
+            ->fixed(self::when($job))
+            ->fixed('. Questions? Call dispatch. Details: ')
+            ->url($actionUrl)
+            ->build();
+    }
+
+    /**
      * Sent when a job the driver is on is canceled.
      */
     public static function canceled(PilotCarJob $job, string $actionUrl, ?string $reason = null): string

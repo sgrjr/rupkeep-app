@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Events\JobAssigned;
+use App\Events\JobUnassigned;
 use App\Models\Attachment;
 use App\Models\CustomerContact;
 use App\Models\Organization;
@@ -42,7 +43,19 @@ class UserLog extends Model
 
         static::updated(function (self $log): void {
             if ($log->wasChanged('car_driver_id')) {
-                $log->loadMissing('job', 'user');
+                $log->loadMissing('job');
+                // The relation may still hold the previous driver.
+                $log->unsetRelation('user');
+                $log->loadMissing('user');
+
+                // The driver who no longer has the job hears first (TASK-459);
+                // before this only the new driver was told.
+                $previousId = $log->getOriginal('car_driver_id');
+                $previous = $previousId ? User::find($previousId) : null;
+
+                if ($log->job && $previous && (int) $previousId !== (int) $log->car_driver_id) {
+                    event(new JobUnassigned($log->job, $previous, $log));
+                }
 
                 if ($log->job && $log->user) {
                     event(new JobAssigned($log->job, $log->user, $log));

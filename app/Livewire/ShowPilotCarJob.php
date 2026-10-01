@@ -11,7 +11,6 @@ use App\Models\PilotCarJob as Job;
 use App\Models\User;
 use App\Models\Attachment;
 use Livewire\WithFileUploads;
-use App\Actions\SendUserNotification;
 use App\Actions\SendCustomerContactNotification;
 use App\Events\InvoiceReady;
 use App\Events\JobStatusChanged;
@@ -293,13 +292,11 @@ class ShowPilotCarJob extends Component
                 'approval_status' => 'pending', // New logs require approval before editing
             ];
 
-            $message = "New job assignment [{$values['vehicle_position']} car] for {$this->job->customer->name}. Job NO. {$this->job->job_no} | Load NO. {$this->job->load_no}. Pickup: {$this->job->pickup_address} @{$this->job->scheduled_pickup_at} {$this->job->memo}. For updates https://pilotcar.io/my/jobs/{$this->job->id}";
-
-            $new_log = UserLog::create($values);
-            
-            if ($new_log->user) {
-                SendUserNotification::to($new_log->user, $message, subject: "New Job {$this->job->load_no}");
-            }
+            // Creating the log fires JobAssigned, whose listener texts or
+            // emails the driver with the confirm link. A second, hand-built
+            // message used to be sent from here as well, so every assignment
+            // arrived twice (TASK-459).
+            UserLog::create($values);
 
             // Reload job relations to show the new log
             $this->job->refresh();
