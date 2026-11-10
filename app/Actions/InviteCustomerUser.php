@@ -2,8 +2,11 @@
 
 namespace App\Actions;
 
+use App\Mail\UserNotification;
 use App\Models\Customer;
 use App\Models\User;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -69,22 +72,54 @@ class InviteCustomerUser
         }
     }
 
+    /**
+     * The welcome went out as one run-on paragraph of plain text, titled and
+     * signed as the platform (TASK-506). It is now the branded HTML layout the
+     * sign-in email uses, in the organization's name, sent from that name.
+     * It goes to the email address directly: the portal is an email sign-in,
+     * so an SMS gateway on the account is the wrong place for it.
+     */
     protected function sendWelcome(User $user, bool $created): void
     {
         $loginUrl = route('login-code.create');
+        $brand = $user->organization?->name ?: config('app.name');
 
         $intro = $created
-            ? __('An account has been created for you to view your invoices and jobs online.')
-            : __('Here is a reminder of how to access your invoices and jobs online.');
+            ? __(':brand has set up an account for you to see your invoices online.', ['brand' => $brand])
+            : __('Here is a reminder of how to see the invoices :brand has sent you.', ['brand' => $brand]);
 
-        $message = sprintf(
-            "Hello %s,\n\n%s\n\nTo sign in, request a one-time sign-in link here:\n%s\n\nEnter your email (%s) and we will email you a link that signs you in with one click — no password required.",
+        $plain = sprintf(
+            "Hello %s,\n\n%s\n\nThere is no password. Open the sign-in page, enter your email address (%s), and we will email you a link that signs you in with one click:\n%s",
             $user->name,
             $intro,
-            $loginUrl,
-            $user->email
+            $user->email,
+            $loginUrl
         );
 
-        SendUserNotification::to($user, $message, __('Welcome to the Rupkeep Customer Portal'));
+        $subject = $created
+            ? __('Your :brand customer portal', ['brand' => $brand])
+            : __('Signing in to your :brand customer portal', ['brand' => $brand]);
+
+        try {
+            Mail::to($user->email)->send(new UserNotification(
+                $plain,
+                $subject,
+                'mail.customer-welcome',
+                [
+                    'user' => $user,
+                    'brand' => $brand,
+                    'created' => $created,
+                    'loginUrl' => $loginUrl,
+                ],
+                $brand
+            ));
+        } catch (\Throwable $e) {
+            // The account exists either way; the customer can still request a
+            // sign-in link themselves. Log rather than fail the invite.
+            Log::error('InviteCustomerUser: welcome email could not be sent', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }

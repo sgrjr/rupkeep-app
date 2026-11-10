@@ -48,7 +48,7 @@
                     <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
                         <div class="flex flex-wrap items-center justify-between gap-4">
                             <div class="text-xs text-slate-500">
-                                <p>{{ __('© :year :app. All rights reserved.', ['year' => date('Y'), 'app' => config('app.name')]) }}</p>
+                                <p>{{ __('© :year :app. All rights reserved.', ['year' => date('Y'), 'app' => Auth::user()?->organization?->name ?: config('app.name')]) }}</p>
                             </div>
                             <div class="flex items-center gap-3">
                                 <a href="{{ route('documentation.index') }}" 

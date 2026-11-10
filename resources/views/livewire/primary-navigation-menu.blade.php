@@ -36,7 +36,10 @@
                             @endif
                         </div>
                         <div class="hidden sm:block min-w-0">
-                            <p class="text-[10px] uppercase tracking-widest text-white/70">Rupkeep</p>
+                            {{-- A customer sees the organization's brand only (TASK-506). --}}
+                            @unless(Auth::user()->isCustomer())
+                                <p class="text-[10px] uppercase tracking-widest text-white/70">Rupkeep</p>
+                            @endunless
                             <p class="truncate text-sm font-semibold text-white max-w-[140px] lg:max-w-none">{{ Auth::user()->organization->name }}</p>
                         </div>
                     </a>

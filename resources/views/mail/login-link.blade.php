@@ -13,7 +13,7 @@
                     <!-- Header -->
                     <tr>
                         <td style="background: linear-gradient(135deg, #f9b104 0%, #ff8c00 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
-                            <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 700;">{{ __('Sign in to Rupkeep') }}</h1>
+                            <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 700;">{{ __('Sign in to :brand', ['brand' => $brand ?? config('app.name')]) }}</h1>
                         </td>
                     </tr>
 
@@ -33,7 +33,7 @@
                                 <tr>
                                     <td align="center" style="padding: 0;">
                                         <a href="{{ $url }}" style="display: inline-block; background-color: #f9b104; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 2px 4px rgba(249, 177, 4, 0.3);">
-                                            {{ __('Sign in to Rupkeep') }}
+                                            {{ __('Sign in to :brand', ['brand' => $brand ?? config('app.name')]) }}
                                         </a>
                                     </td>
                                 </tr>

@@ -36,6 +36,6 @@ class TaskUpdate extends Notification implements ShouldQueue
             ->line('---')
             ->line($this->comment->body)
             ->action('View request', $url)
-            ->line('Thanks for using Rupkeep.');
+            ->line(__('Thank you, :brand', ['brand' => $notifiable->organization?->name ?: config('app.name')]));
     }
 }

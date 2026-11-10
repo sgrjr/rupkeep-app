@@ -187,7 +187,8 @@ class SendUserNotification
             throw new \RuntimeException('SMTP mailer is not properly configured. Missing MAIL_USERNAME or MAIL_PASSWORD.');
         }
 
-        static::sendSmtpOrSms(is_sms: $isSmsGateway, recipient: $recipient, message: $message, subject: $subject);
+        // The sender reads as the user's organization, not the platform (TASK-506).
+        static::sendSmtpOrSms(is_sms: $isSmsGateway, recipient: $recipient, message: $message, subject: $subject, fromName: $user->organization?->name);
 
         Log::info('SendUserNotification: Sent successfully via Laravel Mail', [
             'user_id' => $user->id,
@@ -228,7 +229,7 @@ class SendUserNotification
                     'user_id' => $user->id,
                     'recipient' => $recipient,
                 ]);
-                Mail::mailer('log')->to($recipient)->send(new UserNotification($message, $subject));
+                Mail::mailer('log')->to($recipient)->send(new UserNotification($message, $subject, fromName: $user->organization?->name));
                 Log::info('SendUserNotification: Notification logged (could not be sent)', [
                     'user_id' => $user->id,
                     'recipient' => $recipient,
@@ -245,13 +246,13 @@ class SendUserNotification
         }
     }
 
-    public static function sendSmtpOrSms($is_sms, $recipient, $message, $subject): void
+    public static function sendSmtpOrSms($is_sms, $recipient, $message, $subject, ?string $fromName = null): void
     {
         if($is_sms){
             //not sending subject ON PURPOSE to prevent the carrier from misinterpreting message as anything but plain text.
             Mail::to($recipient)->send(new UserNotificationSms($message));
         }else{
-            Mail::to($recipient)->send(new UserNotification($message, $subject));
+            Mail::to($recipient)->send(new UserNotification($message, $subject, fromName: $fromName));
         }
     }
 }

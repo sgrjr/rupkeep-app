@@ -191,11 +191,14 @@ class LoginCodeController extends Controller
         ]);
 
         $url = route('login-link', $code->link_token);
-        $subject = __('Your Rupkeep sign-in link');
+        // The organization's name, not the platform's (TASK-506).
+        $brand = $user->organization?->name ?: config('app.name');
+        $subject = __('Your :brand sign-in link', ['brand' => $brand]);
 
         $plain = sprintf(
-            "Hello %s,\n\nSign in to Rupkeep with this link:\n%s\n\nOr enter this code at %s:\n%s\n\n%s\n\nIf you did not request this, you can ignore this email.",
+            "Hello %s,\n\nSign in to %s with this link:\n%s\n\nOr enter this code at %s:\n%s\n\n%s\n\nIf you did not request this, you can ignore this email.",
             $user->name,
+            $brand,
             $url,
             route('login-code.verify-form'),
             $code->code,
@@ -208,6 +211,7 @@ class LoginCodeController extends Controller
             'mail.login-link',
             [
                 'user' => $user,
+                'brand' => $brand,
                 'code' => $code->code,
                 'url' => $url,
                 'verifyUrl' => route('login-code.verify-form'),
