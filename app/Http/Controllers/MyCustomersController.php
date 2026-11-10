@@ -37,8 +37,40 @@ class MyCustomersController extends Controller
         $customerCount = $allCustomers->count();
         $averageJobsPerCustomer = $customerCount > 0 ? round($totalJobs / $customerCount, 1) : 0;
         $customersWithCredit = $allCustomers->filter(fn ($customer) => $customer->account_credit > 0)->count();
-        
-        return view('customers.index', compact('allCustomers', 'filteredCustomers', 'hasFilter', 'filterTitle', 'averageJobsPerCustomer', 'customersWithCredit'));
+
+        // Search (TASK-504): name, place, and any contact's name, email or
+        // phone. The tiles above keep counting every customer; only the
+        // list narrows.
+        $search = trim((string) $request->query('q', ''));
+        $listedCustomers = $search === ''
+            ? $allCustomers
+            : $allCustomers->filter(fn ($customer) => $this->customerMatches($customer, $search))->values();
+
+        return view('customers.index', compact('allCustomers', 'listedCustomers', 'search', 'filteredCustomers', 'hasFilter', 'filterTitle', 'averageJobsPerCustomer', 'customersWithCredit'));
+    }
+
+    private function customerMatches(Customer $customer, string $search): bool
+    {
+        $needle = mb_strtolower($search);
+        $digits = preg_replace('/\D+/', '', $search);
+
+        $haystacks = [$customer->name, $customer->street, $customer->city, $customer->state, $customer->zip];
+        foreach ($customer->contacts as $contact) {
+            array_push($haystacks, $contact->name, $contact->email, $contact->phone);
+
+            // 207-555-0100 should match a typed 2075550100, and the other way round.
+            if (strlen($digits) >= 3 && str_contains(preg_replace('/\D+/', '', (string) $contact->phone), $digits)) {
+                return true;
+            }
+        }
+
+        foreach ($haystacks as $value) {
+            if ($value !== null && str_contains(mb_strtolower((string) $value), $needle)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function create(Request $request){

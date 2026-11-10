@@ -1,4 +1,7 @@
 @php
+    // CustomersController::index renders this view too, without search (TASK-504).
+    $search = $search ?? '';
+    $listedCustomers = $listedCustomers ?? $allCustomers;
     $customerCount = $allCustomers->count();
     $totalContacts = $allCustomers->sum(fn ($customer) => $customer->contacts->count());
 @endphp
@@ -165,13 +168,30 @@
             <header class="flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <h2 class="text-lg font-semibold text-slate-900">{{ __('All Customers') }}</h2>
-                    <p class="text-xs text-slate-500">{{ __('Keep customer data current to streamline job assignment and invoicing.') }}</p>
+                    <p class="text-xs text-slate-500">
+                        @if($search !== '')
+                            {{ trans_choice('{0} No customers match ":q".|{1} 1 customer matches ":q".|[2,*] :count customers match ":q".', $listedCustomers->count(), ['count' => $listedCustomers->count(), 'q' => $search]) }}
+                        @else
+                            {{ __('Keep customer data current to streamline job assignment and invoicing.') }}
+                        @endif
+                    </p>
                 </div>
+                {{-- TASK-504: search by name, place, or a contact's name, email or phone. --}}
+                <form method="GET" action="{{ route('my.customers.index') }}" role="search" class="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+                    <label for="customer-search" class="sr-only">{{ __('Search customers') }}</label>
+                    <input id="customer-search" type="search" name="q" value="{{ $search }}" autocomplete="off"
+                           placeholder="{{ __('Name, city, contact, email or phone') }}"
+                           class="w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 sm:w-72">
+                    <button type="submit" class="inline-flex items-center gap-1 rounded-full border border-orange-200 bg-orange-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-orange-600">{{ __('Search') }}</button>
+                    @if($search !== '')
+                        <a href="{{ route('my.customers.index') }}" class="text-xs font-semibold text-slate-500 hover:text-orange-600">{{ __('Clear') }}</a>
+                    @endif
+                </form>
             </header>
 
             <!-- Mobile Card Layout -->
             <div class="mt-5 space-y-3 sm:hidden">
-                @forelse($allCustomers as $customer)
+                @forelse($listedCustomers as $customer)
                     <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                         <div class="flex items-start justify-between gap-3">
                             <div class="flex-1 min-w-0">
@@ -209,7 +229,7 @@
                     </div>
                 @empty
                     <div class="rounded-2xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-400">
-                        {{ __('No customers yet. Add your first customer to begin tracking jobs and invoices.') }}
+                        {{ $search !== '' ? __('No customers match your search.') : __('No customers yet. Add your first customer to begin tracking jobs and invoices.') }}
                     </div>
                 @endforelse
             </div>
@@ -227,7 +247,7 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 bg-white">
-                        @forelse($allCustomers as $customer)
+                        @forelse($listedCustomers as $customer)
                             <tr>
                                 <td class="px-4 py-3 font-semibold text-slate-800">
                                     <a href="{{ route('my.customers.show', ['customer' => $customer->id]) }}" class="text-orange-600 hover:text-orange-700">
@@ -267,7 +287,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="px-4 py-6 text-center text-sm text-slate-400">{{ __('No customers yet. Add your first customer to begin tracking jobs and invoices.') }}</td>
+                                <td colspan="5" class="px-4 py-6 text-center text-sm text-slate-400">{{ $search !== '' ? __('No customers match your search.') : __('No customers yet. Add your first customer to begin tracking jobs and invoices.') }}</td>
                             </tr>
                         @endforelse
                     </tbody>
