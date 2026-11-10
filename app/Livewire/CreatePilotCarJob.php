@@ -8,6 +8,7 @@ use Livewire\Attributes\Validate;
 use App\Models\Customer;
 use App\Models\PilotCarJob;
 use App\Models\User;
+use App\Models\UserLog;
 use App\Models\CustomerContact;
 use Illuminate\Support\Facades\Auth;
 
@@ -123,7 +124,10 @@ class CreatePilotCarJob extends Component
        $this->drivers = [
            ['name' => '(none selected)', 'value' => null]
        ];
+       // Staff only: customer-portal logins share the organization_id and
+       // must not be offered as escorts (TASK-494).
        User::where('organization_id', $user->organization_id)
+           ->where(fn ($q) => $q->whereNull('organization_role')->orWhere('organization_role', '!=', User::ROLE_CUSTOMER))
            ->get()
            ->each(fn($user) => $this->drivers[] = ['name' => $user->name, 'value' => $user->id]);
        
@@ -181,6 +185,19 @@ class CreatePilotCarJob extends Component
         }
 
         $organization = Auth::user()->organization;
+
+        // The attribute rule only checks the id exists anywhere. The default
+        // driver now receives a log and a notice, so it must be staff of this
+        // organization (TASK-494).
+        if (! empty($this->form->default_driver_id)) {
+            $driver = User::where('organization_id', $organization->id)->find($this->form->default_driver_id);
+
+            if (! $driver || $driver->isCustomer()) {
+                $this->addError('form.default_driver_id', __('Choose a driver from your own team.'));
+
+                return;
+            }
+        }
 
         // The importer dedupes on job_no; the form never did (TASK-458).
         if ($this->jobNumberTaken($organization->id, $this->form->job_no)) {
@@ -270,6 +287,28 @@ class CreatePilotCarJob extends Component
 
         $user = Auth::user();
         $job = $user->organization->jobs()->create($form);
+
+        // A default driver chosen here used to be stored and nothing else:
+        // no log, no notice, so the driver never knew (TASK-494). Give them a
+        // pending log exactly as Assign driver & vehicle does; creating it
+        // fires JobAssigned, which sends the confirm-or-deny notice. Vehicle
+        // and position are not on this form and are set on the log.
+        $assignedDriver = null;
+        if (! empty($job->default_driver_id)) {
+            UserLog::create([
+                'car_driver_id' => $job->default_driver_id,
+                'job_id' => $job->id,
+                'organization_id' => $job->organization_id,
+                'truck_driver_id' => $job->default_truck_driver_id ?: null,
+                'approval_status' => 'pending',
+            ]);
+            $assignedDriver = $job->defaultDriver?->name;
+        }
+
+        session()->flash('success', $assignedDriver
+            ? __('Job created. :driver was asked to accept it; set their vehicle and position on the log.', ['driver' => $assignedDriver])
+            : __('Job created.'));
+
         $this->form->reset();
         $this->form->rate_code = PilotCarJob::DEFAULT_RATE_CODE;
         $this->form->rate_value = PilotCarJob::defaultRateValue($this->form->rate_code, $user->organization_id);

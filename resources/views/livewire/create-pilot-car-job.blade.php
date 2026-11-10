@@ -131,6 +131,7 @@
                             <option value="{{ $driver['value'] }}">{{ $driver['name'] }}</option>
                         @endforeach
                     </select>
+                    <p class="mt-2 text-xs text-slate-400">{{ __('They get a pending log and are asked to accept the job. Set their vehicle and position on the log.') }}</p>
                     @error('form.default_driver_id')
                         <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p>
                     @enderror
