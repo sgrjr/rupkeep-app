@@ -835,12 +835,18 @@
 
             <div class="mt-6 space-y-6">
                 @can('update', $job)
-                <form wire:submit="assignJob"
+                {{-- autocomplete="off": the browser must not restore a stale choice into
+                     these selects on reload or back. It showed a driver and
+                     vehicle Livewire never received, so the save failed as
+                     "required" or stored the log without its vehicle
+                     (TASK-496/497). The x-init pushes any value the browser
+                     restored anyway into Livewire, so what shows is what saves. --}}
+                <form wire:submit="assignJob" autocomplete="off"
                       class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 shadow-sm">
                         <div class="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center">
                             <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Assign driver & vehicle') }}</label>
                             <div class="w-full sm:flex-1">
-                                <select wire:model="assignment.car_driver_id"
+                                <select wire:model="assignment.car_driver_id" autocomplete="off" x-init="$nextTick(() => { if ($el.value !== '') $el.dispatchEvent(new Event('change')) })"
                                         class="w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                                     <option value="">{{ __('Select Driver') }}</option>
                                     @foreach($drivers as $driver)
@@ -852,7 +858,7 @@
                                 @error('assignment.car_driver_id') <p class="mt-1 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                             </div>
                             <div class="w-full sm:flex-1">
-                                <select wire:model="assignment.vehicle_id" 
+                                <select wire:model="assignment.vehicle_id" autocomplete="off" x-init="$nextTick(() => { if ($el.value !== '') $el.dispatchEvent(new Event('change')) })" 
                                         class="w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                                     <option value="">{{ __('Select Vehicle') }}</option>
                                     @foreach($vehicles as $vehicle)
@@ -864,7 +870,7 @@
                                 @error('assignment.vehicle_id') <p class="mt-1 text-xs font-semibold text-red-500">{{ $message }}</p> @enderror
                             </div>
                             <div class="w-full sm:flex-1">
-                                <select wire:model="assignment.vehicle_position" 
+                                <select wire:model="assignment.vehicle_position" autocomplete="off" x-init="$nextTick(() => { if ($el.value !== '') $el.dispatchEvent(new Event('change')) })" 
                                         class="w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                                     <option value="">{{ __('Select Position') }}</option>
                                     @foreach($vehicle_positions as $position)
