@@ -117,7 +117,11 @@ class InvoiceEmailForm extends Component
                     $mailable->bcc($bccEmails);
                 }
 
-                Mail::to($email)->send($mailable);
+                // On the notification timeline as this invoice (TASK-498).
+                \App\Support\DeliveryContext::run(
+                    ['kind' => 'invoice_email', 'related' => $this->invoice],
+                    fn () => Mail::to($email)->send($mailable)
+                );
             }
 
             // Emailing the invoice IS sending it (TASK-480). The email itself

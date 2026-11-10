@@ -3,7 +3,9 @@
 namespace App\Jobs;
 
 use App\Actions\SendUserNotification;
+use App\Models\PilotCarJob;
 use App\Models\User;
+use App\Support\DeliveryContext;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -34,10 +36,16 @@ class SendUserMessage implements ShouldQueue
     /** A recipient deleted before the worker got to it is not a failure. */
     public bool $deleteWhenMissingModels = true;
 
+    /**
+     * @param  ?string  $kind  what the notice is, for the notification timeline (TASK-498)
+     * @param  ?PilotCarJob  $about  the job it concerns
+     */
     public function __construct(
         public User $user,
         public string $message,
         public ?string $subject = null,
+        public ?string $kind = null,
+        public ?PilotCarJob $about = null,
     ) {
         // Never before the row that caused it is committed.
         $this->afterCommit = true;
@@ -45,8 +53,10 @@ class SendUserMessage implements ShouldQueue
 
     public function handle(): void
     {
+        $context = ['kind' => $this->kind, 'user' => $this->user, 'related' => $this->about];
+
         try {
-            SendUserNotification::deliver($this->user, $this->message, $this->subject);
+            DeliveryContext::run($context, fn () => SendUserNotification::deliver($this->user, $this->message, $this->subject));
         } catch (Throwable $e) {
             if ($this->shouldRetry()) {
                 Log::warning('SendUserMessage: send failed; the queue will retry it', [
@@ -61,7 +71,7 @@ class SendUserMessage implements ShouldQueue
                 throw $e;
             }
 
-            SendUserNotification::recordUndeliverable($this->user, $this->message, $this->subject, $e);
+            DeliveryContext::run($context, fn () => SendUserNotification::recordUndeliverable($this->user, $this->message, $this->subject, $e));
         }
     }
 

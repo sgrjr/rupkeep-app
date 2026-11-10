@@ -134,7 +134,7 @@ class NotifyAssignedDriversOfJobCancellation implements ShouldQueue
 
             // Use SendUserNotification action for consistency
             // SMS gateway addresses use Brevo, regular emails use Laravel Mail
-            SendUserMessage::dispatch($driver, $message, $subject); // one queued job per recipient (TASK-465)
+            SendUserMessage::dispatch($driver, $message, $subject, 'job_canceled', $job); // one queued job per recipient (TASK-465)
 
             // The most time-critical message there is also goes to the phone's
             // notification tray (TASK-467), like assignment and status changes.

@@ -212,5 +212,10 @@
             </div>
             </section>
                 @endif
+
+        {{-- Who was told what (TASK-498). Admins and managers only. --}}
+        @if(auth()->user()->isSuper() || auth()->user()->isAdmin() || auth()->user()->isManager())
+            <livewire:notification-timeline />
+        @endif
     </div>
 </x-app-layout>

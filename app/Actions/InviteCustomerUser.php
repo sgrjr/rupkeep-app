@@ -136,7 +136,7 @@ class InviteCustomerUser
             : __('Signing in to your :brand customer portal', ['brand' => $brand]);
 
         try {
-            Mail::to($user->email)->send(new UserNotification(
+            \App\Support\DeliveryContext::run(['kind' => 'customer_welcome', 'user' => $user], fn () => Mail::to($user->email)->send(new UserNotification(
                 $plain,
                 $subject,
                 'mail.customer-welcome',
@@ -147,7 +147,7 @@ class InviteCustomerUser
                     'loginUrl' => $loginUrl,
                 ],
                 $brand
-            ));
+            )));
         } catch (\Throwable $e) {
             // The account exists either way; the customer can still request a
             // sign-in link themselves. Log rather than fail the invite.

@@ -2,6 +2,7 @@
 
 namespace App\Listeners;
 
+use App\Support\DeliveryContext;
 use App\Events\JobUnassigned;
 use App\Listeners\Concerns\SendsNotificationMail;
 use App\Mail\UserNotification;
@@ -44,7 +45,16 @@ class NotifyDriverOfUnassignment implements ShouldQueue
         ]);
     }
 
+    /**
+     * Every message sent from here is recorded on the notification timeline
+     * as being about this event (TASK-498).
+     */
     public function handle(JobUnassigned $event): void
+    {
+        DeliveryContext::run(['kind' => 'job_unassigned', 'user' => $event->previousDriver, 'related' => $event->job], fn () => $this->sendNotices($event));
+    }
+
+    protected function sendNotices(JobUnassigned $event): void
     {
         $job = $event->job;
         $driver = $event->previousDriver;

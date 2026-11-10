@@ -2,6 +2,7 @@
 
 namespace App\Listeners;
 
+use App\Support\DeliveryContext;
 use App\Events\InvoiceReady;
 use App\Listeners\Concerns\SendsNotificationMail;
 use App\Mail\UserNotification;
@@ -43,9 +44,15 @@ class SendInvoiceReadyNotification implements ShouldQueue
     use SendsNotificationMail;
 
     /**
-     * Handle the event.
+     * Every message sent from here is recorded on the notification timeline
+     * as being about this event (TASK-498).
      */
     public function handle(InvoiceReady $event): void
+    {
+        DeliveryContext::run(['kind' => 'invoice_ready', 'related' => $event->invoice], fn () => $this->sendNotices($event));
+    }
+
+    protected function sendNotices(InvoiceReady $event): void
     {
         $invoice = $event->invoice->loadMissing('organization.users', 'customer');
         $orgName = $invoice->organization?->name ?: 'your organization';

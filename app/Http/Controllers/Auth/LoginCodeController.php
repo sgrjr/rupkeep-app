@@ -205,7 +205,8 @@ class LoginCodeController extends Controller
             $this->expirySentence($code)
         );
 
-        $this->mailSafely($user->email, new UserNotification(
+        // Recorded on the timeline as a sign-in link, whose text is never kept (TASK-498).
+        \App\Support\DeliveryContext::run(['kind' => 'login_link', 'user' => $user], fn () => $this->mailSafely($user->email, new UserNotification(
             $plain,
             $subject,
             'mail.login-link',
@@ -218,7 +219,7 @@ class LoginCodeController extends Controller
                 'expirySentence' => $this->expirySentence($code),
             ],
             $user->organization?->name
-        ));
+        )));
 
         return $code;
     }

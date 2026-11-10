@@ -27,6 +27,17 @@ class JobUpdate extends Notification implements ShouldQueue
         $this->body = $body ?? 'You have been assigned a new job!';
     }
 
+    /** For the notification timeline (TASK-498). */
+    public function job(): ?PilotCarJob
+    {
+        return $this->job;
+    }
+
+    public function title(): string
+    {
+        return $this->title;
+    }
+
     /**
      * Get the notification's delivery channels.
      *

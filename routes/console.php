@@ -14,3 +14,6 @@ Schedule::command('vehicles:send-maintenance-reminders')->dailyAt('11:00');
 // there failed jobs? Mails the super users on a problem (at most once per six
 // hours for the same problem) and once when it clears (TASK-469).
 Schedule::command('queue:health --notify')->everyFifteenMinutes()->withoutOverlapping();
+
+// The notification timeline keeps 18 months (TASK-498).
+Schedule::command('model:prune', ['--model' => [\App\Models\NotificationDelivery::class]])->dailyAt('03:30');

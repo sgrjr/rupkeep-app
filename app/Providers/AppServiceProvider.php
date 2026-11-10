@@ -59,6 +59,12 @@ class AppServiceProvider extends ServiceProvider
         // drained, so an uptime monitor can act on it (TASK-469).
         Event::listen(DiagnosingHealth::class, CheckApplicationHealth::class);
 
+        // The notification timeline on /my/users (TASK-498): every email,
+        // gateway text and push the app hands to a transport.
+        Event::listen(\Illuminate\Mail\Events\MessageSent::class, [\App\Listeners\RecordNotificationDelivery::class, 'handleMessageSent']);
+        Event::listen(\Illuminate\Notifications\Events\NotificationSent::class, [\App\Listeners\RecordNotificationDelivery::class, 'handleNotificationSent']);
+        Event::listen(\Illuminate\Notifications\Events\NotificationFailed::class, [\App\Listeners\RecordNotificationDelivery::class, 'handleNotificationFailed']);
+
         // Register model observers for payment status synchronization
         Invoice::observe(InvoiceObserver::class);
         PilotCarJob::observe(PilotCarJobObserver::class);

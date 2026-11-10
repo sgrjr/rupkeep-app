@@ -90,7 +90,7 @@ class NotifyDriversOfJobStatusChange implements ShouldQueue
 
             // Routes to the SMS gateway (short body) or email, exactly like the
             // cancellation notifications.
-            SendUserMessage::dispatch($driver, $body, $subject); // one queued job per recipient (TASK-465)
+            SendUserMessage::dispatch($driver, $body, $subject, 'job_status', $job); // one queued job per recipient (TASK-465)
 
             // Web-push / database channel, matching the assignment flow.
             try {

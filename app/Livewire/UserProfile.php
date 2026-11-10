@@ -104,7 +104,10 @@ class UserProfile extends Component
             // back to the standard test notification for unknown values.
             [$message, $subject, $label] = $this->buildTestNotification($this->notificationTestType);
 
-            SendUserNotification::to($this->profile, $message, subject: $subject);
+            \App\Support\DeliveryContext::run(
+                ['kind' => 'direct_message', 'user' => $this->profile],
+                fn () => SendUserNotification::to($this->profile, $message, subject: $subject)
+            );
 
             $this->notificationTestStatus = 'success';
             $notificationType = $this->profile->getSmsGatewayAddress() ? 'SMS' : 'email';

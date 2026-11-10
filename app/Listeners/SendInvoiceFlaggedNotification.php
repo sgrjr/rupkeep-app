@@ -2,6 +2,7 @@
 
 namespace App\Listeners;
 
+use App\Support\DeliveryContext;
 use App\Events\InvoiceFlagged;
 use App\Listeners\Concerns\SendsNotificationMail;
 use App\Mail\UserNotification;
@@ -44,9 +45,15 @@ class SendInvoiceFlaggedNotification implements ShouldQueue
     use SendsNotificationMail;
 
     /**
-     * Handle the event.
+     * Every message sent from here is recorded on the notification timeline
+     * as being about this event (TASK-498).
      */
     public function handle(InvoiceFlagged $event): void
+    {
+        DeliveryContext::run(['kind' => 'invoice_flagged', 'related' => $event->comment->invoice], fn () => $this->sendNotices($event));
+    }
+
+    protected function sendNotices(InvoiceFlagged $event): void
     {
         $comment = $event->comment->loadMissing('invoice.organization.users', 'invoice.customer', 'user');
         $invoice = $comment->invoice;

@@ -2,6 +2,7 @@
 
 namespace App\Listeners;
 
+use App\Support\DeliveryContext;
 use App\Events\JobAssigned;
 use App\Listeners\Concerns\SendsNotificationMail;
 use App\Mail\UserNotification;
@@ -45,9 +46,15 @@ class SendJobAssignedNotification implements ShouldQueue
     use SendsNotificationMail;
 
     /**
-     * Handle the event.
+     * Every message sent from here is recorded on the notification timeline
+     * as being about this event (TASK-498).
      */
     public function handle(JobAssigned $event): void
+    {
+        DeliveryContext::run(['kind' => 'job_assigned', 'user' => $event->driver, 'related' => $event->job], fn () => $this->sendNotices($event));
+    }
+
+    protected function sendNotices(JobAssigned $event): void
     {
         $job = $event->job;
         

@@ -2,6 +2,7 @@
 
 namespace App\Listeners;
 
+use App\Support\DeliveryContext;
 use App\Events\LogCompleted;
 use App\Listeners\Concerns\SendsNotificationMail;
 use App\Mail\UserNotification;
@@ -47,7 +48,16 @@ class SendLogCompletedNotification implements ShouldQueue
     }
     use SendsNotificationMail;
 
+    /**
+     * Every message sent from here is recorded on the notification timeline
+     * as being about this event (TASK-498).
+     */
     public function handle(LogCompleted $event): void
+    {
+        DeliveryContext::run(['kind' => 'log_completed', 'related' => $event->log->job], fn () => $this->sendNotices($event));
+    }
+
+    protected function sendNotices(LogCompleted $event): void
     {
         $log = $event->log->loadMissing('job.customer', 'organization.users', 'user');
         $job = $log->job;
