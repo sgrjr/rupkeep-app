@@ -121,7 +121,14 @@ class MyCustomersController extends Controller
             }
         }
         
-        return view('customers.show', compact('customer', 'transactions', 'accountCredit'));
+        // Who can sign in to the portal as this customer (TASK-505).
+        $portalLogins = \App\Models\User::where('organization_id', $customer->organization_id)
+            ->where('customer_id', $customer->id)
+            ->where('organization_role', \App\Models\User::ROLE_CUSTOMER)
+            ->orderBy('name')
+            ->get();
+
+        return view('customers.show', compact('customer', 'transactions', 'accountCredit', 'portalLogins'));
     }
 
     public function edit(Request $request, int $customer_id){
@@ -190,6 +197,29 @@ class MyCustomersController extends Controller
         }
 
         return back();
+    }
+
+    /**
+     * Take away a customer's portal login (TASK-505). The account is
+     * soft-deleted, so it can no longer sign in; inviting the same email
+     * later, to this or another customer of the organization, brings it back.
+     */
+    public function removeLogin(Request $request, int $customer, int $user)
+    {
+        $customer = Customer::where('organization_id', auth()->user()->organization_id)
+            ->findOrFail($customer);
+
+        $this->authorize('update', $customer);
+
+        $login = \App\Models\User::where('organization_id', $customer->organization_id)
+            ->where('customer_id', $customer->id)
+            ->where('organization_role', \App\Models\User::ROLE_CUSTOMER)
+            ->findOrFail($user);
+
+        $login->delete();
+
+        return redirect()->route('my.customers.show', ['customer' => $customer->id])
+            ->with('status', __(':email can no longer sign in to the portal. Inviting that email again restores it.', ['email' => $login->email]));
     }
 
     public function invite(Request $request, int $customer, InviteCustomerUser $inviter){

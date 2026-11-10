@@ -120,6 +120,7 @@ Route::middleware([
     Route::post('/my/customers', [MyCustomersController::class, 'store'])->name('my.customers.store')->middleware('staff');
     Route::get('/my/customers/{customer}', [MyCustomersController::class, 'show'])->name('my.customers.show')->middleware('staff');
     Route::post('/my/customers/{customer}/invite', [MyCustomersController::class, 'invite'])->name('my.customers.invite')->middleware('staff');
+    Route::delete('/my/customers/{customer}/logins/{user}', [MyCustomersController::class, 'removeLogin'])->whereNumber('user')->name('my.customers.logins.destroy')->middleware('staff');
     Route::get('/my/customers/{customer}/edit', [MyCustomersController::class, 'edit'])->name('my.customers.edit')->middleware('staff');
     Route::put('/my/customers/{customer}', [MyCustomersController::class, 'update'])->name('my.customers.update')->middleware('staff');
     Route::delete('/my/customers/{customer}', [MyCustomersController::class, 'destroy'])->name('my.customers.destroy')->middleware('staff');

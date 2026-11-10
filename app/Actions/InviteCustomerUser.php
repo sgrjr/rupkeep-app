@@ -28,7 +28,26 @@ class InviteCustomerUser
     {
         $email = trim(mb_strtolower($email));
 
-        $existing = User::where('email', $email)->first();
+        // Removed logins are soft-deleted, and users.email is unique, so a
+        // removed address could never be invited again (TASK-505). Look past
+        // the soft delete: a removed customer login of this organization is
+        // brought back and attached to this customer.
+        $existing = User::withTrashed()->where('email', $email)->first();
+
+        if ($existing && $existing->trashed()) {
+            $this->guardRemovedUser($existing, $customer);
+
+            $existing->restore();
+            $existing->forceFill([
+                'customer_id' => $customer->id,
+                'organization_id' => $customer->organization_id,
+                'name' => $name !== null && trim($name) !== '' ? trim($name) : $existing->name,
+            ])->save();
+
+            $this->sendWelcome($existing, created: true);
+
+            return ['user' => $existing, 'created' => true];
+        }
 
         if ($existing) {
             $this->guardExistingUser($existing, $customer);
@@ -67,7 +86,23 @@ class InviteCustomerUser
 
         if ($existing->customer_id && $existing->customer_id !== $customer->id) {
             throw ValidationException::withMessages([
-                'email' => __('That email is already connected to a different customer.'),
+                'email' => __('That email is already a portal login for :customer. Remove its access there first, then invite it here.', [
+                    'customer' => $existing->customer?->name ?? __('another customer'),
+                ]),
+            ]);
+        }
+    }
+
+    /**
+     * A removed account may only come back as a customer login of the same
+     * organization: never revive a removed staff member, or another tenant's
+     * user, through a customer invite.
+     */
+    protected function guardRemovedUser(User $existing, Customer $customer): void
+    {
+        if (! $existing->isCustomer() || (int) $existing->organization_id !== (int) $customer->organization_id) {
+            throw ValidationException::withMessages([
+                'email' => __('That email belongs to a removed account that cannot be used for a customer portal login.'),
             ]);
         }
     }

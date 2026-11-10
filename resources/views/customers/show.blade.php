@@ -56,12 +56,6 @@
                     <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('Contacts') }}</p>
                     <h2 class="mt-1 text-lg font-semibold text-slate-900">{{ trans_choice(':count contact|:count contacts', $customer->contacts->count()) }}</h2>
                 </header>
-                @if(session('status'))
-                    <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700">{{ session('status') }}</div>
-                @endif
-                @error('email')
-                    <div class="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700">{{ $message }}</div>
-                @enderror
                 <div class="space-y-3 max-h-[350px] overflow-y-auto">
                     @forelse($customer->contacts as $contact)
                         <div class="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
@@ -115,6 +109,70 @@
                 </div>
             </div>
         </section>
+
+        {{-- Portal logins (TASK-505). The only way in used to be the small
+             "Invite to portal" button on a contact with an email, and nothing
+             showed who could already sign in. --}}
+        @can('update', $customer)
+        <section id="portal-logins" data-test="portal-logins" class="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm">
+            <header class="mb-4">
+                <h2 class="text-lg font-semibold text-slate-900">{{ __('Portal logins') }}</h2>
+                <p class="text-xs text-slate-500">{{ __('People who can sign in to see the invoices sent to :customer. There is no password: they enter their email at the sign-in page and get a one-time link.', ['customer' => $customer->name]) }}</p>
+            </header>
+
+            @if(session('status'))
+                <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700">{{ session('status') }}</div>
+            @endif
+            @error('email')
+                <div class="mb-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700">{{ $message }}</div>
+            @enderror
+
+            @if($portalLogins->isEmpty())
+                <p class="text-sm text-slate-500">{{ __('Nobody can sign in for this customer yet. Add a login below.') }}</p>
+            @else
+                <ul class="divide-y divide-slate-100 rounded-2xl border border-slate-200">
+                    @foreach($portalLogins as $login)
+                        <li wire:key="portal-login-{{ $login->id }}" class="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-slate-900">{{ $login->name }}</p>
+                                <p class="text-xs text-slate-500">{{ $login->email }} · {{ __('added :date', ['date' => \App\Support\LocalTime::format($login->created_at, 'M j, Y')]) }}</p>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <form action="{{ route('my.customers.invite', ['customer' => $customer->id]) }}" method="POST">
+                                    @csrf
+                                    <input type="hidden" name="email" value="{{ $login->email }}">
+                                    <input type="hidden" name="name" value="{{ $login->name }}">
+                                    <button type="submit" class="inline-flex items-center gap-1 rounded-full border border-orange-200 bg-white px-3 py-1 text-[11px] font-semibold text-orange-600 transition hover:border-orange-300 hover:bg-orange-50">
+                                        {{ __('Email sign-in instructions') }}
+                                    </button>
+                                </form>
+                                <x-delete-form action="{{ route('my.customers.logins.destroy', ['customer' => $customer->id, 'user' => $login->id]) }}"
+                                               title="{{ __('Remove access') }}"
+                                               :message="__(':email will no longer be able to sign in. Their invoices are not affected. Inviting the email again restores it.', ['email' => $login->email])"
+                                               :confirm-label="__('Yes, remove access')"
+                                               button-class="inline-flex items-center gap-1 rounded-full border border-red-200 bg-white px-3 py-1 text-[11px] font-semibold text-red-600 transition hover:border-red-300 hover:text-red-700" />
+                            </div>
+                        </li>
+                    @endforeach
+                </ul>
+            @endif
+
+            <form action="{{ route('my.customers.invite', ['customer' => $customer->id]) }}" method="POST" class="mt-5 grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+                @csrf
+                <div>
+                    <label for="portal-login-name" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Name') }}</label>
+                    <input id="portal-login-name" name="name" type="text" maxlength="255" value="{{ old('name') }}" class="mt-1 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                </div>
+                <div>
+                    <label for="portal-login-email" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Email') }}</label>
+                    <input id="portal-login-email" name="email" type="email" required maxlength="255" value="{{ old('email') }}" class="mt-1 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200">
+                </div>
+                <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-600">
+                    {{ __('Add login and email them') }}
+                </button>
+            </form>
+        </section>
+        @endcan
 
         @can('viewSensitive', $customer)
         <section class="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm">
