@@ -38,6 +38,7 @@ class ExportFiguresTest extends TestCase
     private const TOTAL = 19;
     private const PAID_STATUS = 20;
     private const PAYMENT_DATE = 21;
+    private const CHECK_NUMBER = 22;
     private const MEMO = 23;
 
     // QuickBooks columns.
@@ -169,6 +170,28 @@ class ExportFiguresTest extends TestCase
 
         $this->assertSame('Paid', $rows[(string) $paid->invoice_number][self::PAID_STATUS]);
         $this->assertSame('05/20/2026', $rows[(string) $paid->invoice_number][self::PAYMENT_DATE], 'paid_at, not updated_at');
+    }
+
+    public function test_the_check_number_comes_from_the_recorded_payments(): void
+    {
+        // TASK-508: the column read the job's check_no, which only the old
+        // CSV import filled, so a check recorded through Record Payment was lost.
+        $recorded = $this->invoice([
+            'total' => 1112.50,
+            'payments' => [
+                ['amount' => 1000, 'payment_date' => '2026-11-10', 'check_number' => '123'],
+                ['amount' => 112.50, 'payment_date' => '2026-11-12', 'check_number' => '124'],
+            ],
+        ], $this->job('JOB-CHECK'));
+
+        $importedJob = $this->job('JOB-IMPORTED');
+        $importedJob->forceFill(['check_no' => 'OLD-9'])->save();
+        $imported = $this->invoice(['total' => 300], $importedJob, ['paid_in_full' => true]);
+
+        $rows = collect($this->rows('my.invoices.export.jobs'))->slice(1)->keyBy(0);
+
+        $this->assertSame('123; 124', $rows[(string) $recorded->invoice_number][self::CHECK_NUMBER]);
+        $this->assertSame('OLD-9', $rows[(string) $imported->invoice_number][self::CHECK_NUMBER], 'imported history keeps the job check number');
     }
 
     public function test_the_rate_is_the_one_the_invoice_was_cut_at(): void

@@ -163,7 +163,7 @@ class JobCsvExportController extends Controller
                     number_format($figures['total'], 2, '.', ''),
                     $this->paidStatus($invoice, $payments),
                     $this->paymentDate($invoice, $payments),
-                    $this->csvText(optional($job)->check_no ?? ''),
+                    $this->csvText($this->checkNumbers($payments, $job)),
                     $this->csvText($values['notes'] ?? $values['memo'] ?? ($job ? $job->memo : '') ?? ''),
                     $this->csvText($summaryDetail),
                 ];
@@ -299,6 +299,25 @@ class JobCsvExportController extends Controller
      * marked paid. `updated_at` used to stand in for both, and it moves on
      * every edit.
      */
+    /**
+     * Payments recorded in the app keep their check number on the payment;
+     * only the old CSV import filled the job's check_no, so the column was
+     * blank for every payment taken through Record Payment (TASK-508).
+     */
+    private function checkNumbers(array $payments, $job): string
+    {
+        $numbers = array_values(array_unique(array_filter(array_map(
+            fn ($p) => trim((string) ($p['check_number'] ?? $p['check_no'] ?? '')),
+            $payments
+        ))));
+
+        if ($numbers !== []) {
+            return implode('; ', $numbers);
+        }
+
+        return (string) (optional($job)->check_no ?? '');
+    }
+
     private function paymentDate(Invoice $invoice, array $payments): string
     {
         $dates = array_filter(array_map(fn ($p) => $p['payment_date'] ?? null, $payments));
