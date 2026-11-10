@@ -52,7 +52,7 @@ class InvoicePaymentForm extends Component
         $this->authorize('update', $invoice);
 
         $this->invoice = $invoice;
-        $this->paymentDate = now()->format('Y-m-d');
+        $this->paymentDate = \App\Support\LocalTime::todayDateString(); // the Eastern day, not UTC (TASK-503)
         $this->loadAvailableCredit();
     }
 
@@ -80,7 +80,7 @@ class InvoicePaymentForm extends Component
         $this->paymentAmount = '';
         $this->paymentMethod = '';
         $this->checkNumber = '';
-        $this->paymentDate = now()->format('Y-m-d');
+        $this->paymentDate = \App\Support\LocalTime::todayDateString(); // the Eastern day, not UTC (TASK-503)
         $this->notes = '';
         $this->useAccountCredit = false;
         $this->creditAmount = '';

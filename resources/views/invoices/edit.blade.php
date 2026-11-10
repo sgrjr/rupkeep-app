@@ -474,7 +474,7 @@
                                     @foreach($payments as $payment)
                                         <tr>
                                             <td class="px-4 py-2 text-slate-600">
-                                                {{ LocalTime::format($payment['payment_date'] ?? null, 'M j, Y', '—') }}
+                                                {{ LocalTime::calendarDate($payment['payment_date'] ?? null, 'M j, Y', '—') }}
                                             </td>
                                             <td class="px-4 py-2 font-semibold text-slate-900">
                                                 {{ Money::currency($payment['amount'] ?? 0) }}

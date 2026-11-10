@@ -91,6 +91,36 @@ class LocalTime
             ->format($format);
     }
 
+    /**
+     * A calendar date with no time, such as a payment date stored as
+     * "2026-11-10", is the same day everywhere. Passing it through format()
+     * read it as midnight UTC and moved it to the previous evening in
+     * America/New_York, so every payment showed one day early (TASK-503).
+     * A bare Y-m-d is formatted as-is; anything with a time goes to format().
+     */
+    public static function calendarDate($value, string $format = 'M j, Y', string $default = ''): string
+    {
+        if ($value === null || $value === '') {
+            return $default;
+        }
+
+        if (is_string($value) && preg_match('/^\d{4}-\d{2}-\d{2}$/', trim($value))) {
+            try {
+                return Carbon::createFromFormat('!Y-m-d', trim($value))->format($format);
+            } catch (\Throwable) {
+                return $value;
+            }
+        }
+
+        return self::format($value, $format, $default);
+    }
+
+    /** Today's date in the display timezone as Y-m-d, for date-only inputs. */
+    public static function todayDateString(): string
+    {
+        return self::today()->format('Y-m-d');
+    }
+
     /** Date only: 7/13/2026 */
     public static function date($value, string $default = ''): string
     {
