@@ -1,8 +1,8 @@
 <x-app-layout>
     <x-slot name="header">
         <div>
-            <h2 class="text-xl font-bold tracking-tight text-slate-900">{{ __('My Requests') }}</h2>
-            <p class="text-xs text-slate-500">{{ __('Track what you have asked us to do — and what we are publicly working on.') }}</p>
+            <h2 class="text-xl font-bold tracking-tight text-white">{{ __('My Requests') }}</h2>
+            <p class="text-xs text-white/90">{{ __('Track what you have asked us to do — and what we are publicly working on.') }}</p>
         </div>
     </x-slot>
 

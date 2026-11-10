@@ -5,7 +5,7 @@
 @endphp
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+        <h2 class="font-semibold text-xl text-white leading-tight">
             {{ $crossOrganization ? __('All Invoices') : __('Invoices') }}
             @if($crossOrganization)
                 <span class="ml-2 rounded-full bg-purple-100 px-2 py-0.5 text-[11px] font-semibold uppercase text-purple-700">{{ __('Super User') }}</span>

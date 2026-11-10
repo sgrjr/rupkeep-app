@@ -2,12 +2,12 @@
     <x-app-layout>
         <x-slot name="header">
             <div class="flex items-center justify-between">
-                <h2 class="text-xl font-semibold leading-tight text-slate-800">
+                <h2 class="text-xl font-semibold leading-tight text-white">
                     {{ __('Onboard New Organization') }}
                 </h2>
                 @if($organizationId)
                     <a href="{{ route('organizations.show', ['organization' => $organizationId]) }}" 
-                       class="text-sm font-medium text-orange-600 hover:text-orange-700">
+                       class="text-sm font-medium text-white hover:underline">
                         {{ __('View Organization') }} →
                     </a>
                 @endif

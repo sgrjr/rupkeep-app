@@ -2,9 +2,9 @@
     <x-slot name="header">
         <div class="flex flex-wrap items-center justify-between gap-4">
             <div>
-                <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">{{ __('Reports') }}</p>
-                <h1 class="text-xl font-semibold text-slate-900">{{ __('Vehicle & Mileage Reports') }}</h1>
-                <p class="text-xs text-slate-500">{{ __('Generate reports for tax purposes and fleet management.') }}</p>
+                <p class="text-xs font-semibold uppercase tracking-wide text-white/90">{{ __('Reports') }}</p>
+                <h1 class="text-xl font-semibold text-white">{{ __('Vehicle & Mileage Reports') }}</h1>
+                <p class="text-xs text-white/90">{{ __('Generate reports for tax purposes and fleet management.') }}</p>
             </div>
         </div>
     </x-slot>

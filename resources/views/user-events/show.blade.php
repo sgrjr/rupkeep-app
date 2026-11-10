@@ -2,10 +2,10 @@
     <x-slot name="header">
         <div class="flex flex-wrap items-center justify-between gap-4">
             <div>
-                <a href="{{ route('user-events.index') }}" class="text-xs font-semibold text-slate-400 hover:text-orange-600">
+                <a href="{{ route('user-events.index') }}" class="text-xs font-semibold text-white/90 hover:text-white hover:underline">
                     {{ __('← Back to Events') }}
                 </a>
-                <h1 class="mt-1 text-xl font-semibold text-slate-900">{{ __('Event Details') }}</h1>
+                <h1 class="mt-1 text-xl font-semibold text-white">{{ __('Event Details') }}</h1>
             </div>
         </div>
     </x-slot>

@@ -2,11 +2,11 @@
     <x-slot name="header">
         <div class="flex flex-wrap items-center justify-between gap-4">
             <div>
-                <a href="{{ route('my.reports.index') }}" class="text-xs font-semibold text-slate-400 hover:text-orange-600">
+                <a href="{{ route('my.reports.index') }}" class="text-xs font-semibold text-white/90 hover:text-white hover:underline">
                     {{ __('← Back to Reports') }}
                 </a>
-                <h1 class="mt-1 text-xl font-semibold text-slate-900">{{ __('Annual Vehicle Report') }}</h1>
-                <p class="text-xs text-slate-500">{{ __('Mileage breakdown per vehicle for tax reporting.') }}</p>
+                <h1 class="mt-1 text-xl font-semibold text-white">{{ __('Annual Vehicle Report') }}</h1>
+                <p class="text-xs text-white/90">{{ __('Mileage breakdown per vehicle for tax reporting.') }}</p>
             </div>
         </div>
     </x-slot>

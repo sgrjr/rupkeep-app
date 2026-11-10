@@ -4,10 +4,10 @@
     <x-slot name="header">
         <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
-                <h2 class="text-xl font-bold tracking-tight text-slate-900">{{ __('Public Roadmap') }}</h2>
-                <p class="text-xs text-slate-500">{{ __('What we are working on and shipping next.') }}</p>
+                <h2 class="text-xl font-bold tracking-tight text-white">{{ __('Public Roadmap') }}</h2>
+                <p class="text-xs text-white/90">{{ __('What we are working on and shipping next.') }}</p>
             </div>
-            <a href="{{ route('documentation.index') }}" class="inline-flex items-center gap-1.5 text-sm font-semibold text-orange-600 hover:text-orange-700">
+            <a href="{{ route('documentation.index') }}" class="inline-flex items-center gap-1.5 text-sm font-semibold text-white hover:underline">
                 <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
                 {{ __('Documentation') }}
             </a>

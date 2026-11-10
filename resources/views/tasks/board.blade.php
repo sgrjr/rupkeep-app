@@ -2,8 +2,8 @@
     <x-slot name="header">
         <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
-                <h2 class="text-xl font-bold tracking-tight text-slate-900">{{ __('Dispatch Board') }}</h2>
-                <p class="text-xs text-slate-500">{{ __('Drag cards between columns to update status.') }}</p>
+                <h2 class="text-xl font-bold tracking-tight text-white">{{ __('Dispatch Board') }}</h2>
+                <p class="text-xs text-white/90">{{ __('Drag cards between columns to update status.') }}</p>
             </div>
             <a href="{{ route('tasks.index') }}" class="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50">
                 <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M3 14h18M3 18h18M3 6h18"/></svg>

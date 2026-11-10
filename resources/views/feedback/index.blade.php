@@ -2,8 +2,8 @@
     <x-slot name="header">
         <div class="flex flex-wrap items-center justify-between gap-4">
             <div>
-                <h1 class="text-xl font-semibold text-slate-900">{{ __('Send Feedback') }}</h1>
-                <p class="text-xs text-slate-500">{{ __('Share your thoughts, report issues, or suggest improvements.') }}</p>
+                <h1 class="text-xl font-semibold text-white">{{ __('Send Feedback') }}</h1>
+                <p class="text-xs text-white/90">{{ __('Share your thoughts, report issues, or suggest improvements.') }}</p>
             </div>
         </div>
     </x-slot>
