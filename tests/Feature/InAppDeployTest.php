@@ -112,6 +112,24 @@ class InAppDeployTest extends TestCase
         ], $controller->ran);
     }
 
+    public function test_the_real_command_runner_runs_artisan_and_plain_commands(): void
+    {
+        // Every other test here stubs runCommand(), so the real one never ran:
+        // it passed a null environment to Process::run(), which takes an
+        // array, and the first deploy on production died with a TypeError
+        // before running a single step (2026-11-10).
+        $controller = app(AdminToolsController::class);
+        $run = (new \ReflectionMethod($controller, 'runCommand'))->getClosure($controller);
+
+        $artisan = $run(['type' => 'artisan', 'command' => 'list --raw']);
+        $this->assertSame(0, $artisan['exit_code'], $artisan['stderr']);
+        $this->assertStringContainsString('migrate', $artisan['stdout']);
+
+        $plain = $run(['type' => 'shell', 'command' => [PHP_BINARY, '-r', 'echo "ok";']]);
+        $this->assertSame(0, $plain['exit_code'], $plain['stderr']);
+        $this->assertSame('ok', $plain['stdout']);
+    }
+
     public function test_a_failed_pull_stops_the_deploy_and_still_brings_the_site_up(): void
     {
         $controller = $this->controller(['git pull' => 1]);

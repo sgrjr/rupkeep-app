@@ -333,7 +333,10 @@ class AdminToolsController extends Controller
         }
 
         $process->setTimeout(self::PROCESS_TIMEOUT);
-        $process->run(null, $env);
+        // Process::run() takes an array: [] inherits the server's environment.
+        // Passing null threw a TypeError on the first non-git step, so the
+        // Deploy button died before it ran anything.
+        $process->run(null, $env ?? []);
 
         return [
             'command' => $commandString,
