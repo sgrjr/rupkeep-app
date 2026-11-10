@@ -137,6 +137,14 @@ class Dashboard extends Component
 
     public function render(Request $request)
     {
+       // A customer-portal login landed on the staff dashboard: the staff
+       // tagline, a count of the company's staff with a link to the user list,
+       // and none of the customer's own invoices (TASK-507). They get their
+       // own page, built from nothing but their own records.
+       if (Auth::user()->isCustomer()) {
+           return $this->renderCustomerDashboard();
+       }
+
        $organization = Auth::user()->organization;
        $organizations = false;
 
@@ -373,6 +381,45 @@ class Dashboard extends Component
         }
 
         return view('livewire.dashboard', compact('organization', 'organizations','cards','jobs', 'managerStats', 'recentJobs', 'jobsMarkedForAttention', 'recentFeedback', 'totalFeedback'));
+    }
+
+    private function renderCustomerDashboard()
+    {
+        $user = Auth::user();
+
+        // Only what was actually billed to this customer: drafts are staff
+        // work in progress and void invoices are not owed (TASK-480). The
+        // portal list uses the same rules.
+        $invoices = $user->customer_id
+            ? \App\Models\Invoice::query()
+                ->where('organization_id', $user->organization_id)
+                ->where('customer_id', $user->customer_id)
+                ->whereNull('parent_invoice_id')
+                ->visibleToCustomer()
+                ->with('job')
+                ->latest()
+                ->get()
+            : collect();
+
+        $openInvoices = $invoices->filter(fn ($invoice) => $invoice->remaining_balance > 0);
+
+        $myRequests = \App\Models\Task::where('submitter_user_id', $user->id)
+            ->orderBy('updated_at', 'desc')
+            ->take(5)
+            ->get();
+
+        return view('livewire.customer-dashboard', [
+            'organization' => $user->organization,
+            'customer' => $user->customer,
+            'recentInvoices' => $invoices->take(5),
+            'invoiceCount' => $invoices->count(),
+            'openCount' => $openInvoices->count(),
+            'balanceDue' => round($openInvoices->sum(fn ($invoice) => $invoice->remaining_balance), 2),
+            'myRequests' => $myRequests,
+            'openRequestCount' => \App\Models\Task::where('submitter_user_id', $user->id)
+                ->whereNotIn('status', ['done', 'declined'])
+                ->count(),
+        ]);
     }
 
     public function confirmImport()

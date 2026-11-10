@@ -48,10 +48,12 @@ class DashboardFeedbackCardTest extends TestCase
         $this->makeTask(['submitter_user_id' => $other->id, 'status' => 'triage']);
         $this->makeTask(['submitter_user_id' => null, 'status' => 'triage']);
 
+        // Customers have their own dashboard since TASK-507; the request
+        // count and list keep the same scoping.
         Livewire::actingAs($customerUser)
             ->test(Dashboard::class)
-            ->assertViewHas('totalFeedback', 2)
-            ->assertViewHas('recentFeedback', function ($recent) use ($customerUser) {
+            ->assertViewHas('openRequestCount', 2)
+            ->assertViewHas('myRequests', function ($recent) use ($customerUser) {
                 // Recent list is scoped to the customer's own tasks (all statuses, up to 5).
                 return $recent->count() === 4
                     && $recent->every(fn ($t) => $t->submitter_user_id === $customerUser->id);

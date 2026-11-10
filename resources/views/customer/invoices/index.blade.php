@@ -5,7 +5,9 @@
     use App\Support\LocalTime;
 
     $invoiceCount = $invoices->total();
-    $totalDue = $invoices->sum(fn ($invoice) => (float) ($invoice->values['total'] ?? 0));
+    // What is still owed, not the sum of every invoice ever sent: a paid
+    // invoice used to count toward "Total due" (TASK-507).
+    $totalDue = $invoices->sum(fn ($invoice) => $invoice->remaining_balance);
     $openInvoices = $invoices->where('paid_in_full', false)->count();
     $paidInvoices = $invoiceCount - $openInvoices;
 @endphp
