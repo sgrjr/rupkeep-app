@@ -48,6 +48,47 @@ class PilotCarJobRateTest extends TestCase
         $this->assertSame('2.00', $job->rate_value);
     }
 
+    public function test_the_override_box_starts_empty_and_names_the_selected_rates_default(): void
+    {
+        // TASK-495 (drive 003): the box came prefilled with 2.00 under a
+        // "leave blank" hint, and its placeholder was a hard-coded 2.25.
+        $organization = Organization::factory()->create();
+        $manager = User::factory()->manager()->create(['organization_id' => $organization->id]);
+
+        $component = Livewire::actingAs($manager)->test(CreatePilotCarJob::class)
+            ->set('form.rate_code', 'per_mile_rate_2_00')
+            ->assertSet('form.rate_value', null)
+            ->assertViewHas('defaultRateValue', '2.00')
+            ->assertSee('(default $2.00)')
+            ->assertSee('placeholder="2.00"', false)
+            ->assertDontSee('placeholder="2.25"', false);
+
+        // A typed override survives a change of rate; it is the user's.
+        $component->set('form.rate_value', '2.40')
+            ->set('form.rate_code', PilotCarJob::DEFAULT_RATE_CODE)
+            ->assertSet('form.rate_value', '2.40');
+    }
+
+    public function test_a_typed_override_is_what_the_job_charges(): void
+    {
+        $organization = Organization::factory()->create();
+        $manager = User::factory()->manager()->create(['organization_id' => $organization->id]);
+        $customer = Customer::factory()->create(['organization_id' => $organization->id]);
+
+        Livewire::actingAs($manager)->test(CreatePilotCarJob::class)
+            ->set('form.customer_id', $customer->id)
+            ->set('form.job_no', 'JOB-1002')
+            ->set('form.load_no', 'LOAD-124')
+            ->set('form.pickup_address', '123 Pickup St')
+            ->set('form.delivery_address', '456 Delivery Ave')
+            ->set('form.rate_code', 'per_mile_rate_2_00')
+            ->set('form.rate_value', '2.40')
+            ->call('createJob')
+            ->assertHasNoErrors();
+
+        $this->assertSame('2.40', PilotCarJob::where('job_no', 'JOB-1002')->sole()->rate_value);
+    }
+
     public function test_rate_value_is_sanitized_and_saved_when_editing_job(): void
     {
         $organization = Organization::factory()->create();

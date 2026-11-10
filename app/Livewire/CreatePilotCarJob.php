@@ -147,7 +147,8 @@ class CreatePilotCarJob extends Component
            $this->form->rate_code = PilotCarJob::DEFAULT_RATE_CODE;
        }
 
-       $this->form->rate_value = $this->form->rate_value ?? PilotCarJob::defaultRateValue($this->form->rate_code, $user->organization_id);
+       // Left empty: blank means "use the price list" and is filled in on
+       // save (TASK-495).
     }
 
     public function updatedFormCustomerId($value)
@@ -167,7 +168,13 @@ class CreatePilotCarJob extends Component
 
     public function render()
     {
-        return view('livewire.create-pilot-car-job');
+        // The selected rate's price-list default, shown in the label and the
+        // placeholder. The box itself stays empty unless someone overrides
+        // (TASK-495): it used to be prefilled with the default under a
+        // "leave blank" hint, with a hard-coded 2.25 placeholder.
+        return view('livewire.create-pilot-car-job', [
+            'defaultRateValue' => PilotCarJob::defaultRateValue($this->form->rate_code, Auth::user()->organization_id),
+        ]);
     }
 
     public function createJob(){
@@ -311,7 +318,7 @@ class CreatePilotCarJob extends Component
 
         $this->form->reset();
         $this->form->rate_code = PilotCarJob::DEFAULT_RATE_CODE;
-        $this->form->rate_value = PilotCarJob::defaultRateValue($this->form->rate_code, $user->organization_id);
+        $this->form->rate_value = null;
         $this->dispatch('saved');
         return redirect()->route('my.jobs.show', ['job'=>$job->id]);
     }
@@ -395,13 +402,8 @@ class CreatePilotCarJob extends Component
 
     public function updatedFormRateCode($value): void
     {
-        $user = Auth::user();
-        $default = PilotCarJob::defaultRateValue($value, $user->organization_id);
-
-        if ($default !== null) {
-            $this->form->rate_value = $default;
-        } else {
-            $this->form->rate_value = $this->form->rate_value ?? null;
-        }
+        // Changing the rate no longer writes its default into the override
+        // box (TASK-495); the label shows the new default instead. An
+        // override someone typed is theirs and stays.
     }
 }

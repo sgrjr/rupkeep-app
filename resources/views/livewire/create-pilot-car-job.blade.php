@@ -179,7 +179,7 @@
             <div class="grid gap-4 md:grid-cols-2">
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Rate Code') }}</label>
-                    <select wire:model="form.rate_code" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                    <select wire:model.live="form.rate_code" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
                         @foreach($rates as $rate)
                             <option value="{{ $rate->value }}">{{ $rate->title }}</option>
                         @endforeach
@@ -189,9 +189,20 @@
                     @enderror
                 </div>
                 <div>
-                    <label for="rate_value" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">{{ __('Rate Value / Override') }}</label>
-                    <input type="text" id="rate_value" wire:model="form.rate_value" placeholder="2.25" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
-                    <p class="mt-2 text-xs text-slate-400">{{ __('Leave blank to use the default value for the selected rate.') }}</p>
+                    <label for="rate_value" class="block text-xs font-semibold uppercase tracking-wide text-slate-600">
+                        {{ __('Rate Override') }}
+                        @if($defaultRateValue !== null)
+                            <span class="ml-1 normal-case tracking-normal text-slate-500">{{ __('(default :amount)', ['amount' => \App\Support\Money::currency((float) $defaultRateValue)]) }}</span>
+                        @endif
+                    </label>
+                    <input type="text" id="rate_value" wire:model="form.rate_value" inputmode="decimal" placeholder="{{ $defaultRateValue ?? '' }}" class="mt-2 block w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200 text-slate-900">
+                    <p class="mt-2 text-xs text-slate-400">
+                        @if($defaultRateValue !== null)
+                            {{ __('Leave blank to charge the price-list rate of :amount. Type a number only to charge something different on this job.', ['amount' => \App\Support\Money::currency((float) $defaultRateValue)]) }}
+                        @else
+                            {{ __('This rate has no price-list amount. Type the amount to charge.') }}
+                        @endif
+                    </p>
                     @error('form.rate_value')
                         <p class="mt-2 text-xs font-semibold text-red-500">{{ $message }}</p>
                     @enderror
